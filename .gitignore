@@ -3,3 +3,4 @@
 /package copy.json
 /preload copy.js
 /service
+node_modules

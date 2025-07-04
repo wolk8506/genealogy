@@ -43,7 +43,7 @@
     "vite": "^7.0.0"
   },
   "build": {
-    "appId": "com.yourname.genealogy",
+    "appId": "com.nebula9371.genealogy",
     "productName": "GenealogyApp",
     "directories": {
       "buildResources": "assets",
