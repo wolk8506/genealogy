@@ -3,7 +3,7 @@ import react from "@vitejs/plugin-react";
 import { NodeGlobalsPolyfillPlugin } from "@esbuild-plugins/node-globals-polyfill";
 
 export default defineConfig({
-  base: "./", // ✅ обязательно для Electron
+  base: "./",
   plugins: [react()],
   build: {
     outDir: "dist",

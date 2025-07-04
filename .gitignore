@@ -4,3 +4,4 @@
 /preload copy.js
 /service
 /node_modules
+/vite.config copy.js

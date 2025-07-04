@@ -2,6 +2,7 @@
   "name": "genealogy-react",
   "version": "1.0.0",
   "main": "main.js",
+  "type": "module",
   "scripts": {
     "dev": "concurrently \"vite\" \"cross-env NODE_ENV=development electron .\"",
     "build:react": "vite build",
