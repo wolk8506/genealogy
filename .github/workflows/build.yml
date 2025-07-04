@@ -9,22 +9,26 @@ jobs:
     runs-on: windows-latest
 
     steps:
-      - name: Checkout repo
+      - name: 📥 Checkout repository
         uses: actions/checkout@v3
 
-      - name: Setup Node
+      - name: 🧰 Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: 18
 
-      - name: Install dependencies (legacy mode)
+      - name: 📦 Install dependencies (legacy mode)
         run: npm install --legacy-peer-deps
 
-      - name: Build app
+      - name: 🔧 Disable auto-publish to GitHub Releases
+        run: |
+          node -e "const fs=require('fs');let p=JSON.parse(fs.readFileSync('package.json'));p.build=p.build||{};p.build.publish=null;fs.writeFileSync('package.json',JSON.stringify(p,null,2));"
+
+      - name: 🛠️ Build app (React + Electron)
         run: npm run build
 
-      - name: Upload artifacts
+      - name: 📤 Upload Windows build artifacts
         uses: actions/upload-artifact@v4
         with:
           name: windows-build
-          path: dist_electron/**/*
+          path: dist_electron/**
