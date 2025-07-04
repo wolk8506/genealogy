@@ -1,0 +1,5 @@
+/.DS_Store
+/dist_electron
+/package copy.json
+/preload copy.js
+/service
