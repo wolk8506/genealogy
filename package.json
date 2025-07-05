@@ -1,7 +1,7 @@
 {
   "name": "genealogy-react",
-  "version": "1.0.0",
-  "main": "main.js",
+  "version": "1.0.1",
+  "main": "main.cjs",
   "type": "module",
   "scripts": {
     "dev": "concurrently \"vite\" \"cross-env NODE_ENV=development electron .\"",
@@ -45,28 +45,32 @@
   },
   "build": {
     "appId": "com.nebula9371.genealogy",
-    "productName": "GenealogyApp",
+    "productName": "Genealogy",
+    "icon": "build/icons/icon",
     "directories": {
       "buildResources": "assets",
       "output": "dist_electron"
     },
     "files": [
       "dist/**/*",
-      "main.js",
+      "main.cjs",
       "preload.js",
       "package.json"
     ],
     "extraMetadata": {
-      "main": "main.js"
+      "main": "main.cjs"
     },
     "mac": {
-      "target": "dmg"
+      "target": "dmg",
+      "icon": "build/icons/icon.icns"
     },
     "win": {
-      "target": "nsis"
+      "target": "nsis",
+      "icon": "build/icons/icon.ico"
     },
     "linux": {
-      "target": "AppImage"
+      "target": "AppImage",
+      "icon": "build/icons/256x256.png"
     }
   }
 }

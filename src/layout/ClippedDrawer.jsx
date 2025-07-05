@@ -238,73 +238,13 @@ export default function ClippedDrawer() {
           ))}
         </List>
         <Divider />
-        {/* <List>
-          {["All mail"].map((text, index) => (
-            <ListItem key={text} disablePadding sx={{ display: "block" }}>
-              <ListItemButton
-                sx={[
-                  {
-                    minHeight: 48,
-                    px: 2.5,
-                  },
-                  open
-                    ? {
-                        justifyContent: "initial",
-                      }
-                    : {
-                        justifyContent: "center",
-                      },
-                ]}
-              >
-                <ListItemIcon
-                  sx={[
-                    {
-                      minWidth: 0,
-                      justifyContent: "center",
-                    },
-                    open
-                      ? {
-                          mr: 3,
-                        }
-                      : {
-                          mr: "auto",
-                        },
-                  ]}
-                >
-                  {index % 2 === 0 ? <InboxIcon /> : <MailIcon />}
-                </ListItemIcon>
-                <ListItemText
-                  primary={text}
-                  sx={[
-                    open
-                      ? {
-                          opacity: 1,
-                        }
-                      : {
-                          opacity: 0,
-                        },
-                  ]}
-                />
-              </ListItemButton>
-            </ListItem>
-          ))}
-        </List> */}
       </Drawer>
       <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
         <DrawerHeader />
-        {/* <Typography sx={{ marginBottom: 2 }}>
-          Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
-          faucibus et molestie ac.
-        </Typography>
-        <Typography sx={{ marginBottom: 2 }}>
-          Consequat mauris nunc congue nisi vitae suscipit. Fringilla est
-        </Typography> */}
-        {/* <BrowserRouter> */}
         <Routes>
           <Route path="/" element={<PeopleListPage />} />
           <Route path="/add" element={<AddPersonPage />} />
           <Route path="/globalPhotoGallery" element={<GlobalPhotoGallery />} />
-          {/* <Route path="/add" element={<AddPersonPage />} /> */}
           <Route path="/people" element={<PeopleListPage />} />
           <Route path="/person/:id" element={<PersonPage />} />
           <Route path="/archive" element={<ArchivedPeoplePage />} />
@@ -312,7 +252,6 @@ export default function ClippedDrawer() {
           <Route path="/photoUploader" element={<PhotoUploader />} />
           <Route path="/about" element={<AboutPage />} />
         </Routes>
-        {/* </BrowserRouter> */}
       </Box>
     </Box>
   );

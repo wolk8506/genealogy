@@ -14,7 +14,7 @@ import {
   ListItemButton,
 } from "@mui/material";
 import { Link } from "react-router-dom";
-
+import appIcon from "../../img/app_icon.png";
 function PersonAvatar({ foto, initials }) {
   const [src, setSrc] = useState(null);
 
@@ -41,7 +41,47 @@ export default function PeopleListPage() {
     });
   }, []);
 
-  if (!people.length) return <CircularProgress />;
+  if (!people.length) {
+    return (
+      <Stack
+        spacing={2}
+        alignItems="center"
+        justifyContent="center"
+        sx={{ mt: 10 }}
+      >
+        <Avatar
+          src={appIcon} // или путь к логотипу
+          sx={{ width: 80, height: 80 }}
+        />
+        <Typography variant="h5">Генеалогия</Typography>
+        <Typography variant="h6" color="text.secondary">
+          Пока нет записей
+        </Typography>
+        <Typography variant="body2" color="text.secondary" textAlign="center">
+          Добавьте первого человека или сделайте "Восстановление архива" из
+          резервной копии.
+        </Typography>
+        <Stack direction="row" spacing={2} sx={{ mt: 2 }}>
+          <Button
+            variant="contained"
+            color="primary"
+            component={Link}
+            to="/add"
+          >
+            Добавить человека
+          </Button>
+          <Button
+            variant="outlined"
+            color="secondary"
+            component={Link}
+            to="/settings"
+          >
+            Импорт из резервной копии
+          </Button>
+        </Stack>
+      </Stack>
+    );
+  }
 
   const filtered = people
     .filter((p) => !p.archived)

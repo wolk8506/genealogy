@@ -79,6 +79,7 @@ contextBridge.exposeInMainWorld("bioAPI", {
 // 📂 Файловая система
 contextBridge.exposeInMainWorld("fsAPI", {
   ensurePersonFolder: (id) => ipcRenderer.invoke("fs:ensurePersonFolder", id),
+  exists: (relativePath) => ipcRenderer.invoke("fs:exists", relativePath),
 });
 
 // 📤 Экспорт
@@ -94,6 +95,9 @@ contextBridge.exposeInMainWorld("appAPI", {
   openDataFolder: () => ipcRenderer.invoke("app:openDataFolder"),
   resetSettings: () => ipcRenderer.invoke("app:resetSettings"),
   getBuildDate: () => ipcRenderer.invoke("app:getBuildDate"),
+  getFolderSize: () => ipcRenderer.invoke("app:get-folder-size"),
+  onFolderSizeUpdated: (callback) =>
+    ipcRenderer.on("app:folder-size-updated", callback),
 });
 //  лог
 contextBridge.exposeInMainWorld("logAPI", {

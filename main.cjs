@@ -868,6 +868,64 @@ let Store;
       await shell.openPath(dataPath);
     });
     // -----------------------------
+    ipcMain.handle("fs:exists", async (event, relativePath) => {
+      const fullPath = path.join(app.getPath("userData"), relativePath);
+      return fs.existsSync(fullPath);
+    });
+    // -----------------------------
+    ipcMain.handle("app:get-folder-size", async () => {
+      const folderPath = path.join(app.getPath("documents"), "Genealogy");
+
+      function getSize(dir) {
+        let total = 0;
+        const files = fs.readdirSync(dir);
+        for (const file of files) {
+          const fullPath = path.join(dir, file);
+          const stats = fs.statSync(fullPath);
+          if (stats.isDirectory()) {
+            total += getSize(fullPath);
+          } else {
+            total += stats.size;
+          }
+        }
+        return total;
+      }
+
+      try {
+        const size = getSize(folderPath);
+        return (size / (1024 * 1024)).toFixed(2); // MB
+      } catch (err) {
+        console.error("Ошибка при подсчёте размера папки:", err);
+        return null;
+      }
+    });
+    // -----------------------------
+    // ! следим за размером папки
+
+    let folderWatcher = null;
+
+    function watchFolderChanges() {
+      const folderPath = path.join(app.getPath("documents"), "Genealogy");
+
+      if (!fs.existsSync(folderPath)) return;
+
+      if (folderWatcher) {
+        folderWatcher.close();
+      }
+
+      folderWatcher = fs.watch(folderPath, { recursive: true }, () => {
+        const win = BrowserWindow.getAllWindows()[0];
+        if (win) {
+          win.webContents.send("folder-size-updated");
+        }
+      });
+    }
+
+    app.whenReady().then(() => {
+      watchFolderChanges();
+    });
+
+    // -----------------------------
 
     createWindow();
   });
