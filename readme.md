@@ -23,17 +23,20 @@
 
 ## 📂 Структура архива
 
-genealogy-data.json  
-people/ 
-    └── 12345/ 
-        ├── bio.md  
-        ├── avatar.jpg  
-        ├── photos.json  
-        └── photos/ 
-            ├── photo1.jpg  
-            └── photo2.jpg
+```
+genealogy-data.json
+    people/
+        └── 12345/
+            ├── bio.md
+            ├── bioImg1.jpg
+            ├── bioImg1.jpg
+            ├── avatar.jpg
+            ├── photos.json
+            └── photos/
+                ├── photo1.jpg
+                └── photo2.jpg
+```
 
-            
 ## 🧪 Разработка
 
 ```bash
@@ -48,7 +51,6 @@ npm run build
 ```
 
 ## 📌 Особенности
-
 
 - Приложение не требует подключения к интернету
 - Все данные хранятся локально в папке Documents/Genealogy
