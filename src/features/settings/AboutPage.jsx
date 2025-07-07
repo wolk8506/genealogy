@@ -23,10 +23,16 @@ export default function AboutPage() {
           sx={{ width: 80, height: 80 }}
         />
         <Typography variant="h5">Генеалогия</Typography>
-        <Typography variant="body2" color="text.secondary">
-          Приложение для построения и редактирования семейного древа
+        <Typography variant="body2" color="text.secondary" textAlign="center">
+          Приложение для ведения и визуализации семейной истории. Построено на
+          базе Electron + React, с акцентом на автономность, приватность и
+          удобство работы с мультимедийными данными.
         </Typography>
 
+        {/* <Divider flexItem sx={{ my: 2 }} /> */}
+        <Typography variant="caption" color="text.secondary" textAlign="center">
+          Сделано с уважением к памяти и истории 🕊️
+        </Typography>
         <Divider flexItem sx={{ my: 2 }} />
 
         <Stack spacing={1} alignSelf="stretch">
@@ -51,7 +57,7 @@ export default function AboutPage() {
 
         <Stack direction="row" spacing={2}>
           <Link
-            href="https://github.com/your-username/your-repo"
+            href="https://github.com/wolk8506/genealogy"
             target="_blank"
             rel="noopener"
             underline="hover"

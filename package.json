@@ -1,6 +1,6 @@
 {
   "name": "genealogy-react",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "main": "main.cjs",
   "type": "module",
   "scripts": {
@@ -15,10 +15,12 @@
     "@emotion/styled": "^11.11.0",
     "@mui/icons-material": "^7.2.0",
     "@mui/material": "^7.2.0",
+    "@mui/x-date-pickers": "^8.7.0",
     "@reduxjs/toolkit": "^2.2.3",
     "@uiw/react-md-editor": "^4.0.7",
     "archiver": "^7.0.1",
     "buffer": "^6.0.3",
+    "dayjs": "^1.11.13",
     "electron-store": "^10.1.0",
     "file-saver": "^2.0.5",
     "html-to-image": "^1.11.13",

@@ -3,9 +3,6 @@ import { useEffect, useState } from "react";
 import { Typography, Button, Stack, Divider, Box } from "@mui/material";
 import PersonAvatar from "./PersonAvatar";
 import PhotoGallery from "./PhotoGallery";
-import AddPhotoAlternateIcon from "@mui/icons-material/AddPhotoAlternate";
-import { IconButton } from "@mui/material";
-import PhotoUploadDialog from "./PhotoUploadDialog";
 import BiographySection from "./BiographySection";
 import { Link as RouterLink, useNavigate } from "react-router-dom";
 import AvatarEditorDialog from "./AvatarEditorDialog";
@@ -17,12 +14,14 @@ import { ToggleButton, ToggleButtonGroup } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import * as htmlToImage from "html-to-image";
 import { useSnackbar } from "notistack";
+import CreateIcon from "@mui/icons-material/Create";
+import PhotoCameraIcon from "@mui/icons-material/PhotoCamera";
 
 export default function PersonPage() {
   const { id } = useParams();
   const [person, setPerson] = useState(null);
   const [allPeople, setAllPeople] = useState([]);
-  const [uploadOpen, setUploadOpen] = useState(false);
+  // const [uploadOpen, setUploadOpen] = useState(false);
   const [refreshPhotos, setRefreshPhotos] = useState(0);
   const [avatarEditorOpen, setAvatarEditorOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
@@ -58,8 +57,11 @@ export default function PersonPage() {
 
   const renderPersonItem = (p) => {
     const name =
-      [p.firstName, p.lastName].filter(Boolean).join(" ") || "Без имени";
-    const initials = (p.firstName?.[0] || "") + (p.lastName?.[0] || "");
+      [p.firstName, p.lastName || p.maidenName].filter(Boolean).join(" ") ||
+      "Без имени";
+    const initials =
+      (p.firstName?.[0] || "") +
+      (p.lastName?.[0] || (p.maidenName?.[0] ? p.maidenName?.[1] : ""));
 
     return (
       <Box
@@ -193,7 +195,7 @@ export default function PersonPage() {
             variant="outlined"
             size="small"
           >
-            ✏️ Редактировать
+            <CreateIcon sx={{ marginRight: 1 }} /> Редактировать
           </Button>
 
           <PersonEditDialog
@@ -212,30 +214,18 @@ export default function PersonPage() {
       {renderSection("Братья и сёстры", siblings)}
       {renderSection("Дети", children)}
 
+      <Divider />
+
       <BiographySection personId={person.id} />
-      <Stack direction="row" justifyContent="space-between" alignItems="center">
-        <Typography variant="h6">
-          Фотографии{" "}
-          <IconButton onClick={() => setUploadOpen(true)}>
-            <AddPhotoAlternateIcon />
-          </IconButton>
-        </Typography>
-      </Stack>
+
+      <Divider />
 
       <PhotoGallery
         personId={person.id}
         allPeople={allPeople}
-        refresh={refreshPhotos}
+        // refresh={refreshPhotos}
       />
 
-      <PhotoUploadDialog
-        open={uploadOpen}
-        onClose={() => setUploadOpen(false)}
-        personId={person.id}
-        currentUserId={person.id} // или получи из настроек
-        // onPhotoAdded={() => setUploadOpen(false)} // можно обновить галерею
-        onPhotoAdded={() => setRefreshPhotos((r) => r + 1)}
-      />
       <Divider />
 
       <Box
@@ -258,7 +248,7 @@ export default function PersonPage() {
           </ToggleButtonGroup>
 
           <Button onClick={handleExport} variant="outlined" size="small">
-            📸 PNG
+            <PhotoCameraIcon sx={{ marginRight: 1 }} />в PNG
           </Button>
         </Box>
       </Box>
@@ -274,4 +264,3 @@ export default function PersonPage() {
     </Stack>
   );
 }
-``;

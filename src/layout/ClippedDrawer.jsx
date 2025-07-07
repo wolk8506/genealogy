@@ -16,14 +16,10 @@ import ListItem from "@mui/material/ListItem";
 import ListItemButton from "@mui/material/ListItemButton";
 import ListItemIcon from "@mui/material/ListItemIcon";
 import ListItemText from "@mui/material/ListItemText";
-// import InboxIcon from "@mui/icons-material/MoveToInbox";
-// import MailIcon from "@mui/icons-material/Mail";
-// -------------
+import { useLocation, matchPath } from "react-router-dom";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-// import HelloPage from "../features/hello/HelloPage";
 import SettingsPage from "../features/settings/SettingsPage";
 import { Link as RouterLink } from "react-router-dom";
-// import FamilyTreePage from "../features/familyTree/FamilyTreePage";
 import AddPersonPage from "../features/people/ADDPersonPage";
 import TuneIcon from "@mui/icons-material/Tune";
 import PersonAddAlt1Icon from "@mui/icons-material/PersonAddAlt1";
@@ -140,6 +136,7 @@ const Drawer = styled(MuiDrawer, {
 export default function ClippedDrawer() {
   const theme = useTheme();
   const [open, setOpen] = React.useState(false);
+  const location = useLocation();
 
   const handleDrawerOpen = () => {
     setOpen(true);
@@ -185,57 +182,69 @@ export default function ClippedDrawer() {
         </DrawerHeader>
         <Divider />
         <List>
-          {drawerItems.map(({ text, icon, path }, index) => (
-            <ListItem key={text} disablePadding sx={{ display: "block" }}>
-              <ListItemButton
-                component={RouterLink}
-                to={path}
-                sx={[
-                  {
-                    minHeight: 48,
-                    px: 2.5,
-                  },
-                  open
-                    ? {
-                        justifyContent: "initial",
-                      }
-                    : {
-                        justifyContent: "center",
-                      },
-                ]}
-              >
-                <ListItemIcon
+          {drawerItems.map(({ text, icon, path }, index) => {
+            const isActive =
+              location.pathname === path ||
+              (path === "/" && matchPath("/person/:id", location.pathname));
+            return (
+              <ListItem key={text} disablePadding sx={{ display: "block" }}>
+                <ListItemButton
+                  component={RouterLink}
+                  to={path}
+                  selected={isActive}
                   sx={[
                     {
-                      minWidth: 0,
-                      justifyContent: "center",
+                      minHeight: 48,
+                      px: 2.5,
                     },
                     open
                       ? {
-                          mr: 3,
+                          justifyContent: "initial",
                         }
                       : {
-                          mr: "auto",
+                          justifyContent: "center",
                         },
+                    isActive && {
+                      backgroundColor: theme.palette.action.selected,
+                      "&:hover": {
+                        backgroundColor: theme.palette.action.selected,
+                      },
+                    },
                   ]}
                 >
-                  {icon}
-                </ListItemIcon>
-                <ListItemText
-                  primary={text}
-                  sx={[
-                    open
-                      ? {
-                          opacity: 1,
-                        }
-                      : {
-                          opacity: 0,
-                        },
-                  ]}
-                />
-              </ListItemButton>
-            </ListItem>
-          ))}
+                  <ListItemIcon
+                    sx={[
+                      {
+                        minWidth: 0,
+                        justifyContent: "center",
+                      },
+                      open
+                        ? {
+                            mr: 3,
+                          }
+                        : {
+                            mr: "auto",
+                          },
+                    ]}
+                  >
+                    {icon}
+                  </ListItemIcon>
+                  <ListItemText
+                    primary={text}
+                    sx={[
+                      open
+                        ? {
+                            opacity: 1,
+                          }
+                        : {
+                            opacity: 0,
+                          },
+                    ]}
+                  />
+                </ListItemButton>
+              </ListItem>
+            );
+          })}
         </List>
         <Divider />
       </Drawer>
