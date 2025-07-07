@@ -24,21 +24,6 @@ export default function FamilyTree({ data, mode = "descendants" }) {
     }
   }, []);
 
-  // const handleExport = async () => {
-  //   if (!treeRef.current) return;
-  //   try {
-  //     const blob = await htmlToImage.toBlob(treeRef.current);
-  //     const url = URL.createObjectURL(blob);
-  //     const link = document.createElement("a");
-  //     link.href = url;
-  //     link.download = `family-tree-${mode}.png`;
-  //     link.click();
-  //     URL.revokeObjectURL(url);
-  //   } catch (err) {
-  //     console.error("Ошибка при экспорте дерева:", err);
-  //   }
-  // };
-
   const renderNode = ({ nodeDatum }) => {
     const { id, birthday, gender } = nodeDatum.attributes || {};
     const initials = nodeDatum.name
@@ -99,15 +84,6 @@ export default function FamilyTree({ data, mode = "descendants" }) {
 
   return (
     <Stack spacing={1}>
-      {/* <Button
-        onClick={handleExport}
-        variant="outlined"
-        size="small"
-        sx={{ alignSelf: "flex-start" }}
-      >
-        📸 Скачать PNG
-      </Button> */}
-
       <div
         id="tree-wrapper"
         ref={containerRef}

@@ -1,28 +1,38 @@
+import React, { useEffect, useState, useMemo } from "react";
 import {
+  Box,
+  Paper,
+  Tabs,
+  Tab,
+  Stack,
+  Typography,
+  Button,
+  Grid,
   List,
   ListItem,
   ListItemAvatar,
   ListItemText,
-  Typography,
-  Button,
-  Stack,
   ListItemButton,
   Checkbox,
-  Tabs,
-  Tab,
-  Box,
+  FormControlLabel,
+  Backdrop,
+  CircularProgress,
+  TextField,
 } from "@mui/material";
-import { FormControlLabel } from "@mui/material";
-
-import { useEffect, useState } from "react";
+import {
+  Archive as ArchiveIcon,
+  People as PeopleIcon,
+  Delete as DeleteIcon,
+  RestoreFromTrash as RestoreIcon,
+  DeleteForever as DeleteForeverIcon,
+  CheckCircle as CheckCircleIcon,
+  CheckBox,
+} from "@mui/icons-material";
 import PersonAvatar from "./PersonAvatar";
-import JSZip from "jszip";
 import ExportConfirmModal from "./ExportConfirmModal";
 import { exportPeopleToZip } from "./utils/exportToZip";
-import Backdrop from "@mui/material/Backdrop";
-import CircularProgress from "@mui/material/CircularProgress";
-import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-// import Box from "@mui/material/Box";
+import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
+import { Fab, Zoom } from "@mui/material";
 
 export default function ArchivePage() {
   const [people, setPeople] = useState([]);
@@ -33,12 +43,52 @@ export default function ArchivePage() {
   const [isSaving, setIsSaving] = useState(false);
   const [saveDone, setSaveDone] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [search, setSearch] = useState("");
+  const [showScrollTop, setShowScrollTop] = useState(false);
 
   useEffect(() => {
-    window.peopleAPI.getAll().then((data) => {
-      setPeople(data || []);
-    });
+    const handleScroll = () => {
+      setShowScrollTop(window.scrollY > 300);
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    loadAll();
+  }, []);
+
+  const loadAll = async () => {
+    const data = await window.peopleAPI.getAll();
+    setPeople(data || []);
+  };
+
+  const archived = people.filter((p) => p.archived);
+  const active = people.filter((p) => !p.archived);
+
+  const filteredActive = useMemo(() => {
+    const q = search.toLowerCase();
+    return active.filter((p) => {
+      const fullName = `${p.firstName || ""} ${p.lastName || ""}`.toLowerCase();
+      return fullName.includes(q) || String(p.id).includes(q);
+    });
+  }, [active, search]);
+
+  const allIds = filteredActive.map((p) => p.id);
+  const allSelected = allIds.every((id) => selected.includes(id));
+  const someSelected = allIds.some((id) => selected.includes(id));
+
+  const handleToggleAll = () => {
+    if (allSelected) {
+      setSelected((prev) => prev.filter((id) => !allIds.includes(id)));
+    } else {
+      setSelected((prev) => [...new Set([...prev, ...allIds])]);
+    }
+  };
 
   const handleToggle = (id) => {
     setSelected((prev) =>
@@ -46,231 +96,260 @@ export default function ArchivePage() {
     );
   };
 
-  const handleBackup = async () => {
+  const handleArchiveSelected = async () => {
+    const all = await window.peopleAPI.getAll();
+    setSelectedPeople(all.filter((p) => selected.includes(p.id)));
+    setConfirmOpen(true);
+  };
+
+  const handleConfirmExport = async () => {
+    setConfirmOpen(false);
     setIsSaving(true);
+    setSaveDone(false);
     setProgress(0);
 
     try {
-      const people = await window.peopleAPI.getAll();
       await exportPeopleToZip({
-        people,
+        people: selectedPeople,
+        filename: `Genealogy_selected_${Date.now()}.zip`,
         onProgress: setProgress,
-        filename: `Genealogy_backup_${Date.now()}.zip`,
       });
-
       setSaveDone(true);
+      setSelected([]);
       setTimeout(() => {
         setIsSaving(false);
         setSaveDone(false);
         setProgress(0);
       }, 1500);
-    } catch (err) {
-      console.error("❌ Ошибка при создании архива:", err);
+    } catch {
       setIsSaving(false);
     }
   };
 
-  const archived = people.filter((p) => p.archived);
-  const active = people.filter((p) => !p.archived);
+  const handleToggleArchive = async (id, toArchive) => {
+    await window.peopleAPI.update(id, { archived: toArchive });
+    await loadAll();
+    setSelected((prev) => prev.filter((x) => x !== id));
+  };
+
+  const handleDeleteForever = async (id) => {
+    await window.peopleAPI.delete(id);
+    await loadAll();
+  };
 
   return (
-    <Stack spacing={2}>
-      <Backdrop
-        open={isSaving}
-        sx={{
-          color: "#fff",
-          zIndex: (theme) => theme.zIndex.drawer + 1,
-          flexDirection: "column",
-        }}
-      >
-        {saveDone ? (
-          <>
-            <CheckCircleIcon sx={{ fontSize: 60, color: "limegreen" }} />
-            <Box mt={2}>
-              <Typography variant="h6" color="inherit">
-                Архив сохранён!
-              </Typography>
-            </Box>
-          </>
-        ) : (
-          <>
-            <CircularProgress color="inherit" />
-            <Box mt={2}>
-              <Typography variant="h6" color="inherit">
-                Сохраняем архив... {progress}%
-              </Typography>
-            </Box>
-          </>
-        )}
-      </Backdrop>
-      <Typography variant="h5">Корзина</Typography>
+    <Box sx={{ p: 3 }}>
+      {/* Заголовок */}
+      <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 2 }}>
+        <ArchiveIcon fontSize="large" color="primary" />
+        <Typography variant="h4">Архив</Typography>
+      </Stack>
 
-      <Tabs value={tab} onChange={(_, v) => setTab(v)}>
-        <Tab label="Не в архиве" />
-        <Tab label="В архиве" />
-      </Tabs>
+      {/* Tabs */}
+      <Paper elevation={1} sx={{ mb: 2 }}>
+        <Tabs
+          value={tab}
+          onChange={(_, v) => setTab(v)}
+          textColor="primary"
+          indicatorColor="primary"
+        >
+          <Tab icon={<PeopleIcon />} iconPosition="start" label="Активные" />
+          <Tab icon={<RestoreIcon />} iconPosition="start" label="В корзине" />
+        </Tabs>
+      </Paper>
 
+      {/* Action buttons */}
       {tab === 0 && (
         <>
-          <Button
-            variant="contained"
-            disabled={selected.length === 0}
-            onClick={async () => {
-              const all = await window.peopleAPI.getAll();
-              const selectedData = all.filter((p) => selected.includes(p.id));
-              setSelectedPeople(selectedData);
-              setConfirmOpen(true);
+          <Paper
+            elevation={1}
+            sx={{
+              position: "sticky",
+              top: { xs: 56, sm: 64 },
+              marginBottom: 2,
+              zIndex: 10,
+              // backgroundColor: theme.palette.background.paper,
+              p: 2,
+              // borderBottom: `1px solid ${theme.palette.divider}`,
             }}
           >
-            📦 Создать архив из выбранных
-          </Button>
+            <Stack direction="row" spacing={2} alignItems="center">
+              <TextField
+                label="Поиск по имени или ID"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                size="small"
+                sx={{ flexGrow: 1 }}
+              />
 
-          <List dense>
-            {active.map((person) => {
-              const fullName = [person.firstName, person.lastName]
-                .filter(Boolean)
-                .join(" ");
-              const initials =
-                (person.firstName?.[0] || "") + (person.lastName?.[0] || "");
-
-              return (
-                <ListItem
-                  key={person.id}
-                  secondaryAction={
-                    <Stack direction="row" spacing={1}>
-                      <Button
-                        size="small"
-                        color="warning"
-                        onClick={async () => {
-                          await window.peopleAPI.update(person.id, {
-                            archived: true,
-                          });
-                          const updated = await window.peopleAPI.getAll();
-                          setPeople(updated);
-                          setSelected((prev) =>
-                            prev.filter((id) => id !== person.id)
-                          );
-                        }}
-                      >
-                        Архивировать
-                      </Button>
-                      <FormControlLabel
-                        control={
-                          <Checkbox
-                            edge="end"
-                            checked={selected.includes(person.id)}
-                            onChange={() => handleToggle(person.id)}
-                          />
-                        }
-                        label="&nbsp;в .zip  "
-                      />
-                    </Stack>
-                  }
-                >
-                  <ListItemAvatar>
-                    <PersonAvatar
-                      foto={person.id}
-                      initials={initials}
-                      size={40}
-                    />
-                  </ListItemAvatar>
-                  <ListItemText
-                    primary={fullName || "Без имени"}
-                    secondary={`ID: ${person.id}`}
+              <Button
+                variant="contained"
+                startIcon={<ArchiveIcon />}
+                disabled={!selected.length}
+                onClick={handleArchiveSelected}
+                sx={{ mb: 2 }}
+              >
+                Экспорт выбранных ({selected.length})
+              </Button>
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={allSelected}
+                    indeterminate={!allSelected && someSelected}
+                    onChange={handleToggleAll}
                   />
-                </ListItem>
-              );
-            })}
-          </List>
+                }
+                label="Выбрать все"
+              />
+            </Stack>
+          </Paper>
         </>
       )}
 
-      {tab === 1 && (
-        <List dense>
-          {archived.map((person) => {
-            const fullName = [person.firstName, person.lastName]
-              .filter(Boolean)
-              .join(" ");
-            const initials =
-              (person.firstName?.[0] || "") + (person.lastName?.[0] || "");
-
-            return (
+      {/* Списки */}
+      {tab === 0 ? (
+        <List disablePadding>
+          {filteredActive.map((p) => (
+            <Paper
+              key={p.id}
+              elevation={1}
+              sx={{
+                mb: 1,
+                "&:hover": { boxShadow: 4 },
+              }}
+            >
               <ListItem
-                key={person.id}
+                secondaryAction={
+                  <Stack direction="row" spacing={1}>
+                    <Button
+                      size="small"
+                      color="warning"
+                      variant="outlined"
+                      onClick={() => handleToggleArchive(p.id, true)}
+                    >
+                      В корзину
+                      <DeleteIcon sx={{ ml: 0.5 }} />
+                    </Button>
+                    <FormControlLabel
+                      control={
+                        <Checkbox
+                          checked={selected.includes(p.id)}
+                          onChange={() => handleToggle(p.id)}
+                        />
+                      }
+                      label="В ZIP"
+                    />
+                  </Stack>
+                }
+              >
+                <ListItemAvatar>
+                  <PersonAvatar
+                    personId={p.id}
+                    initials={p.firstName?.[0]}
+                    size={40}
+                  />
+                </ListItemAvatar>
+                <ListItemText
+                  primary={
+                    `${p.firstName} ${p.lastName || ""}`.trim() || "Без имени"
+                  }
+                  secondary={`ID: ${p.id}`}
+                />
+              </ListItem>
+            </Paper>
+          ))}
+        </List>
+      ) : (
+        <List disablePadding>
+          {archived.map((p) => (
+            <Paper
+              key={p.id}
+              elevation={1}
+              sx={{
+                mb: 1,
+                "&:hover": { boxShadow: 4 },
+              }}
+            >
+              <ListItem
                 secondaryAction={
                   <Stack direction="row" spacing={1}>
                     <Button
                       size="small"
                       color="success"
-                      onClick={async () => {
-                        await window.peopleAPI.update(person.id, {
-                          archived: false,
-                        });
-                        const updated = await window.peopleAPI.getAll();
-                        setPeople(updated);
-                      }}
+                      variant="outlined"
+                      onClick={() => handleToggleArchive(p.id, false)}
                     >
                       Восстановить
+                      <RestoreIcon sx={{ ml: 0.5 }} />
                     </Button>
                     <Button
                       size="small"
                       color="error"
-                      onClick={async () => {
-                        await window.peopleAPI.delete(person.id);
-                        const updated = await window.peopleAPI.getAll();
-                        setPeople(updated);
-                      }}
+                      variant="outlined"
+                      onClick={() => handleDeleteForever(p.id)}
                     >
                       Удалить навсегда
+                      <DeleteForeverIcon sx={{ ml: 0.5 }} />
                     </Button>
                   </Stack>
                 }
               >
                 <ListItemAvatar>
                   <PersonAvatar
-                    foto={person.id}
-                    initials={initials}
+                    personId={p.id}
+                    initials={p.firstName?.[0]}
                     size={40}
                   />
                 </ListItemAvatar>
                 <ListItemText
-                  primary={fullName || "Без имени"}
-                  secondary={`ID: ${person.id}`}
+                  primary={
+                    `${p.firstName} ${p.lastName || ""}`.trim() || "Без имени"
+                  }
+                  secondary={`ID: ${p.id}`}
                 />
               </ListItem>
-            );
-          })}
+            </Paper>
+          ))}
         </List>
       )}
+
+      {/* Export confirmation */}
       <ExportConfirmModal
         open={confirmOpen}
         people={selectedPeople}
         onCancel={() => setConfirmOpen(false)}
-        onConfirm={async () => {
-          setIsSaving(true);
-          setProgress(0);
-          setConfirmOpen(false); // ⬅️ Закрываем модалку
-
-          try {
-            await exportPeopleToZip({
-              people: selectedPeople,
-              filename: `Genealogy_selected_${Date.now()}.zip`,
-              onProgress: setProgress,
-            });
-
-            setSaveDone(true);
-            setSelected([]);
-            setTimeout(() => {
-              setIsSaving(false);
-              setSaveDone(false);
-              setProgress(0);
-            }, 1500);
-          } catch (err) {
-            console.error("❌ Ошибка при экспорте:", err);
-            setIsSaving(false);
-          }
-        }}
+        onConfirm={handleConfirmExport}
       />
-    </Stack>
+
+      {/* Backdrop */}
+      <Backdrop open={isSaving} sx={{ zIndex: 2000, color: "#fff" }}>
+        {saveDone ? (
+          <Stack alignItems="center" spacing={1}>
+            <CheckCircleIcon sx={{ fontSize: 64, color: "limegreen" }} />
+            <Typography variant="h6">Архив сохранён!</Typography>
+          </Stack>
+        ) : (
+          <Stack alignItems="center" spacing={1}>
+            <CircularProgress color="inherit" />
+            <Typography variant="h6">Сохраняем… {progress}%</Typography>
+          </Stack>
+        )}
+      </Backdrop>
+      <Zoom in={showScrollTop}>
+        <Fab
+          color="primary"
+          size="small"
+          onClick={scrollToTop}
+          sx={{
+            position: "fixed",
+            bottom: 24,
+            right: 24,
+            zIndex: 1000,
+          }}
+        >
+          <KeyboardArrowUpIcon />
+        </Fab>
+      </Zoom>
+    </Box>
   );
 }

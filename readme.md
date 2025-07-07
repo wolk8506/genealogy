@@ -1,5 +1,7 @@
 # 🧬 Genealogy Desktop App
 
+![](./build/icons/icon.png)
+
 Приложение для ведения и визуализации семейной истории. Построено на базе Electron + React, с акцентом на автономность, приватность и удобство работы с мультимедийными данными.
 
 ## 🚀 Возможности
@@ -25,16 +27,16 @@
 
 ```
 genealogy-data.json
-    people/
-        └── 12345/
-            ├── bio.md
-            ├── bioImg1.jpg
-            ├── bioImg1.jpg
-            ├── avatar.jpg
-            ├── photos.json
-            └── photos/
-                ├── photo1.jpg
-                └── photo2.jpg
+people/
+    └── 12345/
+        ├── bio.md
+        ├── bioImg1.jpg
+        ├── bioImg1.jpg
+        ├── avatar.jpg
+        ├── photos.json
+        └── photos/
+            ├── photo1.jpg
+            └── photo2.jpg
 ```
 
 ## 🧪 Разработка

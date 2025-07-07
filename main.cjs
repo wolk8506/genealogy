@@ -59,7 +59,7 @@ let Store;
     ipcMain.handle("app:getPlatform", () => process.platform);
 
     ipcMain.handle("app:getBuildDate", () => {
-      const buildTime = fs.statSync(path.join(__dirname, "main.js")).mtime;
+      const buildTime = fs.statSync(path.join(__dirname, "main.cjs")).mtime;
       return buildTime.toISOString().split("T")[0]; // YYYY-MM-DD
     });
 
@@ -184,6 +184,30 @@ let Store;
       fs.writeFileSync(photosMetaPath, JSON.stringify(photos, null, 2));
 
       return newPhoto;
+    });
+
+    // -----------------------------
+
+    ipcMain.handle("avatar:delete", async (event, personId) => {
+      try {
+        const avatarPath = path.join(
+          app.getPath("documents"),
+          "Genealogy",
+          "people",
+          String(personId),
+          "avatar.jpg"
+        );
+
+        if (fs.existsSync(avatarPath)) {
+          fs.unlinkSync(avatarPath);
+          return { success: true };
+        } else {
+          return { success: false, message: "Файл не найден" };
+        }
+      } catch (err) {
+        console.error(`❌ Ошибка при удалении аватара ${personId}:`, err);
+        return { success: false, message: err.message };
+      }
     });
 
     // -----------------------------

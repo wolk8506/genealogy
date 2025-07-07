@@ -27,6 +27,8 @@ import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import RestoreIcon from "@mui/icons-material/Restore";
 import { Buffer } from "buffer";
 import { ImportDecisionModal } from "./ImportDecisionModal";
+import TuneIcon from "@mui/icons-material/Tune";
+import FolderSharedIcon from "@mui/icons-material/FolderShared";
 
 export default function SettingsPage() {
   const dispatch = useDispatch();
@@ -811,8 +813,13 @@ export default function SettingsPage() {
         </Box>
       </Backdrop>
 
-      <Typography variant="h4" gutterBottom>
-        ⚙️ Настройки
+      <Typography
+        variant="h4"
+        gutterBottom
+        sx={{ display: "flex", alignItems: "center" }}
+      >
+        <TuneIcon color="primary" fontSize="large" sx={{ marginRight: 0.5 }} />{" "}
+        Настройки
       </Typography>
       <Stack spacing={3}>
         <Paper elevation={2} sx={{ p: 2 }}>
@@ -828,9 +835,9 @@ export default function SettingsPage() {
             </ListItem>
 
             <Tooltip title={size ? `Размер: ${size} MB` : "Загрузка..."} arrow>
-              <ListItem button onClick={handleOpenFolder}>
+              <ListItem button="true" onClick={handleOpenFolder}>
                 <ListItemIcon>
-                  <FolderOpenIcon />
+                  <FolderSharedIcon />
                 </ListItemIcon>
                 <ListItemText
                   primary="Открыть папку данных"
