@@ -1,7 +1,9 @@
-import React, { useEffect, useState, useContext } from "react";
+import React, { useEffect, useMemo, useState, useContext } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import {
   Box,
   Typography,
+  Button,
   Paper,
   Stack,
   List,
@@ -10,35 +12,36 @@ import {
   ListItemText,
   Divider,
   Tooltip,
+} from "@mui/material";
+import Brightness4Icon from "@mui/icons-material/Brightness4";
+import {
+  FormControlLabel,
   Switch,
   RadioGroup,
   Radio,
+  FormControl,
+  FormLabel,
 } from "@mui/material";
-import Brightness4Icon from "@mui/icons-material/Brightness4";
-import { Backdrop, CircularProgress } from "@mui/material";
-import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import RestoreIcon from "@mui/icons-material/Restore";
-import TuneIcon from "@mui/icons-material/Tune";
-import FolderSharedIcon from "@mui/icons-material/FolderShared";
-import LightModeIcon from "@mui/icons-material/LightMode";
-import DarkModeIcon from "@mui/icons-material/DarkMode";
+import { ThemeContext } from "../../context/ThemeContext.cjs";
+// import FolderOpenIcon from "@mui/icons-material/FolderOpen";
+// import RestartAltIcon from "@mui/icons-material/RestartAlt";
 import InfoIcon from "@mui/icons-material/Info";
 import SettingsIcon from "@mui/icons-material/Settings";
 import SaveIcon from "@mui/icons-material/Save";
-
-import { ThemeContext } from "../../context/ThemeContext.cjs";
+import { toggleTheme } from "../theme/themeSlice";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
+import { Backdrop, CircularProgress } from "@mui/material";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import RestoreIcon from "@mui/icons-material/Restore";
 import { Buffer } from "buffer";
 import { ImportDecisionModal } from "./ImportDecisionModal";
-
-import electronIcon from "../../img/electron-logo.svg";
-import reactIcon from "../../img/react-icon.svg";
-import reduxIcon from "../../img/redux-logo.svg";
-import muiIcon from "../../img/material-ui-logo.svg";
-import viteIcon from "../../img/vitejs-logo.svg";
+import TuneIcon from "@mui/icons-material/Tune";
+import FolderSharedIcon from "@mui/icons-material/FolderShared";
+import ThemeSwitcher from "../theme/ThemeSwitcher";
 
 export default function SettingsPage() {
+  const dispatch = useDispatch();
   const [version, setVersion] = useState("");
   const [platform, setPlatform] = useState("");
   const [isSaving, setIsSaving] = useState(false);
@@ -50,6 +53,7 @@ export default function SettingsPage() {
     total: 0,
   });
   const [importStatus, setImportStatus] = useState("");
+
   const [modalOpen, setModalOpen] = useState(false);
   const [modalSummary, setModalSummary] = useState("");
   const [modalToAdd, setModalToAdd] = useState([]);
@@ -75,6 +79,12 @@ export default function SettingsPage() {
 
   const handleOpenFolder = () => {
     window.appAPI?.openDataFolder?.();
+  };
+
+  const handleReset = () => {
+    if (confirm("Вы уверены, что хотите сбросить все настройки?")) {
+      window.appAPI?.resetSettings?.();
+    }
   };
 
   const handleBackup = async () => {
@@ -212,6 +222,114 @@ export default function SettingsPage() {
   // ~ Восстановление данных
   //! 1
 
+  // const checkArchiveDiff = async (zip, archivePeople) => {
+  //   const peopleToAdd = [];
+  //   const biosToUpdate = [];
+  //   const photosToUpdate = [];
+
+  //   const existingPeople = await window.peopleAPI.getAll();
+  //   const existingIds = existingPeople.map((p) => p.id);
+
+  //   for (const person of archivePeople) {
+  //     const personId = person.id;
+  //     const personPath = `people/${personId}/`;
+
+  //     if (!existingIds.includes(personId)) {
+  //       peopleToAdd.push(personId);
+  //     }
+
+  //     const archiveBio = await zip.file(`${personPath}bio.md`)?.async("string");
+  //     const existingBio = await window.bioAPI.read(personId);
+  //     if (archiveBio && archiveBio !== existingBio) {
+  //       biosToUpdate.push(personId);
+  //     }
+
+  //     const archivePhotosJson = await zip
+  //       .file(`${personPath}photos.json`)
+  //       ?.async("string");
+  //     if (archivePhotosJson) {
+  //       const archivePhotos = JSON.parse(archivePhotosJson);
+  //       const archiveFilenames = archivePhotos.map((p) => p.filename);
+
+  //       const existingPhotos = await window.photosAPI.read(personId);
+  //       const existingFilenames = existingPhotos?.map((p) => p.filename) || [];
+
+  //       const hasPhotoDiff =
+  //         archiveFilenames.length !== existingFilenames.length ||
+  //         archiveFilenames.some((f) => !existingFilenames.includes(f));
+
+  //       if (hasPhotoDiff) {
+  //         photosToUpdate.push(personId);
+  //       }
+  //     }
+  //   }
+
+  //   const totalChanges =
+  //     peopleToAdd.length + biosToUpdate.length + photosToUpdate.length;
+
+  //   if (totalChanges === 0) {
+  //     alert("✅ Все данные актуальны. Импорт можно продолжать.");
+  //     return true;
+  //   }
+
+  //   const message = [
+  //     "Будут обновлены:",
+  //     peopleToAdd.length
+  //       ? `👤 Новые: ${peopleToAdd.length} (${peopleToAdd.join(", ")})`
+  //       : null,
+  //     biosToUpdate.length
+  //       ? `📄 Биографии: ${biosToUpdate.length} (${biosToUpdate.join(", ")})`
+  //       : null,
+  //     photosToUpdate.length
+  //       ? `📸 Фото: ${photosToUpdate.length} (${photosToUpdate.join(", ")})`
+  //       : null,
+  //     "",
+  //     "Что сделать?",
+  //     "✅ OK — обновить всех",
+  //     "➕ Cancel — добавить только новых",
+  //   ]
+  //     .filter(Boolean)
+  //     .join("\n");
+
+  //   const confirm = window.confirm(message);
+  //   if (!confirm) {
+  //     if (peopleToAdd.length === 0) {
+  //       alert("⛔ Импорт отменён. Нет новых людей для добавления.");
+  //       return false;
+  //     }
+
+  //     // Обновлять только новых
+  //     for (const personId of peopleToAdd) {
+  //       const archivePhotosJson = await zip
+  //         .file(`people/${personId}/photos.json`)
+  //         ?.async("string");
+  //       if (archivePhotosJson) {
+  //         const archivePhotos = JSON.parse(archivePhotosJson);
+  //         await window.photosAPI.write(personId, archivePhotos);
+  //         console.log(`✅ Восстановлен photos.json для нового ${personId}`);
+  //       }
+  //     }
+
+  //     // Возвращаем только новых
+  //     return {
+  //       only: peopleToAdd,
+  //     };
+  //   }
+
+  //   // Обновляем всех
+  //   for (const personId of photosToUpdate) {
+  //     const archivePhotosJson = await zip
+  //       .file(`people/${personId}/photos.json`)
+  //       ?.async("string");
+  //     if (archivePhotosJson) {
+  //       const archivePhotos = JSON.parse(archivePhotosJson);
+  //       await window.photosAPI.write(personId, archivePhotos);
+  //       console.log(`✅ Обновлён photos.json для ${personId}`);
+  //     }
+  //   }
+
+  //   return true;
+  // };
   const checkArchiveDiff = async (zip, archivePeople) => {
     const toAdd = [];
     const toUpdate = [];
@@ -294,6 +412,165 @@ export default function SettingsPage() {
 
   //! 1.1
 
+  //! 2
+  // const handleImport = async () => {
+  //   try {
+  //     setIsImporting(true);
+  //     setImportStatus("📥 Запуск импорта архива...");
+
+  //     const [fileHandle] = await window.showOpenFilePicker({
+  //       types: [
+  //         { description: "ZIP архив", accept: { "application/zip": [".zip"] } },
+  //       ],
+  //       multiple: false,
+  //     });
+
+  //     const file = await fileHandle.getFile();
+  //     const zip = await JSZip.loadAsync(file);
+  //     setImportStatus(`📦 Архив загружен: ${file.name}`);
+
+  //     const jsonText = await zip.file("genealogy-data.json")?.async("string");
+  //     if (!jsonText) throw new Error("Файл genealogy-data.json не найден");
+
+  //     const { people } = JSON.parse(jsonText);
+  //     const result = await checkArchiveDiff(zip, people);
+  //     if (!result) return;
+
+  //     const finalList = result.only ?? people;
+
+  //     setImportProgress({ current: 0, total: people.length });
+
+  //     for (const person of people) {
+  //       const personId = person.id;
+  //       const personPath = `people/${personId}/`;
+
+  //       setImportStatus(`🔄 Импортируем ${personId}...`);
+
+  //       let totalPhotos = 0;
+  //       let savedPhotos = 0;
+  //       let skippedPhotos = 0;
+
+  //       try {
+  //         const bio = await zip.file(`${personPath}bio.md`)?.async("string");
+  //         const avatarBlob = await zip
+  //           .file(`${personPath}avatar.jpg`)
+  //           ?.async("blob");
+  //         const photosJson = await zip
+  //           .file(`${personPath}photos.json`)
+  //           ?.async("string");
+  //         const photos = photosJson ? JSON.parse(photosJson) : [];
+
+  //         // 📸 Собираем все имена фото
+  //         const photoFilenames = new Set(photos.map((p) => p.filename));
+
+  //         // 📎 Добавляем изображения из bio.md
+  //         if (bio) {
+  //           const matches = [
+  //             ...bio.matchAll(/\]\(([\w\-\.]+\.(jpg|jpeg|png|webp))\)/gi),
+  //           ];
+  //           for (const match of matches) {
+  //             photoFilenames.add(match[1]);
+  //           }
+  //         }
+
+  //         const hasContent =
+  //           bio || avatarBlob instanceof Blob || photoFilenames.size > 0;
+
+  //         if (!hasContent) {
+  //           const isNew = !(await window.peopleAPI.getById(personId));
+  //           if (isNew) {
+  //             await window.peopleAPI.upsert(person);
+  //             await window.logAPI.append(`⚠️ Добавлен ${personId} без файлов`);
+  //             console.log(`⚠️ Добавлен ${personId} без файлов`);
+  //           } else {
+  //             console.log(`⏭️ Пропускаем ${personId} — нет данных для импорта`);
+  //             await window.logAPI.append(
+  //               `⏭️ Пропущен ${personId} — нет данных`
+  //             );
+  //           }
+  //           continue;
+  //         }
+
+  //         await window.fsAPI.ensurePersonFolder(personId);
+  //         console.log("📁 Папка создана");
+
+  //         if (bio) {
+  //           await window.bioAPI.write(personId, bio);
+  //           console.log("📄 bio.md импортирован");
+  //         }
+
+  //         if (avatarBlob instanceof Blob) {
+  //           const buffer = Buffer.from(await avatarBlob.arrayBuffer());
+  //           await window.avatarAPI.save(personId, buffer);
+  //           console.log("🖼️ Аватар сохранён");
+  //         }
+
+  //         // 📥 Восстанавливаем все изображения
+  //         for (const filename of photoFilenames) {
+  //           totalPhotos++;
+
+  //           const photoPaths = [
+  //             { path: `${personPath}photos/${filename}`, source: "photos" },
+  //             { path: `${personPath}${filename}`, source: "bio" },
+  //           ];
+
+  //           let photoBlob = null;
+  //           let source = null;
+
+  //           for (const entry of photoPaths) {
+  //             const file = zip.file(entry.path);
+  //             if (file) {
+  //               photoBlob = await file.async("blob");
+  //               source = entry.source;
+  //               break;
+  //             }
+  //           }
+
+  //           if (photoBlob instanceof Blob) {
+  //             const buffer = Buffer.from(await photoBlob.arrayBuffer());
+
+  //             if (source === "photos") {
+  //               await window.photosAPI.saveFile(personId, filename, buffer);
+  //             } else if (source === "bio") {
+  //               await window.bioAPI.saveImage(personId, filename, buffer);
+  //             }
+
+  //             savedPhotos++;
+  //             console.log(`🖼️ Фото ${filename} восстановлено из ${source}`);
+  //           } else {
+  //             skippedPhotos++;
+  //             console.log(`⚠️ Фото ${filename} не найдено в архиве`);
+  //           }
+  //         }
+
+  //         await window.peopleAPI.upsert(person);
+  //         console.log("🧬 Данные человека добавлены в people.json");
+
+  //         await window.logAPI.append(
+  //           `Импорт ${personId}: всего ${totalPhotos}, сохранено ${savedPhotos}, пропущено ${skippedPhotos}`
+  //         );
+  //       } catch (personErr) {
+  //         console.error(`❌ Ошибка при импорте ${personId}:`, personErr);
+  //         await window.logAPI.append(
+  //           `❌ Ошибка при импорте ${personId}: ${personErr.message}`
+  //         );
+  //       } finally {
+  //         setImportProgress((prev) => ({ ...prev, current: prev.current + 1 }));
+  //       }
+  //     }
+
+  //     setImportStatus("✅ Импорт архива завершён успешно");
+  //     setTimeout(() => {
+  //       alert("✅ Импорт завершён!");
+  //     }, 100);
+  //   } catch (err) {
+  //     console.error("❌ Ошибка при импорте архива:", err);
+  //     setImportStatus(`❌ Ошибка: ${err.message}`);
+  //     alert("Ошибка при импорте архива: " + err.message);
+  //   } finally {
+  //     setIsImporting(false);
+  //   }
+  // };
   const handleImport = async () => {
     try {
       setIsImporting(true);
@@ -317,6 +594,28 @@ export default function SettingsPage() {
       const result = await checkArchiveDiff(zip, people);
       if (!result) return;
 
+      // let finalList = [];
+
+      // if (result.only) {
+      //   finalList = result.only;
+      // } else if (result.summary) {
+      //   setModalSummary(result.summary);
+      //   setModalToAdd(result.toAdd);
+      //   setModalToUpdate(result.toUpdate);
+      //   setModalOpen(true);
+
+      //   const userChoice = await new Promise((resolve) =>
+      //     setModalResolve(() => resolve)
+      //   );
+
+      //   if (userChoice === "cancel") return;
+      //   finalList =
+      //     userChoice === "new"
+      //       ? result.toAdd
+      //       : [...result.toAdd, ...result.toUpdate];
+      // } else {
+      //   finalList = people;
+      // }
       let finalList = [];
 
       if (result.only) {
@@ -534,79 +833,53 @@ export default function SettingsPage() {
         Настройки
       </Typography>
       <Stack spacing={3}>
-        <Paper elevation={2} sx={{ p: 2, borderRadius: 3 }}>
+        <Paper elevation={2} sx={{ p: 2 }}>
           <Typography variant="h6" gutterBottom>
             Общие
           </Typography>
-          <Divider sx={{ mb: 2 }} />
-          <Paper sx={{ borderRadius: 3, mb: 2 }}>
-            <List disablePadding>
-              {/* Переключатель системной темы */}
-              <ListItem>
-                <ListItemIcon>
-                  <Brightness4Icon />
-                </ListItemIcon>
-                <ListItemText primary="Следовать за системной темой" />
-                <Switch
-                  edge="end"
-                  checked={auto}
-                  onChange={(e) => setAuto(e.target.checked)}
-                />
-              </ListItem>
+          <List>
+            <Paper sx={{ p: 3, maxWidth: 500, mx: "auto", mt: 4 }}>
+              <Typography variant="h6" gutterBottom>
+                Настройки темы
+              </Typography>
+
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={auto}
+                    onChange={(e) => setAuto(e.target.checked)}
+                  />
+                }
+                label="Следовать за системной темой"
+              />
 
               {!auto && (
-                <>
-                  <Divider component="li" sx={{ my: 1 }} />
-
-                  {/* Вложенный список */}
-                  <List component="div" disablePadding>
-                    <ListItem
-                      button="true"
-                      onClick={() => setUserPref("light")}
-                      selected={userPref === "light"}
-                      sx={{ pl: 4 }}
-                    >
-                      <ListItemIcon>
-                        <LightModeIcon />
-                      </ListItemIcon>
-                      <ListItemText primary="Светлая" />
-                      <Radio
-                        edge="end"
-                        value="light"
-                        checked={userPref === "light"}
-                        onChange={() => setUserPref("light")}
-                      />
-                    </ListItem>
-
-                    <ListItem
-                      button="true"
-                      onClick={() => setUserPref("dark")}
-                      selected={userPref === "dark"}
-                      sx={{ pl: 4 }}
-                    >
-                      <ListItemIcon>
-                        <DarkModeIcon />
-                      </ListItemIcon>
-                      <ListItemText primary="Тёмная" />
-                      <Radio
-                        edge="end"
-                        value="dark"
-                        checked={userPref === "dark"}
-                        onChange={() => setUserPref("dark")}
-                      />
-                    </ListItem>
-                  </List>
-                </>
+                <FormControl component="fieldset" sx={{ mt: 2 }}>
+                  <FormLabel component="legend">Выбор темы</FormLabel>
+                  <RadioGroup
+                    value={userPref}
+                    onChange={(e) => setUserPref(e.target.value)}
+                  >
+                    <FormControlLabel
+                      value="light"
+                      control={<Radio />}
+                      label="Светлая"
+                    />
+                    <FormControlLabel
+                      value="dark"
+                      control={<Radio />}
+                      label="Тёмная"
+                    />
+                  </RadioGroup>
+                </FormControl>
               )}
-            </List>
-          </Paper>
-          <List>
-            {/* <ListItem button="true" onClick={() => dispatch(toggleTheme())}>
+            </Paper>
+            <ListItem button="true" onClick={() => dispatch(toggleTheme())}>
               <ListItemIcon>
                 <Brightness4Icon />
               </ListItemIcon>
               <ListItemText primary="Переключить тему" />
-            </ListItem> */}
+            </ListItem>
 
             <Tooltip title={size ? `Размер: ${size} MB` : "Загрузка..."} arrow>
               <ListItem button="true" onClick={handleOpenFolder}>
@@ -642,11 +915,10 @@ export default function SettingsPage() {
           </List>
         </Paper>
 
-        <Paper elevation={2} sx={{ p: 2, borderRadius: 3 }}>
+        <Paper elevation={2} sx={{ p: 2 }}>
           <Typography variant="h6" gutterBottom>
             О приложении
           </Typography>
-          <Divider sx={{ mb: 2 }} />
           <List>
             <ListItem>
               <ListItemIcon>
@@ -663,56 +935,8 @@ export default function SettingsPage() {
               </ListItemIcon>
               <ListItemText
                 primary="Технологии"
-                secondaryTypographyProps={{ component: "div" }}
-                secondary={
-                  <Box
-                    sx={{
-                      display: "flex",
-                      alignItems: "center",
-                      flexWrap: "wrap",
-                      gap: 1,
-                      mt: 0.5,
-                    }}
-                  >
-                    {[
-                      { icon: electronIcon, name: "Electron" },
-                      { icon: reactIcon, name: "React" },
-                      { icon: reduxIcon, name: "Redux" },
-                      { icon: muiIcon, name: "MUI" },
-                      { icon: viteIcon, name: "Vite" },
-                    ].map((tech, i, arr) => (
-                      <Box
-                        key={tech.name}
-                        sx={{ display: "flex", alignItems: "center" }}
-                      >
-                        <Box
-                          component="img"
-                          src={tech.icon}
-                          alt={tech.name}
-                          sx={{ width: 20, height: 20, mr: 1 }}
-                        />
-                        <Typography variant="caption" noWrap>
-                          {tech.name}
-                        </Typography>
-
-                        {i < arr.length - 1 && (
-                          <Divider
-                            orientation="vertical"
-                            flexItem
-                            sx={{
-                              borderColor: "divider",
-                              height: 16,
-                              ml: 2,
-                              mr: 1,
-                            }}
-                          />
-                        )}
-                      </Box>
-                    ))}
-                  </Box>
-                }
+                secondary="Electron + React + Redux + MUI + Vite"
               />
-              {/* <img src={reactIcon} alt="React" width={32} /> */}
             </ListItem>
           </List>
         </Paper>

@@ -63,4 +63,36 @@ export const getTheme = (mode) =>
     typography: {
       fontFamily: `"Roboto", "Helvetica", "Arial", sans-serif`,
     },
+    components: {
+      MuiCssBaseline: {
+        styleOverrides: (themeParam) => ({
+          "*": {
+            scrollbarWidth: "thin", // Firefox
+            scrollbarColor: `${themeParam.palette.divider} transparent`,
+          },
+          "*::-webkit-scrollbar": {
+            width: "8px",
+            height: "8px",
+          },
+          "*::-webkit-scrollbar-track": {
+            background: "transparent",
+          },
+          "*::-webkit-scrollbar-thumb": {
+            backgroundColor:
+              themeParam.palette.mode === "dark"
+                ? "rgba(255, 255, 255, 0.2)"
+                : "rgba(0, 0, 0, 0.2)",
+            borderRadius: "8px",
+            border: "2px solid transparent",
+            backgroundClip: "content-box",
+          },
+          "*::-webkit-scrollbar-thumb:hover": {
+            backgroundColor:
+              themeParam.palette.mode === "dark"
+                ? "rgba(255, 255, 255, 0.4)"
+                : "rgba(0, 0, 0, 0.4)",
+          },
+        }),
+      },
+    },
   });

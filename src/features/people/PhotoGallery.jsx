@@ -22,9 +22,8 @@ import {
 import { useTheme } from "@mui/material/styles";
 import AddPhotoAlternateIcon from "@mui/icons-material/AddPhotoAlternate";
 import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
-// import SwapVertIcon from "@mui/icons-material/SwapVert";
-// import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
-// import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward";
+import FullscreenIcon from "@mui/icons-material/Fullscreen";
+import FullscreenExitIcon from "@mui/icons-material/FullscreenExit";
 import DownloadIcon from "@mui/icons-material/Download";
 import CloseIcon from "@mui/icons-material/Close";
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
@@ -35,6 +34,7 @@ import SwipeableViews from "react-swipeable-views";
 import PhotoUploadDialog from "./PhotoUploadDialog";
 import FilterListOffIcon from "@mui/icons-material/FilterListOff";
 import FilterListIcon from "@mui/icons-material/FilterList";
+import PhotoLibraryIcon from "@mui/icons-material/PhotoLibrary";
 
 // нормализация datePhoto → timestamp или null
 const normalizePhotoDate = (dp) => {
@@ -56,6 +56,7 @@ export default function PhotoGallery({ personId, allPeople, refresh }) {
   const [refreshPhotos, setRefreshPhotos] = useState(0);
   const [uploadOpen, setUploadOpen] = useState(false);
   const [viewMode, setViewMode] = useState("square"); // "square" | "natural"
+  const [hideLabels, setHideLabels] = useState(false);
 
   // сортировка datePhoto: 0=off,1=asc,2=desc
   const [sortState, setSortState] = useState(0);
@@ -151,7 +152,7 @@ export default function PhotoGallery({ personId, allPeople, refresh }) {
     handleClose();
     setRefreshPhotos((r) => r + 1);
   };
-
+  const quntityPhoto = displayPhotos?.length;
   // пустая галерея
   if (!displayPhotos.length) {
     return (
@@ -257,23 +258,30 @@ export default function PhotoGallery({ personId, allPeople, refresh }) {
         {displayPhotos.map((photo) => (
           <ImageListItem
             key={photo.id}
+            onClick={() => {
+              handleFullscreenOpen(photo);
+            }}
             sx={{
               aspectRatio:
                 viewMode === "square" ? "1 / 1" : photo.aspectRatio || "4 / 3",
               position: "relative",
               overflow: "hidden",
-              borderRadius: 2,
+              borderRadius: 3,
               backgroundColor: isDark ? "#1e1e1e" : "#f0f0f0",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
+              cursor: "pointer",
+              "&:hover .overlay": {
+                opacity: 1,
+              },
             }}
           >
             <img
               src={photoPaths[photo.id]}
               alt={photo.title}
               loading="lazy"
-              onClick={() => handleFullscreenOpen(photo)}
+              // onClick={() => handleFullscreenOpen(photo)}
               style={{
                 width: "100%",
                 height: "100%",
@@ -289,6 +297,7 @@ export default function PhotoGallery({ personId, allPeople, refresh }) {
                 handleDownload(photo);
               }}
               sx={{
+                zIndex: 1000,
                 position: "absolute",
                 top: 4,
                 left: 4,
@@ -307,6 +316,7 @@ export default function PhotoGallery({ personId, allPeople, refresh }) {
                 handleOpen(photo);
               }}
               sx={{
+                zIndex: 1000,
                 position: "absolute",
                 top: 4,
                 right: 4,
@@ -329,6 +339,7 @@ export default function PhotoGallery({ personId, allPeople, refresh }) {
                   }
                 }}
                 sx={{
+                  zIndex: 1000,
                   position: "absolute",
                   bottom: 4,
                   left: 4,
@@ -360,6 +371,39 @@ export default function PhotoGallery({ personId, allPeople, refresh }) {
             >
               <CalendarTodayIcon sx={{ fontSize: 14 }} />
               {photo.datePhoto || "—"}
+            </Box>
+            <Box
+              className="overlay"
+              sx={{
+                position: "absolute",
+                inset: 0,
+                bgcolor: "rgba(0,0,0,0.5)",
+                color: "#fff",
+                opacity: 0,
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "center",
+                alignItems: "center",
+                textAlign: "center",
+                px: 1,
+                transition: "opacity 0.3s",
+              }}
+            >
+              <Typography variant="subtitle1">{photo.title}</Typography>
+              <Typography variant="subtitle1">{photo.description}</Typography>
+              <Typography variant="caption" mt={0.5}>
+                🏷️ На фото:{" "}
+                {photo.people
+                  .map((id) => {
+                    const person = allPeople.find((p) => p.id === id);
+                    return person
+                      ? `${person.firstName || ""} ${
+                          person.lastName || ""
+                        }`.trim()
+                      : `ID ${id}`;
+                  })
+                  .join(", ")}
+              </Typography>
             </Box>
           </ImageListItem>
         ))}
@@ -457,52 +501,94 @@ export default function PhotoGallery({ personId, allPeople, refresh }) {
         </DialogContent>
       </Dialog>
 
-      {/* полноэкранный просмотр */}
-      <Dialog open={fullscreen} onClose={handleFullscreenClose} fullScreen>
+      {/* Полноэкранный просмотр */}
+      <Dialog open={fullscreen} onClose={() => setFullscreen(false)} fullScreen>
         <DialogContent
           sx={{
+            backgroundColor: isDark ? "#1e1e1e" : "#fff",
+            color: isDark ? "#fff" : "#000",
             p: 0,
-            position: "relative",
-            bgcolor: isDark ? "#000" : "#fff",
           }}
         >
           <IconButton
-            onClick={handleFullscreenClose}
+            onClick={() => setFullscreen(false)}
             sx={{
               position: "absolute",
               top: 8,
-              right: 8,
+              left: 8,
+              zIndex: 1000,
               color: isDark ? "#fff" : "#000",
-              bgcolor: isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.05)",
+              bgcolor: isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)",
               "&:hover": {
-                bgcolor: isDark ? "rgba(255,255,255,0.2)" : "rgba(0,0,0,0.1)",
+                bgcolor: isDark ? "rgba(255,255,255,0.2)" : "rgba(0,0,0,0.2)",
               },
-              zIndex: 10,
             }}
           >
             <CloseIcon />
           </IconButton>
           <IconButton
-            onClick={() => setIndex((i) => Math.max(i - 1, 0))}
+            onClick={() => setHideLabels((h) => !h)}
+            sx={{
+              position: "absolute",
+              top: 8,
+              left: 56,
+              zIndex: 1000,
+              color: isDark ? "#fff" : "#000",
+              bgcolor: isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)",
+              "&:hover": {
+                bgcolor: isDark ? "rgba(255,255,255,0.2)" : "rgba(0,0,0,0.2)",
+              },
+            }}
+          >
+            {hideLabels ? <FullscreenExitIcon /> : <FullscreenIcon />}
+          </IconButton>
+          <Box
+            sx={{
+              position: "absolute",
+              top: 16,
+              right: 16,
+              zIndex: 1000,
+              display: hideLabels ? "none" : "flex",
+              alignItems: "center",
+              gap: 0.5,
+              bgcolor: "rgba(0,0,0,0.5)",
+              color: "#fff",
+              px: 1,
+              py: 0.5,
+              borderRadius: 1,
+              fontSize: "0.9rem",
+            }}
+          >
+            <PhotoLibraryIcon />
+            <Typography>{`${index} / ${quntityPhoto}`}</Typography>
+          </Box>
+
+          <IconButton
+            onClick={() => setIndex((prev) => Math.max(prev - 1, 0))}
             sx={{
               position: "absolute",
               top: "50%",
               left: 8,
               transform: "translateY(-50%)",
               color: isDark ? "#fff" : "#000",
-              bgcolor: isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.05)",
+              backgroundColor: isDark
+                ? "rgba(255,255,255,0.1)"
+                : "rgba(0,0,0,0.05)",
               "&:hover": {
-                bgcolor: isDark ? "rgba(255,255,255,0.2)" : "rgba(0,0,0,0.1)",
+                backgroundColor: isDark
+                  ? "rgba(255,255,255,0.2)"
+                  : "rgba(0,0,0,0.1)",
               },
-              borderRadius: "50%",
               zIndex: 10,
+              borderRadius: "50%",
             }}
           >
             <ArrowBackIosNewIcon />
           </IconButton>
+
           <IconButton
             onClick={() =>
-              setIndex((i) => Math.min(i + 1, displayPhotos.length - 1))
+              setIndex((prev) => Math.min(prev + 1, displayPhotos.length - 1))
             }
             sx={{
               position: "absolute",
@@ -510,16 +596,21 @@ export default function PhotoGallery({ personId, allPeople, refresh }) {
               right: 8,
               transform: "translateY(-50%)",
               color: isDark ? "#fff" : "#000",
-              bgcolor: isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.05)",
+              backgroundColor: isDark
+                ? "rgba(255,255,255,0.1)"
+                : "rgba(0,0,0,0.05)",
               "&:hover": {
-                bgcolor: isDark ? "rgba(255,255,255,0.2)" : "rgba(0,0,0,0.1)",
+                backgroundColor: isDark
+                  ? "rgba(255,255,255,0.2)"
+                  : "rgba(0,0,0,0.1)",
               },
-              borderRadius: "50%",
               zIndex: 10,
+              borderRadius: "50%",
             }}
           >
             <ArrowForwardIosIcon />
           </IconButton>
+
           <SwipeableViews
             index={index}
             onChangeIndex={setIndex}
@@ -541,31 +632,50 @@ export default function PhotoGallery({ personId, allPeople, refresh }) {
                   src={photoPaths[photo.id]}
                   alt={photo.title}
                   style={{
-                    maxHeight: "80vh",
+                    maxHeight: hideLabels ? "100%" : "90vh",
                     maxWidth: "100%",
                     objectFit: "contain",
                   }}
                 />
-                <Typography variant="h6" mt={2} color="gray">
-                  {photo.title}
-                </Typography>
-                <Typography variant="body2" color="gray">
-                  {photo.description}
-                </Typography>
-                <Typography
-                  variant="caption"
-                  mt={1}
-                  sx={{ color: isDark ? "#fff" : "#000" }}
-                >
-                  {photo?.datePhoto && `📅 ${photo?.datePhoto || "--"} |`} 🏷️ На
-                  фото:{" "}
-                  {photo.people
-                    .map((id) => {
-                      const p = allPeople.find((x) => x.id === id);
-                      return p ? `${p.firstName} ${p.lastName}`.trim() : id;
-                    })
-                    .join(", ")}
-                </Typography>
+
+                {!hideLabels && (
+                  <>
+                    <Typography variant="h6" mt={2} color="gray">
+                      {photo.title}
+                    </Typography>
+                    <Typography variant="body2" color="gray">
+                      {photo.description}
+                    </Typography>
+                    <Typography
+                      variant="caption"
+                      mt={1}
+                      sx={{
+                        color: isDark ? "#fff" : "#000",
+                      }}
+                    >
+                      {allPeople.find((p) => p.id === photo.owner)?.gender ===
+                      "male"
+                        ? "👤 Добавил: "
+                        : "👤 Добавила: "}
+                      {allPeople.find((p) => p.id === photo.owner)?.firstName ||
+                        "Неизвестно"}
+                      {" | "}
+                      {photo?.datePhoto &&
+                        `📅 ${photo?.datePhoto || "--"} |`}{" "}
+                      🏷️ На фото:{" "}
+                      {photo.people
+                        .map((id) => {
+                          const person = allPeople.find((p) => p.id === id);
+                          return person
+                            ? `${person.firstName || ""} ${
+                                person.lastName || ""
+                              }`.trim()
+                            : `ID ${id}`;
+                        })
+                        .join(", ")}
+                    </Typography>
+                  </>
+                )}
               </Box>
             ))}
           </SwipeableViews>

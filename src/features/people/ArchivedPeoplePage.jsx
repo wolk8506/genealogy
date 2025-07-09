@@ -7,12 +7,12 @@ import {
   Stack,
   Typography,
   Button,
-  Grid,
+  // Grid,
   List,
   ListItem,
   ListItemAvatar,
   ListItemText,
-  ListItemButton,
+  // ListItemButton,
   Checkbox,
   FormControlLabel,
   Backdrop,
@@ -26,7 +26,7 @@ import {
   RestoreFromTrash as RestoreIcon,
   DeleteForever as DeleteForeverIcon,
   CheckCircle as CheckCircleIcon,
-  CheckBox,
+  // CheckBox,
 } from "@mui/icons-material";
 import PersonAvatar from "./PersonAvatar";
 import ExportConfirmModal from "./ExportConfirmModal";
@@ -146,7 +146,7 @@ export default function ArchivePage() {
       </Stack>
 
       {/* Tabs */}
-      <Paper elevation={1} sx={{ mb: 2 }}>
+      <Paper elevation={1} sx={{ mb: 2, borderRadius: 3 }}>
         <Tabs
           value={tab}
           onChange={(_, v) => setTab(v)}
@@ -165,6 +165,7 @@ export default function ArchivePage() {
             elevation={1}
             sx={{
               position: "sticky",
+              borderRadius: 3,
               top: { xs: 56, sm: 64 },
               marginBottom: 2,
               zIndex: 10,
@@ -216,6 +217,7 @@ export default function ArchivePage() {
               sx={{
                 mb: 1,
                 "&:hover": { boxShadow: 4 },
+                borderRadius: 3,
               }}
             >
               <ListItem
@@ -268,6 +270,7 @@ export default function ArchivePage() {
               sx={{
                 mb: 1,
                 "&:hover": { boxShadow: 4 },
+                borderRadius: 3,
               }}
             >
               <ListItem

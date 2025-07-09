@@ -71,7 +71,7 @@ export default function PersonPage() {
           cursor: "pointer",
           border: "1px solid",
           borderColor: theme.palette.divider,
-          borderRadius: 2,
+          borderRadius: 3,
           p: 1,
           width: "100%",
           transition: "background-color 0.2s",
@@ -107,6 +107,7 @@ export default function PersonPage() {
             display: "grid",
             gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))",
             gap: 2,
+            borderRadius: 3,
           }}
         >
           {people.map(renderPersonItem)}

@@ -91,7 +91,7 @@ export default function BiographySection({ personId }) {
           backgroundColor: isDark ? "#1e1e1e" : "#f9f9f9",
           color: isDark ? "#e0e0e0" : "inherit",
           border: `1px solid ${theme.palette.divider}`,
-          borderRadius: 2,
+          borderRadius: 3,
         }}
       >
         <div data-color-mode={isDark ? "dark" : "light"}>
