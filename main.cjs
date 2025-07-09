@@ -1,8 +1,16 @@
-const { app, BrowserWindow, ipcMain } = require("electron");
+const {
+  app,
+  BrowserWindow,
+  nativeTheme,
+  ipcMain,
+  Menu,
+  shell,
+  dialog,
+} = require("electron");
 const path = require("path");
 const fs = require("fs");
-const { dialog } = require("electron");
-const { shell } = require("electron");
+// const { dialog } = require("electron");
+// const { shell } = require("electron");
 
 let Store;
 
@@ -33,17 +41,14 @@ let Store;
   }
 
   app.whenReady().then(() => {
-    // Надёжный путь к файлу в "Документах"
+    // ─── 1. Создаём директорию для данных ──────────────────────
     const genealogyDir = path.join(app.getPath("documents"), "Genealogy");
     if (!fs.existsSync(genealogyDir)) {
       fs.mkdirSync(genealogyDir, { recursive: true });
     }
-    const dataPath = path.join(
-      app.getPath("documents"),
-      "Genealogy",
-      "genealogy-data.json"
-    );
+    const dataPath = path.join(genealogyDir, "genealogy-data.json");
 
+    // ─── 2. IPC-хендлеры ─────────────────────────────────────────
     console.log("📁 Путь к JSON-файлу:", dataPath);
 
     // IPC: сохранение темы
@@ -61,6 +66,17 @@ let Store;
     ipcMain.handle("app:getBuildDate", () => {
       const buildTime = fs.statSync(path.join(__dirname, "main.cjs")).mtime;
       return buildTime.toISOString().split("T")[0]; // YYYY-MM-DD
+    });
+
+    ipcMain.handle("get-system-theme", () => {
+      return nativeTheme.shouldUseDarkColors ? "dark" : "light";
+    });
+
+    nativeTheme.on("updated", () => {
+      const theme = nativeTheme.shouldUseDarkColors ? "dark" : "light";
+      BrowserWindow.getAllWindows().forEach((win) => {
+        win.webContents.send("theme-updated", theme);
+      });
     });
 
     // IPC: добавление человека
@@ -950,7 +966,138 @@ let Store;
     });
 
     // -----------------------------
+    // ipcMain.handle("import-archive", async () => {
+    //   const win = BrowserWindow.getAllWindows()[0];
+    //   const result = await dialog.showOpenDialog(win, {
+    //     title: "Выберите ZIP-файл архива",
+    //     filters: [{ name: "ZIP Archive", extensions: ["zip"] }],
+    //     properties: ["openFile"],
+    //   });
 
+    //   if (result.canceled || !result.filePaths.length) {
+    //     return null;
+    //   }
+    //   return result.filePaths[0];
+    // });
+
+    // -----------------------------
+    // ─── 3. Формируем меню ──────────────────────────────────────
+    const isMac = process.platform === "darwin";
+    const menuTemplate = [
+      // ─ macOS App Menu ────────────────
+      ...(isMac
+        ? [
+            {
+              label: app.name,
+              submenu: [
+                { role: "about", label: "О Приложении" },
+                { type: "separator" },
+                { role: "services" },
+                { type: "separator" },
+                { role: "hide", label: `Скрыть ${app.name}` },
+                { role: "quit", label: "Выход" },
+              ],
+            },
+          ]
+        : []),
+
+      // ─ File ───────────────────────────
+      {
+        label: "Файл",
+        submenu: isMac
+          ? [{ role: "close", label: "Закрыть окно" }]
+          : [{ role: "quit", label: "Выход" }],
+      },
+
+      // ─ Edit ───────────────────────────
+      {
+        label: "Правка",
+        submenu: [
+          { role: "undo", label: "Отменить" },
+          { role: "redo", label: "Повторить" },
+          { type: "separator" },
+          { role: "cut", label: "Вырезать" },
+          { role: "copy", label: "Копировать" },
+          { role: "paste", label: "Вставить" },
+          { type: "separator" },
+          {
+            label: "Добавить человека",
+            click: () => {
+              const win = BrowserWindow.getAllWindows()[0];
+              win.webContents.send("navigate", "/add");
+            },
+          },
+          {
+            label: "Добавить фотографию",
+            click: () => {
+              const win = BrowserWindow.getAllWindows()[0];
+              win.webContents.send("navigate", "/photoUploader");
+            },
+          },
+          // {
+          //   label: "Восстановление архива",
+          //   click: () => {
+          //     const win = BrowserWindow.getAllWindows()[0];
+          //     win.webContents.send("menu:import-archive");
+          //   },
+          // },
+        ],
+      },
+
+      // ─ View ───────────────────────────
+      {
+        label: "Вид",
+        submenu: [
+          { role: "reload", label: "Перезагрузить" },
+          { role: "toggleDevTools", label: "Инструменты разработчика" },
+          { type: "separator" },
+          { role: "togglefullscreen", label: "Полноэкранный режим" },
+        ],
+      },
+
+      // ─ Help ───────────────────────────
+      {
+        role: "help",
+        label: "Помощь",
+        submenu: [
+          // About для Windows/Linux
+          ...(!isMac
+            ? [
+                {
+                  label: "О Приложении",
+                  click: () =>
+                    BrowserWindow.getAllWindows()[0].webContents.send(
+                      "app:open-about"
+                    ),
+                },
+                { type: "separator" },
+              ]
+            : []),
+          // {
+          //   label: "Сайт проекта",
+          //   click: () =>
+          //     shell.openExternal("https://github.com/ваш-репозиторий"),
+          // },
+          {
+            label: "О приложении",
+            click: () => {
+              const win = BrowserWindow.getAllWindows()[0];
+              win.webContents.send("navigate", "/about");
+            },
+          },
+        ],
+      },
+    ];
+
+    // ─── 4. Устанавливаем меню ─────────────────────────────────
+    const menu = Menu.buildFromTemplate(menuTemplate);
+    Menu.setApplicationMenu(menu);
+
+    // ─── 5. Создаём окно ───────────────────────────────────────
     createWindow();
+  });
+
+  app.on("window-all-closed", () => {
+    if (process.platform !== "darwin") app.quit();
   });
 })();

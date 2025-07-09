@@ -20,6 +20,9 @@ import {
   Dialog,
   DialogContent,
   Paper,
+  Chip,
+  // FullscreenExitIcon,
+  // FullscreenIcon,
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import CloseIcon from "@mui/icons-material/Close";
@@ -31,11 +34,11 @@ import ArchiveIcon from "@mui/icons-material/Archive";
 import PrintIcon from "@mui/icons-material/Print";
 import DownloadIcon from "@mui/icons-material/Download";
 import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
-import EditIcon from "@mui/icons-material/Edit";
-import DeleteIcon from "@mui/icons-material/Delete";
 import PhotoLibraryIcon from "@mui/icons-material/PhotoLibrary";
 import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
 import { Fab, Zoom } from "@mui/material";
+import FullscreenIcon from "@mui/icons-material/Fullscreen";
+import FullscreenExitIcon from "@mui/icons-material/FullscreenExit";
 
 // Преобразует datePhoto в timestamp, неподходящая строка → null
 const normalizePhotoDate = (dp) => {
@@ -67,7 +70,13 @@ export default function GlobalPhotoGallery() {
   const [fullscreen, setFullscreen] = useState(false);
   const [index, setIndex] = useState(0);
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const [hideLabels, setHideLabels] = useState(false);
 
+  // fullscreen viewer
+  useEffect(() => {
+    if (!fullscreen) setHideLabels(false);
+  }, [fullscreen]);
+  // scroll-to-top
   useEffect(() => {
     const handleScroll = () => {
       setShowScrollTop(window.scrollY > 300);
@@ -126,6 +135,21 @@ export default function GlobalPhotoGallery() {
     const first = u.firstName?.trim() || "";
     return (last + " " + first).toLowerCase();
   };
+
+  // статистика
+  const stats = useMemo(() => {
+    const total = photos.length;
+    const owners = new Set(photos.map((p) => p.owner)).size;
+    const dates = photos
+      .map((p) => normalizePhotoDate(p.datePhoto))
+      .filter((t) => t != null)
+      .sort((a, b) => a - b);
+    const earliest = dates[0] && new Date(dates[0]).getFullYear();
+    const latest =
+      dates[dates.length - 1] &&
+      new Date(dates[dates.length - 1]).getFullYear();
+    return { total, owners, earliest, latest };
+  }, [photos]);
 
   // сортировка без группировки
   const sortedList = useMemo(() => {
@@ -200,19 +224,28 @@ export default function GlobalPhotoGallery() {
   // загрузка фото в плитке
   const renderTile = (photo) => {
     const idx = sortedList.findIndex((p) => p.id === photo.id);
+    // const owner = allPeople.find((u) => u.id === photo.owner);
     return (
       <ImageListItem
         key={photo.id}
+        onClick={() => {
+          setIndex(idx);
+          setFullscreen(true);
+        }}
         sx={{
           aspectRatio:
             viewMode === "square" ? "1 / 1" : photo.aspectRatio || "4 / 3",
           position: "relative",
           overflow: "hidden",
-          borderRadius: 2,
+          borderRadius: 3,
           backgroundColor: isDark ? "#1e1e1e" : "#f0f0f0",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
+          cursor: "pointer",
+          "&:hover .overlay": {
+            opacity: 1,
+          },
         }}
       >
         <img
@@ -230,7 +263,6 @@ export default function GlobalPhotoGallery() {
             borderRadius: 4,
           }}
         />
-
         <IconButton
           size="small"
           onClick={(e) => {
@@ -238,6 +270,7 @@ export default function GlobalPhotoGallery() {
             handleDownload(photo);
           }}
           sx={{
+            zIndex: 1000,
             position: "absolute",
             top: 4,
             left: 4,
@@ -248,45 +281,6 @@ export default function GlobalPhotoGallery() {
         >
           <DownloadIcon fontSize="small" />
         </IconButton>
-        {/* Заглушка для редактирования */}
-        {/* <IconButton
-          size="small"
-          onClick={(e) => {
-            e.stopPropagation();
-          
-          }}
-          sx={{
-            position: "absolute",
-            top: 4,
-            right: 4,
-            backgroundColor: "rgba(0,0,0,0.4)",
-            color: "#fff",
-            "&:hover": { backgroundColor: "rgba(0,0,0,0.6)" },
-          }}
-        >
-          <EditIcon fontSize="small" />
-        </IconButton> */}
-        {/* Заглушка для Удаления */}
-        {/* <IconButton
-          size="small"
-          onClick={(e) => {
-            e.stopPropagation();
-            if (confirm("Удалить это фото?")) {
-              window.photoAPI.delete(photo.owner, photo.id);
-              setPhotos((prev) => prev.filter((p) => p.id !== photo.id));
-            }
-          }}
-          sx={{
-            position: "absolute",
-            bottom: 4,
-            left: 4,
-            backgroundColor: "rgba(255,0,0,0.4)",
-            color: "#fff",
-            "&:hover": { backgroundColor: "rgba(255,0,0,0.6)" },
-          }}
-        >
-          <DeleteIcon fontSize="small" />
-        </IconButton> */}
 
         <Box
           sx={{
@@ -308,9 +302,44 @@ export default function GlobalPhotoGallery() {
           <CalendarTodayIcon sx={{ fontSize: 14 }} />
           {photo.datePhoto || "—"}
         </Box>
+
+        <Box
+          className="overlay"
+          sx={{
+            position: "absolute",
+            inset: 0,
+            bgcolor: "rgba(0,0,0,0.5)",
+            color: "#fff",
+            opacity: 0,
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+            alignItems: "center",
+            textAlign: "center",
+            px: 1,
+            transition: "opacity 0.3s",
+          }}
+        >
+          <Typography variant="subtitle1">{photo.title}</Typography>
+          <Typography variant="subtitle1">{photo.description}</Typography>
+          <Typography variant="caption" mt={0.5}>
+            🏷️ На фото:{" "}
+            {photo.people
+              .map((id) => {
+                const person = allPeople.find((p) => p.id === id);
+                return person
+                  ? `${person.firstName || ""} ${person.lastName || ""}`.trim()
+                  : `ID ${id}`;
+              })
+              .join(", ")}
+          </Typography>
+        </Box>
       </ImageListItem>
     );
   };
+  // Подсчет фото
+
+  const quntityPhoto = sortedList?.length;
 
   // основная разметка
   return (
@@ -323,15 +352,47 @@ export default function GlobalPhotoGallery() {
         />
         <Typography variant="h5">Фотогалерея</Typography>
       </Stack>
+      {/* Статистика */}
+      <Paper
+        elevation={1}
+        sx={{
+          p: 2,
+          mb: 2,
+          display: "flex",
+          gap: 3,
+          flexWrap: "wrap",
+          borderRadius: 3,
+        }}
+      >
+        <Chip icon={<InsertPhotoIcon />} label={`Всего фото: ${stats.total}`} />
+        <Chip
+          icon={<InsertPhotoIcon />}
+          label={`Выбрано фото: ${quntityPhoto}`}
+        />
+
+        <Chip
+          icon={<PhotoLibraryIcon />}
+          label={`Владельцев: ${stats.owners}`}
+          color="secondary"
+        />
+        {stats.earliest && stats.latest && (
+          <Chip
+            label={`Годы: ${stats.earliest}–${stats.latest}`}
+            variant="outlined"
+          />
+        )}
+      </Paper>
+
       <Paper
         elevation={1}
         sx={{
           position: "sticky",
           top: { xs: 56, sm: 64 },
-          zIndex: 10,
           backgroundColor: theme.palette.background.paper,
           p: 2,
           borderBottom: `1px solid ${theme.palette.divider}`,
+          zIndex: 1100,
+          borderRadius: 3,
         }}
       >
         <Stack direction="row" spacing={2} alignItems="center">
@@ -403,7 +464,7 @@ export default function GlobalPhotoGallery() {
           <Button
             variant="outlined"
             startIcon={<ArchiveIcon />}
-            sx={{ width: 150 }}
+            // sx={{ width: 100 }}s
             onClick={() => window.photoExport.exportZip(filtered)}
           >
             в ZIP
@@ -411,7 +472,7 @@ export default function GlobalPhotoGallery() {
           <Button
             variant="outlined"
             startIcon={<PrintIcon />}
-            sx={{ width: 150 }}
+            // sx={{ width: 100 }}
             onClick={() => window.photoExport.exportPDF(filtered)}
           >
             в PDF
@@ -426,12 +487,13 @@ export default function GlobalPhotoGallery() {
               {grp.label}
             </Typography>
           )}
-          <ImageList cols={3} gap={8}>
+          <ImageList cols={4} gap={8}>
             {grp.items.map((photo) => renderTile(photo))}
           </ImageList>
         </Box>
       ))}
 
+      {/* Полноэкранный просмотр */}
       <Dialog open={fullscreen} onClose={() => setFullscreen(false)} fullScreen>
         <DialogContent
           sx={{
@@ -440,26 +502,60 @@ export default function GlobalPhotoGallery() {
             p: 0,
           }}
         >
+          {/* ------------------------------------------------------- */}
+
           <IconButton
             onClick={() => setFullscreen(false)}
             sx={{
               position: "absolute",
               top: 8,
-              right: 8,
+              left: 8,
+              zIndex: 1000,
               color: isDark ? "#fff" : "#000",
-              backgroundColor: isDark
-                ? "rgba(255,255,255,0.1)"
-                : "rgba(0,0,0,0.05)",
+              bgcolor: isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)",
               "&:hover": {
-                backgroundColor: isDark
-                  ? "rgba(255,255,255,0.2)"
-                  : "rgba(0,0,0,0.1)",
+                bgcolor: isDark ? "rgba(255,255,255,0.2)" : "rgba(0,0,0,0.2)",
               },
-              zIndex: 10,
             }}
           >
             <CloseIcon />
           </IconButton>
+          <IconButton
+            onClick={() => setHideLabels((h) => !h)}
+            sx={{
+              position: "absolute",
+              top: 8,
+              left: 56,
+              zIndex: 1000,
+              color: isDark ? "#fff" : "#000",
+              bgcolor: isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)",
+              "&:hover": {
+                bgcolor: isDark ? "rgba(255,255,255,0.2)" : "rgba(0,0,0,0.2)",
+              },
+            }}
+          >
+            {hideLabels ? <FullscreenExitIcon /> : <FullscreenIcon />}
+          </IconButton>
+          <Box
+            sx={{
+              position: "absolute",
+              top: 16,
+              right: 16,
+              zIndex: 1000,
+              display: hideLabels ? "none" : "flex",
+              alignItems: "center",
+              gap: 0.5,
+              bgcolor: "rgba(0,0,0,0.5)",
+              color: "#fff",
+              px: 1,
+              py: 0.5,
+              borderRadius: 1,
+              fontSize: "0.9rem",
+            }}
+          >
+            <PhotoLibraryIcon />
+            <Typography>{`${index} / ${quntityPhoto}`}</Typography>
+          </Box>
 
           <IconButton
             onClick={() => setIndex((prev) => Math.max(prev - 1, 0))}
@@ -530,48 +626,50 @@ export default function GlobalPhotoGallery() {
                   src={photoPaths[photo.id]}
                   alt={photo.title}
                   style={{
-                    maxHeight: "80vh",
+                    maxHeight: hideLabels ? "100%" : "90vh",
                     maxWidth: "100%",
                     objectFit: "contain",
                   }}
                 />
-                <Typography variant="h6" mt={2} color="gray">
-                  {photo.title}
-                </Typography>
-                <Typography variant="body2" color="gray">
-                  {photo.description}
-                </Typography>
-                <Typography
-                  variant="caption"
-                  mt={1}
-                  sx={{
-                    color: isDark ? "#fff" : "#000",
-                  }}
-                >
-                  👤 Добавил:{" "}
-                  {allPeople.find((p) => p.id === photo.owner)?.firstName ||
-                    "Неизвестно"}
-                </Typography>
-                <Typography
-                  variant="caption"
-                  mt={1}
-                  sx={{
-                    color: isDark ? "#fff" : "#000",
-                  }}
-                >
-                  {photo?.datePhoto && `📅 ${photo?.datePhoto || "--"} |`} 🏷️ На
-                  фото:{" "}
-                  {photo.people
-                    .map((id) => {
-                      const person = allPeople.find((p) => p.id === id);
-                      return person
-                        ? `${person.firstName || ""} ${
-                            person.lastName || ""
-                          }`.trim()
-                        : `ID ${id}`;
-                    })
-                    .join(", ")}
-                </Typography>
+
+                {!hideLabels && (
+                  <>
+                    <Typography variant="h6" mt={2} color="gray">
+                      {photo.title}
+                    </Typography>
+                    <Typography variant="body2" color="gray">
+                      {photo.description}
+                    </Typography>
+                    <Typography
+                      variant="caption"
+                      mt={1}
+                      sx={{
+                        color: isDark ? "#fff" : "#000",
+                      }}
+                    >
+                      {allPeople.find((p) => p.id === photo.owner)?.gender ===
+                      "male"
+                        ? "👤 Добавил: "
+                        : "👤 Добавила: "}
+                      {allPeople.find((p) => p.id === photo.owner)?.firstName ||
+                        "Неизвестно"}
+                      {" | "}
+                      {photo?.datePhoto &&
+                        `📅 ${photo?.datePhoto || "--"} |`}{" "}
+                      🏷️ На фото:{" "}
+                      {photo.people
+                        .map((id) => {
+                          const person = allPeople.find((p) => p.id === id);
+                          return person
+                            ? `${person.firstName || ""} ${
+                                person.lastName || ""
+                              }`.trim()
+                            : `ID ${id}`;
+                        })
+                        .join(", ")}
+                    </Typography>
+                  </>
+                )}
               </Box>
             ))}
           </SwipeableViews>

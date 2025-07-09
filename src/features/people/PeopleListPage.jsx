@@ -210,6 +210,7 @@ export default function PeopleListPage() {
             backgroundColor: theme.palette.background.paper,
             p: 2,
             borderBottom: `1px solid ${theme.palette.divider}`,
+            borderRadius: 3,
           }}
         >
           {/* <Box sx={{ height: 64 }} /> или 56, если AppBar меньше */}
@@ -250,6 +251,7 @@ export default function PeopleListPage() {
               p: 2,
               mb: 3,
               backgroundColor: isDark ? "#1e1e1e" : "#fafafa",
+              borderRadius: 3,
             }}
           >
             <Typography variant="h6" sx={{ mb: 1, color: "primary.main" }}>
@@ -271,7 +273,12 @@ export default function PeopleListPage() {
                     <ListItemButton
                       component={Link}
                       to={`/person/${person.id}`}
-                      sx={{ p: 0, textDecoration: "none", width: "100%" }}
+                      sx={{
+                        p: 0,
+                        textDecoration: "none",
+                        width: "100%",
+                        borderRadius: 3,
+                      }}
                     >
                       <Paper
                         elevation={1}
@@ -287,6 +294,8 @@ export default function PeopleListPage() {
                             transform: "translateY(-4px)",
                             boxShadow: 4,
                           },
+                          overflow: "hidden", // обрезаем всё, что выходит за границы
+                          backgroundClip: "padding-box", // гарантируем обрезку фоновых слоёв
                         }}
                       >
                         <ListItemAvatar>
@@ -335,6 +344,7 @@ export default function PeopleListPage() {
                   alignItems: "center",
                   gap: 1.5,
                   bgcolor: isDark ? "#2a002a" : "#f9f9f9",
+                  borderRadius: 3,
                 }}
               >
                 <PeopleIcon color="primary" />
@@ -349,7 +359,13 @@ export default function PeopleListPage() {
             <Grid item xs={12} sm={6} md={4}>
               <Paper
                 elevation={1}
-                sx={{ p: 2, display: "flex", alignItems: "center", gap: 1.5 }}
+                sx={{
+                  p: 2,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1.5,
+                  borderRadius: 3,
+                }}
               >
                 <MaleIcon color="info" />
                 <div>
@@ -363,7 +379,13 @@ export default function PeopleListPage() {
             <Grid item xs={12} sm={6} md={4}>
               <Paper
                 elevation={1}
-                sx={{ p: 2, display: "flex", alignItems: "center", gap: 1.5 }}
+                sx={{
+                  p: 2,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1.5,
+                  borderRadius: 3,
+                }}
               >
                 <FemaleIcon color="secondary" />
                 <div>
@@ -377,7 +399,13 @@ export default function PeopleListPage() {
             <Grid item xs={12} sm={6} md={4}>
               <Paper
                 elevation={1}
-                sx={{ p: 2, display: "flex", alignItems: "center", gap: 1.5 }}
+                sx={{
+                  p: 2,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1.5,
+                  borderRadius: 3,
+                }}
               >
                 <HelpOutlineIcon color="disabled" />
                 <div>
@@ -391,7 +419,13 @@ export default function PeopleListPage() {
             <Grid item xs={12} sm={6} md={4}>
               <Paper
                 elevation={1}
-                sx={{ p: 2, display: "flex", alignItems: "center", gap: 1.5 }}
+                sx={{
+                  p: 2,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1.5,
+                  borderRadius: 3,
+                }}
               >
                 <CakeIcon color="success" />
                 <div>
@@ -405,7 +439,13 @@ export default function PeopleListPage() {
             <Grid item xs={12} sm={6} md={4}>
               <Paper
                 elevation={1}
-                sx={{ p: 2, display: "flex", alignItems: "center", gap: 1.5 }}
+                sx={{
+                  p: 2,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1.5,
+                  borderRadius: 3,
+                }}
               >
                 <RestoreFromTrashIcon color="warning" />
                 <div>
@@ -420,7 +460,13 @@ export default function PeopleListPage() {
               <Grid item xs={12} sm={6} md={4} key={g}>
                 <Paper
                   elevation={1}
-                  sx={{ p: 2, display: "flex", alignItems: "center", gap: 1.5 }}
+                  sx={{
+                    p: 2,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1.5,
+                    borderRadius: 3,
+                  }}
                 >
                   <Typography variant="caption" sx={{ minWidth: 64 }}>
                     Поколение {g}

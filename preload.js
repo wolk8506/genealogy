@@ -7,6 +7,24 @@ contextBridge.exposeInMainWorld("settings", {
   set: (key, value) => ipcRenderer.invoke("settings:set", key, value),
 });
 
+// 🎚️ Тема
+contextBridge.exposeInMainWorld("themeAPI", {
+  get: () => ipcRenderer.invoke("get-system-theme"),
+  onChange: (callback) =>
+    ipcRenderer.on("theme-updated", (_, theme) => callback(theme)),
+  setUserTheme: (theme) => localStorage.setItem("user-theme", theme),
+  getUserTheme: () => localStorage.getItem("user-theme"),
+});
+
+//📌 Главное меню
+contextBridge.exposeInMainWorld("navigationAPI", {
+  onNavigate: (callback) => {
+    ipcRenderer.on("navigate", (event, route) => {
+      callback(route);
+    });
+  },
+});
+
 // 👤 Люди
 contextBridge.exposeInMainWorld("peopleAPI", {
   savePerson: (person) => ipcRenderer.invoke("people:add", person),
