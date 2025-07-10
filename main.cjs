@@ -164,7 +164,9 @@ let Store;
 
       const result = await dialog.showOpenDialog({
         title: "Выберите фотографию",
-        filters: [{ name: "Images", extensions: ["jpg", "png", "jpeg"] }],
+        filters: [
+          { name: "Images", extensions: ["jpg", "png", "jpeg", "heic"] },
+        ],
         properties: ["openFile"],
       });
 
@@ -201,6 +203,58 @@ let Store;
 
       return newPhoto;
     });
+
+    // -----------------------------
+
+    ipcMain.handle(
+      "photo:saveBlobFile",
+      async (_, meta, arrayBuffer, filename) => {
+        const buffer = Buffer.from(arrayBuffer);
+        const baseDir = path.join(
+          app.getPath("documents"),
+          "Genealogy",
+          "people",
+          String(meta.owner)
+        );
+        const photosDir = path.join(baseDir, "photos");
+        const photosMetaPath = path.join(baseDir, "photos.json");
+
+        // ✅ Создаём папки, если нужно
+        if (!fs.existsSync(photosDir)) {
+          fs.mkdirSync(photosDir, { recursive: true });
+        }
+
+        const ext = path.extname(filename);
+        const base = path.basename(filename, ext);
+        let safeFilename = `${base}${ext}`;
+        let counter = 1;
+
+        while (fs.existsSync(path.join(photosDir, safeFilename))) {
+          safeFilename = `${base}_${counter}${ext}`;
+          counter++;
+        }
+
+        const destPath = path.join(photosDir, safeFilename);
+        fs.writeFileSync(destPath, buffer);
+
+        // ✅ Загружаем или создаём метаинформацию
+        let photos = [];
+        if (fs.existsSync(photosMetaPath)) {
+          photos = JSON.parse(fs.readFileSync(photosMetaPath, "utf-8"));
+        }
+
+        const newPhoto = {
+          id: Date.now(),
+          filename: safeFilename,
+          ...meta,
+        };
+
+        photos.push(newPhoto);
+        fs.writeFileSync(photosMetaPath, JSON.stringify(photos, null, 2));
+
+        return newPhoto;
+      }
+    );
 
     // -----------------------------
 
@@ -332,7 +386,9 @@ let Store;
     ipcMain.handle("photo:selectFile", async () => {
       const result = await dialog.showOpenDialog({
         title: "Выберите фотографию",
-        filters: [{ name: "Images", extensions: ["jpg", "jpeg", "png"] }],
+        filters: [
+          { name: "Images", extensions: ["jpg", "jpeg", "png", "heic"] },
+        ],
         properties: ["openFile"],
       });
 
