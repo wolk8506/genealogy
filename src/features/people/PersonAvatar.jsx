@@ -15,11 +15,6 @@ export default function PersonAvatar({
     setError(false);
 
     if (personId) {
-      // window.avatarAPI.getPath(personId).then((path) => {
-      //   const url = `${path}?t=${Date.now()}`;
-      //   console.log("🖼️ avatar path:", url);
-      //   if (isMounted) setSrc(url);
-      // });
       window.avatarAPI.getPath(personId).then((path) => {
         if (!path) {
           console.warn("⚠️ Аватар не найден для:", personId);

@@ -1,11 +1,9 @@
 import React, { useRef, useState, useEffect } from "react";
 import Tree from "react-d3-tree";
-// import PersonAvatar from "./PersonAvatar";
 import ExportableAvatar from "./utils/ExportableAvatar";
 
 import { useNavigate } from "react-router-dom";
-import { Button, Stack } from "@mui/material";
-// import * as htmlToImage from "html-to-image";
+import { Stack } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 
 export default function FamilyTree({ data, mode = "descendants" }) {
@@ -42,7 +40,6 @@ export default function FamilyTree({ data, mode = "descendants" }) {
           style={{
             display: "flex",
             alignItems: "center",
-            // background: "#fff",
             border: `2px solid ${borderColor}`,
             borderRadius: 8,
             padding: 4,
@@ -59,7 +56,6 @@ export default function FamilyTree({ data, mode = "descendants" }) {
           }
           onMouseLeave={(e) => (e.currentTarget.style.boxShadow = "none")}
         >
-          {/* <PersonAvatar personId={id} initials={initials} size={40} /> */}
           <ExportableAvatar personId={id} initials={initials} size={40} />
 
           <div style={{ marginLeft: 8 }}>

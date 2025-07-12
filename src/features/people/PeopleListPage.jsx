@@ -1,15 +1,12 @@
 import React, { useEffect, useState, useMemo } from "react";
 import {
   Avatar,
-  Box,
-  ListItem,
   ListItemAvatar,
   ListItemText,
   Typography,
   CircularProgress,
   TextField,
   Stack,
-  Divider,
   Button,
   ListItemButton,
   Dialog,
@@ -18,6 +15,9 @@ import {
   DialogActions,
   Grid,
   useTheme,
+  Fab,
+  Zoom,
+  Paper,
 } from "@mui/material";
 import LeaderboardIcon from "@mui/icons-material/Leaderboard";
 import PeopleAltIcon from "@mui/icons-material/PeopleAlt";
@@ -27,17 +27,14 @@ import FemaleIcon from "@mui/icons-material/Female";
 import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
 import CakeIcon from "@mui/icons-material/Cake";
 import RestoreFromTrashIcon from "@mui/icons-material/RestoreFromTrash";
-
 import FilterListIcon from "@mui/icons-material/FilterList";
 import SupervisorAccountIcon from "@mui/icons-material/SupervisorAccount";
 import DeleteIcon from "@mui/icons-material/Delete";
-import InfoIcon from "@mui/icons-material/Info";
 import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
-import { Fab, Zoom } from "@mui/material";
 
 import appIcon from "../../img/app_icon.png";
-import { Paper } from "@mui/material";
-import { Link, useNavigate } from "react-router-dom";
+
+import { Link } from "react-router-dom";
 
 function PersonAvatar({ foto, initials }) {
   const [src, setSrc] = useState(null);
