@@ -1,5 +1,12 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { ThemeProvider, createTheme, CssBaseline } from "@mui/material";
+import {
+  ThemeProvider,
+  createTheme,
+  CssBaseline,
+  Box,
+  CircularProgress,
+  Typography,
+} from "@mui/material";
 import ClippedDrawer from "../layout/ClippedDrawer";
 import { ThemeContext } from "../context/ThemeContext.cjs";
 
@@ -7,6 +14,7 @@ export default function App() {
   const [mode, setMode] = useState("light"); // фактическая тема
   const [auto, setAuto] = useState(true); // следовать за системой
   const [userPref, setUserPref] = useState("light"); // ручной выбор
+  const [themeReady, setThemeReady] = useState(false);
 
   // начальная загрузка
   useEffect(() => {
@@ -17,11 +25,21 @@ export default function App() {
     setAuto(autoEnabled);
     setUserPref(savedPref || "light");
 
+    // if (autoEnabled) {
+    //   window.themeAPI.get().then(setMode);
+    //   window.themeAPI.onChange(setMode);
+    // } else {
+    //   setMode(savedPref || "light");
+    // }
     if (autoEnabled) {
-      window.themeAPI.get().then(setMode);
+      window.themeAPI.get().then((systemTheme) => {
+        setMode(systemTheme);
+        setThemeReady(true); // 🎯 тема загружена
+      });
       window.themeAPI.onChange(setMode);
     } else {
       setMode(savedPref || "light");
+      setThemeReady(true); // 🎯 можно рендерить
     }
   }, []);
 
@@ -86,6 +104,26 @@ export default function App() {
       }),
     [mode]
   );
+
+  if (!themeReady) {
+    return (
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          height: "100vh",
+          alignItems: "center",
+          justifyContent: "center",
+          bgcolor: "background.default",
+        }}
+      >
+        <CircularProgress size={64} thickness={5} />
+        <Typography variant="h6" sx={{ mt: 2 }}>
+          Загрузка темы…
+        </Typography>
+      </Box>
+    );
+  }
 
   return (
     <ThemeContext.Provider value={{ auto, setAuto, userPref, setUserPref }}>

@@ -25,7 +25,7 @@ contextBridge.exposeInMainWorld("navigationAPI", {
   },
 });
 
-// 👤 Люди
+// 👤 Люди ✅
 contextBridge.exposeInMainWorld("peopleAPI", {
   savePerson: (person) => ipcRenderer.invoke("people:add", person),
   getAll: () => ipcRenderer.invoke("people:getAll"),
@@ -36,14 +36,15 @@ contextBridge.exposeInMainWorld("peopleAPI", {
   upsert: (person) => ipcRenderer.invoke("people:upsert", person),
 });
 
-// 🖼️ Аватары
+// 🖼️ Аватары ✅
 contextBridge.exposeInMainWorld("avatarAPI", {
   getPath: (personId) => ipcRenderer.invoke("avatar:getPath", personId),
   save: (id, buffer) => ipcRenderer.invoke("avatar:save", id, buffer),
   delete: (personId) => ipcRenderer.invoke("avatar:delete", personId),
+  getBase64: (id) => ipcRenderer.invoke("avatar:readBase64", id),
 });
 
-// 📸 Фото (глобальные)
+// 📸 Фото (глобальные) ✅
 contextBridge.exposeInMainWorld("photoAPI", {
   save: (personId, meta) => ipcRenderer.invoke("photo:save", personId, meta),
   saveWithFilename: (meta, filename) =>
@@ -56,10 +57,6 @@ contextBridge.exposeInMainWorld("photoAPI", {
   delete: (personId, id) => ipcRenderer.invoke("photo:delete", personId, id),
   selectFile: () => ipcRenderer.invoke("photo:selectFile"),
   getAllGlobal: () => ipcRenderer.invoke("photo:getAllGlobal"),
-  // saveBlobFile: async (meta, blob, filename) => {
-  //   const buffer = Buffer.from(await blob.arrayBuffer());
-  //   return ipcRenderer.invoke("photo:saveBlobFile", meta, buffer, filename);
-  // },
   saveBlobFile: async (meta, blob, filename) => {
     const arrayBuffer = await blob.arrayBuffer();
     return ipcRenderer.invoke(
@@ -71,7 +68,7 @@ contextBridge.exposeInMainWorld("photoAPI", {
   },
 });
 
-// 📁 Фото (импорт/экспорт)
+// 📁 Фото (импорт/экспорт) ✅
 contextBridge.exposeInMainWorld("photosAPI", {
   getByOwner: (id) => ipcRenderer.invoke("photos:getByOwner", id),
   getPath: (photoId) => ipcRenderer.invoke("photos:getPath", photoId),
@@ -82,7 +79,7 @@ contextBridge.exposeInMainWorld("photosAPI", {
   write: (id, data) => ipcRenderer.invoke("photos:write", id, data),
 });
 
-// 🧬 Биография
+// 🧬 Биография ✅
 contextBridge.exposeInMainWorld("bioAPI", {
   load: (id) => ipcRenderer.invoke("bio:load", id),
   save: (id, content) => ipcRenderer.invoke("bio:save", id, content),
@@ -113,7 +110,7 @@ contextBridge.exposeInMainWorld("fsAPI", {
   exists: (relativePath) => ipcRenderer.invoke("fs:exists", relativePath),
 });
 
-// 📤 Экспорт
+// 📤 Экспорт ✅
 contextBridge.exposeInMainWorld("photoExport", {
   exportZip: (photos) => ipcRenderer.invoke("photo:exportZip", photos),
   exportPDF: (photos) => ipcRenderer.invoke("photo:exportPDF", photos),

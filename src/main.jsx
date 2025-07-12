@@ -11,9 +11,9 @@ async function bootstrap() {
   // Загружаем тему из настроек
   let theme = "light";
   try {
-    const settings = await window.settingsAPI.get();
-    if (settings?.theme) {
-      theme = settings.theme;
+    const userTheme = await window.settings.get("theme");
+    if (userTheme) {
+      theme = userTheme;
     }
   } catch (err) {
     console.warn("⚠️ Не удалось загрузить настройки темы:", err);
