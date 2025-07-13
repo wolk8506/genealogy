@@ -18,6 +18,7 @@ import {
   MenuItem,
   ToggleButton,
   ToggleButtonGroup,
+  useMediaQuery,
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import AddPhotoAlternateIcon from "@mui/icons-material/AddPhotoAlternate";
@@ -49,6 +50,7 @@ const normalizePhotoDate = (dp) => {
 export default function PhotoGallery({ personId, allPeople, refresh }) {
   const theme = useTheme();
   const isDark = theme.palette.mode === "dark";
+  const isSmall = useMediaQuery(theme.breakpoints.down("md")); // ? sm=600 | md=900 | lg=1200 | xl=1536
 
   // данные и состояния
   const [photos, setPhotos] = useState([]);
@@ -254,7 +256,7 @@ export default function PhotoGallery({ personId, allPeople, refresh }) {
       />
 
       {/* сетка фотографий */}
-      <ImageList cols={3} gap={8}>
+      <ImageList cols={isSmall ? 3 : 4} gap={8}>
         {displayPhotos.map((photo) => (
           <ImageListItem
             key={photo.id}

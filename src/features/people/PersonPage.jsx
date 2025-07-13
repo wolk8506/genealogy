@@ -21,7 +21,6 @@ export default function PersonPage() {
   const { id } = useParams();
   const [person, setPerson] = useState(null);
   const [allPeople, setAllPeople] = useState([]);
-  // const [uploadOpen, setUploadOpen] = useState(false);
   const [refreshPhotos, setRefreshPhotos] = useState(0);
   const [avatarEditorOpen, setAvatarEditorOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);

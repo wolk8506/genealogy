@@ -1,4 +1,3 @@
-// src/components/GlobalPhotoGallery.jsx
 import React, { useEffect, useState, useMemo } from "react";
 import {
   Box,
@@ -21,8 +20,6 @@ import {
   DialogContent,
   Paper,
   Chip,
-  // FullscreenExitIcon,
-  // FullscreenIcon,
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import CloseIcon from "@mui/icons-material/Close";

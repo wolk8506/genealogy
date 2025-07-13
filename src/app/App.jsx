@@ -25,12 +25,6 @@ export default function App() {
     setAuto(autoEnabled);
     setUserPref(savedPref || "light");
 
-    // if (autoEnabled) {
-    //   window.themeAPI.get().then(setMode);
-    //   window.themeAPI.onChange(setMode);
-    // } else {
-    //   setMode(savedPref || "light");
-    // }
     if (autoEnabled) {
       window.themeAPI.get().then((systemTheme) => {
         setMode(systemTheme);
@@ -54,8 +48,6 @@ export default function App() {
       setMode(userPref);
     }
   }, [auto, userPref]);
-
-  // const theme = useMemo(() => createTheme({ palette: { mode } }), [mode]);
 
   const theme = useMemo(
     () =>

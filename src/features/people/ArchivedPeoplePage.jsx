@@ -7,12 +7,10 @@ import {
   Stack,
   Typography,
   Button,
-  // Grid,
   List,
   ListItem,
   ListItemAvatar,
   ListItemText,
-  // ListItemButton,
   Checkbox,
   FormControlLabel,
   Backdrop,
@@ -26,7 +24,6 @@ import {
   RestoreFromTrash as RestoreIcon,
   DeleteForever as DeleteForeverIcon,
   CheckCircle as CheckCircleIcon,
-  // CheckBox,
 } from "@mui/icons-material";
 import PersonAvatar from "./PersonAvatar";
 import ExportConfirmModal from "./ExportConfirmModal";
