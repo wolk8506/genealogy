@@ -1,6 +1,6 @@
 {
   "name": "genealogy-react",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "main": "main.cjs",
   "type": "module",
   "scripts": {
@@ -23,6 +23,7 @@
     "dayjs": "^1.11.13",
     "electron-store": "^10.1.0",
     "file-saver": "^2.0.5",
+    "heic2any": "^0.0.4",
     "html-to-image": "^1.11.13",
     "jszip": "^3.10.1",
     "moment": "^2.30.1",

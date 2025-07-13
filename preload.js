@@ -56,6 +56,19 @@ contextBridge.exposeInMainWorld("photoAPI", {
   delete: (personId, id) => ipcRenderer.invoke("photo:delete", personId, id),
   selectFile: () => ipcRenderer.invoke("photo:selectFile"),
   getAllGlobal: () => ipcRenderer.invoke("photo:getAllGlobal"),
+  // saveBlobFile: async (meta, blob, filename) => {
+  //   const buffer = Buffer.from(await blob.arrayBuffer());
+  //   return ipcRenderer.invoke("photo:saveBlobFile", meta, buffer, filename);
+  // },
+  saveBlobFile: async (meta, blob, filename) => {
+    const arrayBuffer = await blob.arrayBuffer();
+    return ipcRenderer.invoke(
+      "photo:saveBlobFile",
+      meta,
+      arrayBuffer,
+      filename
+    );
+  },
 });
 
 // 📁 Фото (импорт/экспорт)
