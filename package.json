@@ -1,7 +1,7 @@
 {
   "name": "genealogy-react",
-  "version": "1.0.4",
-  "main": "main.cjs",
+  "version": "1.0.5",
+  "main": "src/main/index.cjs",
   "type": "module",
   "scripts": {
     "dev": "concurrently \"vite\" \"cross-env NODE_ENV=development electron .\"",
@@ -56,12 +56,14 @@
     },
     "files": [
       "dist/**/*",
-      "main.cjs",
+      "src/main/**",
+      "src/main/handlers/**",
+      "src/main/index.cjs",
       "preload.js",
       "package.json"
     ],
     "extraMetadata": {
-      "main": "main.cjs"
+      "main": "src/main/index.cjs"
     },
     "mac": {
       "target": "dmg",

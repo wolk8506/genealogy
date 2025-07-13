@@ -9,18 +9,33 @@ export default function ExportableAvatar({ personId, initials, size = 40 }) {
     setError(false);
 
     if (personId) {
-      window.avatarAPI.getPath(personId).then((path) => {
-        const url = `${path}?t=${Date.now()}`;
+      // window.avatarAPI.getPath(personId).then((path) => {
+      //   if (!path) {
+      //     if (isMounted) setError(true);
+      //     return;
+      //   }
 
-        // Проверяем, загружается ли изображение
-        const img = new Image();
-        img.onload = () => {
-          if (isMounted) setSrc(url);
-        };
-        img.onerror = () => {
+      //   const url = `${path}?t=${Date.now()}`;
+      //   console.log("🖼️ avatar path:", url);
+
+      //   const img = new Image();
+      //   img.onload = () => {
+      //     if (isMounted) setSrc(url);
+      //   };
+      //   img.onerror = () => {
+      //     if (isMounted) setError(true);
+      //   };
+      //   img.src = url;
+      // });
+      window.avatarAPI.getPath(personId).then((path) => {
+        if (!path) {
           if (isMounted) setError(true);
-        };
-        img.src = url;
+          return;
+        }
+
+        const url = `${path}?t=${Date.now()}`;
+        console.log("🖼️ avatar path:", url);
+        if (isMounted) setSrc(url);
       });
     }
 
