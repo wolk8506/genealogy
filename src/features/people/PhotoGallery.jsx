@@ -76,6 +76,7 @@ export default function PhotoGallery({ personId, allPeople, refresh }) {
   // fullscreen
   const [fullscreen, setFullscreen] = useState(false);
   const [index, setIndex] = useState(0);
+  const [sliderForcedFullscreen, setSliderForcedFullscreen] = useState(false);
 
   // загрузка фотографий и путей
   useEffect(() => {
@@ -137,7 +138,14 @@ export default function PhotoGallery({ personId, allPeople, refresh }) {
     setIndex(i);
     setFullscreen(true);
   };
-  const handleFullscreenClose = () => setFullscreen(false);
+  const handleFullscreenClose = async () => {
+    setFullscreen(false);
+    if (sliderForcedFullscreen) {
+      await window.windowAPI.setFullscreen(false); // вернём только если мы включили
+      setSliderForcedFullscreen(false);
+    }
+    setHideLabels(false);
+  };
 
   // открытие редактирования
   const handleOpen = (photo) => {
@@ -154,6 +162,47 @@ export default function PhotoGallery({ personId, allPeople, refresh }) {
     handleClose();
     setRefreshPhotos((r) => r + 1);
   };
+
+  const handlMaximazeWindow = async () => {
+    const wantFullscreen = !hideLabels;
+    setHideLabels(wantFullscreen);
+
+    const alreadyFullscreen = await window.windowAPI.isFullscreen();
+
+    if (wantFullscreen) {
+      // Включаем fullscreen, если он ещё не активен
+      if (!alreadyFullscreen) {
+        await window.windowAPI.setFullscreen(true);
+        setSliderForcedFullscreen(true);
+      }
+    } else {
+      // Выключаем fullscreen, если именно этот компонент его активировал
+      if (sliderForcedFullscreen) {
+        await window.windowAPI.setFullscreen(false);
+        setSliderForcedFullscreen(false);
+      }
+    }
+    // setHideLabels((h) => !h);
+  };
+  // Листание слайдов с клавиатуры
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (!fullscreen) return; // реагируем только при открытом просмотре
+
+      if (e.key === "ArrowLeft") {
+        setIndex((prev) => Math.max(prev - 1, 0));
+      }
+      if (e.key === "ArrowRight") {
+        setIndex((prev) => Math.min(prev + 1, displayPhotos.length - 1));
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [fullscreen, displayPhotos.length]);
+
   const quntityPhoto = displayPhotos?.length;
   // пустая галерея
   if (!displayPhotos.length) {
@@ -504,7 +553,7 @@ export default function PhotoGallery({ personId, allPeople, refresh }) {
       </Dialog>
 
       {/* Полноэкранный просмотр */}
-      <Dialog open={fullscreen} onClose={() => setFullscreen(false)} fullScreen>
+      <Dialog open={fullscreen} onClose={handleFullscreenClose} fullScreen>
         <DialogContent
           sx={{
             backgroundColor: isDark ? "#1e1e1e" : "#fff",
@@ -513,7 +562,7 @@ export default function PhotoGallery({ personId, allPeople, refresh }) {
           }}
         >
           <IconButton
-            onClick={() => setFullscreen(false)}
+            onClick={handleFullscreenClose}
             sx={{
               position: "absolute",
               top: 8,
@@ -529,7 +578,8 @@ export default function PhotoGallery({ personId, allPeople, refresh }) {
             <CloseIcon />
           </IconButton>
           <IconButton
-            onClick={() => setHideLabels((h) => !h)}
+            // onClick={() => setHideLabels((h) => !h)}
+            onClick={handlMaximazeWindow}
             sx={{
               position: "absolute",
               top: 8,

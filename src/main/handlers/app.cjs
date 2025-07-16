@@ -1,6 +1,6 @@
 // 🧩 Информация о приложении
 
-const { ipcMain, app, shell } = require("electron");
+const { ipcMain, app, shell, BrowserWindow } = require("electron");
 const path = require("path");
 const fs = require("fs");
 
@@ -45,4 +45,14 @@ ipcMain.handle("app:get-folder-size", async () => {
     console.error("Ошибка при подсчёте размера папки:", err);
     return null;
   }
+});
+
+ipcMain.handle("window:setFullscreen", (event, enable) => {
+  const win = BrowserWindow.getFocusedWindow();
+  if (win) win.setFullScreen(enable);
+});
+
+ipcMain.handle("window:isFullscreen", () => {
+  const win = BrowserWindow.getFocusedWindow();
+  return win ? win.isFullScreen() : false;
 });
