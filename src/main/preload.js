@@ -131,3 +131,9 @@ contextBridge.exposeInMainWorld("appAPI", {
 contextBridge.exposeInMainWorld("logAPI", {
   append: (text) => ipcRenderer.invoke("log:append", text),
 });
+
+//
+contextBridge.exposeInMainWorld("windowAPI", {
+  setFullscreen: (state) => ipcRenderer.invoke("window:setFullscreen", state),
+  isFullscreen: () => ipcRenderer.invoke("window:isFullscreen"),
+});
