@@ -30,6 +30,7 @@ import ExportConfirmModal from "./ExportConfirmModal";
 import { exportPeopleToZip } from "./utils/exportToZip";
 import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
 import { Fab, Zoom } from "@mui/material";
+import ErrorIcon from "@mui/icons-material/Error";
 
 export default function ArchivePage() {
   const [people, setPeople] = useState([]);
@@ -42,6 +43,14 @@ export default function ArchivePage() {
   const [progress, setProgress] = useState(0);
   const [search, setSearch] = useState("");
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const [exportStatus, setExportStatus] = useState("Подготовка архива...");
+  const [exportError, setExportError] = useState(false);
+
+  useEffect(() => {
+    window.archiveAPI?.onProgress(({ percent, phase }) => {
+      setProgress(percent);
+    });
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -104,22 +113,35 @@ export default function ArchivePage() {
     setIsSaving(true);
     setSaveDone(false);
     setProgress(0);
+    setExportError(false); // если используешь для статуса ошибки
+    setExportStatus("Подготовка архива...");
 
     try {
-      await exportPeopleToZip({
+      const blob = await exportPeopleToZip({
         people: selectedPeople,
         filename: `Genealogy_selected_${Date.now()}.zip`,
         onProgress: setProgress,
+        onStatus: (msg) => setExportStatus(msg),
+        onError: (msg) => {
+          setExportStatus(msg);
+          setExportError(true);
+        },
       });
+
+      if (!blob) return; // экспорт прерван
+
       setSaveDone(true);
       setSelected([]);
+      setExportStatus("✅ Архив сохранён");
       setTimeout(() => {
         setIsSaving(false);
         setSaveDone(false);
         setProgress(0);
       }, 1500);
-    } catch {
+    } catch (err) {
+      setExportStatus(`❌ Ошибка: ${err.message || "Неизвестно"}`);
       setIsSaving(false);
+      setExportError(true);
     }
   };
 
@@ -322,19 +344,58 @@ export default function ArchivePage() {
       />
 
       {/* Backdrop */}
-      <Backdrop open={isSaving} sx={{ zIndex: 2000, color: "#fff" }}>
-        {saveDone ? (
-          <Stack alignItems="center" spacing={1}>
-            <CheckCircleIcon sx={{ fontSize: 64, color: "limegreen" }} />
-            <Typography variant="h6">Архив сохранён!</Typography>
-          </Stack>
+      <Backdrop
+        open={isSaving}
+        sx={{
+          color: "#fff",
+          zIndex: (theme) => theme.zIndex.drawer + 1,
+          flexDirection: "column",
+        }}
+      >
+        {exportError ? (
+          <>
+            <ErrorIcon sx={{ fontSize: 60, color: "red" }} />
+            <Box mt={2}>
+              <Typography variant="h6" color="inherit">
+                {exportStatus}
+              </Typography>
+            </Box>
+          </>
+        ) : saveDone ? (
+          <>
+            <CheckCircleIcon sx={{ fontSize: 60, color: "limegreen" }} />
+            <Box mt={2}>
+              <Typography variant="h6" color="inherit">
+                Архив сохранён!
+              </Typography>
+            </Box>
+          </>
         ) : (
-          <Stack alignItems="center" spacing={1}>
+          <>
             <CircularProgress color="inherit" />
-            <Typography variant="h6">Сохраняем… {progress}%</Typography>
-          </Stack>
+            <Box mt={2}>
+              <Typography variant="h6" color="inherit">
+                {exportStatus} {progress > 0 && `${progress}%`}
+              </Typography>
+            </Box>
+          </>
+        )}
+        {exportError && (
+          <Button
+            variant="contained"
+            onClick={() => {
+              setIsSaving(false);
+              setExportError(false);
+              setExportStatus("");
+              setProgress(0);
+            }}
+            sx={{ mt: 2 }}
+          >
+            Закрыть
+          </Button>
         )}
       </Backdrop>
+
       <Zoom in={showScrollTop}>
         <Fab
           color="primary"

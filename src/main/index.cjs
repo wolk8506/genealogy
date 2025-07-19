@@ -16,6 +16,9 @@ const { app, Menu } = require("electron");
   require("./handlers/app.cjs");
   require("./handlers/log.cjs");
   require("./handlers/fs.cjs");
+  require("./handlers/file.cjs");
+  require("./handlers/archive.cjs");
+  require("./handlers/menuContext.cjs");
 
   // Меню
   const { buildMenuTemplate } = require("./menu.cjs");

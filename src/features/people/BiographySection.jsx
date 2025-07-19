@@ -18,7 +18,7 @@ import CloseIcon from "@mui/icons-material/Close";
 import UndoIcon from "@mui/icons-material/Undo";
 import MDEditor from "@uiw/react-md-editor";
 import BioEditor from "./BioEditor";
-import path from "path";
+// import path from "path";
 
 export default function BiographySection({ personId }) {
   const [open, setOpen] = useState(false);
@@ -71,7 +71,12 @@ export default function BiographySection({ personId }) {
   const transformImageUri = (uri) => {
     if (!uri || uri.startsWith("http") || uri.startsWith("file://")) return uri;
     if (!personDir) return uri;
-    const fullPath = path.join(personDir, uri);
+    // const fullPath = path.join(personDir, uri);
+    const fullPath = `${personDir.replace(/[/\\]+$/, "")}/${uri.replace(
+      /^[/\\]+/,
+      ""
+    )}`;
+
     return `file://${fullPath}`;
   };
 

@@ -11,8 +11,8 @@ import {
   Divider,
   Tooltip,
   Switch,
-  RadioGroup,
   Radio,
+  Button,
 } from "@mui/material";
 import Brightness4Icon from "@mui/icons-material/Brightness4";
 import { Backdrop, CircularProgress } from "@mui/material";
@@ -25,10 +25,10 @@ import DarkModeIcon from "@mui/icons-material/DarkMode";
 import InfoIcon from "@mui/icons-material/Info";
 import SettingsIcon from "@mui/icons-material/Settings";
 import SaveIcon from "@mui/icons-material/Save";
+import ErrorIcon from "@mui/icons-material/Error";
 
 import { ThemeContext } from "../../context/ThemeContext.cjs";
 import JSZip from "jszip";
-import { saveAs } from "file-saver";
 import { Buffer } from "buffer";
 import { ImportDecisionModal } from "./ImportDecisionModal";
 
@@ -37,6 +37,8 @@ import reactIcon from "../../img/react-icon.svg";
 import reduxIcon from "../../img/redux-logo.svg";
 import muiIcon from "../../img/material-ui-logo.svg";
 import viteIcon from "../../img/vitejs-logo.svg";
+import ExportConfirmModal from "../people/ExportConfirmModal";
+import { exportPeopleToZip } from "../people/utils/exportToZip";
 
 export default function SettingsPage() {
   const [version, setVersion] = useState("");
@@ -57,10 +59,19 @@ export default function SettingsPage() {
   const [modalResolve, setModalResolve] = useState(null);
   const [size, setSize] = useState(null);
   const { auto, setAuto, userPref, setUserPref } = useContext(ThemeContext);
+  const [exportStatus, setExportStatus] = useState("Подготовка архива...");
+  const [exportError, setExportError] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   useEffect(() => {
     window.appAPI?.getVersion?.().then(setVersion);
     window.appAPI?.getPlatform?.().then(setPlatform);
+  }, []);
+
+  useEffect(() => {
+    window.archiveAPI.onProgress(({ percent, files }) => {
+      setProgress(percent); // отдельный state, например setArchiveProgress
+    });
   }, []);
 
   const fetchSize = () => {
@@ -77,138 +88,46 @@ export default function SettingsPage() {
     window.appAPI?.openDataFolder?.();
   };
 
-  const handleBackup = async () => {
+  const handleDialogExport = async () => {
+    setConfirmOpen(true);
+  };
+
+  const handleExportAll = async () => {
+    setConfirmOpen(false);
     setIsSaving(true);
+    setSaveDone(false);
     setProgress(0);
+    setExportError(false);
+    setExportStatus("Подготовка архива...");
 
     try {
-      const zip = new JSZip();
-      const people = await window.peopleAPI.getAll();
-      const total = people.length;
+      const allPeople = await window.peopleAPI.getAll();
+      const archivePath = await exportPeopleToZip({
+        people: allPeople,
+        filename: `Genealogy_all_${Date.now()}.zip`,
+        onProgress: setProgress,
+        onStatus: setExportStatus,
+        onError: (msg) => {
+          setExportStatus(msg);
+          setExportError(true);
+        },
+      });
 
-      zip.file("genealogy-data.json", JSON.stringify({ people }, null, 2));
+      if (!archivePath) return;
 
-      for (let i = 0; i < total; i++) {
-        const person = people[i];
-        const personPath = `people/${person.id}`;
-        const personFolder = zip.folder(personPath);
-        let hasContent = false;
-
-        // 2.1 Аватар
-        try {
-          const avatarPath = await window.avatarAPI.getPath(person.id);
-          const res = await fetch(avatarPath);
-
-          if (res.ok) {
-            const avatarBlob = await res.blob();
-            if (avatarBlob && avatarBlob.size >= 1024) {
-              personFolder.file("avatar.jpg", avatarBlob);
-              hasContent = true;
-              console.log(`🧑‍🦱 Аватар добавлен для ${person.id}`);
-            } else {
-              console.warn(
-                `⚠️ Аватар пустой или слишком маленький: ${avatarPath}`
-              );
-            }
-          } else {
-            console.warn(`⚠️ Аватар не найден: ${avatarPath}`);
-          }
-        } catch (err) {
-          console.warn(`❌ Ошибка при загрузке аватара ${person.id}`, err);
-        }
-
-        // 2.2 Биография и изображения из неё
-        try {
-          const bioText = await window.bioAPI.read(person.id);
-          if (bioText) {
-            personFolder.file("bio.md", bioText);
-            hasContent = true;
-            console.log(`📄 bio.md добавлен для ${person.id}`);
-
-            const imageMatches = [...bioText.matchAll(/!\[.*?\]\((.*?)\)/g)];
-            const imagePaths = imageMatches.map((m) => m[1]);
-
-            for (const relPath of imagePaths) {
-              try {
-                const blob = await window.bioAPI.readImage(person.id, relPath);
-                personFolder.file(relPath, blob);
-                hasContent = true;
-                console.log(`🖼️ Изображение добавлено: ${relPath}`);
-              } catch (err) {
-                console.warn(
-                  `⚠️ Не удалось загрузить изображение: ${relPath}`,
-                  err
-                );
-              }
-            }
-          }
-        } catch (err) {
-          console.warn(`❌ Ошибка при чтении биографии ${person.id}`, err);
-        }
-
-        // 2.3 Фото
-        if (window.photosAPI?.getByOwner) {
-          try {
-            const photos = await window.photosAPI.getByOwner(person.id);
-            if (photos.length) {
-              personFolder.file("photos.json", JSON.stringify(photos, null, 2));
-              hasContent = true;
-
-              const photoFolder = personFolder.folder("photos");
-
-              for (const photo of photos) {
-                try {
-                  const photoPath = await window.photosAPI.getPath(photo.id);
-                  if (!photoPath) {
-                    console.warn(`⚠️ Путь к фото ${photo.id} не найден`);
-                    continue;
-                  }
-
-                  const ext = photoPath.split(".").pop().split("?")[0];
-                  const res = await fetch(photoPath);
-                  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-                  const blob = await res.blob();
-                  const filename = photo.filename || `${photo.id}.${ext}`;
-                  photoFolder.file(filename, blob);
-                  hasContent = true;
-                  console.log(`📸 Фото добавлено: ${filename}`);
-                } catch (err) {
-                  console.warn(`❌ Не удалось загрузить фото ${photo.id}`, err);
-                }
-              }
-            }
-          } catch (err) {
-            console.warn(`❌ Ошибка при получении фото для ${person.id}`, err);
-          }
-        }
-
-        // 2.4 Удаление пустой папки, если ничего не добавлено
-        if (!hasContent) {
-          zip.remove(personPath);
-          console.log(`🗑️ Папка ${personPath} удалена — нет содержимого`);
-        }
-
-        // 📊 Обновление прогресса
-        setProgress(Math.round(((i + 1) / total) * 100));
-      }
-
-      const blob = await zip.generateAsync({ type: "blob" });
-      saveAs(blob, `Genealogy_backup_${Date.now()}.zip`);
       setSaveDone(true);
+      setExportStatus("✅ Архив сохранён");
       setTimeout(() => {
         setIsSaving(false);
         setSaveDone(false);
         setProgress(0);
-      }, 1500); // Пауза перед закрытием
+      }, 1500);
     } catch (err) {
-      console.error("❌ Ошибка при создании архива:", err);
-    } finally {
+      setExportStatus(`❌ Ошибка: ${err.message || "Неизвестно"}`);
       setIsSaving(false);
-      setProgress(0);
+      setExportError(true);
     }
   };
-
   // ~ Восстановление данных
   //! 1
 
@@ -478,6 +397,14 @@ export default function SettingsPage() {
         }}
       />
 
+      {/* Export confirmation */}
+      <ExportConfirmModal
+        open={confirmOpen}
+        allPeople={true}
+        onCancel={() => setConfirmOpen(false)}
+        onConfirm={handleExportAll}
+      />
+
       <Backdrop
         open={isSaving}
         sx={{
@@ -486,7 +413,16 @@ export default function SettingsPage() {
           flexDirection: "column",
         }}
       >
-        {saveDone ? (
+        {exportError ? (
+          <>
+            <ErrorIcon sx={{ fontSize: 60, color: "red" }} />
+            <Box mt={2}>
+              <Typography variant="h6" color="inherit">
+                {exportStatus}
+              </Typography>
+            </Box>
+          </>
+        ) : saveDone ? (
           <>
             <CheckCircleIcon sx={{ fontSize: 60, color: "limegreen" }} />
             <Box mt={2}>
@@ -500,12 +436,27 @@ export default function SettingsPage() {
             <CircularProgress color="inherit" />
             <Box mt={2}>
               <Typography variant="h6" color="inherit">
-                Сохраняем архив... {progress}%
+                {exportStatus} {progress > 0 && `${progress}%`}
               </Typography>
             </Box>
           </>
         )}
+        {exportError && (
+          <Button
+            variant="contained"
+            onClick={() => {
+              setIsSaving(false);
+              setExportError(false);
+              setExportStatus("");
+              setProgress(0);
+            }}
+            sx={{ mt: 2 }}
+          >
+            Закрыть
+          </Button>
+        )}
       </Backdrop>
+
       <Backdrop
         open={isImporting}
         sx={{
@@ -621,7 +572,7 @@ export default function SettingsPage() {
                 />
               </ListItem>
             </Tooltip>
-            <ListItem button="true" onClick={handleBackup}>
+            <ListItem button="true" onClick={handleDialogExport}>
               <ListItemIcon>
                 <SaveIcon />
               </ListItemIcon>

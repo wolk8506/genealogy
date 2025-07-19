@@ -56,3 +56,7 @@ ipcMain.handle("window:isFullscreen", () => {
   const win = BrowserWindow.getFocusedWindow();
   return win ? win.isFullScreen() : false;
 });
+
+ipcMain.handle("path:getTempDir", () => {
+  return path.join(app.getPath("documents"), "Genealogy", "temp");
+});

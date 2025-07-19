@@ -36,6 +36,7 @@ import PhotoUploadDialog from "./PhotoUploadDialog";
 import FilterListOffIcon from "@mui/icons-material/FilterListOff";
 import FilterListIcon from "@mui/icons-material/FilterList";
 import PhotoLibraryIcon from "@mui/icons-material/PhotoLibrary";
+import PhotoMetaDialog from "./PhotoMetaDialog";
 
 // нормализация datePhoto → timestamp или null
 const normalizePhotoDate = (dp) => {
@@ -78,6 +79,9 @@ export default function PhotoGallery({ personId, allPeople, refresh }) {
   const [index, setIndex] = useState(0);
   const [sliderForcedFullscreen, setSliderForcedFullscreen] = useState(false);
 
+  const [meta, setMeta] = useState(null);
+  const [openDialog, setOpenDialog] = useState(false);
+
   // загрузка фотографий и путей
   useEffect(() => {
     if (!personId) return;
@@ -112,25 +116,6 @@ export default function PhotoGallery({ personId, allPeople, refresh }) {
     }
     return arr;
   }, [photos, sortState]);
-
-  // скачивание
-  const handleDownload = async (photo) => {
-    try {
-      const url = photoPaths[photo.id];
-      if (!url) return;
-      const res = await fetch(url);
-      const blob = await res.blob();
-      const ext = url.split(".").pop().split("?")[0];
-      const name = photo.filename || `${photo.id}.${ext}`;
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(blob);
-      a.download = name;
-      a.click();
-      URL.revokeObjectURL(a.href);
-    } catch {
-      alert("Не удалось скачать");
-    }
-  };
 
   // открытие fullscreen
   const handleFullscreenOpen = (photo) => {
@@ -182,7 +167,6 @@ export default function PhotoGallery({ personId, allPeople, refresh }) {
         setSliderForcedFullscreen(false);
       }
     }
-    // setHideLabels((h) => !h);
   };
   // Листание слайдов с клавиатуры
   useEffect(() => {
@@ -202,6 +186,49 @@ export default function PhotoGallery({ personId, allPeople, refresh }) {
       document.removeEventListener("keydown", handleKeyDown);
     };
   }, [fullscreen, displayPhotos.length]);
+
+  // 📋 Контекстное меню
+
+  useEffect(() => {
+    const { ipcRenderer } = window.electron;
+
+    // зачистка — на случай дубликатов
+    ipcRenderer.removeAllListeners("photo:download");
+    ipcRenderer.removeAllListeners("photo:open");
+    ipcRenderer.removeAllListeners("photo:delete");
+    ipcRenderer.removeAllListeners("photo:meta-response");
+
+    // Скачивание
+    ipcRenderer.on("photo:download", (_, photo) => {
+      ipcRenderer.send("photo:download", photo);
+    });
+
+    // Открытие
+    ipcRenderer.on("photo:open", (_, id) => handleOpen(id));
+
+    // Удаление
+    ipcRenderer.on("photo:delete", (_, id) => {
+      if (confirm("Удалить фото?")) {
+        window.photoAPI.delete(personId, id);
+        setPhotos((prev) => prev.filter((p) => p.id !== id));
+      }
+    });
+
+    // Метаданные
+    ipcRenderer.on("photo:meta-response", (_, receivedMeta) => {
+      console.log("🕯️ мета-инфо получена:", receivedMeta);
+      setMeta(receivedMeta);
+      setOpenDialog(true);
+    });
+
+    // очистка при размонтировании
+    return () => {
+      ipcRenderer.removeAllListeners("photo:download");
+      ipcRenderer.removeAllListeners("photo:open");
+      ipcRenderer.removeAllListeners("photo:delete");
+      ipcRenderer.removeAllListeners("photo:meta-response");
+    };
+  }, []);
 
   const quntityPhoto = displayPhotos?.length;
   // пустая галерея
@@ -312,6 +339,19 @@ export default function PhotoGallery({ personId, allPeople, refresh }) {
             onClick={() => {
               handleFullscreenOpen(photo);
             }}
+            onContextMenu={(e) => {
+              e.preventDefault();
+              console.log(personId);
+              window.contextAPI.showPhotoMenu(
+                photo,
+                {
+                  x: e.clientX,
+                  y: e.clientY,
+                },
+                "full",
+                personId
+              );
+            }}
             sx={{
               aspectRatio:
                 viewMode === "square" ? "1 / 1" : photo.aspectRatio || "4 / 3",
@@ -345,7 +385,7 @@ export default function PhotoGallery({ personId, allPeople, refresh }) {
               size="small"
               onClick={(e) => {
                 e.stopPropagation();
-                handleDownload(photo);
+                window.electron?.ipcRenderer.send("photo:download", photo);
               }}
               sx={{
                 zIndex: 1000,
@@ -733,6 +773,11 @@ export default function PhotoGallery({ personId, allPeople, refresh }) {
           </SwipeableViews>
         </DialogContent>
       </Dialog>
+      <PhotoMetaDialog
+        openDialog={openDialog}
+        meta={meta}
+        onClose={() => setOpenDialog(false)}
+      />
     </>
   );
 }
