@@ -375,3 +375,62 @@ ipcMain.handle("photo:exportPDF", async (event, photos) => {
   doc.end();
   return filePath;
 });
+
+/*
+
+~   Диалоговые окна сохранения
+
+*/
+
+// ipcMain.handle("dialog:chooseSavePathPhoto", async (_, defaultName) => {
+//   const { canceled, filePath } = await dialog.showSaveDialog({
+//     defaultPath: defaultName,
+//     title: "Выберите место для сохранения",
+//     buttonLabel: "Сохранить",
+//     filters: [
+//       { name: "Изображения", extensions: ["jpg", "jpeg", "png", "gif"] },
+//       { name: "Все файлы", extensions: ["*"] },
+//     ],
+//   });
+
+//   return canceled ? null : filePath;
+// });
+
+function getPhotoUrl(photo) {
+  return path.join(
+    process.env.HOME,
+    "Documents",
+    "Genealogy",
+    "people",
+    String(photo.owner),
+    "photos",
+    photo.filename
+  );
+}
+
+ipcMain.on("photo:download", async (event, photo) => {
+  try {
+    const { canceled, filePath } = await dialog.showSaveDialog({
+      defaultPath: photo.filename || `photo_${photo.id}.jpg`,
+      title: "Сохранить фото",
+      buttonLabel: "Сохранить",
+      filters: [
+        { name: "Изображения", extensions: ["jpg", "jpeg", "png", "gif"] },
+        { name: "Все файлы", extensions: ["*"] },
+      ],
+    });
+
+    if (canceled || !filePath) return;
+
+    const sourcePath = getPhotoUrl(photo); // путь к исходному фото
+    console.log("📂 Копируем из:", sourcePath);
+
+    // читаем как buffer и сохраняем
+    const buffer = await fs.promises.readFile(sourcePath);
+    await fs.promises.writeFile(filePath, buffer);
+
+    console.log("✅ Фото успешно сохранено в:", filePath);
+  } catch (err) {
+    console.error("💥 Ошибка сохранения фото:", err);
+  }
+});

@@ -36,6 +36,7 @@ import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
 import { Fab, Zoom } from "@mui/material";
 import FullscreenIcon from "@mui/icons-material/Fullscreen";
 import FullscreenExitIcon from "@mui/icons-material/FullscreenExit";
+import PhotoMetaDialog from "./PhotoMetaDialog";
 
 // Преобразует datePhoto в timestamp, неподходящая строка → null
 const normalizePhotoDate = (dp) => {
@@ -69,6 +70,8 @@ export default function GlobalPhotoGallery() {
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [hideLabels, setHideLabels] = useState(false);
   const [sliderForcedFullscreen, setSliderForcedFullscreen] = useState(false);
+  const [meta, setMeta] = useState(null);
+  const [openDialog, setOpenDialog] = useState(false);
 
   // fullscreen viewer
   useEffect(() => {
@@ -198,6 +201,24 @@ export default function GlobalPhotoGallery() {
         .map(([label, items]) => ({ label, items }));
     }
 
+    if (groupBy === "datePhoto") {
+      const map = {};
+      for (const p of sortedList) {
+        const d = p.datePhoto?.split("T")[0] || "Без даты";
+        map[d] = map[d] || [];
+        map[d].push(p);
+      }
+      return Object.entries(map)
+        .sort(([da], [db]) => {
+          // "Без даты" отправляем вниз
+          if (da === "Без даты") return 1;
+          if (db === "Без даты") return -1;
+          // обычная сортировка
+          return da > db ? -1 : da < db ? 1 : 0;
+        })
+        .map(([label, items]) => ({ label, items }));
+    }
+
     return [{ label: null, items: sortedList }];
   }, [groupBy, allPeople, sortedList]);
 
@@ -256,6 +277,47 @@ export default function GlobalPhotoGallery() {
     };
   }, [fullscreen, sortedList.length]);
 
+  useEffect(() => {
+    const { ipcRenderer } = window.electron;
+
+    // зачистка — на случай дубликатов
+    ipcRenderer.removeAllListeners("photo:download");
+    ipcRenderer.removeAllListeners("photo:open");
+    ipcRenderer.removeAllListeners("photo:delete");
+    ipcRenderer.removeAllListeners("photo:meta-response");
+
+    // Скачивание
+    ipcRenderer.on("photo:download", (_, photo) => {
+      ipcRenderer.send("photo:download", photo);
+    });
+
+    // Открытие
+    ipcRenderer.on("photo:open", (_, id) => handleOpen(id));
+
+    // Удаление
+    ipcRenderer.on("photo:delete", (_, id) => {
+      if (confirm("Удалить фото?")) {
+        window.photoAPI.delete(personId, id);
+        setPhotos((prev) => prev.filter((p) => p.id !== id));
+      }
+    });
+
+    // Метаданные
+    ipcRenderer.on("photo:meta-response", (_, receivedMeta) => {
+      console.log("🕯️ мета-инфо получена:", receivedMeta);
+      setMeta(receivedMeta);
+      setOpenDialog(true);
+    });
+
+    // очистка при размонтировании
+    return () => {
+      ipcRenderer.removeAllListeners("photo:download");
+      ipcRenderer.removeAllListeners("photo:open");
+      ipcRenderer.removeAllListeners("photo:delete");
+      ipcRenderer.removeAllListeners("photo:meta-response");
+    };
+  }, []);
+
   if (loading) {
     return (
       <Box
@@ -279,6 +341,18 @@ export default function GlobalPhotoGallery() {
         onClick={() => {
           setIndex(idx);
           setFullscreen(true);
+        }}
+        onContextMenu={(e) => {
+          e.preventDefault();
+          window.contextAPI.showPhotoMenu(
+            photo,
+            {
+              x: e.clientX,
+              y: e.clientY,
+            },
+            "lite"
+            // personId
+          );
         }}
         sx={{
           aspectRatio:
@@ -488,6 +562,7 @@ export default function GlobalPhotoGallery() {
               <MenuItem value="none">Без группировки</MenuItem>
               <MenuItem value="owner">По владельцу</MenuItem>
               <MenuItem value="date">По дате добавления</MenuItem>
+              <MenuItem value="datePhoto">По дате фотографии</MenuItem>
             </Select>
           </FormControl>
 
@@ -738,6 +813,11 @@ export default function GlobalPhotoGallery() {
           <KeyboardArrowUpIcon />
         </Fab>
       </Zoom>
+      <PhotoMetaDialog
+        openDialog={openDialog}
+        meta={meta}
+        onClose={() => setOpenDialog(false)}
+      />
     </>
   );
 

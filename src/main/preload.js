@@ -1,4 +1,5 @@
 const { contextBridge, ipcRenderer } = require("electron");
+
 console.log("✅ preload.js загружен");
 
 // ⚙️ Настройки
@@ -136,4 +137,60 @@ contextBridge.exposeInMainWorld("logAPI", {
 contextBridge.exposeInMainWorld("windowAPI", {
   setFullscreen: (state) => ipcRenderer.invoke("window:setFullscreen", state),
   isFullscreen: () => ipcRenderer.invoke("window:isFullscreen"),
+});
+
+contextBridge.exposeInMainWorld("fileAPI", {
+  writeText: (targetPath, text) =>
+    ipcRenderer.invoke("file:writeText", targetPath, text),
+
+  writeBlob: async (targetPath, blob) =>
+    ipcRenderer.invoke("file:writeBlob", targetPath, await blob.arrayBuffer()),
+
+  copyFile: (source, destination) =>
+    ipcRenderer.invoke("file:copyFile", source, destination),
+
+  ensureDir: (dirPath) => ipcRenderer.invoke("file:ensureDir", dirPath),
+  delete: (path) => ipcRenderer.invoke("file:delete", path),
+  writeBuffer: (filePath, buffer) =>
+    ipcRenderer.invoke("file:write-buffer", filePath, buffer),
+});
+
+contextBridge.exposeInMainWorld("pathAPI", {
+  getTempDir: () => ipcRenderer.invoke("path:getTempDir"),
+  join: (...segments) => path.join(...segments),
+  basename: (p) => path.basename(p),
+  extname: (p) => path.extname(p),
+});
+
+contextBridge.exposeInMainWorld("archiveAPI", {
+  create: (filePaths, archiveName) =>
+    ipcRenderer.invoke("archive:create", filePaths, archiveName),
+  onProgress: (handler) =>
+    ipcRenderer.on("archive:progress", (_, data) => handler(data)),
+});
+
+// 📨 Диалоговые окна
+contextBridge.exposeInMainWorld("dialogAPI", {
+  chooseSavePath: (defaultName) =>
+    ipcRenderer.invoke("dialog:chooseSavePath", defaultName),
+  chooseSavePathPhoto: (defaultName) =>
+    ipcRenderer.invoke("dialog:chooseSavePathPhoto", defaultName),
+});
+
+// Контекстное меню
+contextBridge.exposeInMainWorld("contextAPI", {
+  showMenu: (type, payload) => ipcRenderer.send(`context:${type}`, ...payload),
+
+  showPhotoMenu: (photo, position, menuType = "full", personId) =>
+    ipcRenderer.send("context:photo-menu", photo, position, menuType, personId),
+});
+
+contextBridge.exposeInMainWorld("electron", {
+  ipcRenderer: {
+    send: (...args) => ipcRenderer.send(...args),
+    on: (...args) => ipcRenderer.on(...args),
+    once: (...args) => ipcRenderer.once(...args),
+    removeListener: (...args) => ipcRenderer.removeListener(...args),
+    removeAllListeners: (...args) => ipcRenderer.removeAllListeners(...args),
+  },
 });
