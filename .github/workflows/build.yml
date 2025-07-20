@@ -32,8 +32,8 @@ jobs:
       - name: Build React
         run: npm run build:react
 
-      - name: Build DMG
-        run: npm run dist:mac
+      - name: Build DMG (ARM64)
+        run: npx electron-builder --mac --arm64
 
       - name: Find built .dmg
         id: find-dmg
