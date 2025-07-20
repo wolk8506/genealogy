@@ -753,30 +753,6 @@ export default function SettingsPage() {
               </ListItem>
             )}
 
-            {/* <div>
-              {!updateInfo && <p>Проверяю обновления…</p>}
-
-              {updateInfo && !downloaded && (
-                <>
-                  <p>Найдена версия {updateInfo.version}</p>
-                  <button
-                    onClick={() => {
-                      console.log("👆 Download click, info:", updateInfo);
-                      window.updater.download(updateInfo);
-                    }}
-                  >
-                    Скачать
-                  </button>
-                  {progress > 0 && <p>Загрузка: {progress}%</p>}
-                </>
-              )}
-
-              {downloaded && (
-                <p>
-                  Готово! Файл загружен: <code>{filePath}</code>
-                </p>
-              )}
-            </div> */}
             <ListItem>
               <ListItemIcon>
                 <SettingsIcon />
