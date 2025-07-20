@@ -68,24 +68,29 @@ jobs:
 
       - name: Find full installer (.exe)
         id: out-exe
+        shell: bash
         run: |
-          FILE=$(ls "dist_electron/Genealogy Setup ${GITHUB_REF#refs/tags/v}.exe")
+          TAG=${GITHUB_REF#refs/tags/v}
+          FILE="dist_electron/Genealogy-Setup-${TAG}.exe"
           echo "path=$FILE" >> $GITHUB_OUTPUT
 
       - name: Find latest.yml
         id: out-yml
+        shell: bash
         run: |
-          FILE=$(ls dist_electron/latest.yml)
-          echo "path=$FILE" >> $GITHUB_OUTPUT
+          echo "path=dist_electron/latest.yml" >> $GITHUB_OUTPUT
 
       - name: Find blockmap
         id: out-block
+        shell: bash
         run: |
+          TAG=${GITHUB_REF#refs/tags/v}
           FILE=$(ls dist_electron/*.blockmap)
           echo "path=$FILE" >> $GITHUB_OUTPUT
 
       - name: Zip nsis-web stub & deltas
         id: out-stub
+        shell: bash
         run: |
           cd dist_electron
           zip -r stub.zip nsis-web
