@@ -33,7 +33,7 @@ jobs:
         run: npm run build:react
 
       - name: Build DMG (ARM64)
-        run: npx electron-builder --mac --arm64
+        run: npx electron-builder --mac --arm64 --publish never
 
       - name: Find built .dmg
         id: find-dmg
