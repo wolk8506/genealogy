@@ -20,20 +20,23 @@ jobs:
       - name: 📦 Install dependencies
         run: npm ci
 
-      - name: 🛠️ Build React + Electron
-        run: |
-          npm run build       # собираем фронт
-          npm run dist:win    # electron-builder для Windows
+      - name: 📦 Build React
+        run: npm run build:react
 
-      - name: 📁 List dist_electron contents
-        run: dir dist_electron
+      - name: 🛠 Build macOS Installer
+        if: runner.os == 'macOS'
+        run: npm run dist:mac
 
-      - name: 📤 Upload Windows build artifacts
+      - name: 🛠 Build Windows Installer
+        if: runner.os == 'Windows'
+        run: npm run dist:win
+
+      - name: 🛠 Build Linux AppImage
+        if: runner.os == 'Linux'
+        run: npm run dist:linux
+
+      - name: 📤 Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: windows-build
-          path: |
-            dist_electron/*.exe
-            dist_electron/latest.yml
-            dist_electron/*.blockmap
-            dist_electron/nsis-web/**/*
+          name: build-${{ matrix.os }}
+          path: dist_electron/**
