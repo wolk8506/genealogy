@@ -189,8 +189,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: artifacts/windows/dist_electron/"Genealogy-Setup-${{ env.VERSION }}.exe"
-          asset_name: "Genealogy-Setup-${{ env.VERSION }}.exe"
+          asset_path: artifacts/windows/dist_electron/"Genealogy Setup ${{ env.VERSION }}.exe"
+          asset_name: "Genealogy Setup ${{ env.VERSION }}.exe"
           asset_content_type: application/octet-stream
 
       - name: Upload Windows latest.yml
