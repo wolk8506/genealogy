@@ -1,6 +1,6 @@
 {
   "name": "genealogy-react",
-  "version": "1.0.10",
+  "version": "1.0.13",
   "main": "src/main/index.cjs",
   "type": "module",
   "description": "Генеалогическое приложение",
@@ -8,7 +8,10 @@
   "scripts": {
     "dev": "concurrently \"vite\" \"cross-env NODE_ENV=development electron .\"",
     "build:react": "vite build",
-    "build:electron": "electron-builder",
+    "build:electron": "electron-builder --publish never",
+    "dist:mac": "electron-builder --mac --x64 --publish never",
+    "dist:win": "electron-builder --win --x64 --publish never",
+    "dist:linux": "electron-builder --linux --x64 --publish never",
     "build": "npm run build:react && npm run build:electron",
     "start": "electron ."
   },
@@ -58,7 +61,8 @@
       {
         "provider": "github",
         "owner": "wolk8506",
-        "repo": "genealogy"
+        "repo": "genealogy",
+        "releaseType": "draft"
       }
     ],
     "icon": "build/icons/icon",
