@@ -1,6 +1,6 @@
 {
   "name": "genealogy-react",
-  "version": "1.0.17",
+  "version": "1.0.18",
   "main": "src/main/index.cjs",
   "type": "module",
   "description": "Генеалогическое приложение",
@@ -57,6 +57,7 @@
   "build": {
     "appId": "com.nebula9371.genealogy",
     "productName": "Genealogy",
+    "artifactName": "${productName}-${version}.${ext}",
     "publish": [
       {
         "provider": "github",
@@ -90,6 +91,7 @@
         "nsis",
         "nsis-web"
       ],
+      "artifactName": "Genealogy-Setup-${version}.${ext}",
       "icon": "build/icons/icon.ico"
     },
     "linux": {
