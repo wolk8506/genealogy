@@ -1,6 +1,6 @@
 {
   "name": "genealogy-react",
-  "version": "1.0.28",
+  "version": "1.0.29",
   "main": "src/main/index.cjs",
   "type": "module",
   "description": "Генеалогическое приложение",
@@ -83,9 +83,6 @@
     },
     "mac": {
       "target": "dmg",
-      "arch": [
-        "arm64"
-      ],
       "icon": "build/icons/icon.icns",
       "identity": "Genealogy Self-Sign"
     },
