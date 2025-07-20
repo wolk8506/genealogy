@@ -68,33 +68,33 @@ jobs:
 
       - name: Find full installer (.exe)
         id: out-exe
-        shell: bash
+        shell: pwsh
         run: |
-          TAG=${GITHUB_REF#refs/tags/v}
-          FILE="dist_electron/Genealogy-Setup-${TAG}.exe"
-          echo "path=$FILE" >> $GITHUB_OUTPUT
+          $tag = $env:GITHUB_REF -replace 'refs/tags/v',''
+          $file = Get-ChildItem dist_electron -Filter "*$tag.exe"
+          Write-Output "path=$($file.FullName)" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
 
       - name: Find latest.yml
         id: out-yml
-        shell: bash
+        shell: pwsh
         run: |
-          echo "path=dist_electron/latest.yml" >> $GITHUB_OUTPUT
+          $file = Join-Path $PWD 'dist_electron\latest.yml'
+          Write-Output "path=$file" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
 
       - name: Find blockmap
         id: out-block
-        shell: bash
+        shell: pwsh
         run: |
-          TAG=${GITHUB_REF#refs/tags/v}
-          FILE=$(ls dist_electron/*.blockmap)
-          echo "path=$FILE" >> $GITHUB_OUTPUT
+          $file = Get-ChildItem dist_electron -Filter '*.blockmap'
+          Write-Output "path=$($file.FullName)" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
 
       - name: Zip nsis-web stub & deltas
         id: out-stub
-        shell: bash
+        shell: pwsh
         run: |
-          cd dist_electron
-          zip -r stub.zip nsis-web
-          echo "path=$(pwd)/dist_electron/stub.zip" >> $GITHUB_OUTPUT
+          Compress-Archive -LiteralPath 'dist_electron\nsis-web\*' -DestinationPath 'dist_electron\stub.zip'
+          $zip = Join-Path $PWD 'dist_electron\stub.zip'
+          Write-Output "path=$zip" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
 
       - name: Upload windows-build
         uses: actions/upload-artifact@v4
