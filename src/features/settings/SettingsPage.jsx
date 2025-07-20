@@ -13,6 +13,8 @@ import {
   Switch,
   Radio,
   Button,
+  Alert,
+  LinearProgress,
 } from "@mui/material";
 import Brightness4Icon from "@mui/icons-material/Brightness4";
 import { Backdrop, CircularProgress } from "@mui/material";
@@ -26,6 +28,10 @@ import InfoIcon from "@mui/icons-material/Info";
 import SettingsIcon from "@mui/icons-material/Settings";
 import SaveIcon from "@mui/icons-material/Save";
 import ErrorIcon from "@mui/icons-material/Error";
+
+import { ListItemSecondaryAction } from "@mui/material";
+
+import CloudDownloadIcon from "@mui/icons-material/CloudDownload";
 
 import { ThemeContext } from "../../context/ThemeContext.cjs";
 import JSZip from "jszip";
@@ -62,6 +68,53 @@ export default function SettingsPage() {
   const [exportStatus, setExportStatus] = useState("Подготовка архива...");
   const [exportError, setExportError] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
+
+  const [updateInfo, setUpdateInfo] = useState(null);
+  const [progress2, setProgress2] = useState(0);
+  const [downloaded, setDownloaded] = useState(false);
+  const [filePath, setFilePath] = useState("");
+
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    // подписываемся на канал ошибки
+    window.updater.onError((msg) => setError(msg));
+    return () => {
+      window.updater.removeAllListeners?.("update:error");
+    };
+  }, []);
+
+  const handleRetry = () => {
+    setError(null);
+    onDownload(updateInfo);
+  };
+
+  useEffect(() => {
+    // 1) Запросить проверку
+    window.updater.check();
+
+    // 2) Подписаться на ответ
+    window.updater.onAvailable((info) => {
+      console.log("👀 Update available:", info);
+      setUpdateInfo(info);
+    });
+
+    // 3) Подписаться на прогресс
+    window.updater.onProgress((pct) => {
+      console.log("📊 Progress:", pct);
+      setProgress(pct);
+    });
+
+    // 4) Подписаться на завершение
+    window.updater.onDownloaded((path) => {
+      console.log("✅ Downloaded to:", path);
+      setDownloaded(true);
+      setFilePath(path);
+    });
+
+    // 5) Снять все подписки при unmount
+    return () => window.updater.removeAll();
+  }, []);
 
   useEffect(() => {
     window.appAPI?.getVersion?.().then(setVersion);
@@ -552,13 +605,6 @@ export default function SettingsPage() {
             </List>
           </Paper>
           <List>
-            {/* <ListItem button="true" onClick={() => dispatch(toggleTheme())}>
-              <ListItemIcon>
-                <Brightness4Icon />
-              </ListItemIcon>
-              <ListItemText primary="Переключить тему" />
-            </ListItem> */}
-
             <Tooltip title={size ? `Размер: ${size} MB` : "Загрузка..."} arrow>
               <ListItem button="true" onClick={handleOpenFolder}>
                 <ListItemIcon>
@@ -608,6 +654,129 @@ export default function SettingsPage() {
                 secondary={`Платформа: ${platform || "неизвестно"}`}
               />
             </ListItem>
+
+            {/* Ошибка */}
+            {error && (
+              <ListItem>
+                <ListItemIcon>
+                  {/* Можно выбрать иконку ошибки */}
+                  <InfoIcon color="error" />
+                </ListItemIcon>
+                <ListItemText
+                  primary={
+                    <Alert severity="error">
+                      Ошибка загрузки: {error}
+                      <Button
+                        color="inherit"
+                        size="small"
+                        onClick={handleRetry}
+                        sx={{ ml: 2 }}
+                      >
+                        Повторить
+                      </Button>
+                    </Alert>
+                  }
+                />
+              </ListItem>
+            )}
+
+            {/* Проверка обновлений */}
+            {!updateInfo && !error && (
+              <ListItem>
+                <ListItemIcon>
+                  <InfoIcon />
+                </ListItemIcon>
+                <ListItemText
+                  primary="Проверяю обновления…"
+                  secondary={
+                    <Box mt={2} sx={{ width: "100%" }}>
+                      <LinearProgress />
+                    </Box>
+                  }
+                />
+              </ListItem>
+            )}
+
+            {updateInfo && !downloaded && (
+              <ListItem>
+                <ListItemIcon>
+                  <CloudDownloadIcon />
+                </ListItemIcon>
+                {updateInfo?.version === version ? (
+                  <ListItemText
+                    primary={`Найдена версия ${updateInfo?.version}`}
+                    secondary={"Обновление не требуется"}
+                  />
+                ) : (
+                  <ListItemText
+                    primary={`Найдена версия ${updateInfo?.version}`}
+                    secondary={
+                      progress > 0 ? (
+                        `Загрузка: ${progress}%`
+                      ) : (
+                        <Button
+                          // variant="contained"
+                          color="primary"
+                          size="small"
+                          onClick={() => {
+                            console.log("👆 Download click, info:", updateInfo);
+                            window.updater.download(updateInfo);
+                          }}
+                        >
+                          Скачать
+                        </Button>
+                      )
+                    }
+                  />
+                )}
+              </ListItem>
+            )}
+
+            {downloaded && (
+              <ListItem>
+                <ListItemIcon>
+                  <CheckCircleIcon color="success" />
+                </ListItemIcon>
+                <ListItemText
+                  primary="Обновление загружено"
+                  secondary={
+                    <Button
+                      // variant="contained"
+                      color="primary"
+                      size="small"
+                      onClick={() => window.updater.install(filePath)}
+                    >
+                      Установить
+                    </Button>
+                  }
+                />
+              </ListItem>
+            )}
+
+            {/* <div>
+              {!updateInfo && <p>Проверяю обновления…</p>}
+
+              {updateInfo && !downloaded && (
+                <>
+                  <p>Найдена версия {updateInfo.version}</p>
+                  <button
+                    onClick={() => {
+                      console.log("👆 Download click, info:", updateInfo);
+                      window.updater.download(updateInfo);
+                    }}
+                  >
+                    Скачать
+                  </button>
+                  {progress > 0 && <p>Загрузка: {progress}%</p>}
+                </>
+              )}
+
+              {downloaded && (
+                <p>
+                  Готово! Файл загружен: <code>{filePath}</code>
+                </p>
+              )}
+            </div> */}
             <ListItem>
               <ListItemIcon>
                 <SettingsIcon />

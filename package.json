@@ -1,6 +1,6 @@
 {
   "name": "genealogy-react",
-  "version": "1.0.8",
+  "version": "1.0.12",
   "main": "src/main/index.cjs",
   "type": "module",
   "description": "Генеалогическое приложение",
@@ -24,7 +24,9 @@
     "buffer": "^6.0.3",
     "dayjs": "^1.11.13",
     "electron-store": "^10.1.0",
+    "electron-updater": "^6.6.2",
     "file-saver": "^2.0.5",
+    "follow-redirects": "^1.15.9",
     "heic2any": "^0.0.4",
     "html-to-image": "^1.11.13",
     "image-size": "^2.0.2",
@@ -52,6 +54,13 @@
   "build": {
     "appId": "com.nebula9371.genealogy",
     "productName": "Genealogy",
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "wolk8506",
+        "repo": "genealogy"
+      }
+    ],
     "icon": "build/icons/icon",
     "directories": {
       "buildResources": "assets",
@@ -74,7 +83,10 @@
       "identity": "Genealogy Self-Sign"
     },
     "win": {
-      "target": "nsis",
+      "target": [
+        "nsis",
+        "nsis-web"
+      ],
       "icon": "build/icons/icon.ico"
     },
     "linux": {
