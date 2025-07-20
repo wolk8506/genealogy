@@ -67,7 +67,6 @@
     ],
     "icon": "build/icons/icon",
     "directories": {
-      "buildResources": "assets",
       "output": "dist_electron"
     },
     "files": [

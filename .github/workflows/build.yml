@@ -1,39 +1,84 @@
-name: Build Windows App
+name: Build Electron App (mac / win / linux)
 
 on:
   push:
     branches: [main]
 
 jobs:
-  build:
-    runs-on: windows-latest
+  #  ────────────────────────────────────────────────
+  build-mac:
+    name: Build macOS .dmg
+    runs-on: macos-latest
 
     steps:
-      - name: 📥 Checkout repository
-        uses: actions/checkout@v3
-
-      - name: 🧰 Setup Node.js
-        uses: actions/setup-node@v3
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
         with:
           node-version: 18
 
-      - name: 📦 Install dependencies
+      - name: Install deps
         run: npm ci
 
-      - name: 🛠️ Build React + Electron
-        run: |
-          npm run build       # собираем фронт
-          npm run dist:win    # electron-builder для Windows
+      - name: Build React
+        run: npm run build:react
 
-      - name: 📁 List dist_electron contents
-        run: dir dist_electron
+      - name: Build DMG
+        run: npm run dist:mac
 
-      - name: 📤 Upload Windows build artifacts
+      - name: Upload macOS artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-build
+          path: dist_electron/**
+
+  #  ────────────────────────────────────────────────
+  build-windows:
+    name: Build Windows .exe + latest.yml + blockmap
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Build React
+        run: npm run build:react
+
+      - name: Build Windows installer
+        run: npm run dist:win
+
+      - name: Upload Windows artifact
         uses: actions/upload-artifact@v4
         with:
           name: windows-build
-          path: |
-            dist_electron/*.exe
-            dist_electron/latest.yml
-            dist_electron/*.blockmap
-            dist_electron/nsis-web/**/*
+          path: dist_electron/**
+
+  #  ────────────────────────────────────────────────
+  build-linux:
+    name: Build Linux AppImage
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Build React
+        run: npm run build:react
+
+      - name: Build AppImage
+        run: npm run dist:linux
+
+      - name: Upload Linux artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-build
+          path: dist_electron/**
