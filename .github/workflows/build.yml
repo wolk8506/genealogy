@@ -159,7 +159,6 @@ jobs:
           release_name: "v${{ env.VERSION }}"
           draft: false
           prerelease: false
-          allow_updates: true
 
       - name: Upload Windows full installer
         uses: actions/upload-release-asset@v1
@@ -197,6 +196,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create-release.outputs.upload_url }}
-          asset_path: artifacts/linux/dist_electron/*.AppImage
+          asset_path: artifacts/linux/*.AppImage
           asset_name: "Genealogy-${{ env.VERSION }}.AppImage"
           asset_content_type: application/octet-stream
