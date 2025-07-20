@@ -1,6 +1,6 @@
 {
   "name": "genealogy-react",
-  "version": "1.0.20",
+  "version": "1.0.21",
   "main": "src/main/index.cjs",
   "type": "module",
   "description": "Генеалогическое приложение",

@@ -6,6 +6,9 @@ on:
     tags:
       - "v*"
 
+permissions:
+  contents: write
+
 jobs:
   # ──────────────────────────────────────────────────
   build-mac:
@@ -113,17 +116,17 @@ jobs:
   # ──────────────────────────────────────────────────
   release:
     name: Create GitHub Release and upload assets
-    needs: [build-mac, build-win, build-linux]
     runs-on: ubuntu-latest
+    needs: [build-mac, build-win, build-linux]
+    permissions:
+      contents: write
+
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
       - name: Get version
         id: get-version
-        run: |
-          VERSION=$(node -p 'require("./package.json").version')
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
+        run: echo "VERSION=$(node -p 'require(\"./package.json\").version')" >> $GITHUB_ENV
 
       - name: Download macOS build
         uses: actions/download-artifact@v4
@@ -153,16 +156,6 @@ jobs:
           release_name: "v${{ env.VERSION }}"
           draft: false
           prerelease: false
-
-      - name: Upload macOS .dmg
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create-release.outputs.upload_url }}
-          asset_path: artifacts/macos/dist_electron/*.dmg
-          asset_name: "Genealogy-${{ env.VERSION }}.dmg"
-          asset_content_type: application/octet-stream
 
       - name: Upload Windows full installer
         uses: actions/upload-release-asset@v1
