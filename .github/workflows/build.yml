@@ -192,6 +192,16 @@ jobs:
           asset_name: latest.yml
           asset_content_type: application/x-yaml
 
+      - name: Upload macOS .dmg
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create-release.outputs.upload_url }}
+          asset_path: artifacts/macos/Genealogy-${{ env.VERSION }}.dmg
+          asset_name: "Genealogy-${{ env.VERSION }}.dmg"
+          asset_content_type: application/octet-stream
+
       - name: Upload Linux AppImage
         uses: actions/upload-release-asset@v1
         env:
