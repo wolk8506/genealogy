@@ -17,25 +17,23 @@ jobs:
         with:
           node-version: 18
 
-      - name: 📦 Install dependencies (legacy mode)
-        run: npm install --legacy-peer-deps
+      - name: 📦 Install dependencies
+        run: npm ci
 
-      - name: 🔧 Disable auto-publish to GitHub Releases
+      - name: 🛠️ Build React + Electron
         run: |
-          node -e "const fs=require('fs');let p=JSON.parse(fs.readFileSync('package.json'));p.build=p.build||{};p.build.publish=null;fs.writeFileSync('package.json',JSON.stringify(p,null,2));"
+          npm run build       # собираем фронт
+          npm run dist:win    # electron-builder для Windows
 
-      - name: 🛠️ Build app (React + Electron)
-        run: npm run build
-
-      - name: 🛠️ Запуск electron-builder для Windows
-        run: npm run dist:win
+      - name: 📁 List dist_electron contents
+        run: dir dist_electron
 
       - name: 📤 Upload Windows build artifacts
         uses: actions/upload-artifact@v4
         with:
           name: windows-build
           path: |
-            dist/*.exe
-            dist/*.yml
-            dist/*.blockmap
-            dist/*.zip
+            dist_electron/*.exe
+            dist_electron/latest.yml
+            dist_electron/*.blockmap
+            dist_electron/nsis-web/**/*
