@@ -125,19 +125,19 @@ jobs:
           echo "VERSION=$(node -p \"require('./package.json').version\")" >> $GITHUB_ENV
 
       - name: Download macOS build
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: macos-build
           path: artifacts/macos
 
       - name: Download Windows build
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: windows-build
           path: artifacts/windows
 
       - name: Download Linux build
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: linux-build
           path: artifacts/linux
