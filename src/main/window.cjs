@@ -22,6 +22,7 @@ function createWindow() {
   } else {
     win.loadFile(path.join(__dirname, "../../dist/index.html"));
   }
+  return win;
 }
 
 module.exports = { createWindow };

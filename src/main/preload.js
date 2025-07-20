@@ -194,3 +194,28 @@ contextBridge.exposeInMainWorld("electron", {
     removeAllListeners: (...args) => ipcRenderer.removeAllListeners(...args),
   },
 });
+
+// Обновление
+
+contextBridge.exposeInMainWorld("updater", {
+  onAppUpdate: (cb) =>
+    ipcRenderer.on("app:update-available", (_e, info) => cb(info)),
+
+  check: () => ipcRenderer.send("update:check"),
+  install: (filePath) => ipcRenderer.send("update:install", filePath),
+  download: (info) => ipcRenderer.send("update:download", info),
+  onError: (cb) => ipcRenderer.on("update:error", (_e, msg) => cb(msg)),
+
+  onAvailable: (cb) =>
+    ipcRenderer.on("update:available", (_e, info) => cb(info)),
+  onProgress: (cb) =>
+    ipcRenderer.on("update:progress", (_e, percent) => cb(percent)),
+  onDownloaded: (cb) =>
+    ipcRenderer.on("update:downloaded", (_e, filePath) => cb(filePath)),
+  removeAll: () => {
+    ipcRenderer.removeAllListeners("update:available");
+    ipcRenderer.removeAllListeners("update:progress");
+    ipcRenderer.removeAllListeners("update:downloaded");
+    ipcRenderer.removeAllListeners("app:update-available");
+  },
+});

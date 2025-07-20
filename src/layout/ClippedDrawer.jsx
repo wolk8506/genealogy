@@ -34,6 +34,7 @@ import InfoIcon from "@mui/icons-material/Info";
 import AboutPage from "../features/settings/AboutPage";
 import ArchivedPeoplePage from "../features/people/ArchivedPeoplePage";
 import ArchiveIcon from "@mui/icons-material/Archive";
+import { UpdateBanner } from "../features/people/UpdateBanner";
 
 const drawerItems = [
   { text: "Главная", icon: <GroupIcon />, path: "/" },
@@ -267,6 +268,7 @@ export default function ClippedDrawer() {
       </Drawer>
       <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
         <DrawerHeader />
+        <UpdateBanner onOpenSettings={() => navigate("/settings")} />
         <Routes>
           <Route path="/" element={<PeopleListPage />} />
           <Route path="/add" element={<AddPersonPage />} />
