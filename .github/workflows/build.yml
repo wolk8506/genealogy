@@ -160,6 +160,7 @@ jobs:
           release_name: "v${{ env.VERSION }}"
           draft: false
           prerelease: false
+          allow_updates: true
 
       - name: Upload Windows full installer
         uses: actions/upload-release-asset@v1
@@ -167,7 +168,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create-release.outputs.upload_url }}
-          asset_path: artifacts/windows/dist_electron/Genealogy-Setup-${{ env.VERSION }}.exe
+          asset_path: artifacts/windows/Genealogy-Setup-${{ env.VERSION }}.exe
           asset_name: "Genealogy-Setup-${{ env.VERSION }}.exe"
           asset_content_type: application/octet-stream
 
@@ -177,7 +178,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create-release.outputs.upload_url }}
-          asset_path: artifacts/windows/dist_electron/Genealogy-Setup-${{ env.VERSION }}.exe.blockmap
+          asset_path: artifacts/windows/Genealogy-Setup-${{ env.VERSION }}.exe.blockmap
           asset_name: "Genealogy-Setup-${{ env.VERSION }}.exe.blockmap"
           asset_content_type: application/octet-stream
 
@@ -187,7 +188,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create-release.outputs.upload_url }}
-          asset_path: artifacts/windows/dist_electron/latest.yml
+          asset_path: artifacts/windows/latest.yml
           asset_name: latest.yml
           asset_content_type: application/x-yaml
 
