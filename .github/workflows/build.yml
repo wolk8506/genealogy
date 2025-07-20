@@ -16,8 +16,8 @@ jobs:
         with:
           node-version: 18
 
-      - name: Install deps
-        run: npm ci
+      - name: 📦 Install dependencies (legacy mode)
+        run: npm install --legacy-peer-deps
 
       - name: Build React
         run: npm run build:react
@@ -42,8 +42,8 @@ jobs:
         with:
           node-version: 18
 
-      - name: Install deps
-        run: npm ci
+      - name: 📦 Install dependencies (legacy mode)
+        run: npm install --legacy-peer-deps
 
       - name: Build React
         run: npm run build:react
@@ -68,8 +68,8 @@ jobs:
         with:
           node-version: 18
 
-      - name: Install deps
-        run: npm ci
+      - name: 📦 Install dependencies (legacy mode)
+        run: npm install --legacy-peer-deps
 
       - name: Build React
         run: npm run build:react
