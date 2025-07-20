@@ -192,6 +192,8 @@ jobs:
           asset_name: latest.yml
           asset_content_type: application/x-yaml
 
+      # ──────────────────────────────────────────────────
+
       - name: Upload macOS .dmg
         uses: actions/upload-release-asset@v1
         env:
@@ -202,6 +204,28 @@ jobs:
           asset_name: "Genealogy-${{ env.VERSION }}.dmg"
           asset_content_type: application/octet-stream
 
+      - name: Upload macOS .blockmap
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create-release.outputs.upload_url }}
+          asset_path: artifacts/macos/Genealogy-${{ env.VERSION }}.dmg.blockmap
+          asset_name: "Genealogy-${{ env.VERSION }}.dmg.blockmap"
+          asset_content_type: application/octet-stream
+
+      - name: Upload macOS .yml
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create-release.outputs.upload_url }}
+          asset_path: artifacts/macos/latest-mac.yml
+          asset_name: latest-mac.yml
+          asset_content_type: application/x-yaml
+
+      # ──────────────────────────────────────────────────
+
       - name: Upload Linux AppImage
         uses: actions/upload-release-asset@v1
         env:
@@ -211,3 +235,13 @@ jobs:
           asset_path: artifacts/linux/Genealogy-${{ env.VERSION }}.AppImage
           asset_name: "Genealogy-${{ env.VERSION }}.AppImage"
           asset_content_type: application/octet-stream
+
+      - name: Upload Linux .yml
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create-release.outputs.upload_url }}
+          asset_path: artifacts/linux/latest-linux.yml
+          asset_name: latest-linux.yml
+          asset_content_type: application/x-yaml
