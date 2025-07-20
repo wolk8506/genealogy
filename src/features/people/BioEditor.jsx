@@ -44,8 +44,6 @@ export default function BioEditor({ personId, value, onChange }) {
         insertImageCommand,
         commands.checkedListCommand,
         commands.divider,
-        // commands.undo,
-        // commands.redo,
       ]}
     />
   );
