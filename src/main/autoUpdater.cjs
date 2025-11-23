@@ -1,4 +1,5 @@
-const { ipcMain, app, shell } = require("electron");
+const { ipcMain, app, shell, BrowserWindow } = require("electron");
+
 const { autoUpdater } = require("electron-updater");
 const path = require("path");
 const fs = require("fs");
@@ -190,5 +191,32 @@ function setupAutoUpdater(win) {
     else console.log("🧼 старые загрузки удалены");
   });
 }
+
+ipcMain.on("trigger-update-check", () => {
+  const win = BrowserWindow.getAllWindows()[0]; // Получаем активное окно
+
+  autoUpdater.once("update-available", (info) => {
+    win.webContents.send("update:manual-check-result", {
+      status: "available",
+      version: info.version,
+    });
+  });
+
+  autoUpdater.once("update-not-available", () => {
+    win.webContents.send("update:manual-check-result", {
+      status: "up-to-date",
+      version: app.getVersion(),
+    });
+  });
+
+  autoUpdater.once("error", (err) => {
+    win.webContents.send("update:manual-check-result", {
+      status: "error",
+      message: err.message,
+    });
+  });
+
+  autoUpdater.checkForUpdates();
+});
 
 module.exports = { setupAutoUpdater };

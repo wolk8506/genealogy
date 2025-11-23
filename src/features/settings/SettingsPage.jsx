@@ -70,7 +70,7 @@ export default function SettingsPage() {
   const [confirmOpen, setConfirmOpen] = useState(false);
 
   const [updateInfo, setUpdateInfo] = useState(null);
-  const [progress2, setProgress2] = useState(0);
+  const [progressArhive, setProgressArhive] = useState(0);
   const [downloaded, setDownloaded] = useState(false);
   const [filePath, setFilePath] = useState("");
 
@@ -149,7 +149,7 @@ export default function SettingsPage() {
     setConfirmOpen(false);
     setIsSaving(true);
     setSaveDone(false);
-    setProgress(0);
+    setProgressArhive(0);
     setExportError(false);
     setExportStatus("Подготовка архива...");
 
@@ -158,7 +158,7 @@ export default function SettingsPage() {
       const archivePath = await exportPeopleToZip({
         people: allPeople,
         filename: `Genealogy_all_${Date.now()}.zip`,
-        onProgress: setProgress,
+        onProgress: setProgressArhive,
         onStatus: setExportStatus,
         onError: (msg) => {
           setExportStatus(msg);
@@ -173,7 +173,7 @@ export default function SettingsPage() {
       setTimeout(() => {
         setIsSaving(false);
         setSaveDone(false);
-        setProgress(0);
+        setProgressArhive(0);
       }, 1500);
     } catch (err) {
       setExportStatus(`❌ Ошибка: ${err.message || "Неизвестно"}`);
@@ -489,7 +489,7 @@ export default function SettingsPage() {
             <CircularProgress color="inherit" />
             <Box mt={2}>
               <Typography variant="h6" color="inherit">
-                {exportStatus} {progress > 0 && `${progress}%`}
+                {exportStatus} {progressArhive > 0 && `${progressArhive}%`}
               </Typography>
             </Box>
           </>
@@ -501,7 +501,7 @@ export default function SettingsPage() {
               setIsSaving(false);
               setExportError(false);
               setExportStatus("");
-              setProgress(0);
+              setProgressArhive(0);
             }}
             sx={{ mt: 2 }}
           >
@@ -529,14 +529,14 @@ export default function SettingsPage() {
         </Box>
       </Backdrop>
 
-      <Typography
+      {/* <Typography
         variant="h4"
         gutterBottom
         sx={{ display: "flex", alignItems: "center" }}
       >
         <TuneIcon color="primary" fontSize="large" sx={{ marginRight: 0.5 }} />{" "}
         Настройки
-      </Typography>
+      </Typography> */}
       <Stack spacing={3}>
         <Paper elevation={2} sx={{ p: 2, borderRadius: 3 }}>
           <Typography variant="h6" gutterBottom>

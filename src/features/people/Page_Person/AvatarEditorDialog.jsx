@@ -19,7 +19,7 @@ import CancelIcon from "@mui/icons-material/Cancel";
 import ZoomInIcon from "@mui/icons-material/ZoomIn";
 import ZoomOutIcon from "@mui/icons-material/ZoomOut";
 import heic2any from "heic2any";
-import getCroppedImg from "./utils/cropImage";
+import getCroppedImg from "../utils/cropImage";
 import { Buffer } from "buffer";
 
 export default function AvatarEditorDialog({

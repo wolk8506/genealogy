@@ -77,6 +77,21 @@ const peopleItems = [
   { text: "Семейное дерево", icon: <AccountTreeIcon />, path: "familyTree" },
 ];
 
+// const scrollToSection = (id) => {
+//   const el = document.getElementById(id);
+//   if (el) {
+//     el.scrollIntoView({ behavior: "smooth" });
+//   }
+// };
+
+const scrollToSection = (id) => {
+  const el = document.getElementById(id);
+  if (el) {
+    const y = el.getBoundingClientRect().top + window.scrollY - 40; // смещение на 20px
+    window.scrollTo({ top: y, behavior: "smooth" });
+  }
+};
+
 const drawerWidth = 240;
 
 const openedMixin = (theme) => ({
@@ -166,31 +181,6 @@ export default function ClippedDrawer() {
 
   const [isLicenseOpen, setLicenseOpen] = useState(false);
   const { enqueueSnackbar } = useSnackbar();
-
-  const [activeSection, setActiveSection] = useState(null);
-  useEffect(() => {
-    const onScroll = () => {
-      peopleItems.forEach(({ path }) => {
-        const el = document.getElementById(path);
-        if (el) {
-          const rect = el.getBoundingClientRect();
-          if (rect.top <= 100 && rect.bottom >= 100) {
-            setActiveSection(path);
-          }
-        }
-      });
-    };
-    window.addEventListener("scroll", onScroll);
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
-
-  const scrollToSection = (id) => {
-    const el = document.getElementById(id);
-    if (el) {
-      const y = el.getBoundingClientRect().top + window.scrollY - 80; // смещение на 20px
-      window.scrollTo({ top: y, behavior: "smooth" });
-    }
-  };
   // Открывает лицензию
   useEffect(() => {
     window.electron.ipcRenderer.on("open-license-modal", () => {
@@ -426,33 +416,36 @@ export default function ClippedDrawer() {
             })}
           </List>
           <Divider />
-          {match &&
-            peopleItems.map(({ text, icon, path }) => {
-              const isActive = activeSection === path;
+          {match && (
+            <List>
+              {peopleItems.map(({ text, icon, path }, index) => {
+                // *** Изменения здесь ***
+                // 1. Проверяем точное совпадение пути
+                // let isActive = location.pathname === path;
 
-              return (
-                <ListItem key={text} disablePadding sx={{ display: "block" }}>
-                  <ListItemButton
-                    onClick={() => scrollToSection(path)}
-                    selected={isActive}
-                    sx={{
-                      "&.Mui-selected": {
-                        backgroundColor: theme.palette.action.selected,
-                        "& .MuiListItemIcon-root": {
-                          color: theme.palette.primary.main,
-                        },
-                        "& .MuiListItemText-primary": {
-                          color: theme.palette.primary.main,
-                        },
-                      },
-                    }}
-                  >
-                    <ListItemIcon>{icon}</ListItemIcon>
-                    <ListItemText primary={text} />
-                  </ListItemButton>
-                </ListItem>
-              );
-            })}
+                // 2. Если путь элемента меню - "/", и текущий путь соответствует /person/:id,
+                //    то делаем этот элемент активным. Используем !! для преобразования в boolean.
+                // if (path === "/" && matchPath("/person/:id", location.pathname)) {
+                //   isActive = true;
+                // }
+                // *** Конец изменений ***
+
+                return (
+                  <ListItem key={text} disablePadding sx={{ display: "block" }}>
+                    <ListItemButton
+                      // component={RouterLink}
+                      // to={path}
+                      onClick={() => scrollToSection(path)}
+                      // selected={isActive} // Теперь isActive точно boolean
+                    >
+                      <ListItemIcon>{icon}</ListItemIcon>
+                      <ListItemText primary={text} />
+                    </ListItemButton>
+                  </ListItem>
+                );
+              })}
+            </List>
+          )}
         </Drawer>
         <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
           <DrawerHeader />

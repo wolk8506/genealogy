@@ -32,7 +32,7 @@ import SupervisorAccountIcon from "@mui/icons-material/SupervisorAccount";
 import DeleteIcon from "@mui/icons-material/Delete";
 import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
 
-import appIcon from "../../img/app_icon.png";
+import appIcon from "../../../img/app_icon.png";
 
 import { Link } from "react-router-dom";
 
@@ -189,14 +189,14 @@ export default function PeopleListPage() {
   return (
     <>
       <Stack spacing={2}>
-        <Stack direction="row" alignItems="center">
+        {/* <Stack direction="row" alignItems="center">
           <PeopleAltIcon
             color="primary"
             fontSize="large"
             sx={{ marginRight: 1 }}
           />
           <Typography variant="h5">Список людей </Typography>
-        </Stack>
+        </Stack> */}
 
         <Paper
           elevation={1}
