@@ -36,7 +36,7 @@ import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
 import { Fab, Zoom } from "@mui/material";
 import FullscreenIcon from "@mui/icons-material/Fullscreen";
 import FullscreenExitIcon from "@mui/icons-material/FullscreenExit";
-import PhotoMetaDialog from "./PhotoMetaDialog";
+import PhotoMetaDialog from "../PhotoMetaDialog";
 
 // Преобразует datePhoto в timestamp, неподходящая строка → null
 const normalizePhotoDate = (dp) => {

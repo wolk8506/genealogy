@@ -191,17 +191,17 @@ export default function AddPersonPage() {
       >
         <Stack spacing={2}>
           {/* Header */}
-          <Stack direction="row" alignItems="center" spacing={1}>
+          {/* <Stack direction="row" alignItems="center" spacing={1}>
             <PersonAddAlt1Icon color="primary" fontSize="large" />
             <Typography variant="h5">Добавить человека</Typography>
-          </Stack>
+          </Stack> */}
 
           {error && <Alert severity="error">{error}</Alert>}
           {success && (
             <Alert severity="success">Человек успешно добавлен</Alert>
           )}
 
-          <Divider />
+          {/* <Divider /> */}
 
           {/* Personal info */}
           <Typography variant="subtitle1">Личные данные</Typography>

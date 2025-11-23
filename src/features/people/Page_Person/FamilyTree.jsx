@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect } from "react";
 import Tree from "react-d3-tree";
-import ExportableAvatar from "./utils/ExportableAvatar";
+import ExportableAvatar from "../utils/ExportableAvatar";
 
 import { useNavigate } from "react-router-dom";
 import { Stack } from "@mui/material";

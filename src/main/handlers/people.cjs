@@ -13,15 +13,14 @@ ipcMain.handle("people:saveAll", async (event, people) => {
 });
 
 ipcMain.handle("people:delete", async (event, id) => {
+  // Блок изменен для возможности удаления из архива человека, если еще что-то не будет работать нужно пересмотреть архитектуру
   const baseDir = path.join(app.getPath("documents"), "Genealogy");
   const peoplePath = path.join(baseDir, "genealogy-data.json");
-  //   const personDir = path.join(baseDir, "people", String(id));
+  const personDir = path.join(baseDir, "people", String(id)); // ← теперь путь корректный!
 
   try {
-    // Удаляем папку
     await fs.promises.rm(personDir, { recursive: true, force: true });
 
-    // Обновляем genealogy-data.json
     const content = await fs.promises.readFile(peoplePath, "utf-8");
     const people = JSON.parse(content);
     const updated = people.filter((p) => p.id !== id);

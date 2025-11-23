@@ -36,7 +36,7 @@ import PhotoUploadDialog from "./PhotoUploadDialog";
 import FilterListOffIcon from "@mui/icons-material/FilterListOff";
 import FilterListIcon from "@mui/icons-material/FilterList";
 import PhotoLibraryIcon from "@mui/icons-material/PhotoLibrary";
-import PhotoMetaDialog from "./PhotoMetaDialog";
+import PhotoMetaDialog from "../PhotoMetaDialog";
 
 // нормализация datePhoto → timestamp или null
 const normalizePhotoDate = (dp) => {

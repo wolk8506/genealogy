@@ -152,6 +152,7 @@ export default function ArchivePage() {
   };
 
   const handleDeleteForever = async (id) => {
+    console.log("DELETE", id);
     await window.peopleAPI.delete(id);
     await loadAll();
   };
@@ -159,10 +160,10 @@ export default function ArchivePage() {
   return (
     <Box sx={{ p: 3 }}>
       {/* Заголовок */}
-      <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 2 }}>
+      {/* <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 2 }}>
         <ArchiveIcon fontSize="large" color="primary" />
         <Typography variant="h4">Архив</Typography>
-      </Stack>
+      </Stack> */}
 
       {/* Tabs */}
       <Paper elevation={1} sx={{ mb: 2, borderRadius: 3 }}>

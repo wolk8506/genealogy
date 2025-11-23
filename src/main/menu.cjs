@@ -104,6 +104,20 @@ function buildMenuTemplate() {
             win.webContents.send("navigate", "/about");
           },
         },
+        {
+          label: "Лицензия",
+          click: () => {
+            const win = BrowserWindow.getAllWindows()[0];
+            win.webContents.send("open-license-modal");
+          },
+        },
+        {
+          label: "Проверить обновления",
+          click: () => {
+            const win = BrowserWindow.getAllWindows()[0];
+            win.webContents.send("check-for-updates");
+          },
+        },
       ],
     },
   ];
