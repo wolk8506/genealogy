@@ -112,6 +112,13 @@ function buildMenuTemplate() {
           },
         },
         {
+          label: "История версий",
+          click: () => {
+            const win = BrowserWindow.getAllWindows()[0];
+            win.webContents.send("open-changelog-modal");
+          },
+        },
+        {
           label: "Проверить обновления",
           click: () => {
             const win = BrowserWindow.getAllWindows()[0];

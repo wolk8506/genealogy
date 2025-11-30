@@ -9,7 +9,7 @@ import {
 } from "@mui/material";
 
 import ClippedDrawer from "../layout/ClippedDrawer";
-import { ThemeContext } from "../context/ThemeContext.cjs";
+import { ThemeContext } from "../theme/ThemeContext.cjs";
 
 export default function App() {
   const [mode, setMode] = useState("light"); // фактическая тема

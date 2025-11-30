@@ -5,8 +5,11 @@ const isDev = process.env.NODE_ENV === "development";
 
 function createWindow() {
   const win = new BrowserWindow({
-    width: 1000,
+    width: 1430,
     height: 700,
+    minWidth: 1430, // минимальная ширина
+    minHeight: 700, // минимальная высота
+    resizable: true, // окно остаётся изменяемым, но не меньше min*
     webPreferences: {
       preload: path.join(__dirname, "./preload.js"),
       contextIsolation: true,

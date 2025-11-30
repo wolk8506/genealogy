@@ -26,28 +26,29 @@ import {
 import { Routes, Route } from "react-router-dom"; // BrowserRouter обычно оборачивает App
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import SettingsPage from "../features/settings/SettingsPage";
-import AddPersonPage from "../features/people/ADDPersonPage";
+import SettingsPage from "../pages/Page_Settings/SettingsPage";
+import AddPersonPage from "../pages/Page_ADDPersonPage/ADDPersonPage";
 import TuneIcon from "@mui/icons-material/Tune";
 import PersonAddAlt1Icon from "@mui/icons-material/PersonAddAlt1";
 import GroupIcon from "@mui/icons-material/Group";
-import PersonPage from "../features/people/Page_Person/PersonPage";
-import PeopleListPage from "../features/people/Page_Main/PeopleListPage";
-import PhotoUploader from "../features/people/PhotoUploader";
+import PersonPage from "../pages/Page_Person/PersonPage";
+import PeopleListPage from "../pages/Page_Main/PeopleListPage";
+import PhotoUploader from "../pages/Page_PhotoUploader/PhotoUploader";
 import AddPhotoAlternateIcon from "@mui/icons-material/AddPhotoAlternate";
 import CollectionsIcon from "@mui/icons-material/Collections";
-import GlobalPhotoGallery from "../features/people/Page_GlobalPhotoGallery/GlobalPhotoGallery";
+import GlobalPhotoGallery from "../pages/Page_GlobalPhotoGallery/GlobalPhotoGallery";
 import InfoIcon from "@mui/icons-material/Info";
-import AboutPage from "../features/settings/AboutPage";
-import ArchivedPeoplePage from "../features/people/ArchivedPeoplePage";
+import AboutPage from "../pages/Page_About/AboutPage";
+import ArchivedPeoplePage from "../pages/Page_Archived/ArchivedPeoplePage";
 import ArchiveIcon from "@mui/icons-material/Archive";
-import { UpdateBanner } from "../features/people/UpdateBanner";
+import { UpdateBanner } from "../pages/Page_Settings/UpdateBanner";
 import AssignmentIcon from "@mui/icons-material/Assignment";
 import AccountTreeIcon from "@mui/icons-material/AccountTree";
 
 import LicenseModal from "./LicenseModal";
 import { useSnackbar } from "notistack";
 import NavigationButtons from "./NavigationButtons";
+import ChangelogModal from "./ChangelogModal";
 
 const drawerItems = [
   { text: "Люди", icon: <GroupIcon />, path: "/" },
@@ -159,6 +160,7 @@ const Drawer = styled(MuiDrawer, {
 
 export default function ClippedDrawer() {
   const theme = useTheme();
+  const isDark = theme.palette.mode === "dark";
   const [open, setOpen] = useState(false);
   const location = useLocation();
 
@@ -284,7 +286,7 @@ export default function ClippedDrawer() {
     pageTitle = (
       <Box sx={{ display: "flex", alignItems: "center" }}>
         <Box sx={{ display: "flex", alignItems: "center", mr: 2 }}>
-          <PersonIcon color="primary" />
+          <PersonIcon color={isDark ? "primary" : "prymary"} />
         </Box>
         <Typography variant="h6" noWrap>
           Карточка человека :: {name}
@@ -296,7 +298,7 @@ export default function ClippedDrawer() {
       <Box sx={{ display: "flex", alignItems: "center" }}>
         <Box sx={{ display: "flex", alignItems: "center", mr: 2 }}>
           {React.cloneElement(currentItem.icon, {
-            color: "primary",
+            color: isDark ? "primary" : "prymary",
             sx: { fontSize: 28 },
           })}
         </Box>
@@ -454,7 +456,7 @@ export default function ClippedDrawer() {
               );
             })}
         </Drawer>
-        <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
+        <Box component="main" sx={{ flexGrow: 1, pt: 1, pr: 3, pb: 3, pl: 3 }}>
           <DrawerHeader />
           <UpdateBanner onOpenSettings={() => navigate("/settings")} />
           <Routes>
@@ -476,6 +478,10 @@ export default function ClippedDrawer() {
       <LicenseModal
         open={isLicenseOpen}
         onClose={() => setLicenseOpen(false)}
+      />
+      <ChangelogModal
+      // open={isChangelogOpen}
+      // onClose={() => setChangelogOpen(false)}
       />
     </>
   );
