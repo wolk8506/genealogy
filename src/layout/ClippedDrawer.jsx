@@ -27,7 +27,7 @@ import { Routes, Route } from "react-router-dom"; // BrowserRouter обычно 
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import SettingsPage from "../pages/Page_Settings/SettingsPage";
-import AddPersonPage from "../pages/Page_ADDPersonPage/ADDPersonPage";
+import AddPersonPage from "../pages/Page_AddPersonPage/AddPersonPage";
 import TuneIcon from "@mui/icons-material/Tune";
 import PersonAddAlt1Icon from "@mui/icons-material/PersonAddAlt1";
 import GroupIcon from "@mui/icons-material/Group";
