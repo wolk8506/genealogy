@@ -5,7 +5,14 @@ import { store } from "./app/store";
 import App from "./app/App";
 import { HashRouter } from "react-router-dom";
 import { SnackbarProvider } from "notistack";
-import { setTheme } from "./features/theme/themeSlice";
+import { setTheme } from "./theme/themeSlice";
+
+import { LocalizationProvider } from "@mui/x-date-pickers";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import dayjs from "dayjs";
+import "dayjs/locale/ru";
+
+dayjs.locale("ru"); // активируем русскую локаль
 
 async function bootstrap() {
   // Загружаем тему из настроек
@@ -25,7 +32,10 @@ async function bootstrap() {
     <Provider store={store}>
       <HashRouter>
         <SnackbarProvider maxSnack={3} autoHideDuration={3000}>
-          <App />
+          <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="ru">
+            {" "}
+            <App />
+          </LocalizationProvider>
         </SnackbarProvider>
       </HashRouter>
     </Provider>

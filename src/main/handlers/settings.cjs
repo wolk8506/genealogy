@@ -7,15 +7,6 @@ module.exports = (store) => {
   ipcMain.handle("settings:set", (_, key, value) => store.set(key, value));
 };
 
-// IPC: сохранение темы
-// ipcMain.handle("settings:get", (event, key) => {
-//   return store.get(key);
-// });
-
-// ipcMain.handle("settings:set", (event, key, value) => {
-//   store.set(key, value);
-// });
-
 ipcMain.handle("get-system-theme", () => {
   return nativeTheme.shouldUseDarkColors ? "dark" : "light";
 });

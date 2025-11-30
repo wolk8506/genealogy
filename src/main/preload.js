@@ -25,6 +25,11 @@ contextBridge.exposeInMainWorld("navigationAPI", {
     });
   },
 });
+contextBridge.exposeInMainWorld("changelogAPI", {
+  read: () => ipcRenderer.invoke("changelog:read"),
+  onOpen: (callback) =>
+    ipcRenderer.on("open-changelog-modal", () => callback()),
+});
 
 // 👤 Люди ✅
 contextBridge.exposeInMainWorld("peopleAPI", {
