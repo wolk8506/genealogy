@@ -21,7 +21,13 @@ export default function ChangelogModal() {
   }, []);
 
   return (
-    <Dialog open={open} onClose={() => setOpen(false)} maxWidth="md" fullWidth>
+    <Dialog
+      open={open}
+      onClose={() => setOpen(false)}
+      maxWidth="md"
+      PaperProps={{ sx: { borderRadius: "15px" } }}
+      fullWidth
+    >
       <DialogTitle>История версий</DialogTitle>
       <DialogContent dividers>
         <Typography

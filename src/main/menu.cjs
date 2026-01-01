@@ -119,6 +119,13 @@ function buildMenuTemplate() {
           },
         },
         {
+          label: "Руководство пользователя",
+          click: () => {
+            const win = BrowserWindow.getAllWindows()[0];
+            win.webContents.send("open-userGuide-modal");
+          },
+        },
+        {
           label: "Проверить обновления",
           click: () => {
             const win = BrowserWindow.getAllWindows()[0];

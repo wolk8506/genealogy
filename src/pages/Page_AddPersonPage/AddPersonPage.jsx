@@ -12,6 +12,7 @@ import {
   Autocomplete,
 } from "@mui/material";
 import CustomDatePickerDialog from "../../components/CustomDatePickerDialog";
+import { AddBanner } from "./AddBanner";
 
 export default function AddPersonPage() {
   const [allPeople, setAllPeople] = useState([]);
@@ -36,6 +37,7 @@ export default function AddPersonPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const idPrefixRef = useRef("");
+  const [newPerson, setNewPerson] = useState(null);
 
   useEffect(() => {
     window.peopleAPI.getAll().then(setAllPeople);
@@ -94,6 +96,8 @@ export default function AddPersonPage() {
 
     // формируем новый объект человека
     const newId = generateId(genNum);
+    const now = new Date().toISOString();
+
     const newPerson = {
       id: newId,
       gender,
@@ -113,23 +117,28 @@ export default function AddPersonPage() {
       spouse: spouse.map((p) => p.id),
       children: children.map((p) => p.id),
       about: [],
+      createdAt: now,
+      editedAt: now,
     };
 
-    // клонируем всех, добавляем нового
     const all = allPeople.map((p) => ({ ...p }));
     all.push(newPerson);
+    setNewPerson(newPerson);
 
     // 1) родители ← добавляем ребёнка
     if (newPerson.father) {
       const par = all.find((p) => p.id === newPerson.father);
       if (par && !(par.children || []).includes(newId)) {
         par.children = [...(par.children || []), newId];
+        par.editedAt = now; // ✅ обновляем дату
       }
     }
+
     if (newPerson.mother) {
       const par = all.find((p) => p.id === newPerson.mother);
       if (par && !(par.children || []).includes(newId)) {
         par.children = [...(par.children || []), newId];
+        par.editedAt = now; // ✅ обновляем дату
       }
     }
 
@@ -139,6 +148,7 @@ export default function AddPersonPage() {
       if (ch) {
         if (gender === "male") ch.father = newId;
         if (gender === "female") ch.mother = newId;
+        ch.editedAt = now; // ✅ обновляем дату
       }
     });
 
@@ -147,6 +157,7 @@ export default function AddPersonPage() {
       const sp = all.find((p) => p.id === sid);
       if (sp && !(sp.spouse || []).includes(newId)) {
         sp.spouse = [...(sp.spouse || []), newId];
+        sp.editedAt = now; // ✅ обновляем дату
       }
     });
 
@@ -155,10 +166,10 @@ export default function AddPersonPage() {
       const sib = all.find((p) => p.id === bid);
       if (sib && !(sib.siblings || []).includes(newId)) {
         sib.siblings = [...(sib.siblings || []), newId];
+        sib.editedAt = now; // ✅ обновляем дату
       }
     });
 
-    // сохраняем весь массив
     await window.peopleAPI.saveAll(all);
     setSuccess(true);
     setAllPeople(all);
@@ -194,9 +205,9 @@ export default function AddPersonPage() {
       >
         <Stack spacing={2}>
           {error && <Alert severity="error">{error}</Alert>}
-          {success && (
+          {/* {success && (
             <Alert severity="success">Человек успешно добавлен</Alert>
-          )}
+          )} */}
 
           {/* <Divider /> */}
 
@@ -374,6 +385,8 @@ export default function AddPersonPage() {
           </Button>
         </Stack>
       </Paper>
+
+      <AddBanner isOpen={success} newPerson={newPerson} />
     </>
   );
 }

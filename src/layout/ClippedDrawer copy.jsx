@@ -44,7 +44,6 @@ import ArchiveIcon from "@mui/icons-material/Archive";
 import { UpdateBanner } from "../pages/Page_Settings/UpdateBanner";
 import AssignmentIcon from "@mui/icons-material/Assignment";
 import AccountTreeIcon from "@mui/icons-material/AccountTree";
-import Badge from "@mui/material/Badge";
 
 import LicenseModal from "./LicenseModal";
 import { useSnackbar } from "notistack";
@@ -262,22 +261,6 @@ export default function ClippedDrawer() {
   };
 
   // ------------------------------------------------------
-  // Подсчет новых изменений для Badge
-  const [changesCount, setChangesCount] = useState(0);
-
-  useEffect(() => {
-    window.peopleAPI.getAll().then((data) => {
-      const lastVisit = localStorage.getItem("lastVisitPeoplePage");
-      const lastVisitTime = lastVisit ? new Date(lastVisit).getTime() : 0;
-      const count = data.filter((p) => {
-        const created = new Date(p.createdAt).getTime();
-        const edited = new Date(p.editedAt).getTime();
-        return created > lastVisitTime || edited > lastVisitTime;
-      }).length;
-      setChangesCount(count);
-    });
-  }, [location.pathname]); // пересчитываем при смене маршрута
-  // ------------------------------------------------------
   const [person, setPerson] = useState(null);
   const match = matchPath("/person/:id", location.pathname);
   const id = Number(match?.params?.id);
@@ -426,14 +409,7 @@ export default function ClippedDrawer() {
                             },
                       ]}
                     >
-                      {/* {icon} */}
-                      {path === "/" ? (
-                        <Badge badgeContent={changesCount} color="secondary">
-                          <PersonIcon />
-                        </Badge>
-                      ) : (
-                        icon
-                      )}
+                      {icon}
                     </ListItemIcon>
                     <ListItemText
                       primary={text}

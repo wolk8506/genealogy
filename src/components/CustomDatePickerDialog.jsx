@@ -204,7 +204,7 @@ export default function CustomDatePickerDialog({
       <DialogActions sx={{ pr: "24px", pl: "24px" }}>
         <Button onClick={onClose}>Отмена</Button>
         <Button variant="contained" onClick={handleSave}>
-          Сохранить
+          Применить
         </Button>
       </DialogActions>
     </Dialog>

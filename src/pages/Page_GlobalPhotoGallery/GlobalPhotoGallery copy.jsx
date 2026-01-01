@@ -1,4 +1,3 @@
-// GlobalPhotoGallery.jsx
 import React, {
   useEffect,
   useState,
@@ -6,6 +5,7 @@ import React, {
   useRef,
   useCallback,
 } from "react";
+
 import {
   Box,
   Stack,
@@ -16,9 +16,12 @@ import {
   Select,
   MenuItem,
   Button,
+  ImageList,
   ImageListItem,
   IconButton,
   Typography,
+  ToggleButton,
+  ToggleButtonGroup,
   CircularProgress,
   Dialog,
   DialogContent,
@@ -27,7 +30,9 @@ import {
   Fab,
   Zoom,
 } from "@mui/material";
+
 import { useTheme } from "@mui/material/styles";
+
 import CloseIcon from "@mui/icons-material/Close";
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
 import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
@@ -41,10 +46,7 @@ import PhotoLibraryIcon from "@mui/icons-material/PhotoLibrary";
 import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
 import FullscreenIcon from "@mui/icons-material/Fullscreen";
 import FullscreenExitIcon from "@mui/icons-material/FullscreenExit";
-import EditIcon from "@mui/icons-material/Edit";
-import DeleteIcon from "@mui/icons-material/Delete";
 import PhotoMetaDialog from "../../components/PhotoMetaDialog";
-import PhotoMetaUpdateDialog from "./PhotoMetaUpdateDialog";
 
 // normalize datePhoto -> timestamp or null
 const normalizePhotoDate = (dp) => {
@@ -56,7 +58,7 @@ const normalizePhotoDate = (dp) => {
   return isNaN(t) ? null : t;
 };
 
-// -------------------- GridByRowsNoDeps --------------------
+// -------------------- GridByRowsNoDeps: lightweight row-based virtualizer --------------------
 function GridByRowsNoDeps({
   items = [],
   columns = 4,
@@ -70,7 +72,8 @@ function GridByRowsNoDeps({
   const containerRef = useRef(null);
   const rAFRef = useRef(null);
   const scrollTopRef = useRef(0);
-  const [, force] = React.useReducer((s) => s + 1, 0);
+  const [, force] = React.useReducer((s) => s + 1, 0); // trigger re-render on rAF tick
+
   const itemsLen = items.length;
   const rowCount = Math.max(1, Math.ceil(itemsLen / columns));
   const rowFullHeight = rowHeight + columnGap;
@@ -85,6 +88,7 @@ function GridByRowsNoDeps({
     return { start, visible };
   }, [rowFullHeight, overscan, rowCount, height]);
 
+  // scroll handler -> rAF -> force re-render + notify onVisibleRange
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
@@ -102,7 +106,7 @@ function GridByRowsNoDeps({
             );
             try {
               onVisibleRange({ fromIndex, toIndex });
-            } catch {}
+            } catch (err) {}
           }
           force();
         });
@@ -115,6 +119,7 @@ function GridByRowsNoDeps({
     };
   }, [compute, columns, itemsLen, onVisibleRange]);
 
+  // initial tick to render viewport and notify loader
   useEffect(() => {
     const t = setTimeout(() => {
       const { start, visible } = compute();
@@ -126,19 +131,22 @@ function GridByRowsNoDeps({
         );
         try {
           onVisibleRange({ fromIndex, toIndex });
-        } catch {}
+        } catch (err) {}
       }
       force();
     }, 20);
     return () => clearTimeout(t);
   }, [compute, columns, itemsLen, onVisibleRange]);
 
+  // render derived from scrollTopRef synchronously
   const { start, visible } = compute();
+  const startIndex = start * columns;
+  const endIndex = Math.min(itemsLen - 1, startIndex + visible * columns - 1);
   const totalHeight = rowCount * rowFullHeight;
   const translateY = start * rowFullHeight;
   const cellWidth = `${100 / columns}%`;
-  const rows = [];
 
+  const rows = [];
   for (let r = 0; r < visible; r++) {
     const rowIndex = start + r;
     const cells = [];
@@ -146,7 +154,14 @@ function GridByRowsNoDeps({
       const idx = rowIndex * columns + c;
       const item = items[idx];
       cells.push(
-        <div key={idx} style={{ width: cellWidth, height: rowHeight }}>
+        <div
+          key={idx}
+          style={{
+            width: cellWidth,
+            height: rowHeight,
+            boxSizing: "border-box",
+          }}
+        >
           {item ? (
             renderCell(item, idx)
           ) : (
@@ -193,18 +208,19 @@ function GridByRowsNoDeps({
     </div>
   );
 }
-
 // ---------------------------------------------------------------------------------------------
+
 export default function GlobalPhotoGallery() {
   const theme = useTheme();
   const isDark = theme.palette.mode === "dark";
 
-  // --- State ---
+  // data
   const [photos, setPhotos] = useState([]);
   const [photoPaths, setPhotoPaths] = useState({});
   const [allPeople, setAllPeople] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // UI state
   const [search, setSearch] = useState("");
   const [selectedPeople, setSelectedPeople] = useState([]);
   const [viewMode, setViewMode] = useState("square");
@@ -218,130 +234,12 @@ export default function GlobalPhotoGallery() {
   const [sliderForcedFullscreen, setSliderForcedFullscreen] = useState(false);
   const [meta, setMeta] = useState(null);
   const [openDialog, setOpenDialog] = useState(false);
-  const [openDialogUpdate, setOpenDialogUpdate] = useState(false);
 
-  const [editingPhoto, setEditingPhoto] = useState(null);
-  const [saving, setSaving] = useState(false);
-
-  // --- Refs ---
+  // path loader controller
   const pendingRef = useRef(new Set());
   const queueRef = useRef(new Set());
   const timerRef = useRef(null);
 
-  // --- Derived values (must be BEFORE any usage) ---
-  const filtered = useMemo(() => {
-    return photos.filter((p) => {
-      const txt = `${p.title || ""} ${p.description || ""}`.toLowerCase();
-      const okText = txt.includes(search.toLowerCase());
-      const okPeople =
-        !selectedPeople.length ||
-        selectedPeople.some((sp) =>
-          [p.owner, ...(p.people || [])].includes(sp.id)
-        );
-      return okText && okPeople;
-    });
-  }, [photos, search, selectedPeople]);
-
-  const stats = useMemo(() => {
-    const total = photos.length;
-    const owners = new Set(photos.map((p) => p.owner)).size;
-    const dates = photos
-      .map((p) => normalizePhotoDate(p.datePhoto))
-      .filter((t) => t != null)
-      .sort((a, b) => a - b);
-    const earliest = dates[0] && new Date(dates[0]).getFullYear();
-    const latest =
-      dates[dates.length - 1] &&
-      new Date(dates[dates.length - 1]).getFullYear();
-    return { total, owners, earliest, latest };
-  }, [photos]);
-
-  const sortedList = useMemo(() => {
-    return [...filtered].sort((a, b) => {
-      const ka =
-        sortBy === "date"
-          ? Date.parse(a.date)
-          : normalizePhotoDate(a.datePhoto);
-      const kb =
-        sortBy === "date"
-          ? Date.parse(b.date)
-          : normalizePhotoDate(b.datePhoto);
-      if (ka === kb) return 0;
-      if (ka == null) return 1;
-      if (kb == null) return -1;
-      return sortDir === "asc" ? ka - kb : kb - ka;
-    });
-  }, [filtered, sortBy, sortDir]);
-
-  const getOwnerKey = useCallback(
-    (ownerId) => {
-      const u = allPeople.find((x) => x.id === ownerId);
-      if (!u) return "\uffff";
-      let last = u.lastName?.trim();
-      if (!last && u.maidenName)
-        last = u.maidenName.replace(/[()]/g, "").trim();
-      if (!last) return "\uffff";
-      const first = u.firstName?.trim() || "";
-      return (last + " " + first).toLowerCase();
-    },
-    [allPeople]
-  );
-
-  const grouped = useMemo(() => {
-    if (groupBy === "owner") {
-      const owners = allPeople
-        .filter((u) => sortedList.some((p) => p.owner === u.id))
-        .sort((a, b) => getOwnerKey(a.id).localeCompare(getOwnerKey(b.id)));
-      return owners.map((u) => ({
-        label:
-          getOwnerKey(u.id) === "\uffff"
-            ? "(Без фамилии)"
-            : `${u.lastName || u.maidenName?.replace(/[()]/g, "") || ""} ${
-                u.firstName || ""
-              }`.trim(),
-        items: sortedList.filter((p) => p.owner === u.id),
-      }));
-    }
-    if (groupBy === "date") {
-      const map = {};
-      for (const p of sortedList) {
-        const d = p.date?.split("T")[0] || "Без даты";
-        map[d] = map[d] || [];
-        map[d].push(p);
-      }
-      return Object.entries(map)
-        .sort(([da], [db]) => (da > db ? -1 : da < db ? 1 : 0))
-        .map(([label, items]) => ({ label, items }));
-    }
-    if (groupBy === "datePhoto") {
-      const map = {};
-      for (const p of sortedList) {
-        const d = p.datePhoto?.split("T")[0] || "Без даты";
-        map[d] = map[d] || [];
-        map[d].push(p);
-      }
-      return Object.entries(map)
-        .sort(([da], [db]) => {
-          if (da === "Без даты") return 1;
-          if (db === "Без даты") return -1;
-          return da > db ? -1 : da < db ? 1 : 0;
-        })
-        .map(([label, items]) => ({ label, items }));
-    }
-    return [{ label: null, items: sortedList }];
-  }, [groupBy, allPeople, sortedList, getOwnerKey]);
-
-  const availablePeople = useMemo(
-    () =>
-      allPeople.filter((u) =>
-        filtered.some(
-          (p) => p.owner === u.id || (p.people || []).includes(u.id)
-        )
-      ),
-    [allPeople, filtered]
-  );
-
-  // --- Callbacks (safe: they use derived values declared above) ---
   const setPathIfNotExists = useCallback((id, p) => {
     setPhotoPaths((prev) => (prev[id] ? prev : { ...prev, [id]: p }));
   }, []);
@@ -384,6 +282,137 @@ export default function GlobalPhotoGallery() {
     }, 80);
   }, [flushQueue]);
 
+  // data load
+  useEffect(() => {
+    (async () => {
+      const [people, list] = await Promise.all([
+        window.peopleAPI.getAll(),
+        window.photoAPI.getAllGlobal(),
+      ]);
+      setAllPeople(people || []);
+      setPhotos(list || []);
+
+      // initial lightweight prefetch: only set paths for first few photos to avoid too many sync awaits
+      const initialCount = Math.min(24, (list || []).length);
+      const paths = {};
+      for (let i = 0; i < initialCount; i++) {
+        const p = list[i];
+        try {
+          paths[p.id] = await window.photoAPI.getPath(p.owner, p.filename);
+        } catch (e) {
+          // ignore individual errors
+        }
+      }
+      setPhotoPaths((prev) => ({ ...paths, ...prev }));
+      setLoading(false);
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // filtering
+  const filtered = useMemo(() => {
+    return photos.filter((p) => {
+      const txt = `${p.title || ""} ${p.description || ""}`.toLowerCase();
+      const okText = txt.includes(search.toLowerCase());
+      const okPeople =
+        !selectedPeople.length ||
+        selectedPeople.some((sp) =>
+          [p.owner, ...(p.people || [])].includes(sp.id)
+        );
+      return okText && okPeople;
+    });
+  }, [photos, search, selectedPeople]);
+
+  const getOwnerKey = (ownerId) => {
+    const u = allPeople.find((x) => x.id === ownerId);
+    if (!u) return "\uffff";
+    let last = u.lastName?.trim();
+    if (!last && u.maidenName) last = u.maidenName.replace(/[()]/g, "").trim();
+    if (!last) return "\uffff";
+    const first = u.firstName?.trim() || "";
+    return (last + " " + first).toLowerCase();
+  };
+
+  const stats = useMemo(() => {
+    const total = photos.length;
+    const owners = new Set(photos.map((p) => p.owner)).size;
+    const dates = photos
+      .map((p) => normalizePhotoDate(p.datePhoto))
+      .filter((t) => t != null)
+      .sort((a, b) => a - b);
+    const earliest = dates[0] && new Date(dates[0]).getFullYear();
+    const latest =
+      dates[dates.length - 1] &&
+      new Date(dates[dates.length - 1]).getFullYear();
+    return { total, owners, earliest, latest };
+  }, [photos]);
+
+  const sortedList = useMemo(() => {
+    return [...filtered].sort((a, b) => {
+      let ka =
+        sortBy === "date"
+          ? Date.parse(a.date)
+          : normalizePhotoDate(a.datePhoto);
+      let kb =
+        sortBy === "date"
+          ? Date.parse(b.date)
+          : normalizePhotoDate(b.datePhoto);
+      if (ka === kb) return 0;
+      if (ka == null) return 1;
+      if (kb == null) return -1;
+      return sortDir === "asc" ? ka - kb : kb - ka;
+    });
+  }, [filtered, sortBy, sortDir]);
+
+  const grouped = useMemo(() => {
+    if (groupBy === "owner") {
+      const owners = allPeople
+        .filter((u) => sortedList.some((p) => p.owner === u.id))
+        .sort((a, b) => getOwnerKey(a.id).localeCompare(getOwnerKey(b.id)));
+      return owners.map((u) => ({
+        label:
+          getOwnerKey(u.id) === "\uffff"
+            ? "(Без фамилии)"
+            : `${u.lastName || u.maidenName.replace(/[()]/g, "")} ${
+                u.firstName
+              }`.trim(),
+        items: sortedList.filter((p) => p.owner === u.id),
+      }));
+    }
+    if (groupBy === "date") {
+      const map = {};
+      for (const p of sortedList) {
+        const d = p.date?.split("T")[0] || "Без даты";
+        map[d] = map[d] || [];
+        map[d].push(p);
+      }
+      return Object.entries(map)
+        .sort(([da], [db]) => (da > db ? -1 : da < db ? 1 : 0))
+        .map(([label, items]) => ({ label, items }));
+    }
+    if (groupBy === "datePhoto") {
+      const map = {};
+      for (const p of sortedList) {
+        const d = p.datePhoto?.split("T")[0] || "Без даты";
+        map[d] = map[d] || [];
+        map[d].push(p);
+      }
+      return Object.entries(map)
+        .sort(([da], [db]) => {
+          if (da === "Без даты") return 1;
+          if (db === "Без даты") return -1;
+          return da > db ? -1 : da < db ? 1 : 0;
+        })
+        .map(([label, items]) => ({ label, items }));
+    }
+    return [{ label: null, items: sortedList }];
+  }, [groupBy, allPeople, sortedList]);
+
+  const availablePeople = allPeople.filter((u) =>
+    filtered.some((p) => p.owner === u.id || (p.people || []).includes(u.id))
+  );
+
+  // visible range handler: enqueue ids for prefetch
   const handleVisibleRange = useCallback(
     ({ fromIndex, toIndex }) => {
       const margin = 8;
@@ -401,330 +430,7 @@ export default function GlobalPhotoGallery() {
     [sortedList, photoPaths, scheduleFlush]
   );
 
-  const openEditDialog = useCallback((photo) => {
-    // console.log("openEditDialog", photo);
-    if (!photo) return;
-    setEditingPhoto(photo);
-    setMeta({
-      id: photo.id,
-      title: photo.title || "",
-      description: photo.description || "",
-      datePhoto: photo.datePhoto || "",
-      owner: photo.owner,
-      people: photo.people ? [...photo.people] : [],
-      filename: photo.filename,
-      aspectRatio: photo.aspectRatio || "",
-    });
-    setOpenDialogUpdate(true);
-  }, []);
-
-  const handleDelete = useCallback(async (photo) => {
-    console.log("photo", photo);
-    if (!photo) return;
-    if (!confirm("Удалить фото?")) return;
-
-    setSaving(true); // опционально: показать индикатор, если есть
-    try {
-      const owner = photo.owner;
-      const filename = photo.filename;
-
-      // 1) Попытка удалить файл на диске (несколько вариантов API)
-      let fileDeleted = false;
-      try {
-        // prefer explicit deleteFile(owner, filename)
-        if (window.fileAPI?.deleteFile) {
-          await window.fileAPI.deleteFile(owner, filename);
-          fileDeleted = true;
-        } else if (window.fileAPI?.moveToTrash) {
-          // если есть moveToTrash(owner, filename)
-          await window.fileAPI.moveToTrash(owner, filename);
-          fileDeleted = true;
-        } else if (window.fileAPI?.moveFile) {
-          // fallback: переместить в специальную папку trash (если у вас такая логика)
-          // здесь 'trash' — пример; замените на реальную папку, если нужно
-          try {
-            await window.fileAPI.moveFile(owner, "trash", filename, filename);
-            fileDeleted = true;
-          } catch (e) {
-            // ignore, попробуем другие варианты ниже
-          }
-        }
-      } catch (fileErr) {
-        console.warn("file delete failed", fileErr);
-        // не прерываем — попробуем удалить JSON и обновить UI
-      }
-
-      // 2) Удалить запись через photoAPI (глобально)
-      // В коде IPC вызывался window.photoAPI.delete(id) — используйте реальную сигнатуру
-      try {
-        if (window.photoAPI?.delete?.length === 1) {
-          // если delete(id)
-          await window.photoAPI.delete(photo.id);
-        } else if (window.photoAPI?.delete?.length === 2) {
-          // если delete(owner, id)
-          await window.photoAPI.delete(owner, photo.id);
-        } else {
-          // универсальный вызов: попробуем оба варианта
-          try {
-            await window.photoAPI.delete(photo.id);
-          } catch (e) {}
-          try {
-            await window.photoAPI.delete(owner, photo.id);
-          } catch (e) {}
-        }
-      } catch (apiErr) {
-        console.warn("photoAPI.delete failed", apiErr);
-        // продолжаем — ниже удалим из локального стейта
-      }
-
-      // 3) Попытка удалить запись из owner JSON (если photoAPI.delete не делает этого)
-      try {
-        if (window.photoAPI?.removeFromOwnerJson) {
-          await window.photoAPI.removeFromOwnerJson(owner, {
-            filename,
-            id: photo.id,
-          });
-        }
-      } catch (remErr) {
-        console.warn("removeFromOwnerJson warning", remErr);
-      }
-
-      // 4) Обновить локальный стейт и кэш путей
-      setPhotos((prev) => prev.filter((p) => p.id !== photo.id));
-      setPhotoPaths((prev) => {
-        const copy = { ...prev };
-        delete copy[photo.id];
-        return copy;
-      });
-
-      // 5) Если файл не удалился и есть fallback-логика (например, удаление через electron ipc)
-      if (!fileDeleted && window.electron?.ipcRenderer) {
-        try {
-          window.electron.ipcRenderer.send("photo:delete-file", {
-            owner,
-            filename,
-            id: photo.id,
-          });
-        } catch (e) {
-          console.warn("ipc delete-file send failed", e);
-        }
-      }
-    } catch (e) {
-      console.error("Failed to delete photo", e);
-      alert("Не удалось удалить фото: " + (e?.message || e));
-    } finally {
-      setSaving(false);
-    }
-  }, []);
-
-  const handleMetaSave = useCallback(
-    async (updatedMeta) => {
-      if (!editingPhoto) return;
-      setSaving(true);
-      try {
-        const oldOwner = editingPhoto.owner;
-        const newOwner = updatedMeta.owner ?? oldOwner;
-        const oldFilename = editingPhoto.filename;
-        const newFilename = updatedMeta.filename ?? oldFilename;
-        const ownerChanged = String(newOwner) !== String(oldOwner);
-        const filenameChanged = String(newFilename) !== String(oldFilename);
-
-        // 1) если переименование и файл не перемещается — переименовать на месте
-        if (!ownerChanged && filenameChanged) {
-          // переименование в той же папке
-          await window.fileAPI.renameFile?.(oldOwner, oldFilename, newFilename);
-        }
-
-        // 2) если сменился владелец — переместить (и при необходимости переименовать в процессе)
-        if (ownerChanged) {
-          // если одновременно переименование — передаём новое имя в moveFile
-          await window.fileAPI.moveFile(
-            oldOwner,
-            newOwner,
-            oldFilename,
-            newFilename
-          );
-        }
-
-        // 3) обновить JSON: удалить у старого владельца
-        try {
-          await window.photoAPI.removeFromOwnerJson(oldOwner, {
-            filename: oldFilename,
-            id: editingPhoto.id,
-          });
-        } catch (remErr) {
-          console.warn("removeFromOwnerJson warning", remErr);
-        }
-
-        // 4) добавить/обновить запись у нового владельца
-        const newEntry = {
-          ...editingPhoto,
-          ...updatedMeta,
-          owner: newOwner,
-          filename: newFilename,
-        };
-        await window.photoAPI.addOrUpdateOwnerJson(newOwner, newEntry);
-
-        // 5) обновить локальный стейт photos
-        setPhotos((prev) =>
-          prev.map((p) =>
-            p.id === editingPhoto.id ? { ...p, ...newEntry } : p
-          )
-        );
-
-        // 6) сбросить кеш пути (если имя или владелец изменились)
-        setPhotoPaths((prev) => {
-          const copy = { ...prev };
-          delete copy[editingPhoto.id];
-          return copy;
-        });
-      } catch (e) {
-        console.error("Failed to save photo meta", e);
-        alert("Не удалось сохранить метаданные: " + (e.message || e));
-      } finally {
-        setSaving(false);
-        setOpenDialogUpdate(false);
-        setEditingPhoto(null);
-      }
-    },
-    [editingPhoto]
-  );
-
-  const handleMetaClose = useCallback(() => {
-    setOpenDialogUpdate(false);
-    setEditingPhoto(null);
-  }, []);
-
-  const makeHandleVisibleRangeForGroup = useCallback(
-    (itemsArray) =>
-      ({ fromIndex, toIndex }) => {
-        const margin = 8;
-        const start = Math.max(0, fromIndex - margin);
-        const end = Math.min(itemsArray.length - 1, toIndex + margin);
-        for (let i = start; i <= end; i++) {
-          const p = itemsArray[i];
-          if (!p) continue;
-          if (photoPaths[p.id]) continue;
-          if (pendingRef.current.has(p.id)) continue;
-          queueRef.current.add(p.id);
-        }
-        scheduleFlush();
-      },
-    [photoPaths, scheduleFlush]
-  );
-
-  // --- Effects (safe: they can use sortedList now) ---
-  useEffect(() => {
-    let mounted = true;
-    (async () => {
-      try {
-        const [people, list] = await Promise.all([
-          window.peopleAPI.getAll(),
-          window.photoAPI.getAllGlobal(),
-        ]);
-        if (!mounted) return;
-        setAllPeople(people || []);
-        setPhotos(list || []);
-
-        const initialCount = Math.min(24, (list || []).length);
-        const paths = {};
-        for (let i = 0; i < initialCount; i++) {
-          const p = list[i];
-          try {
-            paths[p.id] = await window.photoAPI.getPath(p.owner, p.filename);
-          } catch {}
-        }
-        setPhotoPaths((prev) => ({ ...paths, ...prev }));
-      } catch (e) {
-        console.error("data load failed", e);
-      } finally {
-        if (mounted) setLoading(false);
-      }
-    })();
-    return () => {
-      mounted = false;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
-    if (!fullscreen) setHideLabels(false);
-  }, [fullscreen]);
-
-  useEffect(() => {
-    const handleScroll = () => setShowScrollTop(window.scrollY > 300);
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
-
-  useEffect(() => {
-    const { ipcRenderer } = window.electron || {};
-    if (!ipcRenderer) return;
-
-    ipcRenderer.removeAllListeners?.("photo:download");
-    ipcRenderer.removeAllListeners?.("photo:open");
-    ipcRenderer.removeAllListeners?.("photo:delete");
-    ipcRenderer.removeAllListeners?.("photo:meta-response");
-
-    ipcRenderer.on("photo:download", (_, photo) => {
-      ipcRenderer.send("photo:download", photo);
-    });
-
-    ipcRenderer.on("photo:open", (_, id) => {
-      // console.log("id", { photo: { id: id.id } });
-      // const photo = {photo:{id}}
-      openEditDialog(id);
-      // setOpenDialogUpdate(true);
-    });
-
-    ipcRenderer.on("photo:delete", (_, photo) => {
-      // if (confirm("Удалить фото?")) {
-      //   window.photoAPI.delete(id);
-      //   setPhotos((prev) => prev.filter((p) => p.id !== id));
-      // }
-      handleDelete(photo);
-    });
-
-    ipcRenderer.on("photo:meta-response", (_, receivedMeta) => {
-      if (receivedMeta?.id) {
-        const p = photos.find((x) => x.id === receivedMeta.id);
-        if (p) setEditingPhoto(p);
-      }
-      setMeta(receivedMeta);
-      setOpenDialog(true);
-    });
-
-    return () => {
-      ipcRenderer.removeAllListeners?.("photo:download");
-      ipcRenderer.removeAllListeners?.("photo:open");
-      ipcRenderer.removeAllListeners?.("photo:delete");
-      ipcRenderer.removeAllListeners?.("photo:meta-response");
-    };
-  }, [photos, sortedList]);
-
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (!fullscreen) return;
-      if (e.key === "ArrowLeft") setIndex((prev) => Math.max(prev - 1, 0));
-      if (e.key === "ArrowRight")
-        setIndex((prev) => Math.min(prev + 1, sortedList.length - 1));
-    };
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [fullscreen, sortedList.length]);
-
-  useEffect(() => {
-    const t = setTimeout(() => {
-      const initial = Math.min(24, sortedList.length);
-      for (let i = 0; i < initial; i++) {
-        const p = sortedList[i];
-        if (p && !photoPaths[p.id]) queueRef.current.add(p.id);
-      }
-      scheduleFlush();
-    }, 40);
-    return () => clearTimeout(t);
-  }, [sortedList, photoPaths, scheduleFlush]);
-
+  // preload neighbors when opening fullscreen
   useEffect(() => {
     if (!fullscreen) return;
     const ids = [index - 1, index, index + 1].filter(
@@ -744,17 +450,31 @@ export default function GlobalPhotoGallery() {
     });
   }, [fullscreen, index, sortedList, photoPaths, setPathIfNotExists]);
 
-  // --- UI helpers & layout ---
+  // initial prefetch for first viewport
+  useEffect(() => {
+    const t = setTimeout(() => {
+      const initial = Math.min(24, sortedList.length);
+      for (let i = 0; i < initial; i++) {
+        const p = sortedList[i];
+        if (p && !photoPaths[p.id]) queueRef.current.add(p.id);
+      }
+      scheduleFlush();
+    }, 40);
+    return () => clearTimeout(t);
+  }, [sortedList, photoPaths, scheduleFlush]);
+
+  // UI handlers
+  useEffect(() => {
+    if (!fullscreen) setHideLabels(false);
+  }, [fullscreen]);
+
+  useEffect(() => {
+    const handleScroll = () => setShowScrollTop(window.scrollY > 300);
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
   const scrollToTop = () => window.scrollTo({ top: 0, behavior: "smooth" });
-  // const quntityPhoto = sortedList?.length;
-  // const columns = 4;
-  // const columnGap = 8;
-  // const containerHeight = Math.max(300, window.innerHeight - 220);
-  // const baseWidth = Math.max(300, Math.floor(window.innerWidth * 0.9));
-  // const rowHeight =
-  //   viewMode === "square"
-  //     ? Math.floor(baseWidth / columns)
-  //     : Math.floor((baseWidth / columns) * 1.15);
 
   const handlMaximazeWindow = async () => {
     const wantFullscreen = !hideLabels;
@@ -782,7 +502,74 @@ export default function GlobalPhotoGallery() {
     setHideLabels(false);
   };
 
-  // --- Early return AFTER all hooks/derived ---
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (!fullscreen) return;
+      if (e.key === "ArrowLeft") setIndex((prev) => Math.max(prev - 1, 0));
+      if (e.key === "ArrowRight")
+        setIndex((prev) => Math.min(prev + 1, sortedList.length - 1));
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [fullscreen, sortedList.length]);
+
+  // ipc listeners
+  useEffect(() => {
+    const { ipcRenderer } = window.electron || {};
+    if (!ipcRenderer) return;
+    ipcRenderer.removeAllListeners?.("photo:download");
+    ipcRenderer.removeAllListeners?.("photo:open");
+    ipcRenderer.removeAllListeners?.("photo:delete");
+    ipcRenderer.removeAllListeners?.("photo:meta-response");
+
+    ipcRenderer.on("photo:download", (_, photo) => {
+      ipcRenderer.send("photo:download", photo);
+    });
+    ipcRenderer.on("photo:open", (_, id) => {
+      // try to find photo and open
+      const p = photos.find((x) => x.id === id);
+      if (p) {
+        const idx = sortedList.findIndex((x) => x.id === id);
+        setIndex(idx >= 0 ? idx : 0);
+        setFullscreen(true);
+      }
+    });
+    ipcRenderer.on("photo:delete", (_, id) => {
+      if (confirm("Удалить фото?")) {
+        window.photoAPI.delete(id);
+        setPhotos((prev) => prev.filter((p) => p.id !== id));
+      }
+    });
+    ipcRenderer.on("photo:meta-response", (_, receivedMeta) => {
+      setMeta(receivedMeta);
+      setOpenDialog(true);
+    });
+
+    return () => {
+      ipcRenderer.removeAllListeners?.("photo:download");
+      ipcRenderer.removeAllListeners?.("photo:open");
+      ipcRenderer.removeAllListeners?.("photo:delete");
+      ipcRenderer.removeAllListeners?.("photo:meta-response");
+    };
+  }, [photos, sortedList]);
+
+  const makeHandleVisibleRangeForGroup =
+    (itemsArray) =>
+    ({ fromIndex, toIndex }) => {
+      const margin = 8;
+      const start = Math.max(0, fromIndex - margin);
+      const end = Math.min(itemsArray.length - 1, toIndex + margin);
+
+      for (let i = start; i <= end; i++) {
+        const p = itemsArray[i];
+        if (!p) continue;
+        if (photoPaths[p.id]) continue;
+        if (pendingRef.current.has(p.id)) continue;
+        queueRef.current.add(p.id);
+      }
+      scheduleFlush();
+    };
+
   if (loading) {
     return (
       <Box
@@ -796,7 +583,7 @@ export default function GlobalPhotoGallery() {
     );
   }
 
-  // --- Tile renderer ---
+  // render tile (uses photoPaths)
   const renderTile = (photo) => {
     const idx = sortedList.findIndex((p) => p.id === photo.id);
     return (
@@ -874,44 +661,6 @@ export default function GlobalPhotoGallery() {
           <DownloadIcon fontSize="small" />
         </IconButton>
 
-        <IconButton
-          size="small"
-          onClick={(e) => {
-            e.stopPropagation();
-            // console.log("Edit clicked", photo.id);
-            openEditDialog(photo);
-          }}
-          sx={{
-            zIndex: 1000,
-            position: "absolute",
-            top: 4,
-            right: 4,
-            backgroundColor: "rgba(0,0,0,0.4)",
-            color: "#fff",
-            "&:hover": { backgroundColor: "rgba(0,0,0,0.6)" },
-          }}
-        >
-          <EditIcon fontSize="small" />
-        </IconButton>
-        <IconButton
-          size="small"
-          onClick={(e) => {
-            e.stopPropagation();
-            handleDelete(photo);
-          }}
-          sx={{
-            zIndex: 1000,
-            position: "absolute",
-            bottom: 6,
-            left: 6,
-            backgroundColor: "rgba(255,0,0,0.4)",
-            color: "#fff",
-            "&:hover": { backgroundColor: "rgba(255,0,0,0.6)" },
-          }}
-        >
-          <DeleteIcon fontSize="small" />
-        </IconButton>
-
         <Box
           sx={{
             position: "absolute",
@@ -968,7 +717,9 @@ export default function GlobalPhotoGallery() {
     );
   };
 
-  // --- Layout sizes ---
+  const quntityPhoto = sortedList?.length;
+
+  // layout sizes for GridByRowsNoDeps
   const columns = 4;
   const columnGap = 8;
   const containerHeight = Math.max(300, window.innerHeight - 220);
@@ -977,9 +728,7 @@ export default function GlobalPhotoGallery() {
     viewMode === "square"
       ? Math.floor(baseWidth / columns)
       : Math.floor((baseWidth / columns) * 1.15);
-  const quntityPhoto = sortedList?.length;
 
-  // --- Render ---
   return (
     <>
       <Paper
@@ -1031,6 +780,7 @@ export default function GlobalPhotoGallery() {
             size="small"
             sx={{ flexGrow: 1 }}
           />
+
           <Autocomplete
             multiple
             options={availablePeople}
@@ -1046,6 +796,17 @@ export default function GlobalPhotoGallery() {
             )}
             sx={{ minWidth: 240 }}
           />
+
+          {/* <ToggleButtonGroup
+            size="small"
+            value={viewMode}
+            exclusive
+            onChange={(_, v) => v && setViewMode(v)}
+          >
+            <ToggleButton value="square">Квадрат</ToggleButton>
+            <ToggleButton value="natural">Пропорции</ToggleButton>
+          </ToggleButtonGroup> */}
+
           <FormControl size="small" sx={{ minWidth: 160 }}>
             <InputLabel>Группировка</InputLabel>
             <Select
@@ -1059,6 +820,7 @@ export default function GlobalPhotoGallery() {
               <MenuItem value="datePhoto">По дате фотографии</MenuItem>
             </Select>
           </FormControl>
+
           <FormControl size="small" sx={{ minWidth: 200 }}>
             <InputLabel>Сортировка</InputLabel>
             <Select
@@ -1076,6 +838,7 @@ export default function GlobalPhotoGallery() {
               <MenuItem value="datePhoto:asc">Фото (старые)</MenuItem>
             </Select>
           </FormControl>
+
           <Button
             variant="outlined"
             startIcon={<ArchiveIcon />}
@@ -1100,6 +863,7 @@ export default function GlobalPhotoGallery() {
               {grp.label}
             </Typography>
           )}
+          {/* use the virtualizer here */}
           <GridByRowsNoDeps
             items={grp.items}
             columns={columns}
@@ -1142,6 +906,7 @@ export default function GlobalPhotoGallery() {
           >
             <CloseIcon />
           </IconButton>
+
           <IconButton
             onClick={handlMaximazeWindow}
             sx={{
@@ -1194,6 +959,7 @@ export default function GlobalPhotoGallery() {
           >
             <ArrowBackIosNewIcon />
           </IconButton>
+
           <IconButton
             onClick={() =>
               setIndex((prev) => Math.min(prev + 1, sortedList.length - 1))
@@ -1298,22 +1064,16 @@ export default function GlobalPhotoGallery() {
         meta={meta}
         onClose={() => setOpenDialog(false)}
       />
-      <PhotoMetaUpdateDialog
-        openDialog={openDialogUpdate}
-        meta={meta}
-        onClose={handleMetaClose}
-        onSave={handleMetaSave}
-        saving={saving}
-        allPeople={allPeople}
-      />
     </>
   );
 }
 
+// small wrapper component so GridByRowsNoDeps renderCell receives a simple component
 function PhotoTileWrapper({ photo, photoPaths, renderTile }) {
   return renderTile(photo);
 }
 
+// download helper
 async function handleDownload(photo) {
   try {
     const url =

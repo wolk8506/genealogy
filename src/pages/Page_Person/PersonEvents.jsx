@@ -9,6 +9,7 @@ import {
   ListItemText,
   Divider,
 } from "@mui/material";
+import StarIcon from "@mui/icons-material/Star";
 
 import AddIcon from "@mui/icons-material/Add";
 import EventIcon from "@mui/icons-material/Event";
@@ -184,14 +185,33 @@ export default function PersonEvents({
     });
 
   return (
-    <Box sx={{ minWidth: 260 }}>
+    <Box
+      // sx={{ minWidth: 260 }}
+      sx={{
+        border: "solid 1px",
+        borderColor: "divider",
+        p: 1,
+        minWidth: "400px",
+        borderRadius: "15px",
+      }}
+    >
       <Box
         display="flex"
         alignItems="center"
         justifyContent="space-between"
         mb={1}
       >
-        <Typography variant="subtitle1">События</Typography>
+        <Box
+          display="flex"
+          alignItems="center"
+          justifyContent="flex-start"
+          gap={1}
+        >
+          <StarIcon />
+          <Typography variant="subtitle1">События</Typography>
+          <Typography variant="subtitle1">({sortedEvents.length})</Typography>
+        </Box>
+
         {onAdd && (
           <IconButton onClick={onAdd}>
             <AddIcon />
@@ -208,9 +228,10 @@ export default function PersonEvents({
           sx={{
             width: "100%",
             bgcolor: "background.paper",
+            // bgcolor: "divider",
             maxHeight: 230,
             overflowY: "auto",
-            borderRadius: "15px",
+            borderRadius: "10px",
           }}
         >
           {sortedEvents.map((ev, index) => (

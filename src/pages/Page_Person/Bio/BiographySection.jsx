@@ -1,13 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
   Button,
-  Typography,
-  IconButton,
-  Stack,
   DialogContentText,
   useTheme,
   Paper,
@@ -18,10 +15,10 @@ import SaveIcon from "@mui/icons-material/Save";
 import CloseIcon from "@mui/icons-material/Close";
 import UndoIcon from "@mui/icons-material/Undo";
 import MDEditor from "@uiw/react-md-editor";
+import rehypeRaw from "rehype-raw";
 import AssignmentIcon from "@mui/icons-material/Assignment";
 import BioEditor from "./BioEditor";
 import NameSection from "../../../components/NameSection";
-// import path from "path";
 
 export default function BiographySection({ personId }) {
   const [open, setOpen] = useState(false);
@@ -29,6 +26,7 @@ export default function BiographySection({ personId }) {
   const [original, setOriginal] = useState("");
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [personDir, setPersonDir] = useState("");
+  const [openImg, setOpenImg] = useState(null);
 
   const theme = useTheme();
   const isDark = theme.palette.mode === "dark";
@@ -41,7 +39,7 @@ export default function BiographySection({ personId }) {
       });
 
       window.bioAPI.getFullImagePath(personId, "").then((dirPath) => {
-        setPersonDir(dirPath);
+        setPersonDir(dirPath || "");
       });
     }
   }, [personId]);
@@ -57,7 +55,7 @@ export default function BiographySection({ personId }) {
   const handleDiscard = () => {
     setConfirmOpen(false);
     setOpen(false);
-    setBio(original); // откат изменений
+    setBio(original);
   };
 
   const handleCancel = () => {
@@ -71,7 +69,7 @@ export default function BiographySection({ personId }) {
     setOpen(false);
   };
 
-  const transformImageUri = (uri) => {
+  const toFileUri = (uri) => {
     if (!uri || uri.startsWith("http") || uri.startsWith("file://")) return uri;
     if (!personDir) return uri;
     // const fullPath = path.join(personDir, uri);
@@ -80,8 +78,35 @@ export default function BiographySection({ personId }) {
       ""
     )}`;
 
-    return `file://${fullPath}`;
+    return `${fullPath}`;
   };
+
+  const processedBio = useMemo(() => {
+    if (!bio) return bio;
+    let text = bio;
+
+    // 1) Markdown: ![alt](path) -> абсолютные пути
+    text = text.replace(
+      /!\[([^\]]*)\]\(([^)]+)\)/g,
+      (_m, alt, src) => `![${alt}](${toFileUri(src)})`
+    );
+
+    // 2) HTML: <img ... src="..."> -> абсолютные пути
+    text = text.replace(
+      /<img\b([^>]*?)\s+src=(["'])([^"']+)\2([^>]*?)>/gi,
+      (_m, pre, q, src, post) => `<img ${pre} src="${toFileUri(src)}" ${post}>`
+    );
+
+    // 3) Оборачивание "параграфов, внутри которых только изображения" в flex-контейнер
+    //    <p><img ...><img ...>...</p> -> <div class="bio-images-container">...</div>
+    text = text.replace(/<p>\s*(?:<img\b[^>]*>\s*){2,}\s*<\/p>/gi, (m) =>
+      m
+        .replace(/^<p>/i, '<div class="bio-images-container">')
+        .replace(/<\/p>$/i, "</div>")
+    );
+
+    return text;
+  }, [bio, personDir]);
 
   return (
     <>
@@ -96,6 +121,7 @@ export default function BiographySection({ personId }) {
           Редактировать
         </Button>
       </Box>
+
       <Paper
         elevation={0}
         sx={{
@@ -108,34 +134,98 @@ export default function BiographySection({ personId }) {
           overflow: "auto",
         }}
       >
-        {/* <IconButton size="small" onClick={() => setOpen(true)}>
-          <EditIcon fontSize="small" />
-        </IconButton> */}
-        <div data-color-mode={isDark ? "dark" : "light"}>
+        <div
+          data-color-mode={isDark ? "dark" : "light"}
+          className="bio-images-container"
+          onClick={(e) => {
+            const t = e.target;
+            if (t && t.tagName === "IMG") {
+              const src = t.getAttribute("src");
+              if (src) setOpenImg(src);
+            }
+          }}
+        >
           <MDEditor.Markdown
-            source={bio}
-            style={{
-              backgroundColor: "transparent",
-              color: "inherit",
-            }}
-            urlTransform={(url) => {
-              if (!url || url.startsWith("http") || url.startsWith("file://"))
-                return url;
-              if (!personDir) return url;
-              return `${personDir.replace(/\/$/, "")}/${url.replace(
-                /^\//,
-                ""
-              )}`;
-            }}
+            source={processedBio}
+            style={{ backgroundColor: "transparent", color: "inherit" }}
+            rehypePlugins={[rehypeRaw]}
+            urlTransform={(url) => toFileUri(url)}
           />
         </div>
       </Paper>
 
+      <style>
+        {`[data-color-mode] p:has(img) {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 12px;
+          }
+          [data-color-mode] p:has(img) img {
+            flex: 1 1 calc(33.333% - 12px);
+            max-width: calc(33.333% - 12px);
+            height: auto;
+            max-height: 400px;
+            object-fit: contain;
+            cursor: pointer;
+            display: block;
+          }
+          @media (max-width: 900px) {
+            [data-color-mode] p:has(img) img {
+              flex: 1 1 calc(50% - 12px);
+              max-width: calc(50% - 12px);
+            }
+          }
+          @media (max-width: 600px) {
+            [data-color-mode] p:has(img) img {
+              flex: 1 1 100%;
+              max-width: 100%;
+            }
+          }`}
+      </style>
+
+      {/* Диалог просмотра картинки в полном размере */}
+      <Dialog
+        open={!!openImg}
+        onClose={() => setOpenImg(null)}
+        maxWidth="lg"
+        fullWidth
+        PaperProps={{
+          sx: { backgroundColor: "transparent", boxShadow: "none" },
+        }}
+      >
+        {openImg && (
+          <DialogContent
+            onClick={() => setOpenImg(null)}
+            sx={{
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              p: 0,
+              backgroundColor: "rgba(0,0,0,0.85)",
+            }}
+          >
+            <img
+              src={openImg}
+              alt=""
+              style={{
+                maxWidth: "95vw",
+                maxHeight: "90vh",
+                width: "auto",
+                height: "auto",
+                display: "block",
+              }}
+              loading="lazy"
+            />
+          </DialogContent>
+        )}
+      </Dialog>
+
+      {/* Редактор биографии */}
       <Dialog
         open={open}
         onClose={handleClose}
-        maxWidth="md"
-        fullWidth
+        fullScreen
         PaperProps={{
           sx: {
             borderRadius: "15px",
@@ -144,7 +234,12 @@ export default function BiographySection({ personId }) {
       >
         <DialogTitle>Редактировать биографию</DialogTitle>
         <DialogContent>
-          <BioEditor personId={personId} value={bio} onChange={setBio} />
+          <BioEditor
+            personId={personId}
+            value={bio}
+            onChange={setBio}
+            personDir={personDir}
+          />
         </DialogContent>
         <DialogActions sx={{ pr: "24px", pl: "24px", pb: "16px" }}>
           <Button
@@ -157,6 +252,7 @@ export default function BiographySection({ personId }) {
         </DialogActions>
       </Dialog>
 
+      {/* Подтверждение сохранения */}
       <Dialog open={confirmOpen} onClose={handleCancel}>
         <DialogTitle>Сохранить изменения?</DialogTitle>
         <DialogContent>

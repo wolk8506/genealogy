@@ -151,9 +151,68 @@ export default function ArchivePage() {
     setSelected((prev) => prev.filter((x) => x !== id));
   };
 
+  // const handleDeleteForever = async (id) => {
+  //   console.log("DELETE", id);
+  //   await window.peopleAPI.delete(id);
+  //   await loadAll();
+  // };
   const handleDeleteForever = async (id) => {
-    console.log("DELETE", id);
+    const now = new Date().toISOString();
+
+    // 1) получить всех людей
+    let all = await window.peopleAPI.getAll();
+    const person = all.find((p) => p.id === id);
+    if (!person) return;
+
+    // 2) обновляем связи
+    if (person.father) {
+      const father = all.find((p) => p.id === person.father);
+      if (father) {
+        father.children = (father.children || []).filter((cid) => cid !== id);
+        father.editedAt = now;
+      }
+    }
+
+    if (person.mother) {
+      const mother = all.find((p) => p.id === person.mother);
+      if (mother) {
+        mother.children = (mother.children || []).filter((cid) => cid !== id);
+        mother.editedAt = now;
+      }
+    }
+
+    (person.children || []).forEach((cid) => {
+      const child = all.find((p) => p.id === cid);
+      if (child) {
+        if (child.father === id) child.father = null;
+        if (child.mother === id) child.mother = null;
+        child.editedAt = now;
+      }
+    });
+
+    (person.spouse || []).forEach((sid) => {
+      const sp = all.find((p) => p.id === sid);
+      if (sp) {
+        sp.spouse = (sp.spouse || []).filter((s) => s !== id);
+        sp.editedAt = now;
+      }
+    });
+
+    (person.siblings || []).forEach((sid) => {
+      const sib = all.find((p) => p.id === sid);
+      if (sib) {
+        sib.siblings = (sib.siblings || []).filter((s) => s !== id);
+        sib.editedAt = now;
+      }
+    });
+
+    // 3) сохраняем обновлённые связи
+    await window.peopleAPI.saveAll(all);
+
+    // 4) удаляем самого человека
     await window.peopleAPI.delete(id);
+
+    // 5) перезагружаем список
     await loadAll();
   };
 

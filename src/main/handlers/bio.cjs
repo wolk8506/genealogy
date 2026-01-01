@@ -52,6 +52,35 @@ ipcMain.handle("bio:getFullImagePath", async (event, id, relPath) => {
   return `file://${fullPath}`;
 });
 
+// ipcMain.handle("bio:addImage", async (event, id) => {
+//   const result = await dialog.showOpenDialog({
+//     title: "Выберите изображение",
+//     filters: [{ name: "Images", extensions: ["jpg", "jpeg", "png", "gif"] }],
+//     properties: ["openFile"],
+//   });
+
+//   if (result.canceled || result.filePaths.length === 0) return null;
+
+//   const source = result.filePaths[0];
+//   const ext = path.extname(source);
+//   const base = path.basename(source, ext);
+//   const dir = getBioDir(id);
+
+//   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+
+//   let filename = `${base}${ext}`;
+//   let counter = 1;
+//   while (fs.existsSync(path.join(dir, filename))) {
+//     filename = `${base}_${counter}${ext}`;
+//     counter++;
+//   }
+
+//   const dest = path.join(dir, filename);
+//   fs.copyFileSync(source, dest);
+
+//   return filename; // относительный путь
+// });
+
 ipcMain.handle("bio:addImage", async (event, id) => {
   const result = await dialog.showOpenDialog({
     title: "Выберите изображение",
@@ -62,20 +91,26 @@ ipcMain.handle("bio:addImage", async (event, id) => {
   if (result.canceled || result.filePaths.length === 0) return null;
 
   const source = result.filePaths[0];
-  const ext = path.extname(source);
-  const base = path.basename(source, ext);
+  const ext = path.extname(source).toLowerCase();
   const dir = getBioDir(id);
 
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 
-  let filename = `${base}${ext}`;
-  let counter = 1;
-  while (fs.existsSync(path.join(dir, filename))) {
-    filename = `${base}_${counter}${ext}`;
-    counter++;
+  // 🔢 ищем все файлы по шаблону img_bio_XXXX.ext
+  const files = fs.readdirSync(dir);
+  const bioImages = files
+    .map((f) => f.match(/^img_bio_(\d{4})\.(jpg|jpeg|png|gif)$/i))
+    .filter(Boolean);
+
+  let nextNum = 1;
+  if (bioImages.length > 0) {
+    const maxNum = Math.max(...bioImages.map((m) => parseInt(m[1], 10)));
+    nextNum = maxNum + 1;
   }
 
+  const filename = `img_bio_${String(nextNum).padStart(4, "0")}${ext}`;
   const dest = path.join(dir, filename);
+
   fs.copyFileSync(source, dest);
 
   return filename; // относительный путь
