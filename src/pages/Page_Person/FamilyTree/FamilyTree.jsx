@@ -172,7 +172,7 @@ export default function FamilyTree({
     return (
       <foreignObject width={180} height={80} x={-90} y={-40}>
         <div
-          onClick={() => id && navigate(`/person/${id}`)}
+          onClick={() => id && navigate(`/person/${id}#familyTree`)}
           style={{
             display: "flex",
             alignItems: "center",

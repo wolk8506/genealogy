@@ -166,7 +166,7 @@ ipcMain.handle("archive:create", async (_, filePaths, archivePath) => {
   const totalBytesComputed = cumulative;
 
   safeSend(win, {
-    phase: "writing2",
+    phase: "writing",
     totalFiles: fileEntries.length,
     processedFiles: 0,
     totalBytes: totalBytesComputed,
@@ -210,7 +210,7 @@ ipcMain.handle("archive:create", async (_, filePaths, archivePath) => {
     }
 
     safeSend(win, {
-      phase: "writing2",
+      phase: "writing",
       totalFiles: fileEntries.length,
       processedFiles,
       totalBytes: totalBytesComputed,
@@ -225,7 +225,7 @@ ipcMain.handle("archive:create", async (_, filePaths, archivePath) => {
   const finalizePromise = new Promise((resolve, reject) => {
     output.on("close", () => {
       safeSend(win, {
-        phase: "writing2",
+        phase: "writing",
         totalFiles: fileEntries.length,
         processedFiles: fileEntries.length,
         totalBytes: totalBytesComputed,

@@ -22,6 +22,10 @@ const path = require("path");
   require("./handlers/archive.cjs");
   require("./handlers/menuContext.cjs");
   require("./handlers/changelog.cjs");
+  require("./handlers/userGuide.cjs");
+  require("./handlers/import.cjs");
+  require("./handlers/dialogs.cjs");
+  require("./handlers/dataStore.cjs");
 
   // чтобы не дергать whenReady() дважды — делаем один раз:
   app.whenReady().then(async () => {

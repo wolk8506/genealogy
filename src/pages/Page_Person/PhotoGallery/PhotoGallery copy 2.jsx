@@ -223,19 +223,7 @@ function PhotoCell({
   rowHeight,
   isDark,
   personId,
-  allPeople = [], // <- принимаем проп
 }) {
-  const [hover, setHover] = useState(false);
-
-  const peopleText = (photo.people || [])
-    .map((id) => {
-      const person = allPeople.find((p) => p.id === id);
-      return person
-        ? `${person.firstName || ""} ${person.lastName || ""}`.trim()
-        : `ID ${id}`;
-    })
-    .join(", ");
-
   return (
     <div
       onClick={() => onOpen(photo)}
@@ -248,8 +236,6 @@ function PhotoCell({
           personId
         );
       }}
-      onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => setHover(false)}
       style={{
         width: "100%",
         height: rowHeight,
@@ -290,7 +276,6 @@ function PhotoCell({
         </div>
       )}
 
-      {/* кнопки (скачать, редактировать, удалить) */}
       <div style={{ position: "absolute", top: 6, left: 6, zIndex: 10 }}>
         <IconButton
           size="small"
@@ -349,30 +334,6 @@ function PhotoCell({
           sx={{ fontSize: 12, verticalAlign: "middle", mr: 0.3 }}
         />
         {photo.datePhoto || "—"}
-      </div>
-
-      {/* overlay */}
-      <div
-        style={{
-          position: "absolute",
-          inset: 0,
-          backgroundColor: "rgba(0,0,0,0.5)",
-          color: "#fff",
-          opacity: hover ? 1 : 0,
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "center",
-          alignItems: "center",
-          textAlign: "center",
-          padding: 8,
-          transition: "opacity 0.2s",
-        }}
-      >
-        <Typography variant="subtitle1">{photo.title}</Typography>
-        <Typography variant="subtitle1">{photo.description}</Typography>
-        <Typography variant="caption" mt={0.5}>
-          🏷️ На фото: {peopleText || "—"}
-        </Typography>
       </div>
     </div>
   );
@@ -922,7 +883,6 @@ export default function PhotoGallery({ personId, allPeople, refresh }) {
               rowHeight={rowHeight}
               isDark={isDark}
               personId={personId}
-              allPeople={allPeople}
             />
           )}
         />

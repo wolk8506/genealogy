@@ -77,6 +77,14 @@ function buildPhotoMenu(photo, wc, options = {}) {
         click: () => wc.send("photo:delete", photo.id),
       }
     );
+  } else if (includeDelete && "onVisible" === personId) {
+    tpl.push(
+      { type: "separator" },
+      {
+        label: "🗑️ Удалить",
+        click: () => wc.send("photo:delete", photo),
+      }
+    );
   }
 
   return tpl;
@@ -90,10 +98,11 @@ ipcMain.on(
     const options =
       menuType === "lite"
         ? {
-            includeEdit: false,
-            includeDelete: false,
+            includeEdit: true,
+            includeDelete: true,
             includeInfo: true,
             includeDownload: true,
+            personId: "onVisible",
           }
         : {
             includeEdit: true,

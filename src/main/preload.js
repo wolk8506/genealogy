@@ -30,6 +30,11 @@ contextBridge.exposeInMainWorld("changelogAPI", {
   onOpen: (callback) =>
     ipcRenderer.on("open-changelog-modal", () => callback()),
 });
+contextBridge.exposeInMainWorld("userGuideAPI", {
+  read: () => ipcRenderer.invoke("userGuide:read"),
+  onOpen: (callback) =>
+    ipcRenderer.on("open-userGuide-modal", () => callback()),
+});
 
 // 👤 Люди ✅
 contextBridge.exposeInMainWorld("peopleAPI", {
@@ -63,6 +68,15 @@ contextBridge.exposeInMainWorld("photoAPI", {
   delete: (personId, id) => ipcRenderer.invoke("photo:delete", personId, id),
   selectFile: () => ipcRenderer.invoke("photo:selectFile"),
   getAllGlobal: () => ipcRenderer.invoke("photo:getAllGlobal"),
+  // переместить фото в папку нового владельца
+  moveFile: (oldOwnerId, newOwnerId, filename) =>
+    ipcRenderer.invoke("file:moveFile", oldOwnerId, newOwnerId, filename),
+
+  removeFromOwnerJson: (ownerId, opts) =>
+    ipcRenderer.invoke("photo:removeFromOwnerJson", ownerId, opts),
+  addOrUpdateOwnerJson: (ownerId, photoObj) =>
+    ipcRenderer.invoke("photo:addOrUpdateOwnerJson", ownerId, photoObj),
+
   saveBlobFile: async (meta, blob, filename) => {
     const arrayBuffer = await blob.arrayBuffer();
     return ipcRenderer.invoke(
@@ -158,6 +172,17 @@ contextBridge.exposeInMainWorld("fileAPI", {
   delete: (path) => ipcRenderer.invoke("file:delete", path),
   writeBuffer: (filePath, buffer) =>
     ipcRenderer.invoke("file:write-buffer", filePath, buffer),
+
+  moveFile: (oldOwnerId, newOwnerId, oldFilename, newFilename) =>
+    ipcRenderer.invoke(
+      "file:moveFile",
+      oldOwnerId,
+      newOwnerId,
+      oldFilename,
+      newFilename
+    ),
+  renameFile: (ownerId, oldFilename, newFilename) =>
+    ipcRenderer.invoke("file:renameFile", ownerId, oldFilename, newFilename),
 });
 
 contextBridge.exposeInMainWorld("pathAPI", {
@@ -168,10 +193,14 @@ contextBridge.exposeInMainWorld("pathAPI", {
 });
 
 contextBridge.exposeInMainWorld("archiveAPI", {
-  create: (filePaths, archiveName) =>
-    ipcRenderer.invoke("archive:create", filePaths, archiveName),
-  onProgress: (handler) =>
-    ipcRenderer.on("archive:progress", (_, data) => handler(data)),
+  create: (filePaths, archivePath) =>
+    ipcRenderer.invoke("archive:create", filePaths, archivePath),
+  // onProgress(handler) -> возвращает функцию off()
+  onProgress: (handler) => {
+    const wrapped = (_, data) => handler(data);
+    ipcRenderer.on("archive:progress", wrapped);
+    return () => ipcRenderer.removeListener("archive:progress", wrapped);
+  },
 });
 
 // 📨 Диалоговые окна
@@ -180,6 +209,18 @@ contextBridge.exposeInMainWorld("dialogAPI", {
     ipcRenderer.invoke("dialog:chooseSavePath", defaultName),
   chooseSavePathPhoto: (defaultName) =>
     ipcRenderer.invoke("dialog:chooseSavePathPhoto", defaultName),
+
+  chooseOpenZip: () => ipcRenderer.invoke("dialog:chooseOpenZip"),
+  chooseSavePath: (defaultName) =>
+    ipcRenderer.invoke("dialog:chooseSavePath", defaultName),
+  chooseSavePathPhoto: (defaultName) =>
+    ipcRenderer.invoke("dialog:chooseSavePathPhoto", defaultName),
+});
+
+contextBridge.exposeInMainWorld("importAPI", {
+  importZip: (zipPath) => ipcRenderer.invoke("import:zip", zipPath),
+  onProgress: (handler) =>
+    ipcRenderer.on("import:progress", (_, data) => handler(data)),
 });
 
 // Контекстное меню
@@ -223,4 +264,9 @@ contextBridge.exposeInMainWorld("updater", {
     ipcRenderer.removeAllListeners("update:downloaded");
     ipcRenderer.removeAllListeners("app:update-available");
   },
+});
+
+//🚪 Выход из приложения
+contextBridge.exposeInMainWorld("electronAPI", {
+  quitApp: () => ipcRenderer.send("app:quit"),
 });

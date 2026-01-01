@@ -10,6 +10,7 @@ import {
   Avatar,
   Typography,
   Stack,
+  IconButton,
 } from "@mui/material";
 import Cropper from "react-easy-crop";
 import PhotoCameraIcon from "@mui/icons-material/PhotoCamera";
@@ -26,35 +27,63 @@ export default function AvatarEditorDialog({
   open,
   onClose,
   personId,
-  currentAvatarPath,
   onSaved,
 }) {
   const [imageSrc, setImageSrc] = useState(null);
-  const [fallback, setFallback] = useState(currentAvatarPath);
+  const [fallback, setFallback] = useState(null);
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
   const [dragCounter, setDragCounter] = useState(0);
   const isDragging = dragCounter > 0;
+  const [croppedPreview, setCroppedPreview] = useState(null);
 
   useEffect(() => {
-    if (open) {
+    let isMounted = true;
+    if (open && personId) {
       resetState();
-      setFallback(currentAvatarPath);
+      window.avatarAPI.getPath(personId).then((path) => {
+        if (isMounted) {
+          setFallback(path ? `${path}?t=${Date.now()}` : null);
+        }
+      });
     }
-  }, [open, currentAvatarPath]);
+    return () => {
+      isMounted = false;
+    };
+  }, [open, personId]);
 
   const resetState = () => {
+    if (croppedPreview) {
+      URL.revokeObjectURL(croppedPreview);
+    }
     setImageSrc(null);
     setZoom(1);
     setCrop({ x: 0, y: 0 });
     setCroppedAreaPixels(null);
     setDragCounter(0);
+    setCroppedPreview(null);
   };
 
-  const onCropComplete = useCallback((_, pixels) => {
-    setCroppedAreaPixels(pixels);
-  }, []);
+  const onCropComplete = useCallback(
+    async (_, pixels) => {
+      setCroppedAreaPixels(pixels);
+      if (imageSrc) {
+        try {
+          const blob = await getCroppedImg(imageSrc, pixels);
+          const previewUrl = URL.createObjectURL(blob);
+          // освобождаем старый превью, если был
+          if (croppedPreview) {
+            URL.revokeObjectURL(croppedPreview);
+          }
+          setCroppedPreview(previewUrl);
+        } catch (e) {
+          console.error("Ошибка генерации превью", e);
+        }
+      }
+    },
+    [imageSrc, croppedPreview]
+  );
 
   // Общий хелпер: читаем File или Blob или ArrayBuffer, возвращаем Data URL
   const toDataURL = (blobOrFile) =>
@@ -145,12 +174,28 @@ export default function AvatarEditorDialog({
     await window.avatarAPI.delete(personId);
     onSaved(null);
     resetState();
+    setFallback(null); // или currentAvatarPath, если хочешь сразу показать дефолт
+  };
+
+  const handleClose = () => {
+    resetState(); // очистка всех локальных стейтов, включая croppedPreview
+    onClose(); // вызов внешнего обработчика
+  };
+
+  const minZoom = 1;
+  const maxZoom = 10;
+  const stepZoom = 0.1;
+  const handleZoomOut = () => {
+    setZoom((z) => Math.max(z - stepZoom, minZoom));
+  };
+  const handleZoomIn = () => {
+    setZoom((z) => Math.min(z + stepZoom, maxZoom));
   };
 
   return (
     <Dialog
       open={open}
-      onClose={onClose}
+      onClose={handleClose}
       fullWidth
       maxWidth="sm"
       PaperProps={{
@@ -162,9 +207,13 @@ export default function AvatarEditorDialog({
       <DialogTitle>Редактировать аватар</DialogTitle>
       <DialogContent>
         <Stack spacing={2} alignItems="center" mb={2}>
-          <Avatar src={imageSrc || fallback} sx={{ width: 80, height: 80 }} />
+          <Avatar
+            src={croppedPreview || fallback}
+            sx={{ width: 120, height: 120 }}
+          />
+
           <Typography variant="body2" color="text.secondary">
-            {imageSrc ? "Новый аватар" : "Текущий аватар"}
+            {imageSrc ? "Новый аватар (превью кропа)" : "Текущий аватар"}{" "}
           </Typography>
         </Stack>
 
@@ -217,25 +266,46 @@ export default function AvatarEditorDialog({
               onCropChange={setCrop}
               onZoomChange={setZoom}
               onCropComplete={onCropComplete}
+              zoomWithScroll={true}
             />
             <Stack direction="row" spacing={1} alignItems="center" mt={2}>
-              <ZoomOutIcon />
+              <IconButton
+                onClick={handleZoomOut}
+                disabled={zoom <= minZoom}
+                variant="outlined"
+                size="small"
+              >
+                <ZoomOutIcon />
+              </IconButton>
               <Slider
                 value={zoom}
-                min={1}
-                max={3}
-                step={0.1}
+                min={minZoom}
+                max={maxZoom}
+                step={stepZoom}
+                marks={[
+                  { value: 1, label: "1x" },
+                  { value: 3, label: "3x (граница)" },
+                  { value: 5, label: "5x" },
+                  { value: 10, label: "10x" },
+                ]}
                 onChange={(e, v) => setZoom(v)}
                 sx={{ flexGrow: 1 }}
               />
-              <ZoomInIcon />
+              <IconButton
+                onClick={handleZoomIn}
+                disabled={zoom >= maxZoom}
+                variant="outlined"
+                size="small"
+              >
+                <ZoomInIcon />
+              </IconButton>
             </Stack>
           </Box>
         )}
       </DialogContent>
 
       <DialogActions>
-        <Button onClick={onClose} startIcon={<CancelIcon />}>
+        <Button onClick={handleClose} startIcon={<CancelIcon />}>
           Закрыть
         </Button>
         <Button color="error" onClick={handleReset} startIcon={<RestoreIcon />}>

@@ -60,3 +60,7 @@ ipcMain.handle("window:isFullscreen", () => {
 ipcMain.handle("path:getTempDir", () => {
   return path.join(app.getPath("documents"), "Genealogy", "temp");
 });
+
+ipcMain.on("app:quit", () => {
+  app.quit();
+});

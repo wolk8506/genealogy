@@ -354,21 +354,42 @@ export default function PersonPage() {
     setFactsEditorOpen(true);
   };
 
-  const deleteFact = async (index) => {
-    const updatedFacts = safeFacts.filter((_, i) => i !== index);
-    const updatedPerson = { ...person, facts: updatedFacts };
+  const saveFact = async (fact) => {
+    const now = new Date().toISOString();
+
+    // генерируем новый id
+    const maxId =
+      safeFacts.length > 0 ? Math.max(...safeFacts.map((f) => f.id || 0)) : 0;
+    const newId = maxId + 1;
+
+    const updatedFacts =
+      editingFactIndex == null
+        ? [...safeFacts, { ...fact, id: newId, createdAt: now, editedAt: now }]
+        : safeFacts.map((f, i) =>
+            i === editingFactIndex
+              ? {
+                  ...f,
+                  ...fact,
+                  id: f.id,
+                  createdAt: f.createdAt || now,
+                  editedAt: now,
+                }
+              : f
+          );
+
+    const updatedPerson = { ...person, facts: updatedFacts, editedAt: now };
+
     await window.peopleAPI.saveAll(
       (allPeople || []).map((p) => (p.id === person.id ? updatedPerson : p))
     );
     await handleSave();
   };
 
-  const saveFact = async (fact) => {
-    const updatedFacts =
-      editingFactIndex == null
-        ? [...safeFacts, fact]
-        : safeFacts.map((f, i) => (i === editingFactIndex ? fact : f));
-    const updatedPerson = { ...person, facts: updatedFacts };
+  const deleteFact = async (index) => {
+    const now = new Date().toISOString();
+    const updatedFacts = safeFacts.filter((_, i) => i !== index);
+    const updatedPerson = { ...person, facts: updatedFacts, editedAt: now };
+
     await window.peopleAPI.saveAll(
       (allPeople || []).map((p) => (p.id === person.id ? updatedPerson : p))
     );
@@ -390,12 +411,30 @@ export default function PersonPage() {
 
   // Сохранение
   const saveEvent = async (ev) => {
+    const now = new Date().toISOString();
+
+    // генерируем новый id
+    const maxId =
+      safeEvents.length > 0 ? Math.max(...safeEvents.map((e) => e.id || 0)) : 0;
+    const newId = maxId + 1;
+
     const updatedEvents =
       editingEventIndex == null
-        ? [...safeEvents, ev]
-        : safeEvents.map((e, i) => (i === editingEventIndex ? ev : e));
+        ? [...safeEvents, { ...ev, id: newId, createdAt: now, editedAt: now }]
+        : safeEvents.map((e, i) =>
+            i === editingEventIndex
+              ? {
+                  ...e,
+                  ...ev,
+                  id: e.id,
+                  createdAt: e.createdAt || now,
+                  editedAt: now,
+                }
+              : e
+          );
 
-    const updatedPerson = { ...person, events: updatedEvents };
+    const updatedPerson = { ...person, events: updatedEvents, editedAt: now };
+
     await window.peopleAPI.saveAll(
       (allPeople || []).map((p) => (p.id === person.id ? updatedPerson : p))
     );
@@ -404,8 +443,10 @@ export default function PersonPage() {
 
   // Удаление
   const deleteEvent = async (index) => {
+    const now = new Date().toISOString();
     const updatedEvents = safeEvents.filter((_, i) => i !== index);
-    const updatedPerson = { ...person, events: updatedEvents };
+    const updatedPerson = { ...person, events: updatedEvents, editedAt: now };
+
     await window.peopleAPI.saveAll(
       (allPeople || []).map((p) => (p.id === person.id ? updatedPerson : p))
     );
@@ -518,7 +559,12 @@ export default function PersonPage() {
             alignItems="top"
             justifyContent="space-between"
           >
-            <Stack direction="row" spacing={3} alignItems="flex-start">
+            <Stack
+              direction="row"
+              spacing={3}
+              alignItems="flex-start"
+              minWidth={"450px"}
+            >
               <Box
                 onClick={() => setAvatarEditorOpen(true)}
                 sx={{ cursor: "pointer" }}
@@ -534,6 +580,7 @@ export default function PersonPage() {
                 open={avatarEditorOpen}
                 onClose={() => setAvatarEditorOpen(false)}
                 personId={person.id}
+                currentAvatarPath={initials}
                 onSaved={() => setRefreshPhotos((r) => r + 1)} // 👈 триггерим обновление
               />
               <Stack spacing={0.5}>
@@ -612,10 +659,11 @@ export default function PersonPage() {
                   onSave={handleSave}
                   allPeople={allPeople}
                 />
-              </Stack>
+              </Stack>{" "}
             </Stack>
 
-            <Stack spacing={0.5} sx={{ ml: "auto" }}>
+            <Divider orientation="vertical" flexItem></Divider>
+            <Stack spacing={0.5} sx={{ ml: "auto", display: "flex" }}>
               <PersonEvents
                 allPeople={allPeople}
                 birthday={person.birthday}
@@ -637,7 +685,13 @@ export default function PersonPage() {
                 onDelete={() => deleteEvent(editingEventIndex)}
               />
             </Stack>
-            <Stack spacing={0.5} sx={{ ml: "auto" }}>
+            <Divider orientation="vertical" flexItem></Divider>
+            <Stack
+              spacing={0.5}
+              alignItems={"flex-start"}
+              flexDirection={"row"}
+              sx={{ ml: "auto" }}
+            >
               <PersonFacts
                 facts={safeFacts}
                 onAdd={openAddFact}

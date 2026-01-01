@@ -25,7 +25,7 @@ export default function ExportConfirmModal({
       open={open}
       onClose={onCancel}
       maxWidth="sm"
-      br
+      // br
       fullWidth
       PaperProps={{
         sx: {

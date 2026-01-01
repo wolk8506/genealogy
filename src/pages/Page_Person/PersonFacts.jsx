@@ -10,7 +10,7 @@ import {
   Divider,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
-
+import InfoOutlineIcon from "@mui/icons-material/InfoOutline";
 import BloodtypeIcon from "@mui/icons-material/Bloodtype";
 import ManIcon from "@mui/icons-material/Man";
 import VisibilityIcon from "@mui/icons-material/Visibility";
@@ -52,14 +52,33 @@ function getIcon(type) {
 
 export default function PersonFacts({ facts = [], onAdd, onEdit }) {
   return (
-    <Box sx={{ minWidth: 300 }}>
+    <Box
+      // sx={{ minWidth: 300 }}
+      sx={{
+        border: "solid 1px",
+        borderColor: "divider",
+        p: 1,
+        minWidth: "350px",
+        borderRadius: "15px",
+      }}
+    >
       <Box
         display="flex"
         alignItems="center"
         justifyContent="space-between"
         mb={1}
       >
-        <Typography variant="subtitle1">Факты</Typography>
+        <Box
+          display="flex"
+          alignItems="center"
+          justifyContent="flex-start"
+          gap={1}
+        >
+          <InfoOutlineIcon />
+          <Typography variant="subtitle1">Факты</Typography>
+          <Typography variant="subtitle1">({facts.length})</Typography>
+        </Box>
+
         {onAdd && (
           <IconButton onClick={onAdd}>
             <AddIcon />

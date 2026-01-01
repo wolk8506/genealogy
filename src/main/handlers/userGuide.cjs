@@ -2,11 +2,15 @@ const { ipcMain } = require("electron");
 const fs = require("fs");
 const path = require("path");
 
-ipcMain.handle("changelog:read", async () => {
+ipcMain.handle("userGuide:read", async () => {
   // dev: корень проекта
-  const devPath = path.join(process.cwd(), "CHANGELOG.md");
+  const devPath = path.join(process.cwd(), "USER_GUIDE.md");
   // prod: внутри app.asar
-  const prodPath = path.join(process.resourcesPath, "app.asar", "CHANGELOG.md");
+  const prodPath = path.join(
+    process.resourcesPath,
+    "app.asar",
+    "USER_GUIDE.md"
+  );
 
   let filePath;
   if (fs.existsSync(devPath)) {
@@ -18,6 +22,6 @@ ipcMain.handle("changelog:read", async () => {
   try {
     return fs.readFileSync(filePath, "utf-8");
   } catch (e) {
-    return `Файл CHANGELOG.md не найден по пути ${filePath}`;
+    return `Файл USER_GUIDE.md не найден по пути ${filePath}`;
   }
 });

@@ -9,7 +9,13 @@ import {
 
 export default function LicenseModal({ open, onClose }) {
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth="md"
+      PaperProps={{ sx: { borderRadius: "15px" } }}
+      fullWidth
+    >
       <DialogTitle>Лицензионное соглашение</DialogTitle>
       <DialogContent dividers>
         <Typography variant="body2" sx={{ whiteSpace: "pre-line" }}>

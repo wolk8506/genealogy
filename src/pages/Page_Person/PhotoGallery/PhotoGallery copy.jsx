@@ -26,7 +26,6 @@ import {
   DialogActions,
   Paper,
   ButtonGroup,
-  CircularProgress,
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import AddPhotoAlternateIcon from "@mui/icons-material/AddPhotoAlternate";
@@ -223,19 +222,7 @@ function PhotoCell({
   rowHeight,
   isDark,
   personId,
-  allPeople = [], // <- принимаем проп
 }) {
-  const [hover, setHover] = useState(false);
-
-  const peopleText = (photo.people || [])
-    .map((id) => {
-      const person = allPeople.find((p) => p.id === id);
-      return person
-        ? `${person.firstName || ""} ${person.lastName || ""}`.trim()
-        : `ID ${id}`;
-    })
-    .join(", ");
-
   return (
     <div
       onClick={() => onOpen(photo)}
@@ -248,8 +235,6 @@ function PhotoCell({
           personId
         );
       }}
-      onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => setHover(false)}
       style={{
         width: "100%",
         height: rowHeight,
@@ -290,7 +275,6 @@ function PhotoCell({
         </div>
       )}
 
-      {/* кнопки (скачать, редактировать, удалить) */}
       <div style={{ position: "absolute", top: 6, left: 6, zIndex: 10 }}>
         <IconButton
           size="small"
@@ -350,30 +334,6 @@ function PhotoCell({
         />
         {photo.datePhoto || "—"}
       </div>
-
-      {/* overlay */}
-      <div
-        style={{
-          position: "absolute",
-          inset: 0,
-          backgroundColor: "rgba(0,0,0,0.5)",
-          color: "#fff",
-          opacity: hover ? 1 : 0,
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "center",
-          alignItems: "center",
-          textAlign: "center",
-          padding: 8,
-          transition: "opacity 0.2s",
-        }}
-      >
-        <Typography variant="subtitle1">{photo.title}</Typography>
-        <Typography variant="subtitle1">{photo.description}</Typography>
-        <Typography variant="caption" mt={0.5}>
-          🏷️ На фото: {peopleText || "—"}
-        </Typography>
-      </div>
     </div>
   );
 }
@@ -401,10 +361,6 @@ export default function PhotoGallery({ personId, allPeople, refresh }) {
   const [sliderForcedFullscreen, setSliderForcedFullscreen] = useState(false);
   const [meta, setMeta] = useState(null);
   const [openDialog, setOpenDialog] = useState(false);
-
-  const [rename, setRename] = useState(false);
-  const [newFilename, setNewFilename] = useState("");
-  const [saving, setSaving] = useState(false); // если ещё нет
 
   // load metadata
   useEffect(() => {
@@ -568,8 +524,6 @@ export default function PhotoGallery({ personId, allPeople, refresh }) {
   const handleOpen = (photo) => {
     setCurrent({ ...photo });
     setOpen(true);
-    setRename(false);
-    setNewFilename(photo?.filename || "");
     // priority prefetch for dialog preview
     if (photo && !photoPaths[photo.id] && !pendingRef.current.has(photo.id)) {
       pendingRef.current.add(photo.id);
@@ -584,105 +538,11 @@ export default function PhotoGallery({ personId, allPeople, refresh }) {
     setOpen(false);
     setCurrent(null);
   };
-  // const handleSave = () => {
-  //   window.photoAPI.update(current.owner, current);
-  //   setPhotos((prev) => prev.map((p) => (p.id === current.id ? current : p)));
-  //   handleClose();
-  //   setRefreshPhotos((r) => r + 1);
-  // };
-  const handleSave = async () => {
-    if (!current) return;
-    setSaving(true);
-    try {
-      const oldOwner = current.owner;
-      const oldFilename = current.filename;
-      const newName = rename ? newFilename || oldFilename : oldFilename;
-      const filenameChanged = String(newName) !== String(oldFilename);
-
-      // 1) Переименование файла на диске (если имя изменилось)
-      if (filenameChanged) {
-        try {
-          if (window.fileAPI?.renameFile) {
-            // renameFile(owner, oldName, newName)
-            await window.fileAPI.renameFile(oldOwner, oldFilename, newName);
-          } else if (window.fileAPI?.moveFile) {
-            // fallback: moveFile(ownerFrom, ownerTo, oldName, newName)
-            await window.fileAPI.moveFile(
-              oldOwner,
-              oldOwner,
-              oldFilename,
-              newName
-            );
-          } else {
-            console.warn(
-              "fileAPI.renameFile/moveFile not available; file may remain unchanged on disk"
-            );
-          }
-        } catch (fileErr) {
-          console.warn("File rename failed", fileErr);
-          // продолжаем — обновим JSON и UI, чтобы метаданные соответствовали желаемому имени
-        }
-      }
-
-      // 2) Обновить JSON: удалить старую запись (если имя менялось)
-      try {
-        if (filenameChanged && window.photoAPI?.removeFromOwnerJson) {
-          await window.photoAPI.removeFromOwnerJson(oldOwner, {
-            filename: oldFilename,
-            id: current.id,
-          });
-        }
-      } catch (remErr) {
-        console.warn("removeFromOwnerJson warning", remErr);
-      }
-
-      // 3) Подготовить новую запись и добавить/обновить в JSON
-      const updatedEntry = {
-        ...current,
-        title: current.title,
-        description: current.description,
-        datePhoto: current.datePhoto,
-        filename: newName,
-        owner: oldOwner,
-        people: current.people,
-        aspectRatio: current.aspectRatio,
-      };
-
-      try {
-        if (window.photoAPI?.addOrUpdateOwnerJson) {
-          await window.photoAPI.addOrUpdateOwnerJson(oldOwner, updatedEntry);
-        } else if (window.photoAPI?.update) {
-          // возможный универсальный метод
-          await window.photoAPI.update(oldOwner, updatedEntry);
-        } else {
-          console.warn("photoAPI.addOrUpdateOwnerJson/update not available");
-        }
-      } catch (addErr) {
-        console.warn("addOrUpdateOwnerJson/update failed", addErr);
-      }
-
-      // 4) Обновить локальный стейт photos
-      setPhotos((prev) =>
-        prev.map((p) => (p.id === current.id ? { ...p, ...updatedEntry } : p))
-      );
-
-      // 5) Сбросить кеш пути, если имя изменилось
-      if (filenameChanged) {
-        setPhotoPaths((prev) => {
-          const copy = { ...prev };
-          delete copy[current.id];
-          return copy;
-        });
-      }
-
-      // 6) Закрыть диалог
-      handleClose();
-    } catch (e) {
-      console.error("Failed to save photo meta", e);
-      alert("Не удалось сохранить метаданные: " + (e.message || e));
-    } finally {
-      setSaving(false);
-    }
+  const handleSave = () => {
+    window.photoAPI.update(current.owner, current);
+    setPhotos((prev) => prev.map((p) => (p.id === current.id ? current : p)));
+    handleClose();
+    setRefreshPhotos((r) => r + 1);
   };
 
   const handlMaximazeWindow = async () => {
@@ -922,7 +782,6 @@ export default function PhotoGallery({ personId, allPeople, refresh }) {
               rowHeight={rowHeight}
               isDark={isDark}
               personId={personId}
-              allPeople={allPeople}
             />
           )}
         />
@@ -1055,48 +914,13 @@ export default function PhotoGallery({ personId, allPeople, refresh }) {
                 setDatePickerOpen(false);
               }}
             />
-            {/* ...существующие поля (title, description, ...) */}
-
-            <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
-              <TextField
-                label="Имя файла"
-                value={rename ? newFilename : current?.filename || ""}
-                onChange={(e) => setNewFilename(e.target.value)}
-                size="small"
-                fullWidth
-                helperText={
-                  rename
-                    ? "Введите новое имя файла (включая расширение)"
-                    : "Информационное поле. Нажмите «Переименовать», чтобы изменить имя на диске"
-                }
-                InputProps={{ readOnly: !rename }}
-              />
-              <Button
-                variant={rename ? "contained" : "outlined"}
-                onClick={() => {
-                  setRename((r) => !r);
-                  if (!rename) setNewFilename(current?.filename || "");
-                }}
-              >
-                {rename ? "Отмена" : "Переименовать"}
-              </Button>
-            </Box>
           </Stack>
         </DialogContent>
-        {/* <DialogActions sx={{ pr: "24px", pl: "24px", pb: "16px" }}>
+        <DialogActions sx={{ pr: "24px", pl: "24px", pb: "16px" }}>
           <Button onClick={handleClose}> Отмена</Button>
           <Button variant="contained" onClick={handleSave}>
             Сохранить
           </Button>
-        </DialogActions> */}
-        <DialogActions sx={{ pr: "24px", pl: "24px", pb: "16px" }}>
-          <Button onClick={handleClose} disabled={saving}>
-            Отмена
-          </Button>
-          <Button variant="contained" onClick={handleSave} disabled={saving}>
-            Сохранить
-          </Button>
-          {saving && <CircularProgress size={20} sx={{ ml: 2 }} />}
         </DialogActions>
       </Dialog>
 

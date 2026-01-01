@@ -78,21 +78,28 @@ export default function PersonEditDialog({
       form.lastName?.trim() ||
       form.patronymic?.trim() ||
       form.maidenName?.trim();
+
     if (!hasName) {
       setError("Укажите хотя бы имя, фамилию, отчество или девичью фамилию");
       return;
     }
 
-    // Клонируем массив всех людей
-    const all = allPeople.map((p) => ({ ...p }));
+    // 1) взять свежие данные
+    let all = await window.peopleAPI.getAll();
+
     const updated = { ...form };
+    const now = new Date().toISOString();
+
+    // 2) найти текущего человека по свежим данным
+    const personIdx = all.findIndex((x) => x.id === person.id);
+    const current = personIdx !== -1 ? all[personIdx] : person;
 
     // Старые связи
-    const oldFather = person.father ?? null;
-    const oldMother = person.mother ?? null;
-    const oldChildren = person.children || [];
-    const oldSpouse = person.spouse || [];
-    const oldSiblings = person.siblings || [];
+    const oldFather = current.father ?? null;
+    const oldMother = current.mother ?? null;
+    const oldChildren = current.children || [];
+    const oldSpouse = current.spouse || [];
+    const oldSiblings = current.siblings || [];
 
     // Новые связи
     const newFather = form.father ?? null;
@@ -102,35 +109,37 @@ export default function PersonEditDialog({
     const newSiblings = form.siblings || [];
 
     // === РОДИТЕЛИ ===
-    // Удаляем из oldFather.children связь
     if (oldFather && oldFather !== newFather) {
       const par = all.find((x) => x.id === oldFather);
-      if (par)
+      if (par) {
         par.children = (par.children || []).filter((id) => id !== person.id);
+        par.editedAt = now;
+      }
     }
-    // Добавляем в newFather.children
     if (newFather && newFather !== oldFather) {
       const par = all.find((x) => x.id === newFather);
       if (par && !(par.children || []).includes(person.id)) {
         par.children = [...(par.children || []), person.id];
+        par.editedAt = now;
       }
     }
 
-    // Аналогично для матери
     if (oldMother && oldMother !== newMother) {
       const par = all.find((x) => x.id === oldMother);
-      if (par)
+      if (par) {
         par.children = (par.children || []).filter((id) => id !== person.id);
+        par.editedAt = now;
+      }
     }
     if (newMother && newMother !== oldMother) {
       const par = all.find((x) => x.id === newMother);
       if (par && !(par.children || []).includes(person.id)) {
         par.children = [...(par.children || []), person.id];
+        par.editedAt = now;
       }
     }
 
     // === ДЕТИ ===
-    // Удаленные дети
     oldChildren
       .filter((cid) => !newChildren.includes(cid))
       .forEach((cid) => {
@@ -138,9 +147,10 @@ export default function PersonEditDialog({
         if (ch) {
           if (ch.father === person.id) ch.father = null;
           if (ch.mother === person.id) ch.mother = null;
+          ch.editedAt = now;
         }
       });
-    // Добавленные дети
+
     newChildren
       .filter((cid) => !oldChildren.includes(cid))
       .forEach((cid) => {
@@ -148,24 +158,28 @@ export default function PersonEditDialog({
         if (ch) {
           if (form.gender === "male") ch.father = person.id;
           if (form.gender === "female") ch.mother = person.id;
+          ch.editedAt = now;
         }
       });
 
     // === СУПРУГИ ===
-    // Удаленные
     oldSpouse
       .filter((sid) => !newSpouse.includes(sid))
       .forEach((sid) => {
         const sp = all.find((x) => x.id === sid);
-        if (sp) sp.spouse = (sp.spouse || []).filter((id) => id !== person.id);
+        if (sp) {
+          sp.spouse = (sp.spouse || []).filter((id) => id !== person.id);
+          sp.editedAt = now;
+        }
       });
-    // Добавленные
+
     newSpouse
       .filter((sid) => !oldSpouse.includes(sid))
       .forEach((sid) => {
         const sp = all.find((x) => x.id === sid);
         if (sp && !(sp.spouse || []).includes(person.id)) {
           sp.spouse = [...(sp.spouse || []), person.id];
+          sp.editedAt = now;
         }
       });
 
@@ -174,26 +188,36 @@ export default function PersonEditDialog({
       .filter((sid) => !newSiblings.includes(sid))
       .forEach((sid) => {
         const sib = all.find((x) => x.id === sid);
-        if (sib)
+        if (sib) {
           sib.siblings = (sib.siblings || []).filter((id) => id !== person.id);
+          sib.editedAt = now;
+        }
       });
+
     newSiblings
       .filter((sid) => !oldSiblings.includes(sid))
       .forEach((sid) => {
         const sib = all.find((x) => x.id === sid);
         if (sib && !(sib.siblings || []).includes(person.id)) {
           sib.siblings = [...(sib.siblings || []), person.id];
+          sib.editedAt = now;
         }
       });
 
-    // === Обновляем сам объект ===
-    const idx = all.findIndex((x) => x.id === person.id);
-    if (idx !== -1) all[idx] = updated;
+    // === Сам объект человека ===
+    if (personIdx !== -1) {
+      all[personIdx] = {
+        ...all[personIdx], // сохраняем служебные поля
+        ...updated, // накладываем изменения из формы
+        editedAt: now, // обновляем дату редактирования
+      };
+    }
 
-    // Сохраняем всё
+    // 3) сохранить и ре‑фетч
     await window.peopleAPI.saveAll(all);
+    const fresh = await window.peopleAPI.getAll();
     setSaved(true);
-    onSave?.();
+    onSave?.(fresh); // можно передать свежие данные наверх
     onClose();
   };
 
