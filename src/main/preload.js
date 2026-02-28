@@ -83,7 +83,7 @@ contextBridge.exposeInMainWorld("photoAPI", {
       "photo:saveBlobFile",
       meta,
       arrayBuffer,
-      filename
+      filename,
     );
   },
 });
@@ -144,6 +144,8 @@ contextBridge.exposeInMainWorld("appAPI", {
   resetSettings: () => ipcRenderer.invoke("app:resetSettings"),
   getBuildDate: () => ipcRenderer.invoke("app:getBuildDate"),
   getFolderSize: () => ipcRenderer.invoke("app:get-folder-size"),
+  getPersonFolderSize: (personId) =>
+    ipcRenderer.invoke("app:get-person-folder-size", personId), //Для страницы архив
   onFolderSizeUpdated: (callback) =>
     ipcRenderer.on("app:folder-size-updated", callback),
 });
@@ -179,7 +181,7 @@ contextBridge.exposeInMainWorld("fileAPI", {
       oldOwnerId,
       newOwnerId,
       oldFilename,
-      newFilename
+      newFilename,
     ),
   renameFile: (ownerId, oldFilename, newFilename) =>
     ipcRenderer.invoke("file:renameFile", ownerId, oldFilename, newFilename),

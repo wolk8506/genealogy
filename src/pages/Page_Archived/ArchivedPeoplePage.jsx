@@ -16,6 +16,7 @@ import {
   Backdrop,
   CircularProgress,
   TextField,
+  LinearProgress,
 } from "@mui/material";
 import {
   Archive as ArchiveIcon,
@@ -31,6 +32,9 @@ import { exportPeopleToZip } from "../utils/exportToZip";
 import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
 import { Fab, Zoom } from "@mui/material";
 import ErrorIcon from "@mui/icons-material/Error";
+import CameraAltIcon from "@mui/icons-material/CameraAlt";
+import FolderIcon from "@mui/icons-material/Folder";
+import PersonIcon from "@mui/icons-material/Person";
 
 export default function ArchivePage() {
   const [people, setPeople] = useState([]);
@@ -40,17 +44,55 @@ export default function ArchivePage() {
   const [selectedPeople, setSelectedPeople] = useState([]);
   const [isSaving, setIsSaving] = useState(false);
   const [saveDone, setSaveDone] = useState(false);
-  const [progress, setProgress] = useState(0);
+  // const [progress, setProgress] = useState(0);
   const [search, setSearch] = useState("");
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [exportStatus, setExportStatus] = useState("Подготовка архива...");
   const [exportError, setExportError] = useState(false);
+  const [sizes, setSizes] = useState({});
+  const [archiveProgress, setArchiveProgress] = useState({
+    phase: "idle",
+    percent: 0,
+    processedFiles: 0,
+    totalFiles: 0,
+    currentFile: "",
+    message: "",
+    currentOwner: null, // Добавляем поле для имени текущего человека
+  });
 
-  useEffect(() => {
-    window.archiveAPI?.onProgress(({ percent, phase }) => {
-      setProgress(percent);
-    });
-  }, []);
+  // Логика расчета процентов как в SettingsPage
+  const percentValue = (() => {
+    const bytePct = archiveProgress?.percent ?? 0;
+    if (typeof bytePct === "number" && bytePct > 0)
+      return Math.max(0, Math.min(100, bytePct));
+
+    if (archiveProgress?.totalFiles) {
+      return Math.round(
+        ((archiveProgress.processedFiles ?? 0) / archiveProgress.totalFiles) *
+          100,
+      );
+    }
+    return 0;
+  })();
+
+  // Вычисляем общий размер выбранных людей
+  const totalSelectedSize = useMemo(() => {
+    return selected
+      .reduce((acc, id) => {
+        // Извлекаем числовое значение размера из объекта sizes[id].data.size
+        const personSize = parseFloat(sizes[id]?.size || 0);
+        return acc + personSize;
+      }, 0)
+      .toFixed(2);
+  }, [selected, sizes]);
+
+  // Вычисляем общее количество фото выбранных людей
+  const totalSelectedPhotos = useMemo(() => {
+    return selected.reduce((acc, id) => {
+      const personPhotos = parseInt(sizes[id]?.count || 0, 10);
+      return acc + personPhotos;
+    }, 0);
+  }, [selected, sizes]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -68,10 +110,38 @@ export default function ArchivePage() {
     loadAll();
   }, []);
 
+  // --
+
+  // Размер занимаемого места на диске человеком
+  // 2. Функция для загрузки размеров всех отображаемых людей
+  const loadSizes = async (peopleList) => {
+    const newSizes = {};
+
+    const sizePromises = peopleList.map(async (p) => {
+      // Теперь здесь приходит объект { size, count }
+      const data = await window.appAPI.getPersonFolderSize(p.id);
+      return { id: p.id, data };
+    });
+
+    const results = await Promise.all(sizePromises);
+
+    results.forEach(({ id, data }) => {
+      newSizes[id] = data; // Сохраняем весь объект
+      // console.log(id, data.size, data.count);
+    });
+
+    setSizes(newSizes);
+  };
+
   const loadAll = async () => {
     const data = await window.peopleAPI.getAll();
-    setPeople(data || []);
+    const sortedData = data || [];
+    setPeople(sortedData);
+
+    // 3. Запускаем подсчет размеров после загрузки списка людей
+    loadSizes(sortedData);
   };
+  // --
 
   const archived = people.filter((p) => p.archived);
   const active = people.filter((p) => !p.archived);
@@ -98,50 +168,61 @@ export default function ArchivePage() {
 
   const handleToggle = (id) => {
     setSelected((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
     );
   };
 
-  const handleArchiveSelected = async () => {
-    const all = await window.peopleAPI.getAll();
-    setSelectedPeople(all.filter((p) => selected.includes(p.id)));
+  const handleArchiveSelected = () => {
+    // Не делайте getAll() здесь! У вас уже есть people в стейте.
+    const toExport = people.filter((p) => selected.includes(p.id));
+    setSelectedPeople(toExport);
     setConfirmOpen(true);
   };
 
   const handleConfirmExport = async () => {
     setConfirmOpen(false);
-    setIsSaving(true);
+    setIsSaving(true); // Включили Backdrop
     setSaveDone(false);
-    setProgress(0);
-    setExportError(false); // если используешь для статуса ошибки
+    setExportError(false);
     setExportStatus("Подготовка архива...");
 
     try {
-      const blob = await exportPeopleToZip({
+      const resultPath = await exportPeopleToZip({
         people: selectedPeople,
         filename: `Genealogy_selected_${Date.now()}.zip`,
-        onProgress: setProgress,
+        onProgress: (payload) => {
+          if (typeof payload === "number") {
+            setArchiveProgress((prev) => ({ ...prev, percent: payload }));
+          } else {
+            setArchiveProgress((prev) => ({ ...prev, ...payload }));
+          }
+        },
         onStatus: (msg) => setExportStatus(msg),
-        onError: (msg) => {
-          setExportStatus(msg);
+        onError: (errMsg) => {
+          setExportStatus(errMsg);
           setExportError(true);
         },
       });
 
-      if (!blob) return; // экспорт прерван
+      // --- ВОТ ЭТОТ БЛОК ИСПРАВЛЯЕТ ПРОБЛЕМУ ---
+      if (!resultPath) {
+        // Если пользователь нажал "Отмена" в системном диалоге
+        setIsSaving(false);
+        setExportStatus("");
+        return; // Просто выходим из функции
+      }
+      // -----------------------------------------
 
+      setExportPath(resultPath);
       setSaveDone(true);
       setSelected([]);
       setExportStatus("✅ Архив сохранён");
-      setTimeout(() => {
-        setIsSaving(false);
-        setSaveDone(false);
-        setProgress(0);
-      }, 1500);
     } catch (err) {
-      setExportStatus(`❌ Ошибка: ${err.message || "Неизвестно"}`);
-      setIsSaving(false);
+      console.error("Export error:", err);
+      setExportStatus(`❌ Ошибка: ${err?.message || "Неизвестно"}`);
       setExportError(true);
+      // В случае реальной ошибки Backdrop остается открытым,
+      // чтобы пользователь нажал кнопку "Закрыть" сам.
     }
   };
 
@@ -151,11 +232,6 @@ export default function ArchivePage() {
     setSelected((prev) => prev.filter((x) => x !== id));
   };
 
-  // const handleDeleteForever = async (id) => {
-  //   console.log("DELETE", id);
-  //   await window.peopleAPI.delete(id);
-  //   await loadAll();
-  // };
   const handleDeleteForever = async (id) => {
     const now = new Date().toISOString();
 
@@ -246,51 +322,107 @@ export default function ArchivePage() {
 
       {/* Action buttons */}
       {tab === 0 && (
-        <>
-          <Paper
-            elevation={1}
-            sx={{
-              position: "sticky",
-              borderRadius: 3,
-              top: { xs: 56, sm: 64 },
-              marginBottom: 2,
-              zIndex: 10,
-              // backgroundColor: theme.palette.background.paper,
-              p: 2,
-              // borderBottom: `1px solid ${theme.palette.divider}`,
-            }}
+        <Paper
+          elevation={1}
+          sx={{
+            position: "sticky",
+            borderRadius: 3,
+            top: { xs: 56, sm: 64 },
+            marginBottom: 2,
+            zIndex: 10,
+            p: 2,
+          }}
+        >
+          <Stack
+            direction="row"
+            spacing={2}
+            alignItems="center"
+            flexWrap="wrap"
           >
-            <Stack direction="row" spacing={2} alignItems="center">
-              <TextField
-                label="Поиск по имени или ID"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                size="small"
-                sx={{ flexGrow: 1 }}
-              />
+            <TextField
+              label="Поиск по имени или ID"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              size="small"
+              sx={{ flexGrow: 1, minWidth: "200px" }}
+            />
 
-              <Button
-                variant="contained"
-                startIcon={<ArchiveIcon />}
-                disabled={!selected.length}
-                onClick={handleArchiveSelected}
-                sx={{ mb: 2 }}
-              >
-                Экспорт выбранных ({selected.length})
-              </Button>
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={allSelected}
-                    indeterminate={!allSelected && someSelected}
-                    onChange={handleToggleAll}
-                  />
-                }
-                label="Выбрать все"
-              />
-            </Stack>
-          </Paper>
-        </>
+            {/* Статистика выбранного */}
+            {selected.length > 0 && (
+              <Box sx={{ textAlign: "right", px: 2, width: "210px" }}>
+                <Typography
+                  variant="caption"
+                  display="block"
+                  color="text.secondary"
+                  sx={{
+                    // fontWeight: "bold",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 0.5,
+                  }}
+                >
+                  {selected.length > 1 ? (
+                    <PeopleIcon sx={{ fontSize: "18px" }} />
+                  ) : (
+                    <PersonIcon sx={{ fontSize: "18px" }} />
+                  )}
+                  Выбрано: <b>{selected.length}</b>
+                </Typography>
+                <Typography
+                  variant="caption"
+                  display="block"
+                  color="primary"
+                  sx={{
+                    fontWeight: "bold",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 2,
+                  }}
+                >
+                  <span
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 3,
+                    }}
+                  >
+                    <FolderIcon sx={{ fontSize: 16 }} /> {totalSelectedSize} МБ
+                  </span>
+                  <span
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 3,
+                    }}
+                  >
+                    <CameraAltIcon sx={{ fontSize: 16 }} />
+                    {totalSelectedPhotos}
+                  </span>
+                </Typography>
+              </Box>
+            )}
+
+            <Button
+              variant="contained"
+              startIcon={<ArchiveIcon />}
+              disabled={!selected.length}
+              onClick={handleArchiveSelected}
+            >
+              Экспорт выбранных
+            </Button>
+
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={allSelected}
+                  indeterminate={!allSelected && someSelected}
+                  onChange={handleToggleAll}
+                />
+              }
+              label="Все"
+            />
+          </Stack>
+        </Paper>
       )}
 
       {/* Списки */}
@@ -341,7 +473,55 @@ export default function ArchivePage() {
                   primary={
                     `${p.firstName} ${p.lastName || ""}`.trim() || "Без имени"
                   }
-                  secondary={`ID: ${p.id}`}
+                  // primaryTypographyProps={{
+                  //   fontSize: "1.2rem", // Увеличиваем размер (было примерно 1rem)
+                  //   fontWeight: "bold", // Можно сделать жирным для акцента
+                  //   color: "text.primary",
+                  //   sx: { mb: 0.5 }, // Небольшой отступ снизу до вторичного текста
+                  // }}
+                  secondary={
+                    <Typography
+                      variant="body2"
+                      component="span"
+                      sx={{
+                        display: "flex",
+                        alignItems: "flex-end",
+                        gap: 3,
+                      }}
+                    >
+                      <span
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 5,
+                        }}
+                      >
+                        <PersonIcon sx={{ fontSize: 18 }} />
+                        ID: {p.id}
+                      </span>
+                      <span
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 5,
+                        }}
+                      >
+                        <CameraAltIcon sx={{ fontSize: 18 }} /> Фото в папке:{" "}
+                        <b>{sizes[p.id]?.count ?? 0}</b>{" "}
+                      </span>
+                      <span
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 5,
+                        }}
+                      >
+                        <FolderIcon sx={{ fontSize: 18 }} /> Размер на диске:{" "}
+                        <b>{sizes[p.id]?.size ?? "0.00"} МБ</b>
+                      </span>
+                    </Typography>
+                  }
+                  secondaryTypographyProps={{ component: "div" }}
                 />
               </ListItem>
             </Paper>
@@ -417,49 +597,83 @@ export default function ArchivePage() {
           color: "#fff",
           zIndex: (theme) => theme.zIndex.drawer + 1,
           flexDirection: "column",
+          p: 3,
+          backgroundColor: "rgba(0, 0, 0, 0.85)",
+          backdropFilter: "blur(4px)",
         }}
       >
         {exportError ? (
-          <>
-            <ErrorIcon sx={{ fontSize: 60, color: "red" }} />
-            <Box mt={2}>
-              <Typography variant="h6" color="inherit">
-                {exportStatus}
-              </Typography>
-            </Box>
-          </>
+          <Box sx={{ textAlign: "center" }}>
+            <ErrorIcon sx={{ fontSize: 70, color: "#ff1744", mb: 2 }} />
+            <Typography variant="h6">{exportStatus}</Typography>
+            <Button
+              variant="contained"
+              sx={{ mt: 3 }}
+              onClick={() => setIsSaving(false)}
+            >
+              Закрыть
+            </Button>
+          </Box>
         ) : saveDone ? (
-          <>
-            <CheckCircleIcon sx={{ fontSize: 60, color: "limegreen" }} />
-            <Box mt={2}>
-              <Typography variant="h6" color="inherit">
-                Архив сохранён!
-              </Typography>
-            </Box>
-          </>
+          <Box sx={{ textAlign: "center" }}>
+            <CheckCircleIcon sx={{ fontSize: 70, color: "#4caf50", mb: 2 }} />
+            <Typography variant="h6">Экспорт завершен!</Typography>
+            <Button
+              variant="contained"
+              sx={{ mt: 3 }}
+              onClick={() => setIsSaving(false)}
+            >
+              Готово
+            </Button>
+          </Box>
         ) : (
-          <>
-            <CircularProgress color="inherit" />
-            <Box mt={2}>
-              <Typography variant="h6" color="inherit">
-                {exportStatus} {progress > 0 && `${progress}%`}
+          <Box sx={{ width: "100%", maxWidth: 500, textAlign: "center" }}>
+            <CircularProgress color="inherit" sx={{ mb: 3 }} />
+
+            <Typography variant="h6" sx={{ mb: 1 }}>
+              {exportStatus}
+            </Typography>
+
+            {/* Имя текущего человека из прогресса */}
+            {archiveProgress.currentOwner && (
+              <Typography
+                variant="subtitle1"
+                sx={{ color: "#4fc3f7", fontWeight: "bold", mb: 2 }}
+              >
+                👤 Обработка: {archiveProgress.currentOwner}
+              </Typography>
+            )}
+
+            <Box sx={{ width: "100%", mt: 1 }}>
+              <Stack
+                direction="row"
+                justifyContent="space-between"
+                sx={{ mb: 1 }}
+              >
+                <Typography variant="body2">
+                  Файлов: {archiveProgress.processedFiles || 0}
+                  {archiveProgress.totalFiles
+                    ? ` из ${archiveProgress.totalFiles}`
+                    : ""}
+                </Typography>
+                <Typography variant="body2">{percentValue}%</Typography>
+              </Stack>
+
+              <LinearProgress
+                variant="determinate"
+                value={percentValue}
+                sx={{ height: 10, borderRadius: 5, mb: 2 }}
+              />
+
+              <Typography
+                variant="caption"
+                sx={{ display: "block", opacity: 0.7, fontStyle: "italic" }}
+              >
+                {archiveProgress.currentFile ||
+                  "Инициализация файловой системы..."}
               </Typography>
             </Box>
-          </>
-        )}
-        {exportError && (
-          <Button
-            variant="contained"
-            onClick={() => {
-              setIsSaving(false);
-              setExportError(false);
-              setExportStatus("");
-              setProgress(0);
-            }}
-            sx={{ mt: 2 }}
-          >
-            Закрыть
-          </Button>
+          </Box>
         )}
       </Backdrop>
 

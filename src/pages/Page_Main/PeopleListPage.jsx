@@ -20,15 +20,9 @@ import {
   Paper,
   FormControlLabel,
   Checkbox,
-  // MenuItem,
   Divider,
   ToggleButtonGroup,
   ToggleButton,
-  // Select,
-  // OutlinedInput,
-  // Chip,
-  // InputLabel,
-  // Box,
   Autocomplete,
 } from "@mui/material";
 
@@ -93,7 +87,7 @@ function checkDateFilter(dateStr, filter) {
   const startOfToday = new Date(
     now.getFullYear(),
     now.getMonth(),
-    now.getDate()
+    now.getDate(),
   );
   const startOfWeek = new Date(startOfToday);
   startOfWeek.setDate(startOfWeek.getDate() - 7);
@@ -140,7 +134,7 @@ function PeopleFilterDialog({
 
   const handleToggleGen = (g) => {
     setSelectedGens((prev) =>
-      prev.includes(g) ? prev.filter((x) => x !== g) : [...prev, g]
+      prev.includes(g) ? prev.filter((x) => x !== g) : [...prev, g],
     );
   };
 
@@ -929,7 +923,7 @@ export default function PeopleListPage() {
                 const g = p.generation ?? "Без поколения";
                 acc[g] = (acc[g] || 0) + 1;
                 return acc;
-              }, {})
+              }, {}),
             ).map(([g, cnt]) => (
               <Grid item xs={12} sm={6} md={4} key={g}>
                 <Paper
