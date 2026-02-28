@@ -34,6 +34,7 @@ import {
   getSiblingsButtonLabel,
   getSiblingsModalLabel,
 } from "./Function_getSiblingsButtonLabel";
+import EventCopyDialog from "./EventCopyDialog";
 
 import { formatAge } from "./HowOldIsThePerson";
 import { buildFamiliesForPerson } from "./Function_buildFamiliesForPerson";
@@ -57,6 +58,8 @@ export default function PersonPage() {
   const [eventEditorOpen, setEventEditorOpen] = useState(false);
   const [editingEventIndex, setEditingEventIndex] = useState(null);
   const [siblingsOpen, setSiblingsOpen] = useState(false);
+  const [copyDialogOpen, setCopyDialogOpen] = useState(false);
+  const [eventToCopy, setEventToCopy] = useState(null);
 
   useEffect(() => {
     const numericId = parseInt(id, 10);
@@ -374,13 +377,13 @@ export default function PersonPage() {
                   createdAt: f.createdAt || now,
                   editedAt: now,
                 }
-              : f
+              : f,
           );
 
     const updatedPerson = { ...person, facts: updatedFacts, editedAt: now };
 
     await window.peopleAPI.saveAll(
-      (allPeople || []).map((p) => (p.id === person.id ? updatedPerson : p))
+      (allPeople || []).map((p) => (p.id === person.id ? updatedPerson : p)),
     );
     await handleSave();
   };
@@ -391,7 +394,7 @@ export default function PersonPage() {
     const updatedPerson = { ...person, facts: updatedFacts, editedAt: now };
 
     await window.peopleAPI.saveAll(
-      (allPeople || []).map((p) => (p.id === person.id ? updatedPerson : p))
+      (allPeople || []).map((p) => (p.id === person.id ? updatedPerson : p)),
     );
     await handleSave();
   };
@@ -430,13 +433,13 @@ export default function PersonPage() {
                   createdAt: e.createdAt || now,
                   editedAt: now,
                 }
-              : e
+              : e,
           );
 
     const updatedPerson = { ...person, events: updatedEvents, editedAt: now };
 
     await window.peopleAPI.saveAll(
-      (allPeople || []).map((p) => (p.id === person.id ? updatedPerson : p))
+      (allPeople || []).map((p) => (p.id === person.id ? updatedPerson : p)),
     );
     await handleSave();
   };
@@ -448,11 +451,121 @@ export default function PersonPage() {
     const updatedPerson = { ...person, events: updatedEvents, editedAt: now };
 
     await window.peopleAPI.saveAll(
-      (allPeople || []).map((p) => (p.id === person.id ? updatedPerson : p))
+      (allPeople || []).map((p) => (p.id === person.id ? updatedPerson : p)),
     );
     await handleSave();
   };
+  //копирование события
+  // const handleConfirmCopy = async (targetPersonId, mode, eventIndex) => {
+  //   const now = new Date().toISOString();
+  //   const all = await window.peopleAPI.getAll();
+  //   const target = all.find((p) => p.id === targetPersonId);
+  //   if (!target) return;
 
+  //   let updatedEvents = Array.isArray(target.events) ? [...target.events] : [];
+
+  //   if (mode === "new") {
+  //     const maxId =
+  //       updatedEvents.length > 0
+  //         ? Math.max(...updatedEvents.map((e) => e.id || 0))
+  //         : 0;
+  //     updatedEvents.push({
+  //       ...eventToCopy,
+  //       id: maxId + 1,
+  //       createdAt: now,
+  //       editedAt: now,
+  //     });
+  //   } else if (mode === "replace") {
+  //     updatedEvents = updatedEvents.map((ev, idx) =>
+  //       idx === eventIndex
+  //         ? {
+  //             ...eventToCopy,
+  //             id: ev.id,
+  //             createdAt: ev.createdAt,
+  //             editedAt: now,
+  //           }
+  //         : ev,
+  //     );
+  //   }
+
+  //   const updatedTarget = { ...target, events: updatedEvents, editedAt: now };
+  //   const newAllPeople = all.map((p) =>
+  //     p.id === targetPersonId ? updatedTarget : p,
+  //   );
+
+  //   await window.peopleAPI.saveAll(newAllPeople);
+  //   setAllPeople(newAllPeople);
+  //   setEventEditorOpen(false); // Закрываем редактор
+  //   alert("Событие успешно перенесено!");
+  // };
+  const handleConfirmCopy = async (targetPersonId, mode, eventIndex) => {
+    const now = new Date().toISOString();
+
+    // 1. Подготавливаем "чистые" данные участников
+    const updatedParticipants = (eventToCopy.participants || []).map((id) => {
+      // Если в списке участников есть тот, кому мы копируем событие,
+      // заменяем его на текущего человека (автора события)
+      if (id === targetPersonId) {
+        return person.id;
+      }
+      return id;
+    });
+
+    // Если текущего человека (от кого копируем) еще нет в списке,
+    // и мы заменили целевого человека, то логика выше уже сработала.
+    // Но если целевого человека не было в участниках, возможно стоит его добавить?
+    // Обычно замена — это именно то, что нужно для парных событий.
+
+    const cleanEvent = {
+      ...eventToCopy,
+      type:
+        typeof eventToCopy.type === "object"
+          ? { name: eventToCopy.type.name }
+          : eventToCopy.type,
+      participants: updatedParticipants, // 👈 Обновленный список участников
+    };
+
+    const all = await window.peopleAPI.getAll();
+    const target = all.find((p) => p.id === targetPersonId);
+    if (!target) return;
+
+    let updatedEvents = Array.isArray(target.events) ? [...target.events] : [];
+
+    if (mode === "new") {
+      const maxId =
+        updatedEvents.length > 0
+          ? Math.max(...updatedEvents.map((e) => e.id || 0))
+          : 0;
+      updatedEvents.push({
+        ...cleanEvent,
+        id: maxId + 1,
+        createdAt: now,
+        editedAt: now,
+      });
+    } else if (mode === "replace") {
+      updatedEvents = updatedEvents.map((ev, idx) =>
+        idx === eventIndex
+          ? {
+              ...cleanEvent,
+              id: ev.id,
+              createdAt: ev.createdAt,
+              editedAt: now,
+            }
+          : ev,
+      );
+    }
+
+    const updatedTarget = { ...target, events: updatedEvents, editedAt: now };
+    const newAllPeople = all.map((p) =>
+      p.id === targetPersonId ? updatedTarget : p,
+    );
+
+    await window.peopleAPI.saveAll(newAllPeople);
+    setAllPeople(newAllPeople);
+    setEventEditorOpen(false);
+    alert(`Событие успешно скопировано для ${target.firstName}`);
+  };
+  // ---
   // Компонент модалки для братьев и сестёр
   function SiblingsDialog({ open, onClose, siblings = [] }) {
     const renderSiblingsItem = (p) => {
@@ -623,9 +736,9 @@ export default function PersonPage() {
                               person.gender === "male" ? "прожил " : "прожила "
                             } ${formatAge(person.birthday, person.died)})`
                           : !person.died ||
-                            person.died.trim().toLowerCase() === ""
-                          ? `(${formatAge(person.birthday, null)})`
-                          : ""}
+                              person.died.trim().toLowerCase() === ""
+                            ? `(${formatAge(person.birthday, null)})`
+                            : ""}
                       </span>
                     )}
                   </Typography>
@@ -672,6 +785,7 @@ export default function PersonPage() {
                 onEdit={openEditEvent}
               />
 
+              {/* Основной редактор событий*/}
               <EventEditorDialog
                 allPeople={allPeople}
                 open={eventEditorOpen}
@@ -683,6 +797,20 @@ export default function PersonPage() {
                 }
                 onSave={saveEvent}
                 onDelete={() => deleteEvent(editingEventIndex)}
+                // Передаем функцию открытия модалки копирования
+                onCopyRequest={(data) => {
+                  setEventToCopy(data);
+                  setCopyDialogOpen(true);
+                }}
+              />
+
+              {/* Модальное окно копирования события*/}
+              <EventCopyDialog
+                open={copyDialogOpen}
+                onClose={() => setCopyDialogOpen(false)}
+                allPeople={allPeople}
+                eventData={eventToCopy}
+                onConfirmCopy={handleConfirmCopy}
               />
             </Stack>
             <Divider orientation="vertical" flexItem></Divider>
@@ -693,12 +821,14 @@ export default function PersonPage() {
               sx={{ ml: "auto" }}
             >
               <PersonFacts
+                person={person}
                 facts={safeFacts}
                 onAdd={openAddFact}
                 onEdit={openEditFact}
               />
 
               <FactsEditorDialog
+                person={person}
                 open={factsEditorOpen}
                 onClose={() => setFactsEditorOpen(false)}
                 initialFact={
@@ -713,7 +843,7 @@ export default function PersonPage() {
 
         {renderSectionFamilies(
           person.gender === "male" ? "Супруга" : "Супруг",
-          families
+          families,
         )}
 
         {/* {families.length < 1 && renderSection("Дети", children)} */}

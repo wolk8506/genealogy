@@ -9,62 +9,11 @@ import {
   Button,
   MenuItem,
   Autocomplete,
+  Box,
 } from "@mui/material";
 import CustomDatePickerDialog from "../../components/CustomDatePickerDialog";
-import EventIcon from "@mui/icons-material/Event";
-
-const EVENT_TYPES = [
-  "Бар-мицва",
-  "Бат-мицва",
-  "Благословение",
-  "Болезнь",
-  "Брак",
-  "Воинская награда",
-  "Воинская служба",
-  "Выкидыш",
-  "Выход на пенсию",
-  "Гражданство, подданство",
-  "Дворянский титул",
-  "Документ на владение",
-  "Завещание",
-  "Земельная сделка",
-  "Иммиграция",
-  "Инициация в церкви LDS",
-  "Иное событие",
-  "Конфирмация",
-  "Конфирмация в церкви LDS",
-  "Кремация",
-  "Крещение",
-  "Крещение в церкви LDS",
-  "Крещение взрослого",
-  "Крещение ребёнка",
-  "Место жительства",
-  "Миссия",
-  "Наследственное дело",
-  "Натурализация",
-  "Образование",
-  "Обрезание",
-  "Обучение",
-  "Окончание учебного заведения",
-  "Отлучение от церкви",
-  "Первое причастие",
-  "Перепись",
-  "Погребение",
-  "Посвящение в церкви LDS",
-  "Похоронная церемония",
-  "Призыв на воинскую службу",
-  "Прозвище",
-  "Религия",
-  "Род занятий",
-  "Рождение",
-  "Роспись",
-  "Рукоположение",
-  "Смерть",
-  "Соединение с родителями LDS",
-  "Увольнение с воинской службы",
-  "Усыновление",
-  "Эмиграция",
-];
+import { EVENT_TYPES } from "./EventTypesList";
+import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 
 export default function EventEditorDialog({
   open,
@@ -72,6 +21,7 @@ export default function EventEditorDialog({
   initialEvent,
   onSave,
   onDelete,
+  onCopyRequest,
   allPeople = [],
 }) {
   const [type, setType] = useState(EVENT_TYPES[0]);
@@ -84,7 +34,10 @@ export default function EventEditorDialog({
 
   useEffect(() => {
     if (open) {
-      setType(initialEvent?.type ?? EVENT_TYPES[0]);
+      setType(
+        EVENT_TYPES.find((i) => i.name === initialEvent?.type) ??
+          EVENT_TYPES[0],
+      );
       setDate(initialEvent?.date ?? "");
       setDescription(initialEvent?.description ?? "");
       setNotes(initialEvent?.notes ?? "");
@@ -94,7 +47,14 @@ export default function EventEditorDialog({
   }, [open, initialEvent]);
 
   const handleSave = () => {
-    onSave?.({ type, date, description, notes, place, participants });
+    onSave?.({
+      type: type.name,
+      date,
+      description,
+      notes,
+      place,
+      participants,
+    });
     onClose?.();
   };
 
@@ -115,7 +75,7 @@ export default function EventEditorDialog({
       <Dialog
         open={open}
         onClose={onClose}
-        maxWidth="xs"
+        maxWidth="sm"
         fullWidth
         PaperProps={{ sx: { borderRadius: "15px" } }}
       >
@@ -127,14 +87,37 @@ export default function EventEditorDialog({
             <TextField
               select
               label="Тип события"
-              value={type}
-              onChange={(e) => setType(e.target.value)}
+              value={type.name}
+              // onChange={(e) => setType({e.target.value})}
+              onChange={(e) =>
+                setType(EVENT_TYPES.find((i) => i.name === e.target.value))
+              }
               size="small"
               fullWidth
+              // Настройка отображения ВНУТРИ самого TextField после выбора
+              SelectProps={{
+                renderValue: (selected) => {
+                  const eventType = EVENT_TYPES.find(
+                    (t) => t.name === selected,
+                  );
+                  return (
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                      {eventType?.icon}
+                      {eventType?.name}
+                    </Box>
+                  );
+                },
+              }}
             >
               {EVENT_TYPES.map((t) => (
-                <MenuItem key={t} value={t}>
-                  <EventIcon fontSize="small" sx={{ mr: 1 }} /> {t}
+                <MenuItem
+                  key={t.name}
+                  value={t.name}
+                  // Выравнивание внутри списка (при наведении/выборе)
+                  sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                >
+                  {t.icon}
+                  {t.name}
                 </MenuItem>
               ))}
             </TextField>
@@ -188,6 +171,28 @@ export default function EventEditorDialog({
           {initialEvent && (
             <Button color="error" onClick={handleDelete} sx={{ mr: "auto" }}>
               Удалить
+            </Button>
+          )}
+          {initialEvent && (
+            <Button
+              startIcon={<ContentCopyIcon />}
+              onClick={() => {
+                // Создаем копию данных БЕЗ иконки
+                const dataToCopy = {
+                  // Если type — это объект {name, icon}, берем только name
+                  // Если type уже строка (вдруг), берем её
+                  type: type.name,
+                  date,
+                  description,
+                  notes,
+                  place,
+                  participants,
+                };
+
+                onCopyRequest?.(dataToCopy);
+              }}
+            >
+              Скопировать...
             </Button>
           )}
           <Button onClick={onClose}>Отмена</Button>

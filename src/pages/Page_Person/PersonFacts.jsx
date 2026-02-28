@@ -22,6 +22,7 @@ import ColorLensIcon from "@mui/icons-material/ColorLens";
 import PhoneIcon from "@mui/icons-material/Phone";
 import EmailIcon from "@mui/icons-material/Email";
 import FaceIcon from "@mui/icons-material/Face";
+import nationalities from "./nationalities.json";
 
 function getIcon(type) {
   switch (type) {
@@ -50,7 +51,22 @@ function getIcon(type) {
   }
 }
 
-export default function PersonFacts({ facts = [], onAdd, onEdit }) {
+function getValue(type, value, person) {
+  switch (type) {
+    case "Рост":
+      return value + " см";
+
+    case "Национальность":
+      return (
+        nationalities.find((n) => n.country === value)[person.gender] || null
+      );
+
+    default:
+      return value;
+  }
+}
+
+export default function PersonFacts({ person, facts = [], onAdd, onEdit }) {
   return (
     <Box
       // sx={{ minWidth: 300 }}
@@ -118,7 +134,8 @@ export default function PersonFacts({ facts = [], onAdd, onEdit }) {
                 <ListItemAvatar>{getIcon(fact.type)}</ListItemAvatar>
                 <ListItemText
                   primary={fact.type}
-                  secondary={fact.value}
+                  // secondary={fact.value}
+                  secondary={getValue(fact.type, fact.value, person)}
                   primaryTypographyProps={{ fontWeight: "bold" }}
                 />
               </ListItem>

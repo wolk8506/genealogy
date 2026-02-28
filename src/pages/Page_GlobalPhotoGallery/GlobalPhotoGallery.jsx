@@ -80,7 +80,7 @@ function GridByRowsNoDeps({
     const start = Math.max(0, Math.floor(st / rowFullHeight) - overscan);
     const visible = Math.min(
       rowCount - start,
-      Math.ceil(height / rowFullHeight) + overscan * 2
+      Math.ceil(height / rowFullHeight) + overscan * 2,
     );
     return { start, visible };
   }, [rowFullHeight, overscan, rowCount, height]);
@@ -98,7 +98,7 @@ function GridByRowsNoDeps({
             const fromIndex = start * columns;
             const toIndex = Math.min(
               itemsLen - 1,
-              fromIndex + visible * columns - 1
+              fromIndex + visible * columns - 1,
             );
             try {
               onVisibleRange({ fromIndex, toIndex });
@@ -122,7 +122,7 @@ function GridByRowsNoDeps({
         const fromIndex = start * columns;
         const toIndex = Math.min(
           itemsLen - 1,
-          fromIndex + visible * columns - 1
+          fromIndex + visible * columns - 1,
         );
         try {
           onVisibleRange({ fromIndex, toIndex });
@@ -152,7 +152,7 @@ function GridByRowsNoDeps({
           ) : (
             <div style={{ width: "100%", height: "100%" }} />
           )}
-        </div>
+        </div>,
       );
     }
     rows.push(
@@ -161,7 +161,7 @@ function GridByRowsNoDeps({
         style={{ display: "flex", gap: `${columnGap}px`, width: "100%" }}
       >
         {cells}
-      </div>
+      </div>,
     );
   }
 
@@ -236,7 +236,7 @@ export default function GlobalPhotoGallery() {
       const okPeople =
         !selectedPeople.length ||
         selectedPeople.some((sp) =>
-          [p.owner, ...(p.people || [])].includes(sp.id)
+          [p.owner, ...(p.people || [])].includes(sp.id),
         );
       return okText && okPeople;
     });
@@ -284,7 +284,7 @@ export default function GlobalPhotoGallery() {
       const first = u.firstName?.trim() || "";
       return (last + " " + first).toLowerCase();
     },
-    [allPeople]
+    [allPeople],
   );
 
   const grouped = useMemo(() => {
@@ -335,10 +335,10 @@ export default function GlobalPhotoGallery() {
     () =>
       allPeople.filter((u) =>
         filtered.some(
-          (p) => p.owner === u.id || (p.people || []).includes(u.id)
-        )
+          (p) => p.owner === u.id || (p.people || []).includes(u.id),
+        ),
       ),
-    [allPeople, filtered]
+    [allPeople, filtered],
   );
 
   // --- Callbacks (safe: they use derived values declared above) ---
@@ -363,7 +363,7 @@ export default function GlobalPhotoGallery() {
         pendingRef.current.delete(photo.id);
       }
     },
-    [photoPaths, setPathIfNotExists]
+    [photoPaths, setPathIfNotExists],
   );
 
   const flushQueue = useCallback(async () => {
@@ -398,7 +398,7 @@ export default function GlobalPhotoGallery() {
       }
       scheduleFlush();
     },
-    [sortedList, photoPaths, scheduleFlush]
+    [sortedList, photoPaths, scheduleFlush],
   );
 
   const openEditDialog = useCallback((photo) => {
@@ -542,7 +542,7 @@ export default function GlobalPhotoGallery() {
             oldOwner,
             newOwner,
             oldFilename,
-            newFilename
+            newFilename,
           );
         }
 
@@ -568,8 +568,8 @@ export default function GlobalPhotoGallery() {
         // 5) обновить локальный стейт photos
         setPhotos((prev) =>
           prev.map((p) =>
-            p.id === editingPhoto.id ? { ...p, ...newEntry } : p
-          )
+            p.id === editingPhoto.id ? { ...p, ...newEntry } : p,
+          ),
         );
 
         // 6) сбросить кеш пути (если имя или владелец изменились)
@@ -587,7 +587,7 @@ export default function GlobalPhotoGallery() {
         setEditingPhoto(null);
       }
     },
-    [editingPhoto]
+    [editingPhoto],
   );
 
   const handleMetaClose = useCallback(() => {
@@ -610,7 +610,7 @@ export default function GlobalPhotoGallery() {
         }
         scheduleFlush();
       },
-    [photoPaths, scheduleFlush]
+    [photoPaths, scheduleFlush],
   );
 
   // --- Effects (safe: they can use sortedList now) ---
@@ -671,17 +671,10 @@ export default function GlobalPhotoGallery() {
     });
 
     ipcRenderer.on("photo:open", (_, id) => {
-      // console.log("id", { photo: { id: id.id } });
-      // const photo = {photo:{id}}
       openEditDialog(id);
-      // setOpenDialogUpdate(true);
     });
 
     ipcRenderer.on("photo:delete", (_, photo) => {
-      // if (confirm("Удалить фото?")) {
-      //   window.photoAPI.delete(id);
-      //   setPhotos((prev) => prev.filter((p) => p.id !== id));
-      // }
       handleDelete(photo);
     });
 
@@ -728,7 +721,7 @@ export default function GlobalPhotoGallery() {
   useEffect(() => {
     if (!fullscreen) return;
     const ids = [index - 1, index, index + 1].filter(
-      (i) => i >= 0 && i < sortedList.length
+      (i) => i >= 0 && i < sortedList.length,
     );
     const toLoad = ids.map((i) => sortedList[i]).filter(Boolean);
     toLoad.forEach((p) => {
@@ -746,15 +739,6 @@ export default function GlobalPhotoGallery() {
 
   // --- UI helpers & layout ---
   const scrollToTop = () => window.scrollTo({ top: 0, behavior: "smooth" });
-  // const quntityPhoto = sortedList?.length;
-  // const columns = 4;
-  // const columnGap = 8;
-  // const containerHeight = Math.max(300, window.innerHeight - 220);
-  // const baseWidth = Math.max(300, Math.floor(window.innerWidth * 0.9));
-  // const rowHeight =
-  //   viewMode === "square"
-  //     ? Math.floor(baseWidth / columns)
-  //     : Math.floor((baseWidth / columns) * 1.15);
 
   const handlMaximazeWindow = async () => {
     const wantFullscreen = !hideLabels;
@@ -811,7 +795,7 @@ export default function GlobalPhotoGallery() {
           window.contextAPI?.showPhotoMenu?.(
             photo,
             { x: e.clientX, y: e.clientY },
-            "lite"
+            "lite",
           );
         }}
         sx={{

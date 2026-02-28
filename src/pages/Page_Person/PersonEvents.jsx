@@ -12,149 +12,15 @@ import {
 import StarIcon from "@mui/icons-material/Star";
 
 import AddIcon from "@mui/icons-material/Add";
-import EventIcon from "@mui/icons-material/Event";
+
 import PlaceIcon from "@mui/icons-material/Place";
 import DescriptionIcon from "@mui/icons-material/Description";
 import NotesIcon from "@mui/icons-material/Notes";
 
-import CelebrationIcon from "@mui/icons-material/Celebration";
-import VolunteerActivismIcon from "@mui/icons-material/VolunteerActivism";
-import LocalHospitalIcon from "@mui/icons-material/LocalHospital";
-import MilitaryTechIcon from "@mui/icons-material/MilitaryTech";
-import HealthAndSafetyIcon from "@mui/icons-material/HealthAndSafety";
-import ElderlyIcon from "@mui/icons-material/Elderly";
-import PublicIcon from "@mui/icons-material/Public";
-import WorkspacePremiumIcon from "@mui/icons-material/WorkspacePremium";
-import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
-import AssignmentIcon from "@mui/icons-material/Assignment";
-import GavelIcon from "@mui/icons-material/Gavel";
-import LoginIcon from "@mui/icons-material/Login";
-import ChurchIcon from "@mui/icons-material/Church";
-import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
-import VerifiedUserIcon from "@mui/icons-material/VerifiedUser";
-import AirlineSeatIndividualSuiteIcon from "@mui/icons-material/AirlineSeatIndividualSuite";
-import EmojiFlagsIcon from "@mui/icons-material/EmojiFlags";
-import HomeIcon from "@mui/icons-material/Home";
-import AssignmentTurnedInIcon from "@mui/icons-material/AssignmentTurnedIn";
-import HowToRegIcon from "@mui/icons-material/HowToReg";
-import SchoolIcon from "@mui/icons-material/School";
-import BookmarkRemoveIcon from "@mui/icons-material/BookmarkRemove";
-import BookmarkAddedIcon from "@mui/icons-material/BookmarkAdded";
-import Inventory2Icon from "@mui/icons-material/Inventory2";
-import AccountCircleIcon from "@mui/icons-material/AccountCircle";
-import WorkIcon from "@mui/icons-material/Work";
-import ChildCareIcon from "@mui/icons-material/ChildCare";
-import PersonAddIcon from "@mui/icons-material/PersonAdd";
-import PersonRemoveIcon from "@mui/icons-material/PersonRemove";
-// import EventIcon from "@mui/icons-material/Event";
-import FavoriteIcon from "@mui/icons-material/Favorite";
-import HistoryEduIcon from "@mui/icons-material/HistoryEdu";
+import { EVENT_TYPES } from "./EventTypesList";
 
 import { ageAtEvent } from "./Function_ageAtEvent";
 import PersonAvatar from "../../components/PersonAvatar";
-function getEventIcon(type) {
-  switch (type) {
-    case "Бар-мицва":
-    case "Бат-мицва":
-      return <CelebrationIcon />;
-    case "Благословение":
-      return <VolunteerActivismIcon />;
-    case "Болезнь":
-      return <LocalHospitalIcon />;
-
-    // ИСПРАВЛЕНО: Добавлен return и отдельная иконка (Сердце)
-    case "Брак":
-      return <FavoriteIcon />;
-
-    // ИСПРАВЛЕНО: Добавлен return
-    case "Воинская награда":
-      return <MilitaryTechIcon />;
-    case "Воинская служба":
-    case "Призыв на воинскую службу":
-      return <MilitaryTechIcon />;
-
-    case "Выкидыш":
-      return <HealthAndSafetyIcon color="error" />;
-    case "Выход на пенсию":
-      return <ElderlyIcon />;
-    case "Гражданство, подданство":
-      return <PublicIcon />;
-    case "Дворянский титул":
-      return <WorkspacePremiumIcon />;
-    case "Документ на владение":
-      return <ReceiptLongIcon />;
-    case "Завещание":
-    case "Перепись":
-      return <AssignmentIcon />;
-    case "Земельная сделка":
-      return <GavelIcon />;
-    case "Иммиграция":
-    case "Эмиграция":
-      return <LoginIcon />;
-    case "Инициация в церкви LDS":
-    case "Посвящение в церкви LDS":
-      return <ChurchIcon />;
-    case "Иное событие":
-      return <AutoAwesomeIcon />;
-    case "Конфирмация":
-    case "Конфирмация в церкви LDS":
-      return <VerifiedUserIcon />;
-    case "Кремация":
-      return <AirlineSeatIndividualSuiteIcon />;
-    case "Крещение":
-      return <ChurchIcon />;
-    case "Крещение в церкви LDS":
-      return <ChurchIcon />;
-    case "Крещение взрослого":
-      return <ChurchIcon />;
-    case "Крещение ребёнка":
-      return <ChurchIcon />;
-    case "Миссия":
-      return <EmojiFlagsIcon />;
-    case "Место жительства":
-      return <HomeIcon />;
-    case "Наследственное дело":
-      return <AssignmentTurnedInIcon />;
-    case "Натурализация":
-    case "Рукоположение":
-      return <HowToRegIcon />;
-    case "Образование":
-    case "Обучение":
-    case "Окончание учебного заведения":
-      return <SchoolIcon />;
-    case "Обрезание":
-      return <HealthAndSafetyIcon />;
-    case "Отлучение от церкви":
-      return <BookmarkRemoveIcon color="error" />;
-    case "Первое причастие":
-      return <BookmarkAddedIcon />;
-    case "Погребение":
-    case "Похоронная церемония":
-      return <Inventory2Icon />;
-    case "Прозвище":
-      return <AccountCircleIcon />;
-    case "Религия":
-      return <ChurchIcon />;
-    case "Род занятий":
-      return <WorkIcon />;
-    case "Рождение":
-      return <ChildCareIcon />;
-
-    // ДОБАВЛЕНО: Иконка подписи/пера для регистрации брака
-    case "Роспись":
-      return <HistoryEduIcon />;
-
-    case "Смерть":
-      return <HealthAndSafetyIcon color="error" />;
-    case "Соединение с родителями LDS":
-    case "Усыновление":
-      return <PersonAddIcon />;
-    case "Увольнение с воинской службы":
-      return <PersonRemoveIcon />;
-    default:
-      return <EventIcon />;
-  }
-}
 
 export default function PersonEvents({
   birthday,
@@ -246,7 +112,10 @@ export default function PersonEvents({
                   pb: 0,
                 }}
               >
-                <ListItemAvatar>{getEventIcon(ev.type)}</ListItemAvatar>
+                {/* {console.log(EVENT_TYPES.filter((i) => i.name === ev.type))} */}
+                <ListItemAvatar>
+                  {EVENT_TYPES.find((i) => i.name === ev.type)?.icon}
+                </ListItemAvatar>
 
                 <ListItemText
                   primary={
