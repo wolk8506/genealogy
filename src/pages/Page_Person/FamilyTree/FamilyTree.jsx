@@ -164,10 +164,10 @@ export default function FamilyTree({
         ? "#8e24aa"
         : "#43a047"
       : attrs.gender === "male"
-      ? "#2196f3"
-      : attrs.gender === "female"
-      ? "#e91e63"
-      : "#999";
+        ? "#2196f3"
+        : attrs.gender === "female"
+          ? "#e91e63"
+          : "#999";
 
     return (
       <foreignObject width={180} height={80} x={-90} y={-40}>
@@ -232,7 +232,7 @@ export default function FamilyTree({
 
     const root = d3
       .hierarchy(data, (d) =>
-        d.children && d.children.length ? d.children : null
+        d.children && d.children.length ? d.children : null,
       )
       .sum(() => 1)
       .sort((a, b) => b.value - a.value);
@@ -296,7 +296,7 @@ export default function FamilyTree({
               d.data.attributes?.birthday
                 ? ` • ${escapeHtml(d.data.attributes.birthday)}`
                 : ""
-            }`
+            }`,
           );
       })
       .on("mousemove", function (event) {
@@ -355,7 +355,7 @@ export default function FamilyTree({
           .select(this)
           .attr(
             "transform",
-            `rotate(${rotateOuter}) translate(${r},0) rotate(${backRotate})`
+            `rotate(${rotateOuter}) translate(${r},0) rotate(${backRotate})`,
           )
           .attr("text-anchor", "middle")
           .style("pointer-events", "none")
@@ -444,13 +444,16 @@ export default function FamilyTree({
   const isVertical = !isRadial;
 
   return (
-    <Paper spacing={1} sx={{ borderRadius: "15px" }}>
+    <Paper
+      spacing={1}
+      sx={{ borderRadius: "15px", height: 1, position: "relative" }}
+    >
       <div
         id="tree-wrapper"
         ref={containerRef}
         style={{
           width: "100%",
-          height: "80vh",
+          height: "100%",
           position: "relative",
           overflow: "auto",
         }}

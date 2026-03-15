@@ -6,13 +6,17 @@ const path = require("path");
   const Store = (await import("electron-store")).default;
   const settingsStore = new Store({ name: "settings" });
 
+  if (!settingsStore.has("importSettings")) {
+    settingsStore.set("importSettings", { keepOriginals: true, quality: 80 });
+  }
+
   // Передаём Store в модуль настроек
   require("./handlers/settings.cjs")(settingsStore);
 
   // Остальные хендлеры
   require("./handlers/avatar.cjs");
   require("./handlers/people.cjs");
-  require("./handlers/photo.cjs");
+  require("./handlers/photo.cjs")(settingsStore);
   require("./handlers/bio.cjs");
   require("./handlers/photos.cjs");
   require("./handlers/app.cjs");
@@ -26,6 +30,7 @@ const path = require("path");
   require("./handlers/import.cjs");
   require("./handlers/dialogs.cjs");
   require("./handlers/dataStore.cjs");
+  require("./handlers/photoConversion.cjs"); // для конвертера фотографий нв странице архив
 
   // чтобы не дергать whenReady() дважды — делаем один раз:
   app.whenReady().then(async () => {

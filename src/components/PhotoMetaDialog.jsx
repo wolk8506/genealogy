@@ -1,4 +1,3 @@
-// PhotoMetaDialog.jsx
 import React from "react";
 import {
   Dialog,
@@ -7,44 +6,17 @@ import {
   DialogActions,
   Typography,
   Button,
-  Stack,
   Box,
-  Tooltip,
+  Chip,
+  Stack,
+  Paper,
 } from "@mui/material";
 import InfoIcon from "@mui/icons-material/Info";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import CancelIcon from "@mui/icons-material/Cancel";
 
 export default function PhotoMetaDialog({ openDialog, meta, onClose }) {
-  // console.log("openDialog", openDialog);
-
-  const data = !meta
-    ? []
-    : [
-        { name: "Название:", value: meta?.filename },
-        { name: "Путь:", value: meta?.path },
-        { name: "Размер:", value: meta?.sizeKB },
-        { name: "Разрешение:", value: `${meta?.width} x ${meta.height}` },
-        { name: "Создано:", value: meta?.created },
-      ];
-
-  if (!meta || meta.error) {
-    return (
-      <Dialog
-        open={openDialog}
-        onClose={onClose}
-        PaperProps={{ sx: { borderRadius: "15px" } }}
-      >
-        <DialogTitle>Информация о фото</DialogTitle>
-        <DialogContent>
-          <Typography color="error">
-            Не удалось получить информацию о фото.
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={onClose}>Закрыть</Button>
-        </DialogActions>
-      </Dialog>
-    );
-  }
+  if (!meta) return null;
 
   return (
     <Dialog
@@ -54,70 +26,108 @@ export default function PhotoMetaDialog({ openDialog, meta, onClose }) {
       fullWidth
       PaperProps={{ sx: { borderRadius: "15px" } }}
     >
-      <Box sx={{ display: "flex", alignItems: "center", p: "24px" }}>
-        <InfoIcon sx={{ mr: 2 }} />
-        <Typography>Информация о фото</Typography>
+      <Box sx={{ display: "flex", alignItems: "center", p: 3, pb: 1 }}>
+        <InfoIcon sx={{ mr: 1.5, color: "primary.main", fontSize: 28 }} />
+        <Typography variant="h6" fontWeight="bold">
+          Состояние медиа-файлов
+        </Typography>
       </Box>
-      <DialogContent dividers>
-        {/* <Stack spacing={2}>
-          <Typography variant="body2">
-            📄 <strong>Название:</strong> {meta.filename}
-          </Typography>
-          <Typography variant="body2">
-            📍 <strong>Путь:</strong> {meta.path}
-          </Typography>
-          <Typography variant="body2">
-            💾 <strong>Размер:</strong> {meta.sizeKiB} ({meta.sizeKB})
-          </Typography>
-          <Typography variant="body2">
-            📐 <strong>Разрешение:</strong> {meta.width} × {meta.height}
-          </Typography>
-          <Typography variant="body2">
-            ⏱️ <strong>Создано:</strong> {meta.created}
-          </Typography>
-        </Stack> */}
-        {data.map((i) => (
-          <Box
-            key={i.name}
-            sx={{
-              display: "grid",
-              gridTemplateColumns: { xs: "1fr", sm: "20% 80%" }, // на мобильных — одна колонка
-              gap: 1,
-              alignItems: "start",
-              width: "100%",
-              py: 0.25,
-            }}
-          >
-            <Typography
-              variant="body2"
+
+      <DialogContent>
+        <Typography
+          variant="caption"
+          color="text.secondary"
+          sx={{ mb: 2, display: "block" }}
+        >
+          Уникальный ID: {meta.id}
+        </Typography>
+
+        <Stack spacing={2}>
+          {meta.details?.map((file, index) => (
+            <Paper
+              key={index}
+              variant="outlined"
               sx={{
-                textAlign: { xs: "left", sm: "right" }, // на десктопе правая выравнивание
-                pr: { sm: 1, xs: 0 },
-                fontWeight: 500,
-                display: "flex",
-                justifyContent: { xs: "flex-start", sm: "flex-end" },
-                gap: 1,
+                p: 2,
+                borderRadius: "12px",
+                borderColor: file.exists ? "divider" : "error.light",
+                bgcolor: file.exists ? "inherit" : "error.lightest", // если есть прозрачность в теме
               }}
             >
-              {i.name}
-            </Typography>
-            <Typography
-              variant="body2"
-              sx={
-                {
-                  // overflow: "hidden",
-                  // textOverflow: "ellipsis",
-                  // whiteSpace: "nowrap",
-                }
-              }
-            >
-              {i.value}
-            </Typography>
-          </Box>
-        ))}
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                }}
+              >
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                  {file.exists ? (
+                    <CheckCircleIcon color="success" fontSize="small" />
+                  ) : (
+                    <CancelIcon color="error" fontSize="small" />
+                  )}
+                  <Typography variant="body1" fontWeight="600">
+                    {file.type}
+                  </Typography>
+                </Box>
+                <Chip
+                  label={file.exists ? file.size : "Отсутствует"}
+                  size="small"
+                  color={file.exists ? "primary" : "error"}
+                  variant={file.exists ? "filled" : "outlined"}
+                />
+              </Box>
+              {file.exists && (
+                <Box
+                  sx={{
+                    mt: 1,
+                    pl: 1,
+                    borderLeft: "2px solid #ccc",
+                    opacity: 0.8,
+                  }}
+                >
+                  <Typography variant="caption" display="block">
+                    📏 Разрешение: <b>{file.res}</b>
+                  </Typography>
+                  <Typography variant="caption" display="block">
+                    📅 Создан: {file.date}
+                  </Typography>
+                  <Typography
+                    variant="caption"
+                    display="block"
+                    sx={{
+                      wordBreak: "break-all",
+                      color: "text.secondary",
+                      mt: 0.5,
+                      fontSize: "10px",
+                    }}
+                  >
+                    📂 {file.fullPath}
+                  </Typography>
+                </Box>
+              )}
+              {/* <Typography
+                variant="caption"
+                sx={{
+                  mt: 1,
+                  display: "block",
+                  color: "text.secondary",
+                  fontStyle: "italic",
+                }}
+              >
+                {file.name}
+                {console.log(file)}
+              </Typography> */}
+            </Paper>
+          ))}
+        </Stack>
       </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose}>Закрыть</Button>
+
+      <DialogActions sx={{ p: 2 }}>
+        <Button onClick={onClose} variant="outlined" color="inherit">
+          Закрыть
+        </Button>
       </DialogActions>
     </Dialog>
   );

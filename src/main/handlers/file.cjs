@@ -1,3 +1,4 @@
+//file.cjs
 const { app, ipcMain } = require("electron");
 const fs = require("fs");
 const path = require("path");
@@ -13,9 +14,23 @@ ipcMain.handle("file:writeBlob", async (_, targetPath, arrayBuffer) => {
   await fs.promises.writeFile(targetPath, buffer);
 });
 
+// ipcMain.handle("file:copyFile", async (_, source, destination) => {
+//   await fs.promises.mkdir(path.dirname(destination), { recursive: true });
+//   await fs.promises.copyFile(source, destination);
+// });
 ipcMain.handle("file:copyFile", async (_, source, destination) => {
-  await fs.promises.mkdir(path.dirname(destination), { recursive: true });
-  await fs.promises.copyFile(source, destination);
+  try {
+    // Проверка на существование файла перед копированием
+    if (!fs.existsSync(source)) {
+      return { success: false, reason: "NOT_FOUND" };
+    }
+
+    await fs.promises.mkdir(path.dirname(destination), { recursive: true });
+    await fs.promises.copyFile(source, destination);
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
 });
 
 ipcMain.handle("file:ensureDir", async (_, dirPath) => {
@@ -85,26 +100,44 @@ ipcMain.handle(
   "file:renameFile",
   async (_, ownerId, oldFilename, newFilename) => {
     try {
-      const baseDir = PEOPLE_BASE;
-      const dir = path.join(baseDir, String(ownerId), "photos");
-      const src = path.join(dir, oldFilename);
-      const dst = path.join(dir, newFilename);
+      const baseDir = path.join(PEOPLE_BASE, String(ownerId), "photos");
+      const oldWebpName = oldFilename.replace(/\.[^.]+$/, ".webp");
+      const newWebpName = newFilename.replace(/\.[^.]+$/, ".webp");
 
-      // проверка существования
-      await fs.promises.access(src);
+      // Список всех подпапок, где может лежать файл и его производные
+      const subDirs = [
+        { dir: "original", old: oldFilename, new: newFilename },
+        { dir: "webp", old: oldWebpName, new: newWebpName },
+        { dir: "thumbs", old: oldWebpName, new: newWebpName },
+        { dir: "", old: oldFilename, new: newFilename }, // legacy (корень photos)
+      ];
 
-      // создать папку (на всякий)
-      await fs.promises.mkdir(dir, { recursive: true });
+      let renamedSomething = false;
 
-      // переименовать (atomic)
-      await fs.promises.rename(src, dst);
+      for (const item of subDirs) {
+        const src = path.join(baseDir, item.dir, item.old);
+        const dst = path.join(baseDir, item.dir, item.new);
 
-      return dst;
+        try {
+          await fs.promises.access(src); // Проверяем наличие
+          await fs.promises.mkdir(path.dirname(dst), { recursive: true });
+          await fs.promises.rename(src, dst);
+          renamedSomething = true;
+        } catch (e) {
+          // Если файла нет в конкретной подпапке — просто идем дальше
+        }
+      }
+
+      if (!renamedSomething) {
+        throw new Error(`Файл ${oldFilename} не найден ни в одной из папок.`);
+      }
+
+      return path.join(baseDir, "original", newFilename); // Возвращаем путь к оригиналу как основной
     } catch (err) {
       console.error("[file:renameFile] failed:", err);
       throw err;
     }
-  }
+  },
 );
 
 // --- file:moveFile ---
@@ -113,53 +146,55 @@ ipcMain.handle(
   "file:moveFile",
   async (_, oldOwnerId, newOwnerId, oldFilename, newFilename) => {
     try {
-      const candidates = [
-        path.join(PEOPLE_BASE, String(oldOwnerId), "photos", oldFilename),
-        path.join(__dirname, "photos", String(oldOwnerId), oldFilename),
-        path.join(process.cwd(), "photos", String(oldOwnerId), oldFilename),
-        path.join(
-          app.getPath("userData"),
-          "Genealogy",
-          "people",
-          String(oldOwnerId),
-          "photos",
-          oldFilename
-        ),
+      const oldBaseDir = path.join(PEOPLE_BASE, String(oldOwnerId), "photos");
+      const newBaseDir = path.join(PEOPLE_BASE, String(newOwnerId), "photos");
+
+      const targetName = newFilename || oldFilename;
+      const oldWebp = oldFilename.replace(/\.[^.]+$/, ".webp");
+      const newWebp = targetName.replace(/\.[^.]+$/, ".webp");
+
+      // Определяем соответствие (подпапка -> старое имя -> новое имя)
+      const moveTasks = [
+        { sub: "original", old: oldFilename, new: targetName },
+        { sub: "webp", old: oldWebp, new: newWebp },
+        { sub: "thumbs", old: oldWebp, new: newWebp },
+        { sub: "", old: oldFilename, new: targetName }, // для старых файлов в корне
       ];
 
-      let source = null;
-      for (const c of candidates) {
-        try {
-          await fs.promises.access(c, fs.constants.R_OK);
-          source = c;
-          break;
-        } catch (err) {}
-      }
-      if (!source) {
-        const msg = `Source file not found. Tried:\n${candidates.join("\n")}`;
-        const err = new Error(msg);
-        err.code = "SOURCE_NOT_FOUND";
-        throw err;
-      }
+      let movedAny = false;
 
-      const destDir = path.join(PEOPLE_BASE, String(newOwnerId), "photos");
-      const destName = newFilename || oldFilename;
-      const destination = path.join(destDir, destName);
+      for (const task of moveTasks) {
+        const src = path.join(oldBaseDir, task.sub, task.old);
+        const dstDir = path.join(newBaseDir, task.sub);
+        const dst = path.join(dstDir, task.new);
 
-      await fs.promises.mkdir(destDir, { recursive: true });
-      await fs.promises.copyFile(source, destination);
-      try {
-        await fs.promises.rm(source, { force: true });
-      } catch (rmErr) {
-        console.warn("rm failed", rmErr);
+        if (fs.existsSync(src)) {
+          await fs.promises.mkdir(dstDir, { recursive: true });
+          await fs.promises.copyFile(src, dst);
+          await fs.promises.rm(src, { force: true });
+          movedAny = true;
+        }
       }
 
-      return destination;
+      if (!movedAny) {
+        throw new Error(
+          `Ни один файл не найден для перемещения. Искали: ${oldFilename}`,
+        );
+      }
+
+      // Возвращаем путь к новому оригиналу (или корню, если оригинала нет)
+      const finalPath = fs.existsSync(
+        path.join(newBaseDir, "original", targetName),
+      )
+        ? path.join(newBaseDir, "original", targetName)
+        : path.join(newBaseDir, targetName);
+
+      return finalPath;
     } catch (err) {
       console.error("[file:moveFile] failed:", err);
       throw err;
     }
-  }
+  },
 );
 
 // --- photo:removeFromOwnerJson ---
@@ -184,7 +219,7 @@ ipcMain.handle(
       console.error("[photo:removeFromOwnerJson] failed:", err);
       throw err;
     }
-  }
+  },
 );
 
 // --- photo:addOrUpdateOwnerJson ---

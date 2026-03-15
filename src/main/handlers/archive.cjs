@@ -3,14 +3,49 @@ const fs = require("fs");
 const path = require("path");
 const archiver = require("archiver");
 
+// function listFilesRecursive(paths) {
+//   const files = [];
+//   for (const p of paths) {
+//     if (!fs.existsSync(p)) continue;
+//     const stat = fs.statSync(p);
+//     if (stat.isFile()) files.push(p);
+//     else if (stat.isDirectory()) {
+//       const entries = fs.readdirSync(p);
+//       const childPaths = entries.map((e) => path.join(p, e));
+//       files.push(...listFilesRecursive(childPaths));
+//     }
+//   }
+//   return files;
+// }
 function listFilesRecursive(paths) {
   const files = [];
+
+  // Список имен файлов/папок, которые мы игнорируем ВСЕГДА
+  const blacklist = [".DS_Store", "thumbs", "webp"];
+
   for (const p of paths) {
     if (!fs.existsSync(p)) continue;
+
+    const basename = path.basename(p);
+    if (blacklist.includes(basename)) continue; // Пропускаем кэш и системный мусор
+
     const stat = fs.statSync(p);
-    if (stat.isFile()) files.push(p);
-    else if (stat.isDirectory()) {
+    if (stat.isFile()) {
+      files.push(p);
+    } else if (stat.isDirectory()) {
       const entries = fs.readdirSync(p);
+
+      // Логика: если мы внутри папки photos, берем ТОЛЬКО папку original
+      if (basename === "photos") {
+        const hasOriginal = entries.includes("original");
+        if (hasOriginal) {
+          // Рекурсивно заходим только в photos/original
+          files.push(...listFilesRecursive([path.join(p, "original")]));
+        }
+        // Папки webp и thumbs будут проигнорированы, так как их нет в условии
+        continue;
+      }
+
       const childPaths = entries.map((e) => path.join(p, e));
       files.push(...listFilesRecursive(childPaths));
     }

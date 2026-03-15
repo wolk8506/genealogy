@@ -53,7 +53,7 @@ export default function AddPersonPage() {
   const genNum = Number(generation) || 1;
   const byGen = (g) =>
     allPeople.filter(
-      (p) => (p.generation ?? 0) === g && String(p.id).startsWith(String(g))
+      (p) => (p.generation ?? 0) === g && String(p.id).startsWith(String(g)),
     );
 
   // сгенерировать уникальный ID
@@ -195,7 +195,7 @@ export default function AddPersonPage() {
       <Paper
         elevation={2}
         sx={{
-          maxWidth: 600,
+          maxWidth: 650,
           mx: "auto",
           mt: 4,
           p: 3,
@@ -355,7 +355,7 @@ export default function AddPersonPage() {
               size="small"
               multiple
               options={byGen(genNum).filter(
-                (p) => p.gender && p.gender !== gender
+                (p) => p.gender && p.gender !== gender,
               )}
               getOptionLabel={getLabel}
               value={spouse}

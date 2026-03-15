@@ -5,64 +5,27 @@ import {
   ListItemText,
   Typography,
   CircularProgress,
-  TextField,
   Stack,
   Button,
   ListItemButton,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   Grid,
   useTheme,
   Fab,
   Zoom,
   Paper,
-  FormControlLabel,
-  Checkbox,
   Divider,
-  ToggleButtonGroup,
-  ToggleButton,
-  Autocomplete,
+  Tooltip,
 } from "@mui/material";
 
-import ClearIcon from "@mui/icons-material/Clear";
-import LeaderboardIcon from "@mui/icons-material/Leaderboard";
-import PeopleIcon from "@mui/icons-material/People";
-import MaleIcon from "@mui/icons-material/Male";
-import FemaleIcon from "@mui/icons-material/Female";
-import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
-import FilterAltOffIcon from "@mui/icons-material/FilterAltOff";
-import RestoreFromTrashIcon from "@mui/icons-material/RestoreFromTrash";
-import FilterListIcon from "@mui/icons-material/FilterList";
-import SupervisorAccountIcon from "@mui/icons-material/SupervisorAccount";
 import DeleteIcon from "@mui/icons-material/Delete";
 import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
-import FilterAltIcon from "@mui/icons-material/FilterAlt";
+
 import { Badge } from "@mui/material";
+import DescriptionIcon from "@mui/icons-material/Description"; // Для биографии
+import PhotoLibraryIcon from "@mui/icons-material/PhotoLibrary"; // Для фото
 
 import appIcon from "../../img/app_icon.png";
 import { Link } from "react-router-dom";
-
-// вспомогательная функция для стилей
-function getStyles(name, selected, theme) {
-  return {
-    fontWeight:
-      selected.indexOf(name) === -1
-        ? theme.typography.fontWeightRegular
-        : theme.typography.fontWeightMedium,
-  };
-}
-
-// настройки меню
-const MenuProps = {
-  PaperProps: {
-    style: {
-      maxHeight: 48 * 4.5 + 8,
-      width: 250,
-    },
-  },
-};
 
 /* Аватар по ID фото */
 function PersonAvatar({ foto, initials }) {
@@ -110,222 +73,44 @@ function checkDateFilter(dateStr, filter) {
   }
 }
 
-/* Модалка фильтров */
-function PeopleFilterDialog({
-  open,
-  onClose,
-  onApply,
-  generations,
-  initialFilters,
+export default function PeopleListPage({
+  search,
+  filters,
+  sortOrder,
+  statsOpen,
+  setStatsOpen,
+  filterOpen,
+  setFilterOpen,
+  setFilters,
 }) {
-  const [createdFilter, setCreatedFilter] = useState("");
-  const [editedFilter, setEditedFilter] = useState("");
-  const [selectedGens, setSelectedGens] = useState([]);
-  const [showRelations, setShowRelations] = useState(false);
-
-  useEffect(() => {
-    if (open && initialFilters) {
-      setCreatedFilter(initialFilters.created || "");
-      setEditedFilter(initialFilters.edited || "");
-      setSelectedGens(initialFilters.gens || []);
-      setShowRelations(!!initialFilters.showRelations);
-    }
-  }, [open, initialFilters]);
-
-  const handleToggleGen = (g) => {
-    setSelectedGens((prev) =>
-      prev.includes(g) ? prev.filter((x) => x !== g) : [...prev, g],
-    );
-  };
-
-  const handleReset = () => {
-    const reset = { created: "", edited: "", gens: [], showRelations: false };
-    setCreatedFilter("");
-    setEditedFilter("");
-    setSelectedGens([]);
-    setShowRelations(false);
-    onApply(reset);
-  };
-
-  const handleApply = () => {
-    onApply({
-      created: createdFilter,
-      edited: editedFilter,
-      gens: selectedGens,
-      showRelations,
-    });
-    onClose();
-  };
-
-  useEffect(() => {
-    // при монтировании страницы "Люди" сбрасываем счётчик
-    localStorage.setItem("lastVisitPeoplePage", new Date().toISOString());
-  }, []);
-
-  return (
-    <Dialog
-      open={open}
-      onClose={onClose}
-      fullWidth
-      maxWidth="sm"
-      PaperProps={{ sx: { borderRadius: "15px" } }}
-    >
-      <DialogTitle>Фильтры</DialogTitle>
-      <DialogContent>
-        <Stack spacing={2} sx={{ mt: 1 }}>
-          <Typography variant="subtitle2">Дата создания</Typography>
-
-          <ToggleButtonGroup
-            size="small"
-            value={createdFilter}
-            exclusive
-            onChange={(e) => setCreatedFilter(e.target.value)}
-            aria-label="Фильтр по дате создания"
-          >
-            <ToggleButton sx={{ width: "82px", borderRadius: "15px" }} value="">
-              Все
-            </ToggleButton>
-            <ToggleButton
-              sx={{ width: "82px", borderRadius: "15px" }}
-              value="today"
-            >
-              Сегодня
-            </ToggleButton>
-            <ToggleButton
-              sx={{ width: "82px", borderRadius: "15px" }}
-              value="week"
-            >
-              Неделя
-            </ToggleButton>
-            <ToggleButton
-              sx={{ width: "82px", borderRadius: "15px" }}
-              value="month"
-            >
-              Месяц
-            </ToggleButton>
-            <ToggleButton
-              sx={{ width: "82px", borderRadius: "15px" }}
-              value="year"
-            >
-              Год
-            </ToggleButton>
-          </ToggleButtonGroup>
-
-          <Typography variant="subtitle2">Дата изменения</Typography>
-
-          <ToggleButtonGroup
-            size="small"
-            value={editedFilter}
-            exclusive
-            onChange={(e) => {
-              setEditedFilter(e.target.value);
-            }}
-            aria-label="Фильтр по дате изменения"
-            sx={{ mt: "10px" }}
-          >
-            <ToggleButton sx={{ width: "82px", borderRadius: "15px" }} value="">
-              Все
-            </ToggleButton>
-            <ToggleButton
-              sx={{ width: "82px", borderRadius: "15px" }}
-              value="today"
-            >
-              Сегодня
-            </ToggleButton>
-            <ToggleButton
-              sx={{ width: "82px", borderRadius: "15px" }}
-              value="week"
-            >
-              Неделя
-            </ToggleButton>
-            <ToggleButton
-              sx={{ width: "82px", borderRadius: "15px" }}
-              value="month"
-            >
-              Месяц
-            </ToggleButton>
-            <ToggleButton
-              sx={{ width: "82px", borderRadius: "15px" }}
-              value="year"
-            >
-              Год
-            </ToggleButton>
-          </ToggleButtonGroup>
-
-          {/* //--------------------------------------------- */}
-          <Typography variant="subtitle2">Поколения</Typography>
-          <Autocomplete
-            sx={{
-              "& .MuiOutlinedInput-root": {
-                borderRadius: "15px", // любой радиус
-              },
-              // "& .MuiChip-root": {
-              //   borderRadius: "8px", // радиус для чипов
-              // },
-            }}
-            size="small"
-            slotProps={{
-              popper: {
-                placement: "top-start", // всегда вверх
-              },
-            }}
-            multiple
-            id="gens-autocomplete"
-            options={generations} // список поколений
-            value={selectedGens} // текущее состояние
-            disableCloseOnSelect
-            onChange={(event, newValue) => setSelectedGens(newValue)}
-            getOptionLabel={(option) => `Поколение ${option}`}
-            filterSelectedOptions
-            renderInput={(params) => (
-              <TextField
-                {...params}
-                label="Выберите поколения"
-                placeholder="Поколения"
-              />
-            )}
-          />
-          {/* //--------------------------------------------- */}
-          <Typography variant="subtitle2">Родственные связи</Typography>
-          <FormControlLabel
-            control={
-              <Checkbox
-                checked={showRelations}
-                onChange={(e) => setShowRelations(e.target.checked)}
-              />
-            }
-            label="Показать родственные связи (при единственном результате поиска)"
-          />
-        </Stack>
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={() => onClose()}>Отменить</Button>
-        <Button onClick={handleReset}>Сбросить</Button>
-        <Button onClick={handleApply} variant="contained">
-          Применить
-        </Button>
-      </DialogActions>
-    </Dialog>
-  );
-}
-
-export default function PeopleListPage() {
   const [people, setPeople] = useState([]);
-  const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
-  const [sortOrder, setSortOrder] = useState("asc");
-  const [statsOpen, setStatsOpen] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
-  const [filterOpen, setFilterOpen] = useState(false);
-  const [filters, setFilters] = useState({
-    created: "",
-    edited: "",
-    gens: [],
-    showRelations: false,
-  });
 
   const theme = useTheme();
   const isDark = theme.palette.mode === "dark";
+  const [personStats, setPersonStats] = useState({}); // Храним данные по ID
+
+  const loadAllStats = async (list) => {
+    const statsMap = {};
+    // Загружаем данные параллельно для скорости
+    await Promise.all(
+      list.map(async (p) => {
+        const data = await window.appAPI.getPersonFolderSize(p.id);
+        statsMap[p.id] = data;
+      }),
+    );
+    setPersonStats(statsMap);
+  };
+
+  // Вызываем при загрузке списка
+  useEffect(() => {
+    window.peopleAPI.getAll().then((data) => {
+      setPeople(data || []);
+      setLoading(false);
+      if (data) loadAllStats(data);
+    });
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => setShowScrollTop(window.scrollY > 300);
@@ -343,7 +128,7 @@ export default function PeopleListPage() {
   }, []);
 
   const active = useMemo(() => people.filter((p) => !p.archived), [people]);
-  const archived = useMemo(() => people.filter((p) => p.archived), [people]);
+  // const archived = useMemo(() => people.filter((p) => p.archived), [people]);
 
   const filtered = useMemo(() => {
     let res = active.filter((p) => {
@@ -463,6 +248,8 @@ export default function PeopleListPage() {
       (p.firstName?.[0] || "") +
       (p.lastName?.[0] || (p.maidenName?.[0] ? p.maidenName?.[1] : ""));
 
+    const stats = personStats[p.id] || { count: 0, hasBio: false };
+
     // определяем условия
     const createdToday = isToday(p.createdAt);
     const editedToday = isToday(p.editedAt);
@@ -510,7 +297,69 @@ export default function PeopleListPage() {
           </ListItemAvatar>
           <ListItemText
             primary={name}
-            secondary={`ID: ${p.id}`}
+            secondary={
+              <Stack
+                component="span"
+                direction="row"
+                alignItems="center"
+                mt={1}
+                spacing={2}
+              >
+                <Typography
+                  component="span"
+                  variant="caption"
+                  sx={{
+                    color: "text.secondary",
+                    bgcolor: isDark
+                      ? "rgba(255,255,255,0.05)"
+                      : "rgba(0,0,0,0.04)",
+                    px: 1,
+                    py: 0.2,
+                    borderRadius: "6px",
+                    fontFamily: "monospace",
+                    border: `1px solid ${theme.palette.divider}`,
+                  }}
+                >
+                  ID: {p.id}
+                </Typography>
+                {/* Индикатор Биографии */}
+                {stats.hasBio && (
+                  <Tooltip title="Биография заполнена">
+                    <DescriptionIcon
+                      sx={{
+                        fontSize: 16,
+                        color: "primary.main",
+                        opacity: 0.8,
+                      }}
+                    />
+                  </Tooltip>
+                )}
+                {/* Индикатор Фото */}
+                {stats.count > 0 && (
+                  <Tooltip title={`Фотографий: ${stats.count}`}>
+                    <Stack
+                      component="span"
+                      direction="row"
+                      alignItems="center"
+                      spacing={0.7}
+                      sx={{
+                        opacity: 0.7,
+                        color: "primary.main",
+                      }}
+                    >
+                      <PhotoLibraryIcon sx={{ fontSize: 14 }} />
+                      <Typography
+                        component="span"
+                        variant="caption"
+                        fontWeight="700"
+                      >
+                        {/* {stats.count} */}
+                      </Typography>
+                    </Stack>
+                  </Tooltip>
+                )}
+              </Stack>
+            }
             sx={{ ml: 1 }}
           />
           <Button
@@ -523,94 +372,21 @@ export default function PeopleListPage() {
             }}
             sx={{ ml: "auto" }}
           >
-            В корзину
-            <DeleteIcon fontSize="small" sx={{ ml: 0.5 }} />
+            {p.id === Number(search) && "В корзину"}
+
+            <DeleteIcon
+              fontSize="small"
+              sx={{ ml: p.id === Number(search) ? 0.5 : 6 }}
+            />
           </Button>
         </Paper>
       </ListItemButton>
     );
   };
 
-  const isFilterActive =
-    filters.created ||
-    filters.edited ||
-    filters.gens.length > 0 ||
-    filters.showRelations;
-
   return (
     <>
       <Stack spacing={2}>
-        {/* Панель поиска и кнопок */}
-        <Paper
-          elevation={1}
-          sx={{
-            position: "sticky",
-            top: { xs: 56, sm: 64 },
-            zIndex: 10,
-            backgroundColor: theme.palette.background.paper,
-            p: 2,
-            borderBottom: `1px solid ${theme.palette.divider}`,
-            borderRadius: 3,
-          }}
-        >
-          <Stack direction="row" spacing={2} alignItems="center">
-            <TextField
-              label="Поиск по имени или ID"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              sx={{ flexGrow: 1 }}
-              size="small"
-              InputProps={{
-                endAdornment: search && (
-                  <Button
-                    size="small"
-                    onClick={() => setSearch("")}
-                    sx={{ ml: 1 }}
-                  >
-                    <ClearIcon />
-                  </Button>
-                ),
-              }}
-            />
-
-            {/* <Button
-              startIcon={<FilterAltIcon />}
-              variant="outlined"
-              onClick={() => setFilterOpen(true)}
-            >
-              Фильтр
-            </Button> */}
-            <Button
-              // startIcon={
-              //   isFilterActive ? <FilterListIcon /> : <FilterAltIcon />
-              // }
-              variant="outlined"
-              onClick={() => setFilterOpen(true)}
-            >
-              {isFilterActive ? <FilterAltOffIcon /> : <FilterAltIcon />}
-            </Button>
-            <Button
-              startIcon={<SupervisorAccountIcon />}
-              endIcon={
-                <FilterListIcon
-                  sx={{
-                    transform: sortOrder === "asc" ? "rotate(180deg)" : "none",
-                  }}
-                />
-              }
-              variant="outlined"
-              onClick={() =>
-                setSortOrder((o) => (o === "asc" ? "desc" : "asc"))
-              }
-            >
-              Поколения
-            </Button>
-            <Button variant="outlined" onClick={() => setStatsOpen(true)}>
-              <LeaderboardIcon />
-            </Button>
-          </Stack>
-        </Paper>
-
         {/* Родственные связи вместо поколений, если единственный результат */}
         {singleMatch ? (
           <Paper elevation={2} sx={{ p: 2, borderRadius: 3 }}>
@@ -703,7 +479,7 @@ export default function PeopleListPage() {
               }}
             >
               <Typography variant="h6" sx={{ mb: 1, color: "primary.main" }}>
-                Поколение {g}
+                Поколение - {g} :: ({grouped[g].length})
               </Typography>
               <Grid container direction="column" spacing={2}>
                 {grouped[g].map((person) => {
@@ -716,6 +492,11 @@ export default function PeopleListPage() {
                   const initials =
                     (person.firstName?.[0] || "") +
                     (person.lastName?.[0] || person.maidenName?.[1] || "");
+
+                  const stats = personStats[person.id] || {
+                    count: 0,
+                    hasBio: false,
+                  };
 
                   // проверка дат
                   const createdToday = isToday(person.createdAt);
@@ -732,7 +513,7 @@ export default function PeopleListPage() {
                   }
 
                   return (
-                    <Grid item xs={12} key={person.id}>
+                    <Grid size={{ xs: 12 }} key={person.id}>
                       <ListItemButton
                         component={Link}
                         to={`/person/${person.id}`}
@@ -780,7 +561,94 @@ export default function PeopleListPage() {
                           </ListItemAvatar>
                           <ListItemText
                             primary={name || "Без имени"}
-                            secondary={`ID: ${person.id}`}
+                            secondary={
+                              <Stack
+                                mt={1}
+                                component="span"
+                                direction="row"
+                                alignItems="center"
+                                spacing={4}
+                              >
+                                <Typography
+                                  component="span"
+                                  variant="caption"
+                                  sx={{
+                                    color: "text.secondary",
+                                    bgcolor: isDark
+                                      ? "rgba(255,255,255,0.05)"
+                                      : "rgba(0,0,0,0.04)",
+                                    px: 1,
+                                    py: 0.2,
+                                    borderRadius: "10px",
+                                    fontFamily: "monospace",
+                                    border: `1px solid ${theme.palette.divider}`,
+                                  }}
+                                >
+                                  ID: {person.id}
+                                </Typography>
+                                {/* Индикатор Биографии */}
+                                {stats.hasBio && (
+                                  <Tooltip title="Биография заполнена">
+                                    <Stack
+                                      component="span"
+                                      direction="row"
+                                      alignItems="center"
+                                      spacing={0.7}
+                                      sx={{
+                                        color: "text.secondary",
+                                        bgcolor: isDark
+                                          ? "rgba(255,255,255,0.05)"
+                                          : "rgba(0,0,0,0.04)",
+                                        px: 1,
+                                        py: 0.4,
+                                        borderRadius: "10px",
+                                        fontFamily: "monospace",
+                                        border: `1px solid ${theme.palette.divider}`,
+                                        //
+                                        opacity: 0.7,
+                                        color: "primary.main",
+                                      }}
+                                    >
+                                      <DescriptionIcon sx={{ fontSize: 17 }} />
+                                    </Stack>
+                                  </Tooltip>
+                                )}
+                                {/* Индикатор Фото */}
+                                {stats.count > 0 && (
+                                  <Tooltip title={`Фотографий: ${stats.count}`}>
+                                    <Stack
+                                      component="span"
+                                      direction="row"
+                                      alignItems="center"
+                                      spacing={0.7}
+                                      sx={{
+                                        color: "text.secondary",
+                                        bgcolor: isDark
+                                          ? "rgba(255,255,255,0.05)"
+                                          : "rgba(0,0,0,0.04)",
+                                        px: 1,
+                                        py: 0.2,
+                                        borderRadius: "10px",
+                                        fontFamily: "monospace",
+                                        border: `1px solid ${theme.palette.divider}`,
+                                        //
+                                        opacity: 0.7,
+                                        color: "primary.main",
+                                      }}
+                                    >
+                                      <PhotoLibraryIcon sx={{ fontSize: 17 }} />
+                                      <Typography
+                                        component="span"
+                                        variant="caption"
+                                        fontWeight="700"
+                                      >
+                                        {stats.count}
+                                      </Typography>
+                                    </Stack>
+                                  </Tooltip>
+                                )}
+                              </Stack>
+                            }
                             sx={{ ml: 1 }}
                           />
                           <Button
@@ -791,10 +659,10 @@ export default function PeopleListPage() {
                               e.stopPropagation();
                               handleArchive(person.id);
                             }}
-                            sx={{ ml: "auto" }}
+                            sx={{ ml: "auto", borderRadius: "10px" }}
+                            endIcon={<DeleteIcon fontSize="small" />}
                           >
                             В корзину
-                            <DeleteIcon fontSize="small" sx={{ ml: 0.5 }} />
                           </Button>
                         </Paper>
                       </ListItemButton>
@@ -806,158 +674,6 @@ export default function PeopleListPage() {
           ))
         )}
       </Stack>
-
-      {/* Статистика */}
-      <Dialog
-        open={statsOpen}
-        onClose={() => setStatsOpen(false)}
-        PaperProps={{ sx: { borderRadius: "15px" } }}
-      >
-        <DialogTitle>Статистика</DialogTitle>
-        <DialogContent>
-          <Grid container spacing={2} sx={{ mt: 1 }}>
-            <Grid item xs={12} sm={6} md={4}>
-              <Paper
-                elevation={1}
-                sx={{
-                  p: 2,
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 1.5,
-                  bgcolor: isDark ? "#2a002a" : "#f9f9f9",
-                  borderRadius: 3,
-                }}
-              >
-                <PeopleIcon color="primary" />
-                <div>
-                  <Typography variant="caption">Всего людей</Typography>
-                  <Typography variant="h6">{active.length}</Typography>
-                </div>
-              </Paper>
-            </Grid>
-
-            <Grid item xs={12} sm={6} md={4}>
-              <Paper
-                elevation={1}
-                sx={{
-                  p: 2,
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 1.5,
-                  borderRadius: 3,
-                }}
-              >
-                <MaleIcon color="info" />
-                <div>
-                  <Typography variant="caption">Мужчин</Typography>
-                  <Typography variant="h6">
-                    {active.filter((p) => p.gender === "male").length}
-                  </Typography>
-                </div>
-              </Paper>
-            </Grid>
-
-            <Grid item xs={12} sm={6} md={4}>
-              <Paper
-                elevation={1}
-                sx={{
-                  p: 2,
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 1.5,
-                  borderRadius: 3,
-                }}
-              >
-                <FemaleIcon color="secondary" />
-                <div>
-                  <Typography variant="caption">Женщин</Typography>
-                  <Typography variant="h6">
-                    {active.filter((p) => p.gender === "female").length}
-                  </Typography>
-                </div>
-              </Paper>
-            </Grid>
-
-            <Grid item xs={12} sm={6} md={4}>
-              <Paper
-                elevation={1}
-                sx={{
-                  p: 2,
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 1.5,
-                  borderRadius: 3,
-                }}
-              >
-                <HelpOutlineIcon color="disabled" />
-                <div>
-                  <Typography variant="caption">Неизвестно</Typography>
-                  <Typography variant="h6">
-                    {active.filter((p) => !p.gender).length}
-                  </Typography>
-                </div>
-              </Paper>
-            </Grid>
-
-            <Grid item xs={12} sm={6} md={4}>
-              <Paper
-                elevation={1}
-                sx={{
-                  p: 2,
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 1.5,
-                  borderRadius: 3,
-                }}
-              >
-                <RestoreFromTrashIcon color="warning" />
-                <div>
-                  <Typography variant="caption">В корзине</Typography>
-                  <Typography variant="h6">{archived.length}</Typography>
-                </div>
-              </Paper>
-            </Grid>
-
-            {Object.entries(
-              filtered.reduce((acc, p) => {
-                const g = p.generation ?? "Без поколения";
-                acc[g] = (acc[g] || 0) + 1;
-                return acc;
-              }, {}),
-            ).map(([g, cnt]) => (
-              <Grid item xs={12} sm={6} md={4} key={g}>
-                <Paper
-                  elevation={1}
-                  sx={{
-                    p: 2,
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 1.5,
-                    borderRadius: 3,
-                  }}
-                >
-                  <Typography variant="caption" sx={{ minWidth: 96 }}>
-                    Поколение {g}
-                  </Typography>
-                  <Typography variant="h6">{cnt}</Typography>
-                </Paper>
-              </Grid>
-            ))}
-          </Grid>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setStatsOpen(false)}>Закрыть</Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Модалка фильтров */}
-      <PeopleFilterDialog
-        open={filterOpen}
-        onClose={() => setFilterOpen(false)}
-        onApply={setFilters}
-        generations={gens}
-        initialFilters={filters}
-      />
 
       {/* Кнопка вверх */}
       <Zoom in={showScrollTop}>

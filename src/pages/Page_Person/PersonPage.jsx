@@ -131,6 +131,7 @@ export default function PersonPage() {
   };
   const renderFamiliesItem = (el) => {
     const p = el.partner;
+    if (!p) return;
     const children = el.children;
     const title = p.gender === "male" ? "Супруг" : "Супругa";
 
@@ -671,108 +672,139 @@ export default function PersonPage() {
             spacing={2}
             alignItems="top"
             justifyContent="space-between"
+            // sx={{ border: "solid green 1px" }}
           >
             <Stack
               direction="row"
-              spacing={3}
-              alignItems="flex-start"
+              // spacing={3}
+              alignItems="center"
+              justifyContent="space-between"
+              flexDirection={"column"}
               minWidth={"450px"}
+              // sx={{ border: "solid red 1px" }}
             >
-              <Box
-                onClick={() => setAvatarEditorOpen(true)}
-                sx={{ cursor: "pointer" }}
+              <Stack
+                direction="row"
+                spacing={3}
+                alignItems="flex-start"
+                minWidth={"450px"}
+                // sx={{ border: "solid violet 1px" }}
               >
-                <PersonAvatar
+                <Box
+                  onClick={() => setAvatarEditorOpen(true)}
+                  sx={{ cursor: "pointer" }}
+                >
+                  <PersonAvatar
+                    personId={person.id}
+                    initials={initials}
+                    size={160}
+                    refresh={refreshPhotos} // 👈 передаём сюда
+                  />
+                </Box>
+                <AvatarEditorDialog
+                  open={avatarEditorOpen}
+                  onClose={() => setAvatarEditorOpen(false)}
                   personId={person.id}
-                  initials={initials}
-                  size={160}
-                  refresh={refreshPhotos} // 👈 передаём сюда
+                  currentAvatarPath={initials}
+                  onSaved={() => setRefreshPhotos((r) => r + 1)} // 👈 триггерим обновление
                 />
-              </Box>
-              <AvatarEditorDialog
-                open={avatarEditorOpen}
-                onClose={() => setAvatarEditorOpen(false)}
-                personId={person.id}
-                currentAvatarPath={initials}
-                onSaved={() => setRefreshPhotos((r) => r + 1)} // 👈 триггерим обновление
-              />
-              <Stack spacing={0.5}>
-                <Stack direction="row" spacing={2}>
-                  <Typography variant="h5">
-                    {[person.firstName, person.lastName]
-                      .filter(Boolean)
-                      .join(" ") || "Без имени"}
+                <Stack spacing={0.5}>
+                  <Stack direction="row" spacing={2}>
+                    <Typography variant="h5">
+                      {[person.firstName, person.lastName]
+                        .filter(Boolean)
+                        .join(" ") || "Без имени"}
+                    </Typography>
+                    <IconButton
+                      onClick={() => setEditOpen(true)}
+                      variant="outlined"
+                      size="small"
+                    >
+                      <CreateIcon size="small" />
+                    </IconButton>
+                  </Stack>
+
+                  {person.patronymic && (
+                    <Typography variant="body2" color="text.secondary">
+                      Отчество: {person.patronymic}
+                    </Typography>
+                  )}
+
+                  {person.maidenName && (
+                    <Typography variant="body2" color="text.secondary">
+                      Девичья фамилия: {person.maidenName}
+                    </Typography>
+                  )}
+                  {(person.birthday || person.died) && (
+                    <Typography variant="body2" color="text.secondary">
+                      {person.birthday ? `📅 ${person.birthday}` : ""}
+                      {person.died ? ` – ✝ ${person.died}` : ""}
+                      {person.birthday && (
+                        <span>
+                          {" "}
+                          {person.died &&
+                          person.died.trim().toLowerCase() !== "неизвестно"
+                            ? `(${
+                                person.gender === "male"
+                                  ? "прожил "
+                                  : "прожила "
+                              } ${formatAge(person.birthday, person.died)})`
+                            : !person.died ||
+                                person.died.trim().toLowerCase() === ""
+                              ? `(${formatAge(person.birthday, null)})`
+                              : ""}
+                        </span>
+                      )}
+                    </Typography>
+                  )}
+                  <Typography variant="caption" color="text.disabled">
+                    Поколение: {person.generation}
                   </Typography>
-                  <IconButton
-                    onClick={() => setEditOpen(true)}
-                    variant="outlined"
-                    size="small"
-                  >
-                    <CreateIcon size="small" />
-                  </IconButton>
+                  <Typography variant="caption" color="text.disabled">
+                    ID: {person.id}
+                  </Typography>
+
+                  {/* Кнопка открытия модалки с братьями и сёстрами — показываем только если есть siblings */}
+                  {Array.isArray(siblings) && siblings.length > 0 && (
+                    <Button
+                      onClick={() => setSiblingsOpen(true)}
+                      variant="text"
+                      size="small"
+                      sx={{
+                        mt: 1,
+                        textTransform: "none",
+                        borderRadius: "10px",
+                      }}
+                      startIcon={
+                        siblings.length > 1 ? <PeopleAltIcon /> : <PersonIcon />
+                      }
+                    >
+                      {getSiblingsButtonLabel(siblings)} ({siblings.length})
+                    </Button>
+                  )}
+
+                  <PersonEditDialog
+                    open={editOpen}
+                    onClose={() => setEditOpen(false)}
+                    person={person}
+                    onSave={handleSave}
+                    allPeople={allPeople}
+                  />
                 </Stack>
-
-                {person.patronymic && (
-                  <Typography variant="body2" color="text.secondary">
-                    Отчество: {person.patronymic}
-                  </Typography>
-                )}
-
-                {person.maidenName && (
-                  <Typography variant="body2" color="text.secondary">
-                    Девичья фамилия: {person.maidenName}
-                  </Typography>
-                )}
-                {(person.birthday || person.died) && (
-                  <Typography variant="body2" color="text.secondary">
-                    {person.birthday ? `📅 ${person.birthday}` : ""}
-                    {person.died ? ` – ✝ ${person.died}` : ""}
-                    {person.birthday && (
-                      <span>
-                        {" "}
-                        {person.died &&
-                        person.died.trim().toLowerCase() !== "неизвестно"
-                          ? `(${
-                              person.gender === "male" ? "прожил " : "прожила "
-                            } ${formatAge(person.birthday, person.died)})`
-                          : !person.died ||
-                              person.died.trim().toLowerCase() === ""
-                            ? `(${formatAge(person.birthday, null)})`
-                            : ""}
-                      </span>
-                    )}
-                  </Typography>
-                )}
-                <Typography variant="caption" color="text.disabled">
-                  Поколение: {person.generation}
-                </Typography>
-                <Typography variant="caption" color="text.disabled">
-                  ID: {person.id}
-                </Typography>
-
-                {/* Кнопка открытия модалки с братьями и сёстрами — показываем только если есть siblings */}
-                {Array.isArray(siblings) && siblings.length > 0 && (
-                  <Button
-                    onClick={() => setSiblingsOpen(true)}
-                    variant="text"
-                    size="small"
-                    sx={{ mt: 1, textTransform: "none" }}
-                    startIcon={
-                      siblings.length > 1 ? <PeopleAltIcon /> : <PersonIcon />
-                    }
-                  >
-                    {getSiblingsButtonLabel(siblings)} ({siblings.length})
-                  </Button>
-                )}
-
-                <PersonEditDialog
-                  open={editOpen}
-                  onClose={() => setEditOpen(false)}
-                  person={person}
-                  onSave={handleSave}
+              </Stack>
+              <Stack
+                direction="row"
+                width={1}
+                justifyContent="space-between"
+                mt={5}
+              >
+                <BiographySection personId={person.id} />
+                <PhotoGallery personId={person.id} allPeople={allPeople} />
+                <Component_FamilyTree
                   allPeople={allPeople}
+                  person_id={person.id}
                 />
-              </Stack>{" "}
+              </Stack>
             </Stack>
 
             <Divider orientation="vertical" flexItem></Divider>
@@ -856,17 +888,15 @@ export default function PersonPage() {
         />
       </Stack>
 
-      <div id="biographySection" style={{ height: "90vh", overflowY: "auto" }}>
+      {/* <div id="biographySection" style={{ height: "90vh", overflowY: "auto" }}>
         <BiographySection personId={person.id} />
-      </div>
+      </div> */}
 
-      <div id="photoGallery">
+      {/* <div id="photoGallery">
         <PhotoGallery personId={person.id} allPeople={allPeople} />
-      </div>
+      </div> */}
 
-      <div id="familyTree" style={{ height: "90vh" }}>
-        <Component_FamilyTree allPeople={allPeople} person_id={person.id} />
-      </div>
+      {/* <div id="familyTree" style={{ height: "90vh" }}></div> */}
     </Stack>
   );
 }

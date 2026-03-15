@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import {
   Box,
   Card,
-  CardHeader,
   CardContent,
   CardActions,
   Avatar,
@@ -11,14 +10,20 @@ import {
   Grid,
   Button,
   Stack,
+  Chip,
 } from "@mui/material";
 
+// Иконки
 import GitHubIcon from "@mui/icons-material/GitHub";
-
 import InfoIcon from "@mui/icons-material/Info";
 import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
 import ComputerIcon from "@mui/icons-material/Computer";
-import BuildIcon from "@mui/icons-material/Build";
+import VerifiedUserIcon from "@mui/icons-material/VerifiedUser";
+import { Tooltip } from "@mui/material";
+
+// Твой новый компонент технологий (предположим, он тут)
+import AppDiagnostic from "./AppInfo";
+
 import appIcon from "../../img/app_icon.png";
 import developer from "../../img/developer.png";
 
@@ -34,129 +39,185 @@ export default function AboutPage() {
   }, []);
 
   return (
-    <Box
-      sx={{
-        display: "flex",
-        justifyContent: "center",
-        p: 2,
-        mt: 6,
-      }}
-    >
-      <Card sx={{ maxWidth: 600, borderRadius: 3, boxShadow: 4 }}>
-        <Stack spacing={2} alignItems="center">
-          {" "}
-          <CardHeader
-            avatar={
+    <Box sx={{ display: "flex", justifyContent: "center", p: 3, mt: 4 }}>
+      <Card
+        sx={{
+          maxWidth: 650,
+          borderRadius: 4,
+          boxShadow: "0 8px 40px rgba(0,0,0,0.12)",
+          overflow: "visible", // Чтобы декоративные элементы могли выходить за края
+          position: "relative",
+        }}
+      >
+        {/* Декоративный бейдж приватности */}
+        <Chip
+          icon={<VerifiedUserIcon style={{ fontSize: 16, color: "#2e7d32" }} />}
+          label="100% Offline & Private"
+          sx={{
+            position: "absolute",
+            top: -12,
+            right: 20,
+            bgcolor: "background.paper",
+            boxShadow: 2,
+            fontWeight: "bold",
+          }}
+          color="success"
+          variant="outlined"
+        />
+
+        <CardContent sx={{ pt: 4 }}>
+          <Stack spacing={3} alignItems="center" sx={{ width: "100%" }}>
+            {/* Лого и Заголовок */}
+            <Stack
+              direction="row"
+              spacing={3}
+              alignItems="center"
+              sx={{ width: "100%" }}
+            >
               <Avatar
                 src={appIcon}
-                sx={{ width: 64, height: 64 }}
+                sx={{
+                  width: 100,
+                  height: 100,
+                  boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
+                  bgcolor: "transparent",
+                }}
                 variant="rounded"
               />
-            }
-            title={
-              <Typography variant="h5" component="div">
-                Генеалогия
-              </Typography>
-            }
-            subheader={
-              <Typography variant="subtitle2" color="text.secondary">
-                Ведение и визуализация семейной истории
-              </Typography>
-            }
-          />
-        </Stack>
-
-        <CardContent>
-          <Typography
-            variant="body1"
-            color="text.secondary"
-            paragraph
-            sx={{ lineHeight: 1.6 }}
-          >
-            Приложение создано для того, чтобы сохранить память о ваших
-            родственниках: хранить фото, даты и истории поколений. Построено на
-            базе Electron + React с упором на автономность и приватность.
-          </Typography>
-          <Typography variant="caption" color="text.secondary">
-            Сделано с уважением к памяти и истории{" "}
-            <span style={{ fontSize: "3em" }}>🕊️</span>
-          </Typography>
-        </CardContent>
-
-        <Divider />
-
-        <CardContent>
-          <Grid container direction="column" spacing={2}>
-            <Grid item>
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                <InfoIcon color="action" />
-                <Typography variant="body2">
-                  <strong>Версия:</strong> {version || "—"}
+              <Box>
+                <Typography
+                  variant="h4"
+                  sx={{ fontWeight: 800, letterSpacing: -0.5 }}
+                >
+                  Генеалогия
+                </Typography>
+                <Typography
+                  variant="subtitle1"
+                  color="text.secondary"
+                  sx={{ fontStyle: "italic" }}
+                >
+                  Хранитель вашей семейной истории
                 </Typography>
               </Box>
-            </Grid>
+            </Stack>
 
-            <Grid item>
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                <ComputerIcon color="action" />
-                <Typography variant="body2">
-                  <strong>Платформа:</strong> {platform || "—"}
-                </Typography>
-              </Box>
-            </Grid>
+            <Typography
+              variant="body1"
+              sx={{
+                color: "text.primary",
+                lineHeight: 1.8,
+                textAlign: "justify",
+              }}
+            >
+              Это приложение создано для того, чтобы зафиксировать тонкие нити
+              памяти. Мы верим, что история каждой семьи уникальна, поэтому
+              сделали упор на
+              <b> автономность</b>: ваши данные не покидают вашего компьютера.
+            </Typography>
 
-            {buildDate && (
-              <Grid item>
-                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                  <CalendarTodayIcon color="action" />
-                  <Typography variant="body2">
-                    <strong>Сборка:</strong> {buildDate}
-                  </Typography>
-                </Box>
+            <Divider sx={{ width: "100%", borderStyle: "dashed" }} />
+
+            {/* Технические детали в виде сетки */}
+            <Grid container spacing={3} sx={{ width: "570px" }}>
+              <Grid size={{ xs: 12, sm: 4 }}>
+                <Stack spacing={2}>
+                  <DetailItem
+                    icon={<InfoIcon fontSize="small" />}
+                    label="Версия"
+                    value={version}
+                  />
+                  <DetailItem
+                    icon={<CalendarTodayIcon fontSize="small" />}
+                    label="Сборка"
+                    value={buildDate}
+                  />
+                </Stack>
               </Grid>
-            )}
-
-            <Grid item>
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                <BuildIcon color="action" />
-                <Typography variant="body2">
-                  <strong>Разработчик:</strong>
-                </Typography>
-                <Box
-                  component="img"
-                  src={developer}
-                  alt="developer"
-                  sx={{ width: 24, height: 24, mr: 0 }}
-                />
-                <Typography variant="body2">nebula.9371</Typography>
-              </Box>
+              <Grid size={{ xs: 12, sm: 8 }}>
+                <Stack spacing={2}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                    <Avatar
+                      src={developer}
+                      sx={{ width: 24, height: 24, border: "1px solid #ddd" }}
+                    />
+                    <Box>
+                      <Typography
+                        variant="caption"
+                        display="block"
+                        color="text.disabled"
+                        sx={{ lineHeight: 1 }}
+                      >
+                        Разработчик
+                      </Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                        nebula.9371
+                      </Typography>
+                    </Box>
+                  </Box>
+                  <DetailItem
+                    icon={<ComputerIcon fontSize="small" />}
+                    label="Система"
+                    value={platform}
+                  />
+                </Stack>
+              </Grid>
             </Grid>
-          </Grid>
+
+            {/* Вставляем наш новый блок технологий в упрощенном виде или под спойлер */}
+            <Box sx={{ width: "100%", mt: 2 }}>
+              <AppDiagnostic />
+            </Box>
+
+            <Typography
+              variant="caption"
+              sx={{ color: "text.disabled", textAlign: "center", mt: 2 }}
+            >
+              Сделано с уважением к прошлому ради будущего <br />
+              <span style={{ fontSize: "1.5rem" }}>🌿</span>
+            </Typography>
+          </Stack>
         </CardContent>
 
-        <Divider />
-
-        <CardActions sx={{ justifyContent: "center", py: 2 }}>
+        <CardActions sx={{ justifyContent: "center", pb: 3, pt: 0 }}>
           <Button
             startIcon={<GitHubIcon />}
             href="https://github.com/wolk8506/genealogy"
             target="_blank"
-            rel="noopener"
-            variant="outlined"
+            variant="contained"
+            disableElevation
+            sx={{
+              borderRadius: 10,
+              px: 4,
+              textTransform: "none",
+              fontWeight: "bold",
+            }}
           >
-            GitHub
+            Исходный код проекта
           </Button>
-          {/* <Button
-              startIcon={<LanguageIcon />}
-              href="https://your-website.com"
-              target="_blank"
-              rel="noopener"
-              variant="outlined"
-            >
-              Сайт
-            </Button> */}
         </CardActions>
       </Card>
+    </Box>
+  );
+}
+
+// Вспомогательный компонент для строк деталей
+function DetailItem({ icon, label, value }) {
+  return (
+    <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+      <Box sx={{ color: "action.active", display: "flex" }}>{icon}</Box>
+      <Box>
+        <Typography
+          variant="caption"
+          display="block"
+          color="text.disabled"
+          sx={{ lineHeight: 1 }}
+        >
+          {label}
+        </Typography>
+        <Typography variant="body2" sx={{ fontWeight: 600 }}>
+          {value || "—"}
+        </Typography>
+      </Box>
     </Box>
   );
 }
