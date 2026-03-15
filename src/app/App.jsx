@@ -8,7 +8,7 @@ import {
   Typography,
 } from "@mui/material";
 
-import ClippedDrawer from "../layout/ClippedDrawer";
+import MainLayout from "../layout/MainLayout";
 import { ThemeContext } from "../theme/ThemeContext.cjs";
 
 export default function App() {
@@ -95,7 +95,7 @@ export default function App() {
           },
         },
       }),
-    [mode]
+    [mode],
   );
 
   if (!themeReady) {
@@ -122,7 +122,7 @@ export default function App() {
     <ThemeContext.Provider value={{ auto, setAuto, userPref, setUserPref }}>
       <ThemeProvider theme={theme}>
         <CssBaseline />
-        <ClippedDrawer />
+        <MainLayout />
       </ThemeProvider>
     </ThemeContext.Provider>
   );

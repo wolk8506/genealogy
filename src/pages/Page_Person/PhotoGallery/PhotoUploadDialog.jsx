@@ -17,7 +17,12 @@ import {
   Typography,
   Box,
   Divider,
+  IconButton,
 } from "@mui/material";
+
+import CloseIcon from "@mui/icons-material/Close";
+import AddPhotoAlternateIcon from "@mui/icons-material/AddPhotoAlternate";
+
 import heic2any from "heic2any";
 import CustomDatePickerDialog from "../../../components/CustomDatePickerDialog";
 
@@ -206,7 +211,7 @@ export default function PhotoUploadDialog({
       newPhoto = await window.photoAPI.saveBlobFile(
         meta,
         convertedArrayBuffer,
-        filename
+        filename,
       );
     } else if (filePath) {
       newPhoto = await window.photoAPI.saveWithFilename(meta, filePath);
@@ -243,140 +248,267 @@ export default function PhotoUploadDialog({
         onClose();
         setKeepOpen(false);
       }}
+      maxWidth="md"
       fullWidth
-      maxWidth="sm"
       PaperProps={{
         sx: {
-          borderRadius: "15px",
+          borderRadius: "20px",
+          backgroundImage: "none",
+          overflow: "hidden",
         },
       }}
     >
-      <DialogTitle>Добавить фотографию</DialogTitle>
-      <DialogContent>
-        <Stack spacing={2} mt={1}>
+      {/* Шапка диалога — как в Edit */}
+      <Box
+        sx={{
+          p: 2,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          borderBottom: (theme) => `1px solid ${theme.palette.divider}`,
+          bgcolor: (theme) =>
+            theme.palette.mode === "dark"
+              ? "rgba(255,255,255,0.05)"
+              : "rgba(0,0,0,0.02)",
+        }}
+      >
+        <Typography variant="h6" sx={{ fontWeight: 600, ml: 1 }}>
+          Добавление новой фотографии
+        </Typography>
+        <IconButton onClick={onClose} size="small">
+          <CloseIcon />
+        </IconButton>
+      </Box>
+
+      <DialogContent sx={{ p: 0 }}>
+        <Box
+          sx={{ display: "flex", flexDirection: { xs: "column", md: "row" } }}
+        >
+          {/* Левая колонка: Загрузка / Превью */}
           <Box
-            onDragOver={(e) => e.preventDefault()}
-            onDragEnter={() => setDragCounter((c) => c + 1)}
-            onDragLeave={() => setDragCounter((c) => Math.max(c - 1, 0))}
-            onDrop={onDrop}
             sx={{
-              border: "2px dashed",
-              borderColor: isDragging ? "primary.main" : "divider",
-              bgcolor: isDragging ? "action.selected" : "action.hover",
-              transition: "0.3s",
-              borderRadius: 2,
+              flex: 1,
+              bgcolor: (theme) =>
+                theme.palette.mode === "dark" ? "#121212" : "#f5f5f5",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
               p: 3,
-              textAlign: "center",
-              cursor: "pointer",
+              minHeight: 400,
+              position: "relative",
             }}
           >
-            <Typography color="text.secondary" sx={{ mb: 1 }}>
-              Перетащите изображение сюда или
-            </Typography>
-            <Button variant="outlined" onClick={handleFileSelect}>
-              Выбрать файл
-            </Button>
+            {!preview ? (
+              <Box
+                onDragOver={(e) => e.preventDefault()}
+                onDragEnter={() => setDragCounter((c) => c + 1)}
+                onDragLeave={() => setDragCounter((c) => Math.max(c - 1, 0))}
+                onDrop={onDrop}
+                sx={{
+                  width: "100%",
+                  height: "100%",
+                  minHeight: 300,
+                  border: "2px dashed",
+                  borderColor: isDragging ? "primary.main" : "divider",
+                  bgcolor: isDragging ? "action.selected" : "transparent",
+                  borderRadius: "12px",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  transition: "0.3s",
+                  cursor: "pointer",
+                  "&:hover": { bgcolor: "rgba(0,0,0,0.02)" },
+                }}
+                onClick={handleFileSelect}
+              >
+                <AddPhotoAlternateIcon
+                  sx={{ fontSize: 48, mb: 2, color: "text.secondary" }}
+                />
+                <Typography color="text.secondary">
+                  Перетащите фото или нажмите для выбора
+                </Typography>
+              </Box>
+            ) : (
+              <Box
+                sx={{
+                  position: "relative",
+                  width: "100%",
+                  textAlign: "center",
+                }}
+              >
+                <Box
+                  component="img"
+                  src={preview}
+                  alt="Превью"
+                  sx={{
+                    maxWidth: "100%",
+                    maxHeight: 450,
+                    objectFit: "contain",
+                    borderRadius: "12px",
+                    boxShadow: "0 10px 30px rgba(0,0,0,0.3)",
+                  }}
+                />
+                <Button
+                  variant="contained"
+                  size="small"
+                  onClick={handleFileSelect}
+                  // sx={{ borderRadius: "10px" }}
+                  sx={{
+                    position: "absolute",
+                    color: "orange",
+                    top: 10,
+                    right: 10,
+                    bgcolor: "rgba(0,0,0,0.6)",
+                    backdropFilter: "blur(4px)",
+                    borderRadius: "10px",
+                    "&:hover": { bgcolor: "rgba(0,0,0,0.8)" },
+                  }}
+                >
+                  Сменить файл
+                </Button>
+              </Box>
+            )}
           </Box>
 
-          {preview && (
-            <Box sx={{ border: "1px dashed", borderRadius: 2, p: 1 }}>
-              <img
-                src={preview}
-                alt="Предпросмотр"
-                style={{
-                  width: "100%",
-                  maxHeight: 300,
-                  objectFit: "contain",
-                  borderRadius: 8,
-                }}
-              />
-              <FormControl fullWidth sx={{ mt: 2 }}>
-                <InputLabel>Отображение</InputLabel>
-                <Select
-                  value={aspectRatio}
-                  label="Отображение"
-                  onChange={(e) => setAspectRatio(e.target.value)}
+          {/* Правая колонка: Форма */}
+          <Box sx={{ flex: 1.2, p: 3 }}>
+            <Stack spacing={2.5}>
+              <Box>
+                <Typography
+                  variant="overline"
+                  color="text.secondary"
+                  sx={{ fontWeight: "bold" }}
                 >
-                  <MenuItem value="4/3">Горизонтальное (4:3)</MenuItem>
-                  <MenuItem value="1/1">Квадратное (1:1)</MenuItem>
-                  <MenuItem value="3/4">Вертикальное (3:4)</MenuItem>
-                </Select>
-              </FormControl>
-            </Box>
-          )}
-          <Divider />
-          <TextField
-            label="Заголовок"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            fullWidth
-          />
-          <TextField
-            label="Описание"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            multiline
-            rows={3}
-            fullWidth
-          />
-          <Autocomplete
-            multiple
-            options={allPeople}
-            getOptionLabel={(o) =>
-              `${o.id} :: ${o.firstName || ""} ${o.lastName || ""}`.trim()
-            }
-            value={people}
-            onChange={(e, v) => setPeople(v)}
-            renderInput={(params) => (
-              <TextField {...params} label="Кто на фото" fullWidth />
-            )}
-          />
+                  Основные сведения
+                </Typography>
+                <Stack spacing={2} sx={{ mt: 1 }}>
+                  <TextField
+                    fullWidth
+                    label="Заголовок"
+                    variant="filled"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                  />
+                  <TextField
+                    fullWidth
+                    label="Описание"
+                    multiline
+                    rows={2}
+                    variant="filled"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                  />
+                </Stack>
+              </Box>
 
-          <TextField
-            label="Дата снимка (ГГГГ-ММ-ДД)"
-            value={datePhoto || ""}
-            onClick={() => setDatePickerOpen(true)}
-            size="small"
-            fullWidth
-            placeholder="ДД.ММ.ГГГГ / ММ.ГГГГ / ГГГГ"
-            InputProps={{ readOnly: true }}
-          />
-          <CustomDatePickerDialog
-            open={datePickerOpen}
-            onClose={() => setDatePickerOpen(false)}
-            initialDate={datePhoto}
-            format="YYYY-MM-DD" // или  "DD.MM.YYYY"
-            showTime={true} // включить выбор времени
-            onSave={(newDate) => {
-              setDatePhoto(newDate);
-              setDatePickerOpen(false);
-            }}
-          />
-          {/* Checkbox: оставаться в модалке после сохранения */}
-          <FormControlLabel
-            control={
-              <Checkbox
-                checked={keepOpen}
-                onChange={(e) => setKeepOpen(e.target.checked)}
+              <Box>
+                <Typography
+                  variant="overline"
+                  color="text.secondary"
+                  sx={{ fontWeight: "bold" }}
+                >
+                  Детали и теги
+                </Typography>
+                <Stack spacing={2} sx={{ mt: 1 }}>
+                  <Autocomplete
+                    multiple
+                    options={allPeople}
+                    getOptionLabel={(o) =>
+                      `${o.id} :: ${o.firstName || ""} ${o.lastName || ""}`.trim()
+                    }
+                    value={people}
+                    onChange={(e, v) => setPeople(v)}
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        variant="filled"
+                        label="Кто на фото"
+                      />
+                    )}
+                    ChipProps={{ size: "small", sx: { borderRadius: "8px" } }}
+                  />
+
+                  <Stack direction="row" spacing={2}>
+                    <TextField
+                      label="Дата снимка"
+                      value={datePhoto || ""}
+                      onClick={() => setDatePickerOpen(true)}
+                      variant="filled"
+                      fullWidth
+                      placeholder="ГГГГ-ММ-ДД"
+                      InputProps={{ readOnly: true }}
+                    />
+
+                    <FormControl variant="filled" sx={{ minWidth: 140 }}>
+                      <InputLabel>Формат</InputLabel>
+                      <Select
+                        value={aspectRatio}
+                        onChange={(e) => setAspectRatio(e.target.value)}
+                      >
+                        <MenuItem value="4/3">4:3</MenuItem>
+                        <MenuItem value="1/1">1:1</MenuItem>
+                        <MenuItem value="3/4">3:4</MenuItem>
+                      </Select>
+                    </FormControl>
+                  </Stack>
+                </Stack>
+              </Box>
+
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={keepOpen}
+                    onChange={(e) => setKeepOpen(e.target.checked)}
+                    size="small"
+                  />
+                }
+                label={
+                  <Typography variant="body2">
+                    Оставить окно открытым (для загрузки нескольких)
+                  </Typography>
+                }
               />
-            }
-            label="Добавить ещё"
-          />
-        </Stack>
+            </Stack>
+          </Box>
+        </Box>
       </DialogContent>
-      <DialogActions sx={{ pr: "24px", pl: "24px", pb: "16px" }}>
-        <Button
-          onClick={() => {
-            onClose();
-            setKeepOpen(false);
-          }}
-        >
+
+      <DialogActions
+        sx={{
+          px: 3,
+          py: 2,
+          borderTop: (theme) => `1px solid ${theme.palette.divider}`,
+        }}
+      >
+        <Button onClick={onClose} sx={{ borderRadius: "10px" }}>
           Отмена
         </Button>
-        <Button variant="contained" onClick={handleSave}>
-          Сохранить
+        <Button
+          variant="contained"
+          onClick={handleSave}
+          sx={{
+            borderRadius: "10px",
+            px: 4,
+            boxShadow: "0 4px 14px 0 rgba(0,118,255,0.39)",
+          }}
+        >
+          Сохранить фото
         </Button>
       </DialogActions>
+
+      {/* Вынесенный календарь (как в Edit) */}
+      <CustomDatePickerDialog
+        open={datePickerOpen}
+        onClose={() => setDatePickerOpen(false)}
+        initialDate={datePhoto}
+        format="YYYY-MM-DD"
+        showTime={true}
+        onSave={(newDate) => {
+          setDatePhoto(newDate);
+          setDatePickerOpen(false);
+        }}
+      />
     </Dialog>
   );
 }

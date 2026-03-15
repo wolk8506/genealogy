@@ -111,7 +111,7 @@ export default function PhotoUploader() {
       result = await window.photoAPI.saveBlobFile(
         meta,
         convertedArrayBuffer,
-        filename
+        filename,
       );
     } else {
       const source = filePath || filename;
@@ -186,7 +186,9 @@ export default function PhotoUploader() {
   };
 
   return (
-    <Paper sx={{ maxWidth: 600, mx: "auto", p: 3, borderRadius: "15px" }}>
+    <Paper
+      sx={{ maxWidth: 650, mx: "auto", p: 3, mt: 4, borderRadius: "15px" }}
+    >
       <Stack spacing={3}>
         {/* <Stack direction="row" alignItems="center" spacing={1}>
           <AddPhotoAlternateIcon color="primary" fontSize="large" />

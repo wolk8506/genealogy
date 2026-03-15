@@ -20,17 +20,14 @@ export default function NavigationButtons() {
         display: "inline-flex",
         alignItems: "center",
         border: "1px solid",
-        // borderRadius: "15px",
         borderColor: "divider",
         borderRadius: 7,
-        // bgcolor: "background.paper",
+        height: 40,
         color: "text.secondary",
-        "& svg": {
-          m: 1,
-        },
       }}
     >
       <IconButton
+        sx={{ color: "white", p: "9px" }}
         color={isDark ? "primary" : "default"}
         onClick={() => canGoBack && navigate(-1)}
         disabled={!canGoBack}
@@ -40,6 +37,7 @@ export default function NavigationButtons() {
       </IconButton>
       <Divider orientation="vertical" variant="middle" flexItem />
       <IconButton
+        sx={{ color: "white", p: "9px" }}
         color={isDark ? "primary" : "default"}
         onClick={() => canGoForward && navigate(1)}
         disabled={!canGoForward}

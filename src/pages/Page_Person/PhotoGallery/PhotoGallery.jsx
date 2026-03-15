@@ -8,44 +8,32 @@ import React, {
 } from "react";
 import {
   Dialog,
-  DialogContent,
   Typography,
   IconButton,
-  Stack,
   Button,
   Box,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  TextField,
-  Autocomplete,
-  ToggleButton,
-  ToggleButtonGroup,
-  useMediaQuery,
-  DialogActions,
+  // useMediaQuery,
   Paper,
-  ButtonGroup,
-  CircularProgress,
+  Slide,
+  Tooltip,
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import AddPhotoAlternateIcon from "@mui/icons-material/AddPhotoAlternate";
 import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
-import FullscreenIcon from "@mui/icons-material/Fullscreen";
-import FullscreenExitIcon from "@mui/icons-material/FullscreenExit";
-import DownloadIcon from "@mui/icons-material/Download";
-import CloseIcon from "@mui/icons-material/Close";
-import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
-import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
-import EditIcon from "@mui/icons-material/Edit";
-import DeleteIcon from "@mui/icons-material/Delete";
 import PhotoUploadDialog from "./PhotoUploadDialog";
 import PhotoMetaDialog from "../../../components/PhotoMetaDialog";
 import PhotoLibraryIcon from "@mui/icons-material/PhotoLibrary";
-import SwipeableViews from "react-swipeable-views";
+import ArrowBackIosIcon from "@mui/icons-material/ArrowBackIos";
 
-import CustomDatePickerDialog from "../../../components/CustomDatePickerDialog";
-import NameSection from "../../../components/NameSection";
+import onDownload from "../../utils/onDownload";
+import PhotoFullscreenViewer from "../../../components/PhotoFullscreenViewer";
+// import PhotoEditDialog from "./PhotoEditDialog";
+import PhotoCell from "../../../components/PhotoCell";
+import PhotoMetaUpdateDialog from "../../../components/PhotoMetaUpdateDialog";
+// Анимация появления как в биографии
+const Transition = React.forwardRef((props, ref) => (
+  <Slide direction="up" ref={ref} {...props} />
+));
 
 const normalizePhotoDate = (dp) => {
   if (!dp) return null;
@@ -62,6 +50,7 @@ function GridByRowsNoDeps({
   columns,
   rowHeight,
   height,
+  photoPaths,
   columnGap = 8,
   overscan = 3,
   renderCell,
@@ -81,7 +70,7 @@ function GridByRowsNoDeps({
     const start = Math.max(0, Math.floor(st / rowFullHeight) - overscan);
     const visible = Math.min(
       rowCount - start,
-      Math.ceil(height / rowFullHeight) + overscan * 2
+      Math.ceil(height / rowFullHeight) + overscan * 2,
     );
     return { start, visible };
   }, [rowFullHeight, overscan, rowCount, height]);
@@ -101,7 +90,7 @@ function GridByRowsNoDeps({
             const fromIndex = start * columns;
             const toIndex = Math.min(
               itemsLen - 1,
-              fromIndex + visible * columns - 1
+              fromIndex + visible * columns - 1,
             );
             try {
               onVisibleRange({ fromIndex, toIndex });
@@ -121,28 +110,29 @@ function GridByRowsNoDeps({
   }, [compute, columns, itemsLen, onVisibleRange]);
 
   // initial tick to render viewport and notify loader
+  // Внутри функции GridByRowsNoDeps
   useEffect(() => {
     const t = setTimeout(() => {
       const { start, visible } = compute();
       if (typeof onVisibleRange === "function") {
         const fromIndex = start * columns;
+        // Используем itemsLen (он объявлен в начале функции через items.length)
         const toIndex = Math.min(
           itemsLen - 1,
-          fromIndex + visible * columns - 1
+          fromIndex + visible * columns - 1,
         );
         try {
           onVisibleRange({ fromIndex, toIndex });
         } catch (e) {}
       }
       force();
-    }, 20);
+    }, 100); // Небольшая задержка, чтобы DOM успел отрисоваться
     return () => clearTimeout(t);
   }, [compute, columns, itemsLen, onVisibleRange]);
 
   // render derived from scrollTopRef synchronously
   const { start, visible } = compute();
-  const startIndex = start * columns;
-  const endIndex = Math.min(itemsLen - 1, startIndex + visible * columns - 1);
+
   const totalHeight = rowCount * rowFullHeight;
   const translateY = start * rowFullHeight;
   const cellWidth = `${100 / columns}%`;
@@ -168,7 +158,7 @@ function GridByRowsNoDeps({
           ) : (
             <div style={{ width: "100%", height: "100%" }} />
           )}
-        </div>
+        </div>,
       );
     }
     rows.push(
@@ -177,7 +167,7 @@ function GridByRowsNoDeps({
         style={{ display: "flex", gap: `${columnGap}px`, width: "100%" }}
       >
         {cells}
-      </div>
+      </div>,
     );
   }
 
@@ -212,188 +202,19 @@ function GridByRowsNoDeps({
 
 // ---------------------------------------------------------------------------------------------
 
-// Pure Photo cell (stateless, no side-effects)
-function PhotoCell({
-  photo,
-  path,
-  onDownload,
-  onEdit,
-  onDelete,
-  onOpen,
-  rowHeight,
-  isDark,
-  personId,
-  allPeople = [], // <- принимаем проп
-}) {
-  const [hover, setHover] = useState(false);
-
-  const peopleText = (photo.people || [])
-    .map((id) => {
-      const person = allPeople.find((p) => p.id === id);
-      return person
-        ? `${person.firstName || ""} ${person.lastName || ""}`.trim()
-        : `ID ${id}`;
-    })
-    .join(", ");
-
-  return (
-    <div
-      onClick={() => onOpen(photo)}
-      onContextMenu={(e) => {
-        e.preventDefault();
-        window.contextAPI?.showPhotoMenu?.(
-          photo,
-          { x: e.clientX, y: e.clientY },
-          "full",
-          personId
-        );
-      }}
-      onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => setHover(false)}
-      style={{
-        width: "100%",
-        height: rowHeight,
-        borderRadius: 8,
-        overflow: "hidden",
-        background: isDark ? "#1e1e1e" : "#f0f0f0",
-        position: "relative",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        cursor: "pointer",
-      }}
-    >
-      {path ? (
-        <img
-          src={path}
-          alt={photo.title}
-          loading="lazy"
-          style={{
-            width: "100%",
-            height: "100%",
-            objectFit: "cover",
-            display: "block",
-          }}
-        />
-      ) : (
-        <div
-          style={{
-            width: "100%",
-            height: "100%",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            color: "gray",
-          }}
-        >
-          Загрузка...
-        </div>
-      )}
-
-      {/* кнопки (скачать, редактировать, удалить) */}
-      <div style={{ position: "absolute", top: 6, left: 6, zIndex: 10 }}>
-        <IconButton
-          size="small"
-          onClick={(e) => {
-            e.stopPropagation();
-            onDownload(photo);
-          }}
-          sx={{ backgroundColor: "rgba(0,0,0,0.4)", color: "#fff", p: 0.6 }}
-        >
-          <DownloadIcon fontSize="small" />
-        </IconButton>
-      </div>
-
-      <div style={{ position: "absolute", top: 6, right: 6, zIndex: 10 }}>
-        <IconButton
-          size="small"
-          onClick={(e) => {
-            e.stopPropagation();
-            onEdit(photo);
-          }}
-          sx={{ backgroundColor: "rgba(0,0,0,0.4)", color: "#fff", p: 0.6 }}
-        >
-          <EditIcon fontSize="small" />
-        </IconButton>
-      </div>
-
-      {personId === photo.owner && (
-        <div style={{ position: "absolute", bottom: 6, left: 6, zIndex: 10 }}>
-          <IconButton
-            size="small"
-            onClick={(e) => {
-              e.stopPropagation();
-              onDelete(photo);
-            }}
-            sx={{ backgroundColor: "rgba(255,0,0,0.4)", color: "#fff", p: 0.6 }}
-          >
-            <DeleteIcon fontSize="small" />
-          </IconButton>
-        </div>
-      )}
-
-      <div
-        style={{
-          position: "absolute",
-          bottom: 6,
-          right: 6,
-          zIndex: 10,
-          backgroundColor: "rgba(0,0,0,0.4)",
-          color: "orange",
-          padding: "2px 6px",
-          borderRadius: 4,
-          fontSize: 12,
-        }}
-      >
-        <CalendarTodayIcon
-          sx={{ fontSize: 12, verticalAlign: "middle", mr: 0.3 }}
-        />
-        {photo.datePhoto || "—"}
-      </div>
-
-      {/* overlay */}
-      <div
-        style={{
-          position: "absolute",
-          inset: 0,
-          backgroundColor: "rgba(0,0,0,0.5)",
-          color: "#fff",
-          opacity: hover ? 1 : 0,
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "center",
-          alignItems: "center",
-          textAlign: "center",
-          padding: 8,
-          transition: "opacity 0.2s",
-        }}
-      >
-        <Typography variant="subtitle1">{photo.title}</Typography>
-        <Typography variant="subtitle1">{photo.description}</Typography>
-        <Typography variant="caption" mt={0.5}>
-          🏷️ На фото: {peopleText || "—"}
-        </Typography>
-      </div>
-    </div>
-  );
-}
-
 export default function PhotoGallery({ personId, allPeople, refresh }) {
+  const [openMain, setOpenMain] = useState(false);
   const theme = useTheme();
   const isDark = theme.palette.mode === "dark";
-  const isSmall = useMediaQuery(theme.breakpoints.down("md"));
 
   // states
-  // const [date, setDate] = useState("");
-  const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [photos, setPhotos] = useState([]);
-  const [photoPaths, setPhotoPaths] = useState({});
+  const [photoPaths, setPhotoPaths] = useState({ thumbs: {}, full: {} });
   const [refreshPhotos, setRefreshPhotos] = useState(0);
   const [uploadOpen, setUploadOpen] = useState(false);
   const [viewMode, setViewMode] = useState("square");
   const [hideLabels, setHideLabels] = useState(false);
   const [sortState, setSortState] = useState(0);
-
   const [open, setOpen] = useState(false);
   const [current, setCurrent] = useState(null);
   const [fullscreen, setFullscreen] = useState(false);
@@ -401,33 +222,31 @@ export default function PhotoGallery({ personId, allPeople, refresh }) {
   const [sliderForcedFullscreen, setSliderForcedFullscreen] = useState(false);
   const [meta, setMeta] = useState(null);
   const [openDialog, setOpenDialog] = useState(false);
+  const [direction, setDirection] = useState(0); // 1 - вперед, -1 - назад
+  const [windowWidth, setWindowWidth] = useState(window.innerWidth);
 
-  const [rename, setRename] = useState(false);
-  const [newFilename, setNewFilename] = useState("");
-  const [saving, setSaving] = useState(false); // если ещё нет
-
-  // load metadata
+  // Эффект для отслеживания изменения размера окна
   useEffect(() => {
-    if (!personId) return;
-    let mounted = true;
-    window.photoAPI.getAll(personId).then((list) => {
-      if (!mounted) return;
-      const filtered = list.filter(
-        (p) =>
-          p.owner === Number(personId) ||
-          (p.people || []).includes(Number(personId))
-      );
-      setPhotos(filtered);
-    });
-    return () => {
-      mounted = false;
-    };
-  }, [personId, refreshPhotos]);
+    const handleResize = () => setWindowWidth(window.innerWidth);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   const displayPhotos = useMemo(() => {
-    const arr = [...photos].sort(
-      (a, b) => Date.parse(b.date) - Date.parse(a.date)
+    // 1. ФИЛЬТРАЦИЯ:
+    // Фото проходит, если человек является владельцем ИЛИ он в списке отмеченных
+    const filtered = photos.filter((p) => {
+      const isOwner = String(p.owner) === String(personId);
+      const isTagged = p.people && p.people.includes(personId);
+      return isOwner || isTagged;
+    });
+
+    // 2. СОРТИРОВКА ПО ДАТЕ ДОБАВЛЕНИЯ (базовая)
+    const arr = [...filtered].sort(
+      (a, b) => Date.parse(b.date) - Date.parse(a.date),
     );
+
+    // 3. ДОПОЛНИТЕЛЬНАЯ СОРТИРОВКА (если выбрана пользователем)
     if (sortState > 0) {
       arr.sort((a, b) => {
         const da = normalizePhotoDate(a.datePhoto);
@@ -441,46 +260,77 @@ export default function PhotoGallery({ personId, allPeople, refresh }) {
     return arr;
   }, [photos, sortState]);
 
-  // const peopleMap = useMemo(() => {
-  //   const m = new Map();
-  //   (allPeople || []).forEach((p) => {
-  //     const name =
-  //       `${p.firstName || ""} ${p.lastName || p.maidenName || ""}`.trim() ||
-  //       "Неизвестно";
-  //     m.set(p.id, name);
-  //   });
-  //   return m;
-  // }, [allPeople]);
+  useEffect(() => {
+    if (!personId) return;
+    let mounted = true;
+
+    // Запрашиваем ВСЕ фото, связанные с этим человеком через API
+    window.photoAPI.getAll(personId).then((list) => {
+      if (!mounted) return;
+
+      // УБИРАЕМ ЖЕСТКИЙ ФИЛЬТР
+      // Просто сохраняем всё, что прислал API для этого personId
+      console.log(`Загружено для ${personId}: ${list.length} фото`);
+
+      setPhotos(list);
+    });
+
+    return () => {
+      mounted = false;
+    };
+  }, [personId, refreshPhotos]);
 
   // Path loader controller (queue + pending)
   const pendingRef = useRef(new Set());
   const queueRef = useRef(new Set());
   const timerRef = useRef(null);
 
-  const setPathIfNotExists = useCallback((id, p) => {
-    setPhotoPaths((prev) => (prev[id] ? prev : { ...prev, [id]: p }));
+  const setPath = useCallback((id, path, version) => {
+    setPhotoPaths((prev) => ({
+      ...prev,
+      [version]: { ...prev[version], [id]: path },
+    }));
   }, []);
 
   const fetchPath = useCallback(
-    async (photo) => {
-      if (!photo) return null;
-      if (photoPaths[photo.id]) return photoPaths[photo.id];
-      if (pendingRef.current.has(photo.id)) return null;
-      pendingRef.current.add(photo.id);
+    async (photo, version = "thumbs") => {
+      if (!photo || pendingRef.current.has(`${version}-${photo.id}`)) return;
+
+      // Проверяем наличие в конкретном буфере
+      if (photoPaths[version] && photoPaths[version][photo.id]) return;
+
+      pendingRef.current.add(`${version}-${photo.id}`);
       try {
-        const path = await window.photoAPI.getPath(photo.owner, photo.filename);
-        setPathIfNotExists(photo.id, path);
-        return path;
+        const requestedVersion = version === "full" ? "webp" : "thumbs";
+        // ИСПОЛЬЗУЕМ photo.owner вместо personId для корректного пути к файлу
+        const path = await window.photoAPI.getPath(
+          photo.owner,
+          photo.filename,
+          requestedVersion,
+        );
+        if (path) {
+          setPath(photo.id, path, version);
+        }
       } catch (e) {
-        console.error("getPath failed", e);
-        return null;
+        console.error("Failed to get path", e);
       } finally {
-        pendingRef.current.delete(photo.id);
+        pendingRef.current.delete(`${version}-${photo.id}`);
       }
     },
-    [photoPaths, setPathIfNotExists]
+    [photoPaths, setPath], // personId убираем из зависимостей, он тут не нужен
   );
 
+  const handleOpen = (photo) => {
+    setCurrent({ ...photo });
+    setOpen(true);
+
+    // Исправленная проверка для диалога
+    if (photo && !photoPaths.full[photo.id]) {
+      fetchPath(photo, "full");
+    }
+  };
+
+  // 1. Сначала определяем вспомогательные функции
   const flushQueue = useCallback(async () => {
     const ids = Array.from(queueRef.current);
     if (!ids.length) return;
@@ -499,56 +349,68 @@ export default function PhotoGallery({ personId, allPeople, refresh }) {
     }, 80);
   }, [flushQueue]);
 
+  // 2. Затем вызываем их в эффектах
+  useEffect(() => {
+    if (displayPhotos.length > 0) {
+      const t = setTimeout(() => {
+        const initial = Math.min(24, displayPhotos.length);
+        for (let i = 0; i < initial; i++) {
+          const p = displayPhotos[i];
+          if (p && !photoPaths.thumbs[p.id] && !pendingRef.current.has(p.id)) {
+            queueRef.current.add(p.id);
+          }
+        }
+        scheduleFlush(); // Теперь функция точно существует
+      }, 150);
+      return () => clearTimeout(t);
+    }
+  }, [displayPhotos, photoPaths.thumbs, scheduleFlush]);
+
   // called by GridByRowsNoDeps onVisibleRange behavior: we emulate that by calling handleVisibleRange manually
   const handleVisibleRange = useCallback(
     ({ fromIndex, toIndex }) => {
-      const margin = 8;
+      const margin = 5;
       const start = Math.max(0, fromIndex - margin);
+      // ВАЖНО: используем displayPhotos здесь
       const end = Math.min(displayPhotos.length - 1, toIndex + margin);
+
       for (let i = start; i <= end; i++) {
         const p = displayPhotos[i];
-        if (!p) continue;
-        if (photoPaths[p.id]) continue;
-        if (pendingRef.current.has(p.id)) continue;
-        queueRef.current.add(p.id);
+        // Проверяем именно в thumbs
+        if (p && !photoPaths.thumbs[p.id] && !pendingRef.current.has(p.id)) {
+          queueRef.current.add(p.id);
+        }
       }
       scheduleFlush();
     },
-    [displayPhotos, photoPaths, scheduleFlush]
+    [displayPhotos, photoPaths.thumbs, scheduleFlush],
   );
 
   // preload neighbors for fullscreen
   useEffect(() => {
     if (!fullscreen) return;
+
+    // Ищем соседей в ОТОБРАЖАЕМОМ массиве
     const ids = [index - 1, index, index + 1].filter(
-      (i) => i >= 0 && i < displayPhotos.length
+      (i) => i >= 0 && i < displayPhotos.length,
     );
     const toLoad = ids.map((i) => displayPhotos[i]).filter(Boolean);
+
     toLoad.forEach((p) => {
-      if (!p) return;
-      if (!photoPaths[p.id] && !pendingRef.current.has(p.id)) {
-        pendingRef.current.add(p.id);
+      // Используем составной ключ для pending, чтобы не блокировать thumbs
+      const loadingKey = `full-${p.id}`;
+      if (!photoPaths.full[p.id] && !pendingRef.current.has(loadingKey)) {
+        pendingRef.current.add(loadingKey);
         window.photoAPI
-          .getPath(p.owner, p.filename)
-          .then((path) => setPathIfNotExists(p.id, path))
+          .getPath(p.owner, p.filename, "webp") // p.owner обеспечит правильный путь
+          .then((path) => {
+            if (path) setPath(p.id, path, "full");
+          })
           .catch((e) => console.error("getPath failed", e))
-          .finally(() => pendingRef.current.delete(p.id));
+          .finally(() => pendingRef.current.delete(loadingKey));
       }
     });
-  }, [fullscreen, index, displayPhotos, photoPaths, setPathIfNotExists]);
-
-  // initial small prefetch so first viewport is fast
-  useEffect(() => {
-    const t = setTimeout(() => {
-      const initial = Math.min(24, displayPhotos.length);
-      for (let i = 0; i < initial; i++) {
-        const p = displayPhotos[i];
-        if (p && !photoPaths[p.id]) queueRef.current.add(p.id);
-      }
-      scheduleFlush();
-    }, 40);
-    return () => clearTimeout(t);
-  }, [displayPhotos, photoPaths, scheduleFlush]);
+  }, [fullscreen, index, displayPhotos, photoPaths.full, setPath]);
 
   // UI handlers
   const handleFullscreenOpen = (photo) => {
@@ -556,139 +418,36 @@ export default function PhotoGallery({ personId, allPeople, refresh }) {
     setIndex(i >= 0 ? i : 0);
     setFullscreen(true);
   };
-  const handleFullscreenClose = async () => {
+  const handleFullscreenClose = useCallback(async () => {
     setFullscreen(false);
     if (sliderForcedFullscreen) {
       await window.windowAPI.setFullscreen(false);
       setSliderForcedFullscreen(false);
     }
     setHideLabels(false);
-  };
+  }, [sliderForcedFullscreen]);
 
-  const handleOpen = (photo) => {
-    setCurrent({ ...photo });
-    setOpen(true);
-    setRename(false);
-    setNewFilename(photo?.filename || "");
-    // priority prefetch for dialog preview
-    if (photo && !photoPaths[photo.id] && !pendingRef.current.has(photo.id)) {
-      pendingRef.current.add(photo.id);
-      window.photoAPI
-        .getPath(photo.owner, photo.filename)
-        .then((p) => setPathIfNotExists(photo.id, p))
-        .catch((e) => console.error("getPath failed", e))
-        .finally(() => pendingRef.current.delete(photo.id));
-    }
-  };
+  const handleNext = useCallback(() => {
+    setDirection(1);
+    setIndex((prev) => (prev + 1 < displayPhotos.length ? prev + 1 : prev));
+  }, [displayPhotos.length]);
+
+  const handlePrev = useCallback(() => {
+    setDirection(-1);
+    setIndex((prev) => (prev - 1 >= 0 ? prev - 1 : prev));
+  }, []);
+
   const handleClose = () => {
     setOpen(false);
     setCurrent(null);
   };
-  // const handleSave = () => {
-  //   window.photoAPI.update(current.owner, current);
-  //   setPhotos((prev) => prev.map((p) => (p.id === current.id ? current : p)));
-  //   handleClose();
-  //   setRefreshPhotos((r) => r + 1);
-  // };
-  const handleSave = async () => {
-    if (!current) return;
-    setSaving(true);
-    try {
-      const oldOwner = current.owner;
-      const oldFilename = current.filename;
-      const newName = rename ? newFilename || oldFilename : oldFilename;
-      const filenameChanged = String(newName) !== String(oldFilename);
 
-      // 1) Переименование файла на диске (если имя изменилось)
-      if (filenameChanged) {
-        try {
-          if (window.fileAPI?.renameFile) {
-            // renameFile(owner, oldName, newName)
-            await window.fileAPI.renameFile(oldOwner, oldFilename, newName);
-          } else if (window.fileAPI?.moveFile) {
-            // fallback: moveFile(ownerFrom, ownerTo, oldName, newName)
-            await window.fileAPI.moveFile(
-              oldOwner,
-              oldOwner,
-              oldFilename,
-              newName
-            );
-          } else {
-            console.warn(
-              "fileAPI.renameFile/moveFile not available; file may remain unchanged on disk"
-            );
-          }
-        } catch (fileErr) {
-          console.warn("File rename failed", fileErr);
-          // продолжаем — обновим JSON и UI, чтобы метаданные соответствовали желаемому имени
-        }
-      }
-
-      // 2) Обновить JSON: удалить старую запись (если имя менялось)
-      try {
-        if (filenameChanged && window.photoAPI?.removeFromOwnerJson) {
-          await window.photoAPI.removeFromOwnerJson(oldOwner, {
-            filename: oldFilename,
-            id: current.id,
-          });
-        }
-      } catch (remErr) {
-        console.warn("removeFromOwnerJson warning", remErr);
-      }
-
-      // 3) Подготовить новую запись и добавить/обновить в JSON
-      const updatedEntry = {
-        ...current,
-        title: current.title,
-        description: current.description,
-        datePhoto: current.datePhoto,
-        filename: newName,
-        owner: oldOwner,
-        people: current.people,
-        aspectRatio: current.aspectRatio,
-      };
-
-      try {
-        if (window.photoAPI?.addOrUpdateOwnerJson) {
-          await window.photoAPI.addOrUpdateOwnerJson(oldOwner, updatedEntry);
-        } else if (window.photoAPI?.update) {
-          // возможный универсальный метод
-          await window.photoAPI.update(oldOwner, updatedEntry);
-        } else {
-          console.warn("photoAPI.addOrUpdateOwnerJson/update not available");
-        }
-      } catch (addErr) {
-        console.warn("addOrUpdateOwnerJson/update failed", addErr);
-      }
-
-      // 4) Обновить локальный стейт photos
-      setPhotos((prev) =>
-        prev.map((p) => (p.id === current.id ? { ...p, ...updatedEntry } : p))
-      );
-
-      // 5) Сбросить кеш пути, если имя изменилось
-      if (filenameChanged) {
-        setPhotoPaths((prev) => {
-          const copy = { ...prev };
-          delete copy[current.id];
-          return copy;
-        });
-      }
-
-      // 6) Закрыть диалог
-      handleClose();
-    } catch (e) {
-      console.error("Failed to save photo meta", e);
-      alert("Не удалось сохранить метаданные: " + (e.message || e));
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handlMaximazeWindow = async () => {
+  const handlMaximazeWindow = useCallback(async () => {
     const wantFullscreen = !hideLabels;
     setHideLabels(wantFullscreen);
+
     const alreadyFullscreen = await window.windowAPI.isFullscreen();
+
     if (wantFullscreen) {
       if (!alreadyFullscreen) {
         await window.windowAPI.setFullscreen(true);
@@ -700,18 +459,48 @@ export default function PhotoGallery({ personId, allPeople, refresh }) {
         setSliderForcedFullscreen(false);
       }
     }
-  };
+  }, [hideLabels, sliderForcedFullscreen]);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (!fullscreen) return;
-      if (e.key === "ArrowLeft") setIndex((p) => Math.max(p - 1, 0));
-      if (e.key === "ArrowRight")
-        setIndex((p) => Math.min(p + 1, displayPhotos.length - 1));
+      if (e.key === "ArrowLeft") handlePrev();
+      if (e.key === "ArrowRight") handleNext();
+      if (e.key === "Escape") handleFullscreenClose();
+      if (e.key.toLowerCase() === "f") {
+        handlMaximazeWindow();
+      }
     };
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [fullscreen, displayPhotos.length]);
+  }, [fullscreen, handleNext, handlePrev, handleFullscreenClose]);
+
+  const currentPhotoInfo = useMemo(() => {
+    const photo = displayPhotos[index];
+    if (!photo) return null;
+
+    const owner = allPeople.find((p) => p.id === photo.owner);
+    const ownerText = owner
+      ? `${owner.gender === "male" ? "👤 Добавил: " : "👤 Добавила: "}${owner.firstName || "Неизвестно"}`
+      : "👤 Владелец не найден";
+
+    const peopleText = (photo.people || [])
+      .map((id) => {
+        const person = allPeople.find((p) => p.id === id);
+        return person
+          ? `${person.firstName || ""} ${person.lastName || ""}`.trim()
+          : `ID ${id}`;
+      })
+      .join(", ");
+
+    return {
+      title: photo.title,
+      description: photo.description,
+      ownerText,
+      datePhoto: photo.datePhoto,
+      peopleText,
+    };
+  }, [index, displayPhotos, allPeople]);
 
   // IPC context menu listeners
   useEffect(() => {
@@ -745,21 +534,26 @@ export default function PhotoGallery({ personId, allPeople, refresh }) {
     };
   }, [personId]);
 
-  const quntityPhoto = displayPhotos?.length;
+  // --- Layout sizes (ПЕРЕНЕСИТЕ СЮДА) ---
+  // Определяем количество колонок в зависимости от ширины (адаптивность)
+  const columns = useMemo(() => {
+    if (windowWidth < 1500) return 4;
+    if (windowWidth < 1800) return 5;
+    if (windowWidth < 2100) return 6;
+    return 7;
+  }, [windowWidth]);
 
-  // sizing
-  const columns = isSmall ? 3 : 4;
   const columnGap = 8;
-  const containerHeight = Math.max(300, window.innerHeight - 220);
-  const baseWidth = Math.max(300, Math.floor(window.innerWidth * 0.9));
-  const rowHeight =
-    viewMode === "square"
+  const baseWidth = Math.max(300, Math.floor(windowWidth * 0.9));
+  const containerHeight = Math.max(300, window.innerHeight - 100);
+
+  // Теперь columns определен выше, и ошибки не будет
+  const rowHeight = useMemo(() => {
+    return viewMode === "square"
       ? Math.floor(baseWidth / columns)
       : Math.floor((baseWidth / columns) * 1.15);
+  }, [baseWidth, viewMode, columns]);
 
-  // actions
-  const onDownload = (photo) =>
-    window.electron?.ipcRenderer.send("photo:download", photo);
   const onEdit = (photo) => handleOpen(photo);
   const onDelete = (photo) => {
     if (confirm("Удалить фото?")) {
@@ -774,54 +568,213 @@ export default function PhotoGallery({ personId, allPeople, refresh }) {
   };
   const onOpen = (photo) => handleFullscreenOpen(photo);
 
-  if (!displayPhotos.length) {
-    return (
-      <>
-        <NameSection title="Фотогалерея" icon={PhotoLibraryIcon} />
-        <Stack direction="row" gap={1} justifyContent="flex-end" mb={1}>
-          <Button
-            startIcon={<AddPhotoAlternateIcon />}
-            variant="outlined"
-            onClick={() => setUploadOpen(true)}
-          >
-            Добавить фото
-          </Button>
-          {/* <ToggleButtonGroup
-            value={viewMode}
-            exclusive
-            size="small"
-            onChange={(e, v) => v && setViewMode(v)}
-          >
-            <ToggleButton value="square">Квадрат</ToggleButton>
-            <ToggleButton value="natural">Пропорции</ToggleButton>
-          </ToggleButtonGroup> */}
-        </Stack>
+  return (
+    <>
+      {/* Кнопка-триггер */}
+      <Button
+        variant="outlined"
+        onClick={() => setOpenMain(true)}
+        startIcon={<PhotoLibraryIcon />}
+        sx={{ borderRadius: "12px" }}
+      >
+        Фотогалерея
+      </Button>
 
+      {/* Основной диалог */}
+      <Dialog
+        fullScreen
+        open={openMain}
+        onClose={() => setOpenMain(false)}
+        TransitionComponent={Transition}
+      >
+        {/* Шапка (стилизована под вашу биографию) */}
         <Box
-          display="flex"
-          flexDirection="column"
-          alignItems="center"
-          justifyContent="center"
-          textAlign="center"
-          color="text.secondary"
-          sx={{ py: 4 }}
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            p: 1,
+            borderBottom: "1px solid #444",
+            position: "sticky",
+            top: 0,
+            bgcolor: "#2c2c2c",
+            color: "white",
+            zIndex: 1100,
+          }}
         >
-          <AddPhotoAlternateIcon
-            sx={{ fontSize: 64, mb: 2, color: "lightgray" }}
-          />
-          <Typography variant="h6">Фотогалерея пуста</Typography>
-          <Typography variant="body2" sx={{ mb: 2 }}>
-            Добавьте фотографию, чтобы она появилась здесь.
-          </Typography>
-          <Button
-            variant="contained"
-            startIcon={<AddPhotoAlternateIcon />}
-            onClick={() => setUploadOpen(true)}
+          <Box
+            sx={{
+              display: "inline-flex",
+              alignItems: "center",
+              border: "1px solid",
+              borderColor: "divider",
+              borderRadius: 7,
+            }}
           >
-            Загрузить фото
-          </Button>
+            <IconButton
+              onClick={() => setOpenMain(false)}
+              sx={{ color: "white" }}
+            >
+              <ArrowBackIosIcon />
+            </IconButton>
+          </Box>
+
+          <Box
+            sx={{
+              display: "inline-flex",
+              alignItems: "center",
+              border: "1px solid",
+              // borderRadius: "15px",
+              borderColor: "divider",
+              borderRadius: 7,
+              // bgcolor: "background.paper",
+              color: "text.secondary",
+              "& svg": {
+                m: 1,
+              },
+            }}
+          >
+            <Tooltip title="Добавить фото">
+              <IconButton
+                size="small"
+                onClick={() => setUploadOpen(true)}
+                sx={{ color: "white" }}
+              >
+                <AddPhotoAlternateIcon fontSize="inherit" />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Сортировать по дате">
+              <IconButton
+                size="small"
+                onClick={() => setSortState((s) => (s + 1) % 3)}
+                sx={{ color: "white" }}
+              >
+                <CalendarTodayIcon fontSize="inherit" />
+              </IconButton>
+            </Tooltip>
+          </Box>
+          <Box></Box>
         </Box>
 
+        {/* Контент галереи */}
+        <Box sx={{ flex: 1, overflowY: "auto", bgcolor: "#1e1e1e", p: 1 }}>
+          <Paper
+            elevation={0}
+            sx={{
+              maxWidth: 1,
+              mx: "auto",
+              p: 1,
+              bgcolor: "#2c2c2c",
+              borderRadius: "15px",
+              border: "1px solid #333",
+              minHeight: 1,
+            }}
+          >
+            {/* Сюда вставляем вашу сетку GridByRowsNoDeps */}
+            {displayPhotos.length ? (
+              <>
+                <Paper
+                  style={{
+                    width: "100%",
+                    // marginBottom: 8,
+                    // padding: 15,
+                    borderRadius: 15,
+                    position: "relative", // Обязательно для позиционирования оверлеев
+                    overflow: "hidden", // Чтобы блюр не вылезал за границы скругления
+                  }}
+                >
+                  <GridByRowsNoDeps
+                    items={displayPhotos}
+                    columns={columns}
+                    rowHeight={rowHeight}
+                    height={containerHeight}
+                    columnGap={columnGap}
+                    overscan={3}
+                    onVisibleRange={handleVisibleRange}
+                    renderCell={(item, idx) => (
+                      <PhotoCell
+                        key={item.id}
+                        photo={item}
+                        path={photoPaths.thumbs[item.id]} // ОБЯЗАТЕЛЬНО .thumbs
+                        onDownload={onDownload}
+                        onEdit={onEdit}
+                        onDelete={onDelete}
+                        onOpen={onOpen}
+                        rowHeight={rowHeight}
+                        isDark={isDark}
+                        personId={personId}
+                        allPeople={allPeople}
+                      />
+                    )}
+                  />
+                </Paper>
+
+                {/* Edit dialog */}
+                <PhotoMetaUpdateDialog
+                  open={open} // Используем ваш стейт открытия
+                  meta={current} // Объект выбранного фото (у вас он в стейте meta)
+                  onClose={handleClose} // Ваша функция закрытия
+                  allPeople={allPeople} // Список людей
+                  photoPaths={photoPaths} // Кеш путей
+                  setPhotos={setPhotos} // Обновит список автоматически
+                  setPhotoPaths={setPhotoPaths} // Сбросит кеш картинок автоматически
+                  mode="personal" // Разрешаем смену папок
+                />
+
+                <PhotoFullscreenViewer
+                  open={fullscreen}
+                  index={index}
+                  photos={displayPhotos} // ИСПРАВЛЕНО: передаем отсортированный массив
+                  photoPaths={photoPaths.full}
+                  thumbPaths={photoPaths.thumbs}
+                  direction={direction}
+                  hideLabels={hideLabels}
+                  onClose={handleFullscreenClose}
+                  onNext={handleNext}
+                  onPrev={handlePrev}
+                  onToggleMaximize={handlMaximazeWindow}
+                  currentPhotoInfo={currentPhotoInfo}
+                />
+
+                <PhotoMetaDialog
+                  openDialog={openDialog}
+                  meta={meta}
+                  onClose={() => setOpenDialog(false)}
+                />
+              </>
+            ) : (
+              <>
+                <Box
+                  display="flex"
+                  flexDirection="column"
+                  alignItems="center"
+                  justifyContent="center"
+                  textAlign="center"
+                  color="text.secondary"
+                  sx={{ mt: 20 }}
+                >
+                  <AddPhotoAlternateIcon
+                    sx={{ fontSize: 64, mb: 2, color: "lightgray" }}
+                  />
+                  <Typography variant="h6">Фотогалерея пуста</Typography>
+                  <Typography variant="body2" sx={{ mb: 2 }}>
+                    Добавьте фотографию, чтобы она появилась здесь.
+                  </Typography>
+                  <Button
+                    sx={{ borderRadius: "12px" }}
+                    variant="contained"
+                    startIcon={<AddPhotoAlternateIcon />}
+                    onClick={() => setUploadOpen(true)}
+                  >
+                    Загрузить фото
+                  </Button>
+                </Box>
+              </>
+            )}
+          </Paper>
+        </Box>
+
+        {/* Вспомогательные модалки (загрузка, просмотр) */}
         <PhotoUploadDialog
           open={uploadOpen}
           onClose={() => setUploadOpen(false)}
@@ -829,446 +782,7 @@ export default function PhotoGallery({ personId, allPeople, refresh }) {
           currentUserId={personId}
           onPhotoAdded={() => setRefreshPhotos((r) => r + 1)}
         />
-      </>
-    );
-  }
-
-  return (
-    <>
-      <NameSection title="Фотогалерея" icon={PhotoLibraryIcon} />
-      <Box
-        display="flex"
-        gap={1}
-        justifyContent="flex-end"
-        sx={{ width: "100%", mb: 2 }}
-      >
-        <Button
-          startIcon={<AddPhotoAlternateIcon />}
-          variant="outlined"
-          onClick={() => setUploadOpen(true)}
-        >
-          Добавить фото
-        </Button>
-        <Button
-          startIcon={<CalendarTodayIcon />}
-          variant="outlined"
-          onClick={() => setSortState((s) => (s + 1) % 3)}
-        >
-          Сортировать по дате
-        </Button>
-        {/* <ToggleButtonGroup
-          value={viewMode}
-          size="small"
-          onChange={(e, v) => v && setViewMode(v)}
-        >
-          <ToggleButton value="square">Квадрат</ToggleButton>
-          <ToggleButton value="natural">Пропорции</ToggleButton>
-        </ToggleButtonGroup> */}
-      </Box>
-
-      <PhotoUploadDialog
-        open={uploadOpen}
-        onClose={() => setUploadOpen(false)}
-        personId={personId}
-        currentUserId={personId}
-        onPhotoAdded={() => setRefreshPhotos((r) => r + 1)}
-      />
-
-      <Paper
-        style={{
-          width: "100%",
-          marginBottom: 8,
-          padding: 15,
-          borderRadius: 15,
-          position: "relative", // Обязательно для позиционирования оверлеев
-          overflow: "hidden", // Чтобы блюр не вылезал за границы скругления
-        }}
-      >
-        {/* Верхний блюр */}
-        <div
-          style={{
-            position: "absolute",
-            top: 15, // Учитываем padding родителя (Paper padding=15)
-            left: 15,
-            right: 15,
-            height: 8, // Высота зоны размытия
-            background:
-              "linear-gradient(to bottom, rgba(255,255,255,0.5), rgba(255,255,255,0))", // Опционально: легкий градиент
-            backdropFilter: "blur(6px)", // Само размытие
-            zIndex: 2,
-            pointerEvents: "none", // ВАЖНО: чтобы клики и скролл проходили сквозь блюр
-            // borderTopLeftRadius: 15, // Если нужно совпадение с Paper
-            // borderTopRightRadius: 15,
-          }}
-        />
-
-        <GridByRowsNoDeps
-          items={displayPhotos}
-          columns={columns}
-          rowHeight={rowHeight}
-          height={containerHeight}
-          columnGap={columnGap}
-          overscan={3}
-          onVisibleRange={handleVisibleRange}
-          renderCell={(item, idx) => (
-            <PhotoCell
-              key={item.id}
-              photo={item}
-              path={photoPaths[item.id]}
-              onDownload={onDownload}
-              onEdit={onEdit}
-              onDelete={onDelete}
-              onOpen={onOpen}
-              rowHeight={rowHeight}
-              isDark={isDark}
-              personId={personId}
-              allPeople={allPeople}
-            />
-          )}
-        />
-
-        {/* Нижний блюр */}
-        <div
-          style={{
-            position: "absolute",
-            bottom: 15, // Учитываем padding родителя
-            left: 15,
-            right: 15,
-            height: 8,
-            background:
-              "linear-gradient(to top, rgba(255,255,255,0.5), rgba(255,255,255,0))",
-            backdropFilter: "blur(6px)",
-            zIndex: 2,
-            pointerEvents: "none", // ВАЖНО
-            // borderBottomLeftRadius: 15,
-            // borderBottomRightRadius: 15,
-          }}
-        />
-      </Paper>
-
-      {/* Edit dialog */}
-      <Dialog
-        open={open}
-        onClose={handleClose}
-        maxWidth="md"
-        fullWidth
-        PaperProps={{
-          sx: {
-            borderRadius: "15px",
-          },
-        }}
-      >
-        <DialogContent
-          sx={{
-            // bgcolor: isDark ? "#1e1e1e" : "#fff",
-            color: isDark ? "#fff" : "inherit",
-          }}
-        >
-          <Stack spacing={2}>
-            <Stack direction="row" justifyContent="space-between">
-              <Typography variant="h6">Редактировать фото</Typography>
-              <IconButton onClick={handleClose}>
-                <CloseIcon />
-              </IconButton>
-            </Stack>
-
-            <img
-              src={photoPaths[current?.id]}
-              alt={current?.title}
-              style={{
-                maxWidth: "100%",
-                maxHeight: 300,
-                objectFit: "contain",
-                borderRadius: 8,
-                alignSelf: "center",
-              }}
-            />
-
-            <FormControl fullWidth>
-              <InputLabel>Отображение</InputLabel>
-              <Select
-                value={current?.aspectRatio || "4/3"}
-                label="Отображение"
-                onChange={(e) =>
-                  setCurrent({ ...current, aspectRatio: e.target.value })
-                }
-              >
-                <MenuItem value="4/3">Горизонтальное (4:3)</MenuItem>
-                <MenuItem value="1/1">Квадрат (1:1)</MenuItem>
-                <MenuItem value="3/4">Вертикальное (3:4)</MenuItem>
-              </Select>
-            </FormControl>
-
-            <TextField
-              label="Заголовок"
-              value={current?.title || ""}
-              onChange={(e) =>
-                setCurrent({ ...current, title: e.target.value })
-              }
-            />
-            <TextField
-              label="Описание"
-              multiline
-              rows={3}
-              value={current?.description || ""}
-              onChange={(e) =>
-                setCurrent({ ...current, description: e.target.value })
-              }
-            />
-
-            <Autocomplete
-              multiple
-              options={allPeople}
-              getOptionLabel={(p) =>
-                `${p.id} :: ${p.firstName || ""} ${
-                  p.lastName || p.maidenName || ""
-                }`.trim()
-              }
-              value={
-                allPeople.filter((p) => current?.people?.includes(p.id)) || []
-              }
-              onChange={(e, v) =>
-                setCurrent({ ...current, people: v.map((x) => x.id) })
-              }
-              renderInput={(params) => (
-                <TextField {...params} label="Кто на фото" />
-              )}
-            />
-
-            <TextField
-              label="Дата снимка (ГГГГ-ММ-ДД)"
-              value={current?.datePhoto || ""}
-              onClick={() => setDatePickerOpen(true)}
-              size="small"
-              fullWidth
-              placeholder="ДД.ММ.ГГГГ / ММ.ГГГГ / ГГГГ"
-              InputProps={{ readOnly: true }}
-            />
-            <CustomDatePickerDialog
-              open={datePickerOpen}
-              onClose={() => setDatePickerOpen(false)}
-              initialDate={current?.datePhoto}
-              format="YYYY-MM-DD" // или  "DD.MM.YYYY"
-              showTime={true} // включить выбор времени
-              onSave={(newDate) => {
-                setCurrent({ ...current, datePhoto: newDate });
-                setDatePickerOpen(false);
-              }}
-            />
-            {/* ...существующие поля (title, description, ...) */}
-
-            <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
-              <TextField
-                label="Имя файла"
-                value={rename ? newFilename : current?.filename || ""}
-                onChange={(e) => setNewFilename(e.target.value)}
-                size="small"
-                fullWidth
-                helperText={
-                  rename
-                    ? "Введите новое имя файла (включая расширение)"
-                    : "Информационное поле. Нажмите «Переименовать», чтобы изменить имя на диске"
-                }
-                InputProps={{ readOnly: !rename }}
-              />
-              <Button
-                variant={rename ? "contained" : "outlined"}
-                onClick={() => {
-                  setRename((r) => !r);
-                  if (!rename) setNewFilename(current?.filename || "");
-                }}
-              >
-                {rename ? "Отмена" : "Переименовать"}
-              </Button>
-            </Box>
-          </Stack>
-        </DialogContent>
-        {/* <DialogActions sx={{ pr: "24px", pl: "24px", pb: "16px" }}>
-          <Button onClick={handleClose}> Отмена</Button>
-          <Button variant="contained" onClick={handleSave}>
-            Сохранить
-          </Button>
-        </DialogActions> */}
-        <DialogActions sx={{ pr: "24px", pl: "24px", pb: "16px" }}>
-          <Button onClick={handleClose} disabled={saving}>
-            Отмена
-          </Button>
-          <Button variant="contained" onClick={handleSave} disabled={saving}>
-            Сохранить
-          </Button>
-          {saving && <CircularProgress size={20} sx={{ ml: 2 }} />}
-        </DialogActions>
       </Dialog>
-
-      {/* Fullscreen */}
-      <Dialog open={fullscreen} onClose={handleFullscreenClose} fullScreen>
-        <DialogContent
-          sx={{
-            backgroundColor: isDark ? "#1e1e1e" : "#fff",
-            color: isDark ? "#fff" : "#000",
-            p: 0,
-          }}
-        >
-          <IconButton
-            onClick={handleFullscreenClose}
-            sx={{
-              position: "absolute",
-              top: 8,
-              left: 8,
-              zIndex: 1000,
-              color: isDark ? "#fff" : "#000",
-              bgcolor: isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)",
-            }}
-          >
-            <CloseIcon />
-          </IconButton>
-
-          <IconButton
-            onClick={handlMaximazeWindow}
-            sx={{
-              position: "absolute",
-              top: 8,
-              left: 56,
-              zIndex: 1000,
-              color: isDark ? "#fff" : "#000",
-              bgcolor: isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)",
-            }}
-          >
-            {hideLabels ? <FullscreenExitIcon /> : <FullscreenIcon />}
-          </IconButton>
-
-          <Box
-            sx={{
-              position: "absolute",
-              top: 16,
-              right: 16,
-              zIndex: 1000,
-              display: hideLabels ? "none" : "flex",
-              alignItems: "center",
-              gap: 0.5,
-              bgcolor: "rgba(0,0,0,0.5)",
-              color: "#fff",
-              px: 1,
-              py: 0.5,
-              borderRadius: 1,
-              fontSize: "0.9rem",
-            }}
-          >
-            <PhotoLibraryIcon />
-            <Typography>{`${index + 1} / ${quntityPhoto}`}</Typography>
-          </Box>
-
-          <IconButton
-            onClick={() => setIndex((prev) => Math.max(prev - 1, 0))}
-            sx={{
-              position: "absolute",
-              top: "50%",
-              left: 8,
-              transform: "translateY(-50%)",
-              color: isDark ? "#fff" : "#000",
-              backgroundColor: isDark
-                ? "rgba(255,255,255,0.1)"
-                : "rgba(0,0,0,0.05)",
-              zIndex: 10,
-              borderRadius: "50%",
-            }}
-          >
-            <ArrowBackIosNewIcon />
-          </IconButton>
-
-          <IconButton
-            onClick={() =>
-              setIndex((prev) => Math.min(prev + 1, displayPhotos.length - 1))
-            }
-            sx={{
-              position: "absolute",
-              top: "50%",
-              right: 8,
-              transform: "translateY(-50%)",
-              color: isDark ? "#fff" : "#000",
-              backgroundColor: isDark
-                ? "rgba(255,255,255,0.1)"
-                : "rgba(0,0,0,0.05)",
-              zIndex: 10,
-              borderRadius: "50%",
-            }}
-          >
-            <ArrowForwardIosIcon />
-          </IconButton>
-
-          <SwipeableViews
-            index={index}
-            onChangeIndex={(i) => setIndex(i)}
-            enableMouseEvents
-          >
-            {displayPhotos.map((photo) => (
-              <Box
-                key={photo.id}
-                sx={{
-                  height: "100vh",
-                  display: "flex",
-                  flexDirection: "column",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  px: 2,
-                }}
-              >
-                <img
-                  src={photoPaths[photo.id]}
-                  alt={photo.title}
-                  style={{
-                    maxHeight: hideLabels ? "100%" : "90vh",
-                    maxWidth: "100%",
-                    objectFit: "contain",
-                  }}
-                />
-                {!hideLabels && (
-                  <>
-                    <Typography variant="h6" mt={2} color="gray">
-                      {photo.title}
-                    </Typography>
-                    <Typography variant="body2" color="gray">
-                      {photo.description}
-                    </Typography>
-                    <Typography
-                      variant="caption"
-                      mt={1}
-                      sx={{ color: isDark ? "#fff" : "#000" }}
-                    >
-                      {allPeople.find((p) => p.id === photo.owner)?.gender ===
-                      "male"
-                        ? "👤 Добавил: "
-                        : "👤 Добавила: "}
-                      {allPeople.find((p) => p.id === photo.owner)?.firstName ||
-                        "Неизвестно"}{" "}
-                      {" | "}
-                      {photo?.datePhoto &&
-                        `📅 ${photo?.datePhoto || "--"} |`}{" "}
-                      🏷️ На фото:{" "}
-                      {photo.people
-                        .map((id) => {
-                          const person = allPeople.find((p) => p.id === id);
-                          return person
-                            ? `${person.firstName || ""} ${
-                                person.lastName || ""
-                              }`.trim()
-                            : `ID ${id}`;
-                        })
-                        .join(", ")}
-                    </Typography>
-                  </>
-                )}
-              </Box>
-            ))}
-          </SwipeableViews>
-        </DialogContent>
-      </Dialog>
-
-      <PhotoMetaDialog
-        openDialog={openDialog}
-        meta={meta}
-        onClose={() => setOpenDialog(false)}
-      />
     </>
   );
 }

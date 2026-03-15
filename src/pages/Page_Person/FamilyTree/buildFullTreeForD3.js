@@ -38,7 +38,7 @@ export function buildFullTreeForD3(personId, people) {
 
   if (parentBranchChildren.length > 0) {
     meNode.children.push({
-      name: "Родители",
+      name: "Предки",
       attributes: { group: "parents" },
       children: parentBranchChildren,
     });

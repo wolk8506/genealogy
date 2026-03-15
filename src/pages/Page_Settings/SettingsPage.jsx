@@ -25,22 +25,14 @@ import FolderSharedIcon from "@mui/icons-material/FolderShared";
 import LightModeIcon from "@mui/icons-material/LightMode";
 import DarkModeIcon from "@mui/icons-material/DarkMode";
 import InfoIcon from "@mui/icons-material/Info";
-import SettingsIcon from "@mui/icons-material/Settings";
 import SaveIcon from "@mui/icons-material/Save";
 import ErrorIcon from "@mui/icons-material/Error";
-
-import { ListItemSecondaryAction } from "@mui/material";
 
 import CloudDownloadIcon from "@mui/icons-material/CloudDownload";
 
 import { ThemeContext } from "../../theme/ThemeContext.cjs";
 import { ImportDecisionModal } from "./ImportDecisionModal";
 
-import electronIcon from "../../img/electron-logo.svg";
-import reactIcon from "../../img/react-icon.svg";
-import reduxIcon from "../../img/redux-logo.svg";
-import muiIcon from "../../img/material-ui-logo.svg";
-import viteIcon from "../../img/vitejs-logo.svg";
 import ExportConfirmModal from "../../components/ExportConfirmModal";
 import { exportPeopleToZip } from "../utils/exportToZip";
 
@@ -85,7 +77,6 @@ export default function SettingsPage() {
 
   const [confirmConflicts, setConfirmConflicts] = useState([]);
   const confirmResolveRef = useRef(null);
-  // const [exportPath, setExportPath] = useState("");
 
   // Подписка на событие от main, ставим в useEffect
   useEffect(() => {
@@ -206,16 +197,47 @@ export default function SettingsPage() {
     };
   }, []);
 
+  // Подписка на прогресс импорта (единоразовая)
+  const lastUpdateRef = useRef(0);
+
   useEffect(() => {
-    window.appAPI?.getVersion?.().then(setVersion);
-    window.appAPI?.getPlatform?.().then(setPlatform);
+    if (!window.importAPI?.onProgress) return;
+
+    const removeListener = window.importAPI.onProgress((data) => {
+      const now = Date.now();
+
+      // ЛОГИКА ТРОТТЛИНГА: Обновляем стейт не чаще, чем раз в 100мс
+      // ИЛИ если это последний файл (current === total)
+      if (now - lastUpdateRef.current > 100 || data.current === data.total) {
+        lastUpdateRef.current = now;
+
+        setImportProgress((prev) => {
+          // Дополнительная проверка на null/undefined
+          const current = data.current ?? prev.current;
+          const total = data.total ?? prev.total;
+
+          if (prev.current === current && prev.total === total) return prev;
+          return { current, total };
+        });
+
+        if (data.message) {
+          setImportStatus(data.message);
+        }
+      }
+    });
+
+    return () => {
+      if (typeof removeListener === "function") removeListener();
+    };
   }, []);
 
-  // useEffect(() => {
-  //   window.archiveAPI.onProgress(({ percent, files }) => {
-  //     setProgressArhive(percent); // отдельный state, например setArchiveProgress
-  //   });
-  // }, []);
+  useEffect(() => {
+    // 1. Получаем версию приложения
+    window.appAPI?.getVersion?.().then(setVersion);
+
+    // 2. Получаем платформу
+    window.appAPI?.getPlatform?.().then(setPlatform);
+  }, []);
 
   const fetchSize = () => {
     window.appAPI.getFolderSize().then(setSize);
@@ -308,18 +330,23 @@ export default function SettingsPage() {
 
   // вычисление перед return или внутри компонента
   const percentValue = (() => {
-    const bytePct = archiveProgress?.percent ?? null;
-    if (typeof bytePct === "number" && bytePct > 0)
-      return Math.max(0, Math.min(100, bytePct));
-    // если нет байтового процента, используем подготовочный прогресс (по файлам)
-    if (archiveProgress?.totalFiles) {
+    // Если мы в фазе записи самого ZIP (writing), используем процент от archiver
+    if (
+      archiveProgress?.phase === "writing" ||
+      archiveProgress?.phase === "writing2"
+    ) {
+      return Math.max(0, Math.min(100, archiveProgress.percent || 0));
+    }
+
+    // Если мы на фазе подготовки (сканирование файлов)
+    if (archiveProgress?.totalFiles > 0) {
       return Math.round(
-        ((archiveProgress.processedFiles ?? 0) / archiveProgress.totalFiles) *
-          100
+        ((archiveProgress.processedFiles || 0) / archiveProgress.totalFiles) *
+          100,
       );
     }
-    // fallback на старый стейт
-    return progressArhive ?? 0;
+
+    return progressArhive || 0;
   })();
 
   // ~ Восстановление данных
@@ -331,11 +358,10 @@ export default function SettingsPage() {
       setIsImporting(true);
       setIsImportingOpen(true);
       setImportStatus("📥 Выберите ZIP для импорта...");
-      setImportProgress((prev) => ({
-        ...prev,
-        current: 0,
-        total: 0,
-      }));
+
+      // Сбрасываем прогресс перед началом
+      setImportProgress({ current: 0, total: 0 });
+
       const zipPath = await window.dialogAPI.chooseOpenZip();
       if (!zipPath) {
         setImportStatus("Импорт отменён");
@@ -345,31 +371,17 @@ export default function SettingsPage() {
       }
 
       setImportStatus(`📦 Начинаю импорт: ${zipPath}`);
-      // подписка на прогресс
-      const onProgress = (data) => {
-        // console.log("data", data);
-        setImportProgress((prev) => ({
-          ...prev,
-          current: data.current || prev.current,
-          total: data.total || prev.total,
-        }));
-        setImportStatus(data.message || "");
-        // можно хранить percent в отдельном state, если нужно
-      };
-      window.importAPI.onProgress(onProgress);
 
+      // Просто запускаем импорт.
+      // useEffect выше сам поймает все события прогресса.
       const result = await window.importAPI.importZip(zipPath);
+
       if (result && result.ok) {
-        const { report } = result.report ? result : result; // result может содержать report
-        // показываем итоговый отчёт в модальном окне или логируем
+        const report = result.report || result;
         const summary = `Импорт завершён: всего ${
-          (result.report?.totalPersons ?? report?.totalPersons) || 0
-        }, успешно ${
-          (result.report?.success ?? report?.success) || 0
-        }, с ошибками ${(result.report?.failed ?? report?.failed) || 0}`;
+          report.totalPersons || 0
+        }, успешно ${report.success || 0}`;
         setImportStatus(summary);
-        // можно показать детальный лог: result.report.perPerson
-        // console.log("Import report", result.report || report);
       } else {
         setImportStatus(`❌ Ошибка: ${result?.error || "Неизвестно"}`);
       }
@@ -378,11 +390,12 @@ export default function SettingsPage() {
       setImportStatus(`❌ Ошибка: ${err.message}`);
     } finally {
       setIsImporting(false);
+      // Оставляем setIsImportingOpen(true), чтобы пользователь видел финальный статус
     }
   };
 
   return (
-    <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
+    <Box component="main" sx={{ flexGrow: 1, p: 0 }}>
       <ImportDecisionModal
         open={importConfirmOpen}
         summary={`Найдено конфликтов: ${confirmConflicts.length}`}
@@ -473,23 +486,13 @@ export default function SettingsPage() {
                   {exportStatus}
                 </Typography>
               )}
-              {/* {console.log(archiveProgress?.phase)}
-              {console.log(
-                archiveProgress?.phase === ("preparation" || "writing")
-              )} */}
-              {/* {console.log(archiveProgress)} */}
+
               {/* --- Показать фазу подготовки или запись архива --- */}
               {archiveProgress?.phase !== "done" ? (
                 <Box sx={{ mt: 2, width: "100%" }}>
                   <Typography variant="body2" color="inherit" sx={{ mb: 1 }}>
                     Выполнено: {percentValue}
                     {"%"}
-                    {/* {archiveProgress.processedBytes} */}
-                    {/* {Math.round(
-                      (archiveProgress?.processedFiles /
-                        Math.max(1, archiveProgress?.totalFiles)) *
-                        100
-                    )} */}
                   </Typography>
 
                   <LinearProgress
@@ -592,7 +595,7 @@ export default function SettingsPage() {
                   value={Math.round(
                     (importProgress.current /
                       Math.max(1, importProgress.total)) *
-                      100
+                      100,
                   )}
                 />
 
@@ -745,13 +748,33 @@ export default function SettingsPage() {
           </Typography>
           <Divider sx={{ mb: 2 }} />
           <List>
-            <ListItem>
+            {/* <ListItem>
               <ListItemIcon>
                 <InfoIcon />
               </ListItemIcon>
               <ListItemText
                 primary={`Версия: ${version || "неизвестно"}`}
                 secondary={`Платформа: ${platform || "неизвестно"}`}
+              />
+            </ListItem>  */}
+
+            <ListItem>
+              <ListItemIcon>
+                <InfoIcon />
+              </ListItemIcon>
+              <ListItemText
+                primary={`Версия приложения: ${version || "неизвестно"}`}
+                secondary={
+                  <Box component="span" sx={{ display: "block", mt: 0.5 }}>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      display="block"
+                    >
+                      Платформа: {platform}
+                    </Typography>
+                  </Box>
+                }
               />
             </ListItem>
 
@@ -862,63 +885,6 @@ export default function SettingsPage() {
                 />
               </ListItem>
             )}
-
-            <ListItem>
-              <ListItemIcon>
-                <SettingsIcon />
-              </ListItemIcon>
-              <ListItemText
-                primary="Технологии"
-                secondaryTypographyProps={{ component: "div" }}
-                secondary={
-                  <Box
-                    sx={{
-                      display: "flex",
-                      alignItems: "center",
-                      flexWrap: "wrap",
-                      gap: 1,
-                      mt: 0.5,
-                    }}
-                  >
-                    {[
-                      { icon: electronIcon, name: "Electron" },
-                      { icon: reactIcon, name: "React" },
-                      { icon: reduxIcon, name: "Redux" },
-                      { icon: muiIcon, name: "MUI" },
-                      { icon: viteIcon, name: "Vite" },
-                    ].map((tech, i, arr) => (
-                      <Box
-                        key={tech.name}
-                        sx={{ display: "flex", alignItems: "center" }}
-                      >
-                        <Box
-                          component="img"
-                          src={tech.icon}
-                          alt={tech.name}
-                          sx={{ width: 20, height: 20, mr: 1 }}
-                        />
-                        <Typography variant="caption" noWrap>
-                          {tech.name}
-                        </Typography>
-
-                        {i < arr.length - 1 && (
-                          <Divider
-                            orientation="vertical"
-                            flexItem
-                            sx={{
-                              borderColor: "divider",
-                              height: 16,
-                              ml: 2,
-                              mr: 1,
-                            }}
-                          />
-                        )}
-                      </Box>
-                    ))}
-                  </Box>
-                }
-              />
-            </ListItem>
           </List>
         </Paper>
       </Stack>

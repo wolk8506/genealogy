@@ -1,436 +1,406 @@
 const { ipcMain, app, dialog } = require("electron");
 const path = require("path");
 const fs = require("fs");
-// const { personDir, dataPath } = require("../config.cjs");
-
-ipcMain.handle("photo:save", async (event, personId, meta) => {
-  const baseDir = path.join(
-    app.getPath("documents"),
-    "Genealogy",
-    "people",
-    String(personId)
-  );
-  const photosDir = path.join(baseDir, "photos");
-  const photosMetaPath = path.join(baseDir, "photos.json");
-
-  // ✅ Создаём папки, если нужно
-  if (!fs.existsSync(photosDir)) {
-    fs.mkdirSync(photosDir, { recursive: true });
-  }
-
-  const result = await dialog.showOpenDialog({
-    title: "Выберите фотографию",
-    filters: [{ name: "Images", extensions: ["jpg", "png", "jpeg", "heic"] }],
-    properties: ["openFile"],
-  });
-
-  if (result.canceled || result.filePaths.length === 0) return null;
-
-  const sourcePath = result.filePaths[0];
-  const ext = path.extname(sourcePath);
-  const base = path.basename(sourcePath, ext);
-  let filename = `${base}${ext}`;
-  let counter = 1;
-
-  while (fs.existsSync(path.join(photosDir, filename))) {
-    filename = `${base}_${counter}${ext}`;
-    counter++;
-  }
-
-  const destPath = path.join(photosDir, filename);
-  fs.copyFileSync(sourcePath, destPath);
-
-  // ✅ Загружаем или создаём метаинформацию
-  let photos = [];
-  if (fs.existsSync(photosMetaPath)) {
-    photos = JSON.parse(fs.readFileSync(photosMetaPath, "utf-8"));
-  }
-
-  const newPhoto = {
-    id: Date.now(),
-    filename,
-    ...meta,
-  };
-
-  photos.push(newPhoto);
-  fs.writeFileSync(photosMetaPath, JSON.stringify(photos, null, 2));
-
-  return newPhoto;
-});
-
-// -----------------------------
-
-ipcMain.handle("photo:saveBlobFile", async (_, meta, arrayBuffer, filename) => {
-  const buffer = Buffer.from(arrayBuffer);
-  const baseDir = path.join(
-    app.getPath("documents"),
-    "Genealogy",
-    "people",
-    String(meta.owner)
-  );
-  const photosDir = path.join(baseDir, "photos");
-  const photosMetaPath = path.join(baseDir, "photos.json");
-
-  // ✅ Создаём папки, если нужно
-  if (!fs.existsSync(photosDir)) {
-    fs.mkdirSync(photosDir, { recursive: true });
-  }
-
-  const ext = path.extname(filename);
-  const base = path.basename(filename, ext);
-  let safeFilename = `${base}${ext}`;
-  let counter = 1;
-
-  while (fs.existsSync(path.join(photosDir, safeFilename))) {
-    safeFilename = `${base}_${counter}${ext}`;
-    counter++;
-  }
-
-  const destPath = path.join(photosDir, safeFilename);
-  fs.writeFileSync(destPath, buffer);
-
-  // ✅ Загружаем или создаём метаинформацию
-  let photos = [];
-  if (fs.existsSync(photosMetaPath)) {
-    photos = JSON.parse(fs.readFileSync(photosMetaPath, "utf-8"));
-  }
-
-  const newPhoto = {
-    id: Date.now(),
-    filename: safeFilename,
-    ...meta,
-  };
-
-  photos.push(newPhoto);
-  fs.writeFileSync(photosMetaPath, JSON.stringify(photos, null, 2));
-
-  return newPhoto;
-});
-
-// -----------------------------
-
-// -----------------------------
-const photosMetaPath = path.join(
-  app.getPath("documents"),
-  "Genealogy",
-  "photos.json"
-);
-
-ipcMain.handle("photo:getAll", async (event, personId) => {
-  const peopleDir = path.join(app.getPath("documents"), "Genealogy", "people");
-  if (!fs.existsSync(peopleDir)) return [];
-
-  const people = fs
-    .readdirSync(peopleDir)
-    .filter((id) => fs.statSync(path.join(peopleDir, id)).isDirectory());
-
-  const result = [];
-
-  for (const id of people) {
-    const metaPath = path.join(peopleDir, id, "photos.json");
-    if (!fs.existsSync(metaPath)) continue;
-
-    const photos = JSON.parse(fs.readFileSync(metaPath, "utf-8"));
-    for (const photo of photos) {
-      if (
-        photo.owner === personId ||
-        (Array.isArray(photo.people) && photo.people.includes(personId))
-      ) {
-        result.push({ ...photo, owner: Number(id) }); // 👈 добавим owner явно
-      }
-    }
-  }
-
-  return result;
-});
-
-ipcMain.handle("photo:update", (event, ownerId, updatedPhoto) => {
-  const photosMetaPath = path.join(
-    app.getPath("documents"),
-    "Genealogy",
-    "people",
-    String(ownerId),
-    "photos.json"
-  );
-
-  if (!fs.existsSync(photosMetaPath)) return;
-
-  const photos = JSON.parse(fs.readFileSync(photosMetaPath, "utf-8"));
-  const index = photos.findIndex((p) => p.id === updatedPhoto.id);
-  if (index !== -1) {
-    photos[index] = updatedPhoto;
-    fs.writeFileSync(photosMetaPath, JSON.stringify(photos, null, 2));
-  }
-});
-
-// -----------------------------
-ipcMain.handle("photo:getPath", (event, personId, filename) => {
-  const photoPath = path.join(
-    app.getPath("documents"),
-    "Genealogy",
-    "people",
-    String(personId),
-    "photos",
-    filename
-  );
-
-  if (fs.existsSync(photoPath)) {
-    return `file://${photoPath}`;
-  } else {
-    console.warn("⚠️ Фото не найдено:", photoPath);
-    return null;
-  }
-});
-
-// -----------------------------
-ipcMain.handle("photo:delete", (event, personId, id) => {
-  const baseDir = path.join(
-    app.getPath("documents"),
-    "Genealogy",
-    "people",
-    String(personId)
-  );
-  const photosMetaPath = path.join(baseDir, "photos.json");
-  const photosDir = path.join(baseDir, "photos");
-
-  if (!fs.existsSync(photosMetaPath)) return;
-
-  const photos = JSON.parse(fs.readFileSync(photosMetaPath, "utf-8"));
-  const photo = photos.find((p) => p.id === id);
-  const updated = photos.filter((p) => p.id !== id);
-
-  fs.writeFileSync(photosMetaPath, JSON.stringify(updated, null, 2));
-
-  if (photo && photo.filename) {
-    const filePath = path.join(photosDir, photo.filename);
-    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-  }
-});
-
-// -----------------------------
-ipcMain.handle("photo:selectFile", async () => {
-  const result = await dialog.showOpenDialog({
-    title: "Выберите фотографию",
-    filters: [{ name: "Images", extensions: ["jpg", "jpeg", "png", "heic"] }],
-    properties: ["openFile"],
-  });
-
-  if (result.canceled || result.filePaths.length === 0) return null;
-
-  const filePath = result.filePaths[0];
-  return {
-    path: `file://${filePath}`,
-    filename: path.basename(filePath),
-  };
-});
-
-// -----------------------------
-ipcMain.handle("photo:saveWithFilename", async (event, meta, sourcePath) => {
-  const personId = meta.owner;
-  if (!personId || !sourcePath) return null;
-
-  const baseDir = path.join(
-    app.getPath("documents"),
-    "Genealogy",
-    "people",
-    String(personId)
-  );
-  const photosDir = path.join(baseDir, "photos");
-  const photosMetaPath = path.join(baseDir, "photos.json");
-
-  // ✅ Создаём все нужные папки
-  fs.mkdirSync(photosDir, { recursive: true });
-
-  const ext = path.extname(sourcePath);
-  const base = path.basename(sourcePath, ext);
-  let filename = `${base}${ext}`;
-  let counter = 1;
-
-  while (fs.existsSync(path.join(photosDir, filename))) {
-    filename = `${base}_${counter}${ext}`;
-    counter++;
-  }
-
-  const destPath = path.join(photosDir, filename);
-  fs.copyFileSync(sourcePath, destPath);
-
-  let photos = [];
-  if (fs.existsSync(photosMetaPath)) {
-    photos = JSON.parse(fs.readFileSync(photosMetaPath, "utf-8"));
-  }
-
-  const newPhoto = {
-    id: Date.now(),
-    filename,
-    ...meta,
-  };
-
-  photos.push(newPhoto);
-  fs.writeFileSync(photosMetaPath, JSON.stringify(photos, null, 2));
-
-  return newPhoto;
-});
-
-ipcMain.handle("photo:getAllGlobal", async () => {
-  const peopleDir = path.join(app.getPath("documents"), "Genealogy", "people");
-  if (!fs.existsSync(peopleDir)) return [];
-
-  const people = fs
-    .readdirSync(peopleDir)
-    .filter((id) => fs.statSync(path.join(peopleDir, id)).isDirectory());
-
-  const result = [];
-
-  for (const id of people) {
-    const metaPath = path.join(peopleDir, id, "photos.json");
-    if (!fs.existsSync(metaPath)) continue;
-
-    const photos = JSON.parse(fs.readFileSync(metaPath, "utf-8"));
-    for (const photo of photos) {
-      result.push({ ...photo, owner: Number(id) });
-    }
-  }
-
-  return result;
-});
-
-// -----------------------------
+const sharp = require("sharp");
 const archiver = require("archiver");
-
-ipcMain.handle("photo:exportZip", async (event, photos) => {
-  const { canceled, filePath } = await dialog.showSaveDialog({
-    title: "Сохранить архив",
-    defaultPath: "photos.zip",
-    filters: [{ name: "ZIP Archive", extensions: ["zip"] }],
-  });
-
-  if (canceled || !filePath) return null;
-
-  const output = fs.createWriteStream(filePath);
-  const archive = archiver("zip", { zlib: { level: 9 } });
-
-  archive.pipe(output);
-
-  for (const photo of photos) {
-    const photoPath = path.join(
-      app.getPath("documents"),
-      "Genealogy",
-      "people",
-      String(photo.owner),
-      "photos",
-      photo.filename
-    );
-    if (fs.existsSync(photoPath)) {
-      archive.file(photoPath, { name: photo.filename });
-    }
-  }
-
-  await archive.finalize();
-  return filePath;
-});
-
-// -----------------------------
 const PDFDocument = require("pdfkit");
 
-ipcMain.handle("photo:exportPDF", async (event, photos) => {
-  const { canceled, filePath } = await dialog.showSaveDialog({
-    title: "Сохранить PDF",
-    defaultPath: "photos.pdf",
-    filters: [{ name: "PDF", extensions: ["pdf"] }],
-  });
-
-  if (canceled || !filePath) return null;
-
-  const doc = new PDFDocument({ autoFirstPage: false });
-  const stream = fs.createWriteStream(filePath);
-  doc.pipe(stream);
-
-  for (const photo of photos) {
-    const photoPath = path.join(
+module.exports = (settingsStore) => {
+  // Вспомогательная функция для получения путей
+  const getUserPaths = (personId) => {
+    const baseDir = path.join(
       app.getPath("documents"),
       "Genealogy",
       "people",
-      String(photo.owner),
-      "photos",
-      photo.filename
+      String(personId),
     );
-    if (fs.existsSync(photoPath)) {
-      doc.addPage();
-      doc.image(photoPath, {
-        fit: [500, 400],
-        align: "center",
-        valign: "center",
-      });
-      doc.moveDown();
-      doc.fontSize(14).text(photo.title || "", { align: "center" });
-      doc
-        .fontSize(10)
-        .fillColor("gray")
-        .text(photo.description || "", {
-          align: "center",
-        });
-    }
-  }
+    const photosDir = path.join(baseDir, "photos");
+    return {
+      baseDir,
+      photosDir,
+      meta: path.join(baseDir, "photos.json"),
+      webp: path.join(photosDir, "webp"),
+      thumbs: path.join(photosDir, "thumbs"),
+      original: path.join(photosDir, "original"),
+    };
+  };
 
-  doc.end();
-  return filePath;
-});
+  // ✅ 1. Сохранение файла по пути
+  ipcMain.handle("photo:saveWithFilename", async (event, meta, sourcePath) => {
+    const personId = meta.owner;
+    if (!personId || !sourcePath) return null;
 
-/*
+    const paths = getUserPaths(personId);
 
-~   Диалоговые окна сохранения
-
-*/
-
-// ipcMain.handle("dialog:chooseSavePathPhoto", async (_, defaultName) => {
-//   const { canceled, filePath } = await dialog.showSaveDialog({
-//     defaultPath: defaultName,
-//     title: "Выберите место для сохранения",
-//     buttonLabel: "Сохранить",
-//     filters: [
-//       { name: "Изображения", extensions: ["jpg", "jpeg", "png", "gif"] },
-//       { name: "Все файлы", extensions: ["*"] },
-//     ],
-//   });
-
-//   return canceled ? null : filePath;
-// });
-
-function getPhotoUrl(photo) {
-  return path.join(
-    process.env.HOME,
-    "Documents",
-    "Genealogy",
-    "people",
-    String(photo.owner),
-    "photos",
-    photo.filename
-  );
-}
-
-ipcMain.on("photo:download", async (event, photo) => {
-  try {
-    const { canceled, filePath } = await dialog.showSaveDialog({
-      defaultPath: photo.filename || `photo_${photo.id}.jpg`,
-      title: "Сохранить фото",
-      buttonLabel: "Сохранить",
-      filters: [
-        { name: "Изображения", extensions: ["jpg", "jpeg", "png", "gif"] },
-        { name: "Все файлы", extensions: ["*"] },
-      ],
+    [paths.webp, paths.thumbs, paths.original].forEach((p) => {
+      if (!fs.existsSync(p)) fs.mkdirSync(p, { recursive: true });
     });
 
-    if (canceled || !filePath) return;
+    const settings = settingsStore.get("importSettings") || {
+      keepOriginals: true,
+      quality: 80,
+    };
 
-    const sourcePath = getPhotoUrl(photo); // путь к исходному фото
-    console.log("📂 Копируем из:", sourcePath);
+    const ext = path.extname(sourcePath); // .jpg, .png, .heic и т.д.
+    const base = path.basename(sourcePath, ext).replace(/\s+/g, "_");
 
-    // читаем как buffer и сохраняем
-    const buffer = await fs.promises.readFile(sourcePath);
-    await fs.promises.writeFile(filePath, buffer);
+    let finalBase = base;
+    let counter = 1;
+    // Проверяем уникальность по базовому имени, чтобы не было коллизий во всех папках
+    while (fs.existsSync(path.join(paths.original, `${finalBase}${ext}`))) {
+      finalBase = `${base}_${counter}`;
+      counter++;
+    }
 
-    console.log("✅ Фото успешно сохранено в:", filePath);
-  } catch (err) {
-    console.error("💥 Ошибка сохранения фото:", err);
-  }
-});
+    const originalFilename = `${finalBase}${ext}`;
+    const webpFilename = `${finalBase}.webp`;
+
+    try {
+      // 1. Создаем рабочую WebP версию для интерфейса
+      await sharp(sourcePath)
+        .rotate()
+        .webp({ quality: settings.quality })
+        .toFile(path.join(paths.webp, webpFilename));
+
+      // 2. Создаем превью
+      await sharp(sourcePath)
+        .rotate()
+        .resize(300, 300, { fit: "inside" })
+        .webp({ quality: 50 })
+        .toFile(path.join(paths.thumbs, webpFilename));
+
+      // 3. Сохраняем оригинал
+      if (settings.keepOriginals) {
+        fs.copyFileSync(
+          sourcePath,
+          path.join(paths.original, originalFilename),
+        );
+      }
+
+      let photos = fs.existsSync(paths.meta)
+        ? JSON.parse(fs.readFileSync(paths.meta, "utf-8"))
+        : [];
+
+      const newPhoto = {
+        ...meta,
+        id: Date.now(),
+        filename: originalFilename, // ✅ Сохраняем оригинальный формат
+        date: meta.date || new Date().toISOString().split("T")[0],
+      };
+
+      photos.push(newPhoto);
+      fs.writeFileSync(paths.meta, JSON.stringify(photos, null, 2));
+
+      return newPhoto;
+    } catch (err) {
+      console.error("SaveWithFilename Error:", err);
+      return null;
+    }
+  });
+
+  // ✅ 2. Сохранение Blob (HEIC, Drag&Drop)
+  ipcMain.handle(
+    "photo:saveBlobFile",
+    async (_, meta, arrayBuffer, filename) => {
+      const buffer = Buffer.from(arrayBuffer);
+      const paths = getUserPaths(meta.owner);
+
+      [paths.webp, paths.thumbs, paths.original].forEach((p) => {
+        if (!fs.existsSync(p)) fs.mkdirSync(p, { recursive: true });
+      });
+
+      const settings = settingsStore.get("importSettings") || {
+        keepOriginals: true,
+        quality: 80,
+      };
+
+      const ext = path.extname(filename);
+      const base = path.basename(filename, ext).replace(/\s+/g, "_");
+
+      let finalBase = base;
+      let counter = 1;
+      while (fs.existsSync(path.join(paths.original, `${finalBase}${ext}`))) {
+        finalBase = `${base}_${counter}`;
+        counter++;
+      }
+
+      const originalFilename = `${finalBase}${ext}`;
+      const webpFilename = `${finalBase}.webp`;
+
+      try {
+        await sharp(buffer)
+          .rotate()
+          .webp({ quality: settings.quality })
+          .toFile(path.join(paths.webp, webpFilename));
+
+        await sharp(buffer)
+          .rotate()
+          .resize(300, 300, { fit: "inside" })
+          .webp({ quality: 50 })
+          .toFile(path.join(paths.thumbs, webpFilename));
+
+        if (settings.keepOriginals) {
+          fs.writeFileSync(path.join(paths.original, originalFilename), buffer);
+        }
+
+        let photos = fs.existsSync(paths.meta)
+          ? JSON.parse(fs.readFileSync(paths.meta, "utf-8"))
+          : [];
+
+        const newPhoto = {
+          ...meta,
+          id: Date.now(),
+          filename: originalFilename, // ✅ Сохраняем оригинальный формат
+          date: meta.date || new Date().toISOString().split("T")[0],
+        };
+
+        photos.push(newPhoto);
+        fs.writeFileSync(paths.meta, JSON.stringify(photos, null, 2));
+
+        return newPhoto;
+      } catch (err) {
+        console.error("SaveBlob Error:", err);
+        return null;
+      }
+    },
+  );
+
+  // ✅ 3. Получение пути (умное)
+  ipcMain.handle(
+    "photo:getPath",
+    (event, personId, filename, version = "webp") => {
+      const paths = getUserPaths(personId);
+      const webpName = filename.replace(/\.[^.]+$/, ".webp");
+
+      if (version === "thumbs") {
+        const tPath = path.join(paths.thumbs, webpName);
+        if (fs.existsSync(tPath)) return `file://${tPath}`;
+        // Если миниатюры нет, фолбэк на webp
+      }
+
+      // По умолчанию или для слайдера
+      const wPath = path.join(paths.webp, webpName);
+      if (fs.existsSync(wPath)) return `file://${wPath}`;
+
+      const oPath = path.join(paths.original, filename);
+      return fs.existsSync(oPath) ? `file://${oPath}` : null;
+    },
+  );
+
+  // ✅ 4. Удаление (всех копий)
+  ipcMain.handle("photo:delete", (event, personId, id) => {
+    const paths = getUserPaths(personId);
+    if (!fs.existsSync(paths.meta)) return;
+
+    const photos = JSON.parse(fs.readFileSync(paths.meta, "utf-8"));
+    const photo = photos.find((p) => p.id === id);
+    if (!photo) return;
+
+    const webpName =
+      photo.webpName || photo.filename.replace(/\.[^.]+$/, ".webp");
+
+    [
+      path.join(paths.webp, webpName),
+      path.join(paths.thumbs, webpName),
+      path.join(paths.original, photo.filename),
+      path.join(paths.photosDir, photo.filename),
+    ].forEach((fp) => {
+      if (fs.existsSync(fp)) fs.unlinkSync(fp);
+    });
+
+    fs.writeFileSync(
+      paths.meta,
+      JSON.stringify(
+        photos.filter((p) => p.id !== id),
+        null,
+        2,
+      ),
+    );
+    return true;
+  });
+
+  // ✅ Остальные системные методы
+  ipcMain.handle("photo:getAll", async (_, personId) => {
+    const peopleDir = path.join(
+      app.getPath("documents"),
+      "Genealogy",
+      "people",
+    );
+    if (!fs.existsSync(peopleDir)) return [];
+    const result = [];
+    fs.readdirSync(peopleDir).forEach((id) => {
+      const mPath = path.join(peopleDir, id, "photos.json");
+      if (fs.existsSync(mPath)) {
+        const photos = JSON.parse(fs.readFileSync(mPath, "utf-8"));
+        photos.forEach((p) => {
+          if (
+            p.owner === personId ||
+            (p.people && p.people.includes(personId))
+          ) {
+            result.push({ ...p, owner: Number(id) });
+          }
+        });
+      }
+    });
+    return result;
+  });
+
+  ipcMain.handle("photo:selectFile", async () => {
+    const result = await dialog.showOpenDialog({
+      filters: [{ name: "Images", extensions: ["jpg", "jpeg", "png", "heic"] }],
+      properties: ["openFile"],
+    });
+    return result.canceled
+      ? null
+      : {
+          path: `file://${result.filePaths[0]}`,
+          filename: path.basename(result.filePaths[0]),
+        };
+  });
+
+  ipcMain.handle(
+    "photo:getExtendedMeta",
+    async (event, personId, photoRecord) => {
+      const paths = getUserPaths(personId);
+      const webpName =
+        photoRecord.webpName ||
+        photoRecord.filename.replace(/\.[^.]+$/, ".webp");
+
+      const files = [
+        {
+          type: "Оригинал",
+          path: path.join(paths.original, photoRecord.filename),
+        },
+        { type: "WebP (Экран)", path: path.join(paths.webp, webpName) },
+        { type: "Thumbnail (Превью)", path: path.join(paths.thumbs, webpName) },
+      ];
+
+      const details = files.map((f) => {
+        try {
+          if (fs.existsSync(f.path)) {
+            const stats = fs.statSync(f.path);
+            return {
+              type: f.type,
+              exists: true,
+              size: (stats.size / 1024).toFixed(2) + " KB",
+              name: path.basename(f.path),
+            };
+          }
+        } catch (e) {}
+        return { type: f.type, exists: false };
+      });
+
+      return {
+        id: photoRecord.id,
+        title: photoRecord.title || "Без названия",
+        details: details,
+      };
+    },
+  );
+
+  // !!!  Global photo
+  ipcMain.handle("photo:getAllGlobal", async () => {
+    const peopleDir = path.join(
+      app.getPath("documents"),
+      "Genealogy",
+      "people",
+    );
+    if (!fs.existsSync(peopleDir)) return [];
+
+    const people = fs
+      .readdirSync(peopleDir)
+      .filter((id) => fs.statSync(path.join(peopleDir, id)).isDirectory());
+
+    const result = [];
+
+    for (const id of people) {
+      const metaPath = path.join(peopleDir, id, "photos.json");
+      if (!fs.existsSync(metaPath)) continue;
+
+      const photos = JSON.parse(fs.readFileSync(metaPath, "utf-8"));
+      for (const photo of photos) {
+        result.push({ ...photo, owner: Number(id) });
+      }
+    }
+
+    return result;
+  });
+
+  // ... (Здесь можно оставить exportZip и exportPDF, используя пути из getUserPaths)
+
+  ipcMain.handle("photo:exportZip", async (event, photos) => {
+    const { canceled, filePath } = await dialog.showSaveDialog({
+      title: "Сохранить архив",
+      defaultPath: "photos.zip",
+      filters: [{ name: "ZIP Archive", extensions: ["zip"] }],
+    });
+
+    if (canceled || !filePath) return null;
+
+    const output = fs.createWriteStream(filePath);
+    const archive = archiver("zip", { zlib: { level: 9 } });
+
+    archive.pipe(output);
+
+    for (const photo of photos) {
+      const photoPath = path.join(
+        app.getPath("documents"),
+        "Genealogy",
+        "people",
+        String(photo.owner),
+        "photos",
+        photo.filename,
+      );
+      if (fs.existsSync(photoPath)) {
+        archive.file(photoPath, { name: photo.filename });
+      }
+    }
+
+    await archive.finalize();
+    return filePath;
+  });
+
+  ipcMain.handle("photo:exportPDF", async (event, photos) => {
+    const { canceled, filePath } = await dialog.showSaveDialog({
+      title: "Сохранить PDF",
+      defaultPath: "photos.pdf",
+      filters: [{ name: "PDF", extensions: ["pdf"] }],
+    });
+
+    if (canceled || !filePath) return null;
+
+    const doc = new PDFDocument({ autoFirstPage: false });
+    const stream = fs.createWriteStream(filePath);
+    doc.pipe(stream);
+
+    for (const photo of photos) {
+      const photoPath = path.join(
+        app.getPath("documents"),
+        "Genealogy",
+        "people",
+        String(photo.owner),
+        "photos",
+        photo.filename,
+      );
+      if (fs.existsSync(photoPath)) {
+        doc.addPage();
+        doc.image(photoPath, {
+          fit: [500, 400],
+          align: "center",
+          valign: "center",
+        });
+        doc.moveDown();
+        doc.fontSize(14).text(photo.title || "", { align: "center" });
+        doc
+          .fontSize(10)
+          .fillColor("gray")
+          .text(photo.description || "", {
+            align: "center",
+          });
+      }
+    }
+
+    doc.end();
+    return filePath;
+  });
+};

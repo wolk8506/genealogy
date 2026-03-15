@@ -20,9 +20,16 @@ contextBridge.exposeInMainWorld("themeAPI", {
 //📌 Главное меню
 contextBridge.exposeInMainWorld("navigationAPI", {
   onNavigate: (callback) => {
-    ipcRenderer.on("navigate", (event, route) => {
-      callback(route);
-    });
+    // Создаем стабильную ссылку на функцию-обертку
+    const subscription = (event, route) => callback(route);
+
+    // Подписываемся на событие
+    ipcRenderer.on("navigate", subscription);
+
+    // ВОЗВРАЩАЕМ функцию отписки (cleanup)
+    return () => {
+      ipcRenderer.removeListener("navigate", subscription);
+    };
   },
 });
 contextBridge.exposeInMainWorld("changelogAPI", {
@@ -63,8 +70,9 @@ contextBridge.exposeInMainWorld("photoAPI", {
   getAll: (personId) => ipcRenderer.invoke("photo:getAll", personId),
   update: (ownerId, photo) =>
     ipcRenderer.invoke("photo:update", ownerId, photo),
-  getPath: (personId, filename) =>
-    ipcRenderer.invoke("photo:getPath", personId, filename),
+  // Должно быть так:
+  getPath: (personId, filename, version) =>
+    ipcRenderer.invoke("photo:getPath", personId, filename, version),
   delete: (personId, id) => ipcRenderer.invoke("photo:delete", personId, id),
   selectFile: () => ipcRenderer.invoke("photo:selectFile"),
   getAllGlobal: () => ipcRenderer.invoke("photo:getAllGlobal"),
@@ -86,6 +94,15 @@ contextBridge.exposeInMainWorld("photoAPI", {
       filename,
     );
   },
+  // onDownload: (callback) => {
+  //   // Очищаем предыдущие попытки, чтобы не было дублей
+  //   ipcRenderer.removeAllListeners("photo:download");
+  //   ipcRenderer.on("photo:download", (event, photo) => callback(photo));
+  // },
+  // // Добавь этот метод, если его нет
+  // removeDownloadListener: () => {
+  //   ipcRenderer.removeAllListeners("photo:download");
+  // },
 });
 
 // 📁 Фото (импорт/экспорт) ✅
@@ -140,14 +157,30 @@ contextBridge.exposeInMainWorld("photoExport", {
 contextBridge.exposeInMainWorld("appAPI", {
   getVersion: () => ipcRenderer.invoke("app:getVersion"),
   getPlatform: () => ipcRenderer.invoke("app:getPlatform"),
+  getSysVersions: () => ipcRenderer.invoke("app:getSysVersions"),
   openDataFolder: () => ipcRenderer.invoke("app:openDataFolder"),
   resetSettings: () => ipcRenderer.invoke("app:resetSettings"),
   getBuildDate: () => ipcRenderer.invoke("app:getBuildDate"),
   getFolderSize: () => ipcRenderer.invoke("app:get-folder-size"),
   getPersonFolderSize: (personId) =>
-    ipcRenderer.invoke("app:get-person-folder-size", personId), //Для страницы архив
+    ipcRenderer.invoke("app:getPersonFolderSize", personId), //Для страницы архив
   onFolderSizeUpdated: (callback) =>
     ipcRenderer.on("app:folder-size-updated", callback),
+  fullReset: () => ipcRenderer.invoke("app:full-reset"), // Удаление всех данных в папке 'Genealogy'
+
+  // ~   Методы для конвертера фото в Архиве
+  openFolder: (path) => ipcRenderer.send("open-folder", path),
+  getDetailedStorageStats: () =>
+    ipcRenderer.invoke("get-detailed-storage-stats"),
+  startConversion: (options) =>
+    ipcRenderer.invoke("photo:startConversion", options),
+  cancelConversion: () => ipcRenderer.invoke("photo:cancelConversion"),
+  onConversionProgress: (callback) => {
+    const listener = (event, data) => callback(data);
+    ipcRenderer.on("conv-prog", listener);
+    return () => ipcRenderer.removeListener("conv-prog", listener);
+  },
+  deleteMedia: (type) => ipcRenderer.invoke("photo:deleteMedia", type),
 });
 //  лог
 contextBridge.exposeInMainWorld("logAPI", {

@@ -1,4 +1,3 @@
-// FamilyTreePage.jsx
 import React, { useState } from "react";
 import {
   Box,
@@ -7,19 +6,29 @@ import {
   ToggleButtonGroup,
   Typography,
   Divider,
+  Dialog,
+  IconButton,
+  Stack,
+  Slide,
+  Tooltip,
 } from "@mui/material";
 import PhotoCameraIcon from "@mui/icons-material/PhotoCamera";
 import AccountTreeIcon from "@mui/icons-material/AccountTree";
 import DataUsageIcon from "@mui/icons-material/DataUsage";
+import ArrowBackIosIcon from "@mui/icons-material/ArrowBackIos";
 import FamilyTree from "./FamilyTree";
 import { buildDescendantTree } from "./buildDescendantTree";
 import { buildAncestorTree } from "./buildAncestorTree";
 import { buildFullTreeForD3 } from "./buildFullTreeForD3";
 import { useSnackbar } from "notistack";
-import NameSection from "../../../components/NameSection";
 import * as htmlToImage from "html-to-image";
 
+const Transition = React.forwardRef((props, ref) => (
+  <Slide direction="up" ref={ref} {...props} />
+));
+
 export default function FamilyTreePage({ allPeople, person_id }) {
+  const [open, setOpen] = useState(false);
   const [treeMode, setTreeMode] = useState("descendants");
   const { enqueueSnackbar } = useSnackbar();
 
@@ -38,12 +47,10 @@ export default function FamilyTreePage({ allPeople, person_id }) {
       link.click();
       URL.revokeObjectURL(url);
 
-      enqueueSnackbar("Изображение готово для сохранения ✅", {
-        variant: "success",
-      });
+      enqueueSnackbar("Изображение готово ✅", { variant: "success" });
     } catch (err) {
-      console.error("Ошибка при экспорте дерева:", err);
-      enqueueSnackbar("Ошибка при экспорте дерева 😞", { variant: "error" });
+      console.error("Ошибка при экспорте:", err);
+      enqueueSnackbar("Ошибка экспорта", { variant: "error" });
     }
   };
 
@@ -56,7 +63,6 @@ export default function FamilyTreePage({ allPeople, person_id }) {
       case "full":
         return buildFullTreeForD3(person_id, allPeople);
       case "radial": {
-        // Для радиального режима используем дерево потомков как основу.
         const node = buildDescendantTree(person_id, allPeople);
         if (node) node.layout = "radial";
         return node;
@@ -68,79 +74,135 @@ export default function FamilyTreePage({ allPeople, person_id }) {
 
   return (
     <>
-      <NameSection title="Семейное древо" icon={AccountTreeIcon} />
+      {/* Кнопка запуска (ставится рядом с Биографией и Галереей) */}
+      <Button
+        sx={{ borderRadius: "12px" }}
+        variant="outlined"
+        onClick={() => setOpen(true)}
+        startIcon={<AccountTreeIcon />}
+      >
+        Древо
+      </Button>
 
-      <Box display="flex" justifyContent="flex-end" alignItems="center" mb={2}>
-        <Box display="flex" gap={1} justifyContent="flex-end">
+      <Dialog
+        fullScreen
+        open={open}
+        onClose={() => setOpen(false)}
+        TransitionComponent={Transition}
+      >
+        {/* Шапка управления */}
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            p: 1,
+            borderBottom: "1px solid #444",
+            position: "sticky",
+            top: 0,
+            bgcolor: "#2c2c2c",
+            color: "white",
+            zIndex: 1100,
+          }}
+        >
+          {/* Кнопка Назад */}
+          <Box
+            sx={{
+              display: "inline-flex",
+              alignItems: "center",
+              border: "1px solid",
+              borderColor: "divider",
+              borderRadius: 7,
+            }}
+          >
+            <IconButton onClick={() => setOpen(false)} sx={{ color: "white" }}>
+              <ArrowBackIosIcon />
+            </IconButton>
+          </Box>
+
+          {/* Центральный блок: Переключатели режимов */}
+
           <ToggleButtonGroup
             value={treeMode}
             exclusive
             onChange={(e, val) => val && setTreeMode(val)}
             size="small"
+            sx={{
+              border: "1px solid",
+              borderRadius: 7,
+              borderColor: "divider",
+              gap: 1,
+              "& .MuiToggleButton-root": {
+                // color: "#aaa",
+                border: "none",
+                borderRadius: 6,
+                // mx: 0.5,
+                // gap: 1,
+                "&.Mui-selected": {
+                  bgcolor: "#444",
+                  color: "#90caf9",
+                  // "&:hover": { bgcolor: "#555" },
+                },
+              },
+            }}
           >
             <ToggleButton value="descendants">
-              <Typography
-                variant="button"
-                color="text.secondary"
-                sx={{ display: "flex", alignItems: "center", gap: 1 }}
-              >
-                <AccountTreeIcon color="inherit" sx={{ rotate: "90deg" }} />
-                потомки
-              </Typography>
+              <Tooltip title="Потомки">
+                <AccountTreeIcon sx={{ rotate: "90deg" }} />
+              </Tooltip>
             </ToggleButton>
-
             <ToggleButton value="ancestors">
-              <Typography
-                variant="button"
-                color="text.secondary"
-                sx={{ display: "flex", alignItems: "center", gap: 1 }}
-              >
-                <AccountTreeIcon color="inherit" sx={{ rotate: "270deg" }} />
-                предки
-              </Typography>
+              <Tooltip title="Предки">
+                <AccountTreeIcon sx={{ rotate: "270deg" }} />
+              </Tooltip>
             </ToggleButton>
-
             <ToggleButton value="full">
-              <Typography
-                variant="button"
-                color="text.secondary"
-                sx={{ display: "flex", alignItems: "center", gap: 1 }}
-              >
-                <AccountTreeIcon color="inherit" />
-                полное
-              </Typography>
+              <Tooltip title="Полное древо">
+                <AccountTreeIcon />
+              </Tooltip>
             </ToggleButton>
-
             <ToggleButton value="radial">
-              <Typography
-                variant="button"
-                color="text.secondary"
-                sx={{ display: "flex", alignItems: "center", gap: 1 }}
-              >
-                {/* можно заменить иконку на что-то подходящее */}
-                <DataUsageIcon
-                  color="inherit"
-                  sx={{ transform: "scale(0.9)" }}
-                />
-                радиальное
-              </Typography>
+              <Tooltip title="Радиальное">
+                <DataUsageIcon />
+              </Tooltip>
             </ToggleButton>
           </ToggleButtonGroup>
 
-          <Button onClick={handleExport} variant="outlined" size="small">
-            <PhotoCameraIcon sx={{ marginRight: 1 }} />в PNG
-          </Button>
+          {/* Правая часть: Экспорт */}
+          <Box
+            sx={{
+              display: "inline-flex",
+              alignItems: "center",
+              border: "1px solid",
+              borderColor: "divider",
+              borderRadius: 7,
+            }}
+          >
+            <Tooltip title="Сохранить как PNG">
+              <IconButton onClick={handleExport} sx={{ color: "#90caf9" }}>
+                <PhotoCameraIcon />
+              </IconButton>
+            </Tooltip>
+          </Box>
         </Box>
-      </Box>
 
-      <Divider sx={{ mb: 2 }} />
-
-      <FamilyTree
-        mode={treeMode}
-        data={buildData()}
-        people={allPeople}
-        personId={person_id}
-      />
+        {/* Рабочая область древа */}
+        <Box
+          sx={{
+            flex: 1,
+            overflow: "hidden",
+            bgcolor: "#121212",
+            position: "relative",
+          }}
+        >
+          <FamilyTree
+            mode={treeMode}
+            data={buildData()}
+            people={allPeople}
+            personId={person_id}
+          />
+        </Box>
+      </Dialog>
     </>
   );
 }

@@ -17,7 +17,7 @@ export default function getCroppedImg(imageSrc, crop) {
         0,
         0,
         crop.width,
-        crop.height
+        crop.height,
       );
 
       canvas.toBlob((blob) => {
