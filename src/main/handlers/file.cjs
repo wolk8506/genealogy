@@ -3,6 +3,23 @@ const { app, ipcMain } = require("electron");
 const fs = require("fs");
 const path = require("path");
 
+function updateGlobalHashtagsFromPhoto(photo) {
+  // Из массива hashtags
+  if (Array.isArray(photo.hashtags)) {
+    photo.hashtags.forEach((tag) => {
+      const clean = tag.trim().toLowerCase();
+      if (clean) globalHashtags.add(clean);
+    });
+  }
+  // Из строки описания (парсим #теги)
+  if (photo.description) {
+    const matches = photo.description.match(/#[\p{L}\d_]+/gu);
+    if (matches) {
+      matches.forEach((tag) => globalHashtags.add(tag.toLowerCase()));
+    }
+  }
+}
+
 ipcMain.handle("file:writeText", async (_, targetPath, text) => {
   await fs.promises.mkdir(path.dirname(targetPath), { recursive: true });
   await fs.promises.writeFile(targetPath, text, "utf-8");
@@ -245,6 +262,14 @@ ipcMain.handle("photo:addOrUpdateOwnerJson", async (_, ownerId, photoObj) => {
     }
 
     await writeJsonAtomic(jsonPath, arr);
+
+    // --- ВОТ ТУТ ОБНОВЛЯЕМ ТЕГИ В ПАМЯТИ ---
+    if (global.globalHashtags) {
+      // Логика парсинга тегов из photoObj прямо тут или через функцию
+      const matches = photoObj.description?.match(/#[\p{L}\d_]+/gu);
+      matches?.forEach((tag) => global.globalHashtags.add(tag.toLowerCase()));
+    }
+
     return { ok: true, count: arr.length };
   } catch (err) {
     console.error("[photo:addOrUpdateOwnerJson] failed:", err);

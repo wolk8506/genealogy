@@ -6,27 +6,11 @@ import {
   IconButton,
   Slide,
   Stack,
-  Tooltip,
   Typography,
-  // Divider,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import EditIcon from "@mui/icons-material/Edit";
-import EditOffIcon from "@mui/icons-material/EditOff";
-import FormatBoldIcon from "@mui/icons-material/FormatBold";
-import FormatItalicIcon from "@mui/icons-material/FormatItalic";
-// import FormatUnderlinedIcon from "@mui/icons-material/FormatUnderlined";
-// import TitleIcon from "@mui/icons-material/Title";
-import FormatListBulletedIcon from "@mui/icons-material/FormatListBulleted";
-import FormatListNumberedIcon from "@mui/icons-material/FormatListNumbered";
-import FormatQuoteIcon from "@mui/icons-material/FormatQuote";
-// import CodeIcon from "@mui/icons-material/Code";
-import TextFieldsIcon from "@mui/icons-material/TextFields";
-import AddPhotoAlternateIcon from "@mui/icons-material/AddPhotoAlternate";
-import UndoIcon from "@mui/icons-material/Undo";
-import RedoIcon from "@mui/icons-material/Redo";
-import ArrowBackIosIcon from "@mui/icons-material/ArrowBackIos";
-import AssignmentIcon from "@mui/icons-material/Assignment";
+import FeedIcon from "@mui/icons-material/Feed";
 
 import { Milkdown, MilkdownProvider, useEditor } from "@milkdown/react";
 import {
@@ -40,20 +24,9 @@ import {
   commandsCtx,
 } from "@milkdown/core";
 import { nord } from "@milkdown/theme-nord";
-import {
-  commonmark,
-  wrapInHeadingCommand,
-  toggleStrongCommand,
-  toggleEmphasisCommand,
-  wrapInBulletListCommand,
-  wrapInOrderedListCommand,
-  wrapInBlockquoteCommand,
-} from "@milkdown/preset-commonmark";
-import { history, undoCommand, redoCommand } from "@milkdown/plugin-history";
-
-const Transition = React.forwardRef((props, ref) => (
-  <Slide direction="up" ref={ref} {...props} />
-));
+import { commonmark } from "@milkdown/preset-commonmark";
+import { history } from "@milkdown/plugin-history";
+import { ButtonScrollTop } from "../../../components/ButtonScrollTop";
 
 const MilkdownEditor = ({
   content,
@@ -253,36 +226,66 @@ const MilkdownEditor = ({
   );
 };
 
-export default function BiographySection({ personId }) {
-  const [open, setOpen] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
+export default function BiographySection({
+  personId,
+  activeElement,
+  isEditing,
+  setIsEditing,
+  execRef,
+  requestToggleRef,
+  setActiveElement, // <--- ВАЖНО: прокиньте этот сеттер из PersonPage/MainLayout
+}) {
   const [isDirty, setIsDirty] = useState(false);
-  const [bio, setBio] = useState("");
+  const [bio, setBio] = useState(null);
   const [personDir, setPersonDir] = useState("");
   const [previewImg, setPreviewImg] = useState(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [pendingAction, setPendingAction] = useState(null);
 
   const saveRef = useRef(null);
-  const execRef = useRef(null);
 
+  // Регистрация методов в рефе для MainLayout
   useEffect(() => {
-    if (personId && open) {
-      setBio("");
+    if (requestToggleRef) {
+      requestToggleRef.current = {
+        toggle: () => {
+          if (isEditing && isDirty) {
+            setPendingAction("toggleEdit");
+            setConfirmOpen(true);
+          } else {
+            setIsEditing(!isEditing);
+          }
+        },
+        checkDirty: () => isDirty,
+        askSave: (action) => {
+          setPendingAction(action);
+          setConfirmOpen(true);
+        },
+      };
+    }
+    return () => {
+      if (requestToggleRef) requestToggleRef.current = null;
+    };
+  }, [isEditing, isDirty, setIsEditing, requestToggleRef]);
+
+  // Загрузка данных и CLEANUP
+  useEffect(() => {
+    if (personId && activeElement === "bio") {
       window.bioAPI.load(personId).then(setBio);
       window.bioAPI.getFullImagePath(personId, "").then(setPersonDir);
     }
+
+    // ЭТОТ КЛИНИНГ ЗАКРЫВАЕТ РЕДАКТИРОВАНИЕ ПРИ УХОДЕ
     return () => {
-      if (!open) {
-        setBio("");
-        setIsEditing(false);
-      }
+      setIsEditing(false);
     };
-  }, [personId, open]);
+  }, [personId, activeElement, setIsEditing]);
 
   const handleSaveAndExecute = async () => {
     const markdown = saveRef.current?.();
-    if (markdown) {
+
+    // Проверяем, что результат — это строка (даже если она пустая)
+    if (typeof markdown === "string") {
       await window.bioAPI.save(personId, markdown);
       setIsDirty(false);
       setBio(markdown);
@@ -292,387 +295,54 @@ export default function BiographySection({ personId }) {
 
   const handleDiscardAndExecute = () => {
     setIsDirty(false);
-    window.bioAPI.load(personId).then(setBio);
+    // Просто выполняем то, что хотели сделать до модалки
     executePending();
   };
 
   const executePending = () => {
-    if (pendingAction === "close") {
-      setOpen(false);
-      setIsEditing(false); // Сбрасываем режим правки при закрытии
-    }
+    // 1. Если просто переключали кнопку "Карандаш"
     if (pendingAction === "toggleEdit") {
       setIsEditing(false);
     }
+
+    // 2. Если переключали вкладку (например, changeTab:photo)
+    if (
+      typeof pendingAction === "string" &&
+      pendingAction.startsWith("changeTab:")
+    ) {
+      const [, newTab] = pendingAction.split(":");
+      setIsEditing(false);
+      if (setActiveElement) setActiveElement(newTab);
+    }
+
+    // 3. Если уходили по ссылке в меню (например, navigate:/settings)
+    if (
+      typeof pendingAction === "string" &&
+      pendingAction.startsWith("navigate:")
+    ) {
+      const [, path] = pendingAction.split(":");
+      setIsEditing(false);
+      window.location.hash = path; // Или используйте навигацию из пропсов
+    }
+
     setConfirmOpen(false);
     setPendingAction(null);
   };
 
-  const requestClose = () => {
-    if (isDirty) {
-      setPendingAction("close");
-      setConfirmOpen(true);
-    } else {
-      setOpen(false);
-      setIsEditing(false); // Сбрасываем здесь тоже
-    }
-  };
-
-  const requestToggleEdit = () => {
-    if (isEditing && isDirty) {
-      setPendingAction("toggleEdit");
-      setConfirmOpen(true);
-    } else {
-      setIsEditing(!isEditing);
-    }
-  };
-  console.log(personId);
   return (
     <>
-      <Button
-        variant="outlined"
-        onClick={() => setOpen(true)}
-        startIcon={<AssignmentIcon />}
-        sx={{ borderRadius: "12px" }}
-      >
-        Биография
-      </Button>
-
-      <Dialog
-        fullScreen
-        open={open}
-        onClose={requestClose}
-        TransitionComponent={Transition}
-      >
+      <Box>
         <Box
           sx={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            p: 1,
-            borderBottom: "1px solid #444",
-            position: "sticky",
-            top: 0,
-            bgcolor: "#2c2c2c",
-            color: "white",
-            zIndex: 1100,
+            flex: 1,
+            overflowY: "auto",
+            bgcolor: "#1e1e1e",
           }}
         >
           <Box
             sx={{
-              display: "inline-flex",
-              alignItems: "center",
-              border: "1px solid",
-              // borderRadius: "15px",
-              borderColor: "divider",
-              borderRadius: 7,
-              // bgcolor: "background.paper",
-              color: "text.secondary",
-              "& svg": {
-                m: 1,
-              },
-            }}
-          >
-            <IconButton
-              size="small"
-              onClick={requestClose}
-              sx={{ color: "white" }}
-            >
-              <ArrowBackIosIcon fontSize="inherit" />
-            </IconButton>
-          </Box>
-
-          {/* <Divider
-            orientation="vertical"
-            flexItem
-            sx={{ mx: 1, bgcolor: "#444" }}
-          /> */}
-
-          {isEditing && (
-            <Stack
-              direction="row"
-              spacing={0.5}
-              sx={{ ml: 2, flexWrap: "wrap", gap: 1 }}
-            >
-              <Box
-                sx={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  border: "1px solid",
-                  // borderRadius: "15px",
-                  borderColor: "divider",
-                  borderRadius: 7,
-                  // bgcolor: "background.paper",
-                  color: "text.secondary",
-                  "& svg": {
-                    m: 1,
-                  },
-                }}
-              >
-                <IconButton
-                  size="small"
-                  sx={{ color: "white" }}
-                  onClick={() => execRef.current?.exec(undoCommand.key)}
-                >
-                  <UndoIcon fontSize="inherit" />
-                </IconButton>
-                <IconButton
-                  size="small"
-                  sx={{ color: "white" }}
-                  onClick={() => execRef.current?.exec(redoCommand.key)}
-                >
-                  <RedoIcon fontSize="inherit" />
-                </IconButton>
-              </Box>
-
-              {/* <Divider
-                orientation="vertical"
-                flexItem
-                sx={{ mx: 0.5, bgcolor: "#444" }}
-              /> */}
-              <Box
-                sx={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  border: "1px solid",
-                  // borderRadius: "15px",
-                  borderColor: "divider",
-                  borderRadius: 7,
-                  // bgcolor: "background.paper",
-                  color: "text.secondary",
-                  "& svg": {
-                    m: 1,
-                  },
-                }}
-              >
-                {" "}
-                <Tooltip title="Заголовок 1">
-                  <IconButton
-                    size="small"
-                    sx={{ color: "white" }}
-                    onClick={() =>
-                      execRef.current?.exec(wrapInHeadingCommand.key, 1)
-                    }
-                  >
-                    <span
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        // fontSize: "20px",
-                        fontSize: "inherit",
-                        width: "32px",
-                        height: "32px",
-                        fontWeight: 800,
-                        padding: "5px",
-                      }}
-                    >
-                      <span>H1</span>
-                    </span>
-
-                    {/* <TitleIcon /> */}
-                  </IconButton>
-                </Tooltip>
-                <Tooltip title="Заголовок 2">
-                  <IconButton
-                    size="small"
-                    sx={{ color: "white" }}
-                    onClick={() =>
-                      execRef.current?.exec(wrapInHeadingCommand.key, 2)
-                    }
-                  >
-                    <span
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        // fontSize: "20px",
-                        fontSize: "inherit",
-                        width: "32px",
-                        height: "32px",
-                        fontWeight: 800,
-                        padding: "5px",
-                      }}
-                    >
-                      <span>H2</span>
-                    </span>
-                    {/* <TitleIcon sx={{ fontSize: "1.1rem" }} /> */}
-                  </IconButton>
-                </Tooltip>
-                <Tooltip title="Обычный текст">
-                  <IconButton
-                    size="small"
-                    sx={{ color: "white" }}
-                    onClick={() =>
-                      execRef.current?.exec(wrapInHeadingCommand.key, 0)
-                    }
-                  >
-                    <TextFieldsIcon fontSize="inherit" />
-                  </IconButton>
-                </Tooltip>
-              </Box>
-
-              {/* <Divider
-                orientation="vertical"
-                flexItem
-                sx={{ mx: 0.5, bgcolor: "#444" }}
-              /> */}
-              <Box
-                sx={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  border: "1px solid",
-                  // borderRadius: "15px",
-                  borderColor: "divider",
-                  borderRadius: 7,
-                  // bgcolor: "background.paper",
-                  color: "text.secondary",
-                  "& svg": {
-                    m: 1,
-                  },
-                }}
-              >
-                {" "}
-                <Tooltip title="Жирный">
-                  <IconButton
-                    size="small"
-                    sx={{ color: "white" }}
-                    onClick={() =>
-                      execRef.current?.exec(toggleStrongCommand.key)
-                    }
-                  >
-                    <FormatBoldIcon fontSize="inherit" />
-                  </IconButton>
-                </Tooltip>
-                <Tooltip title="Курсив">
-                  <IconButton
-                    size="small"
-                    sx={{ color: "white" }}
-                    onClick={() =>
-                      execRef.current?.exec(toggleEmphasisCommand.key)
-                    }
-                  >
-                    <FormatItalicIcon fontSize="inherit" />
-                  </IconButton>
-                </Tooltip>
-                {/* <IconButton size="small"
-                size="small"
-                sx={{ color: "white" }}
-                onClick={() => execRef.current?.wrapInTag("u")}
-              >
-                <FormatUnderlinedIcon />
-              </IconButton> */}
-              </Box>
-
-              {/* <Divider
-                orientation="vertical"
-                flexItem
-                sx={{ mx: 0.5, bgcolor: "#444" }}
-              /> */}
-              <Box
-                sx={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  border: "1px solid",
-                  // borderRadius: "15px",
-                  borderColor: "divider",
-                  borderRadius: 7,
-                  // bgcolor: "background.paper",
-                  color: "text.secondary",
-                  "& svg": {
-                    m: 1,
-                  },
-                }}
-              >
-                {" "}
-                <Tooltip title="Список">
-                  <IconButton
-                    size="small"
-                    sx={{ color: "white" }}
-                    onClick={() =>
-                      execRef.current?.exec(wrapInBulletListCommand.key)
-                    }
-                  >
-                    <FormatListBulletedIcon fontSize="inherit" />
-                  </IconButton>
-                </Tooltip>
-                <Tooltip title="Нумерованный список">
-                  <IconButton
-                    size="small"
-                    sx={{ color: "white" }}
-                    onClick={() =>
-                      execRef.current?.exec(wrapInOrderedListCommand.key)
-                    }
-                  >
-                    <FormatListNumberedIcon fontSize="inherit" />
-                  </IconButton>
-                </Tooltip>
-                <Tooltip title="Цытата">
-                  <IconButton
-                    size="small"
-                    sx={{ color: "white" }}
-                    onClick={() =>
-                      execRef.current?.exec(wrapInBlockquoteCommand.key)
-                    }
-                  >
-                    <FormatQuoteIcon fontSize="inherit" />
-                  </IconButton>
-                </Tooltip>
-                {/* <IconButton size="small"
-                size="small"
-                sx={{ color: "white" }}
-                onClick={() => execRef.current?.wrapInTag("code")}
-              >
-                <CodeIcon />
-              </IconButton> */}
-                <Tooltip title="Изображение">
-                  <IconButton
-                    size="small"
-                    color="primary"
-                    onClick={() => execRef.current?.insertImage()}
-                  >
-                    <AddPhotoAlternateIcon fontSize="inherit" />
-                  </IconButton>
-                </Tooltip>
-              </Box>
-            </Stack>
-          )}
-          <Box
-            sx={{
-              display: "inline-flex",
-              alignItems: "center",
-              border: "1px solid",
-              // borderRadius: "15px",
-              borderColor: "divider",
-              borderRadius: 7,
-              // bgcolor: "background.paper",
-              color: "text.secondary",
-              "& svg": {
-                m: 1,
-              },
-            }}
-          >
-            {" "}
-            <Tooltip title={isEditing ? "Завершить" : "Править"}>
-              <IconButton
-                size="small"
-                onClick={requestToggleEdit}
-                sx={{ color: isEditing ? "#90caf9" : "white" }}
-              >
-                {isEditing ? (
-                  <EditOffIcon fontSize="inherit" />
-                ) : (
-                  <EditIcon fontSize="inherit" />
-                )}
-              </IconButton>
-            </Tooltip>
-          </Box>
-        </Box>
-
-        <Box sx={{ flex: 1, overflowY: "auto", bgcolor: "#1e1e1e" }}>
-          <Box
-            sx={{
               maxWidth: "900px",
+
               mx: "auto",
               my: 4,
               p: 4,
@@ -683,10 +353,23 @@ export default function BiographySection({ personId }) {
               border: "1px solid #333",
             }}
           >
-            {open && bio !== "" && (
+            {activeElement === "bio" && bio === "" && !isEditing && (
+              <Box sx={{ textAlign: "center", py: 10, color: "text.disabled" }}>
+                <FeedIcon sx={{ fontSize: 60, opacity: 0.3 }} />
+                <Typography>Биография пока не заполнена</Typography>
+                <Button
+                  startIcon={<EditIcon />}
+                  onClick={() => setIsEditing(true)}
+                  sx={{ mt: 2 }}
+                >
+                  Начать писать
+                </Button>
+              </Box>
+            )}
+            {activeElement === "bio" && bio !== null && (
               <MilkdownProvider key={personId + (isEditing ? "_ed" : "_vw")}>
                 <MilkdownEditor
-                  content={bio}
+                  content={bio || " "} // Передаем пробел, чтобы Milkdown не ругался на null
                   isEditing={isEditing}
                   personDir={personDir}
                   personId={personId}
@@ -697,9 +380,10 @@ export default function BiographySection({ personId }) {
                 />
               </MilkdownProvider>
             )}
+            <ButtonScrollTop />
           </Box>
         </Box>
-      </Dialog>
+      </Box>
 
       <Dialog
         open={confirmOpen}

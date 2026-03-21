@@ -1,38 +1,85 @@
-import React from "react";
-import { Dialog, Box, IconButton, Typography, Stack } from "@mui/material";
+import React, { useState } from "react";
+import {
+  Dialog,
+  Box,
+  IconButton,
+  Typography,
+  Stack,
+  Tooltip,
+  Divider,
+} from "@mui/material";
 import { motion, AnimatePresence } from "framer-motion";
 import CloseIcon from "@mui/icons-material/Close";
 import FullscreenIcon from "@mui/icons-material/Fullscreen";
 import FullscreenExitIcon from "@mui/icons-material/FullscreenExit";
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
 import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
+import InfoIcon from "@mui/icons-material/Info";
+import DownloadIcon from "@mui/icons-material/Download";
 
 const PhotoFullscreenViewer = ({
   open,
   index,
-  photos, // Массив объектов фото
-  photoPaths, // Это теперь буфер .full
-  thumbPaths, // Это новый пропс .thumbs
+  photos,
+  photoPaths,
+  thumbPaths,
   direction,
   hideLabels,
   onClose,
   onNext,
   onPrev,
   onToggleMaximize,
-  currentPhotoInfo, // Тот самый объект с текстом, который мы подготовили через useMemo
+  currentPhotoInfo,
+  onDownload,
 }) => {
-  const photo = photos[index];
+  const [showInfo, setShowInfo] = useState(true);
 
-  // Логика: если есть Full — берем его, если нет — берем Thumb
+  const photo = photos[index];
   const displaySrc = photoPaths[photo?.id] || thumbPaths[photo?.id];
   const isHighRes = !!photoPaths[photo?.id];
+
+  // Функция для парсинга текста и оборачивания тегов в стилизованные span
+  const renderTextWithTags = (text) => {
+    if (!text) return "";
+
+    // Регулярка для поиска тегов
+    const parts = text.split(/(#[\p{L}\d_]+)/gu);
+
+    return parts.map((part, i) => {
+      if (part.startsWith("#")) {
+        return (
+          <Box
+            key={i}
+            component="span"
+            sx={{
+              display: "inline-block",
+              bgcolor: "#0d47a1", // blue.900
+              color: "#fff",
+              px: 0.7,
+              mx: 0.3,
+              borderRadius: "4px",
+              fontSize: "0.85em",
+              fontWeight: 600,
+              lineHeight: 1.2,
+              verticalAlign: "middle",
+            }}
+          >
+            {part}
+          </Box>
+        );
+      }
+      return part;
+    });
+  };
+
+  if (!photo) return null;
 
   return (
     <Dialog
       fullScreen
       open={open}
       onClose={onClose}
-      PaperProps={{ sx: { bgcolor: "#000" } }}
+      PaperProps={{ sx: { bgcolor: "#000", backgroundImage: "none" } }}
     >
       <Box
         sx={{
@@ -43,20 +90,24 @@ const PhotoFullscreenViewer = ({
           alignItems: "center",
           justifyContent: "center",
           overflow: "hidden",
+          bgcolor: "#000",
         }}
       >
-        {/* Счетчик */}
+        {/* --- СЧЕТЧИК --- */}
         {!hideLabels && (
           <Box
             sx={{
               position: "absolute",
+              display: "flex",
+              alignItems: "center",
               top: 20,
               left: 20,
               zIndex: 15,
               bgcolor: "rgba(0,0,0,0.5)",
               color: "#fff",
               px: 2,
-              py: 0.5,
+              // py: 0.5,
+              height: 40,
               borderRadius: "20px",
               backdropFilter: "blur(4px)",
               border: "1px solid rgba(255,255,255,0.2)",
@@ -68,27 +119,91 @@ const PhotoFullscreenViewer = ({
           </Box>
         )}
 
-        {/* Управление */}
+        {/* --- ВЕРХНЕЕ УПРАВЛЕНИЕ --- */}
         <Stack
           direction="row"
           spacing={1}
-          sx={{ position: "absolute", top: 10, right: 10, zIndex: 15 }}
+          sx={{
+            position: "absolute",
+            top: 10,
+            right: 10,
+            zIndex: 15,
+            // Начальное состояние: почти прозрачный
+            opacity: 0.2,
+            transition: "opacity 0.3s ease-in-out",
+            // Состояние при наведении на весь блок Stack
+            "&:hover": {
+              opacity: 1,
+            },
+          }}
         >
-          <IconButton
-            onClick={onToggleMaximize}
-            sx={{ color: "#fff", bgcolor: "rgba(0,0,0,0.3)" }}
+          <Box
+            sx={{
+              backdropFilter: "blur(4px)",
+              display: "inline-flex",
+              alignItems: "center",
+              border: "1px solid",
+              borderColor: "divider",
+              borderRadius: 7,
+              height: 40,
+              color: "text.secondary",
+            }}
           >
-            {hideLabels ? <FullscreenExitIcon /> : <FullscreenIcon />}
-          </IconButton>
-          <IconButton
-            onClick={onClose}
-            sx={{ color: "#fff", bgcolor: "rgba(0,0,0,0.3)" }}
-          >
-            <CloseIcon />
-          </IconButton>
+            <Tooltip title="Скачать">
+              <IconButton
+                onClick={() => onDownload?.(photo)}
+                size="small"
+                sx={{ color: "white", p: "8px" }}
+              >
+                <DownloadIcon />
+              </IconButton>
+            </Tooltip>
+
+            <Tooltip title={showInfo ? "Скрыть описание" : "Показать описание"}>
+              <IconButton
+                onClick={() => setShowInfo(!showInfo)}
+                size="small"
+                sx={{
+                  color: showInfo ? "primary.main" : "#fff",
+                  p: "8px",
+                }}
+              >
+                <InfoIcon />
+              </IconButton>
+            </Tooltip>
+            <Tooltip
+              title={
+                hideLabels ? "Выйти из полноэкранного режима" : "На весь экран"
+              }
+            >
+              <IconButton
+                onClick={onToggleMaximize}
+                size="small"
+                sx={{
+                  color: "#fff",
+                  p: "8px",
+                }}
+              >
+                {hideLabels ? <FullscreenExitIcon /> : <FullscreenIcon />}
+              </IconButton>
+            </Tooltip>
+            <Divider orientation="vertical" variant="middle" flexItem />
+            <Tooltip title={"Закрыть"}>
+              <IconButton
+                onClick={onClose}
+                size="small"
+                sx={{
+                  color: "#fff",
+                  p: "8px",
+                }}
+              >
+                <CloseIcon />
+              </IconButton>
+            </Tooltip>
+          </Box>
         </Stack>
 
-        {/* Слайдер */}
+        {/* --- ИЗОБРАЖЕНИЕ (СЛАЙДЕР) --- */}
         <AnimatePresence initial={false} custom={direction}>
           <motion.img
             key={index}
@@ -98,7 +213,7 @@ const PhotoFullscreenViewer = ({
               enter: (direction) => ({
                 x: direction > 0 ? "100%" : "-100%",
                 opacity: 0,
-                scale: 0.95, // Добавляем легкое масштабирование для глубины
+                scale: 0.95,
               }),
               center: {
                 x: 0,
@@ -117,17 +232,14 @@ const PhotoFullscreenViewer = ({
             animate="center"
             exit="exit"
             transition={{
-              // Переходим на более предсказуемый ease
               x: { type: "tween", ease: [0.4, 0.0, 0.2, 1], duration: 0.4 },
               opacity: { duration: 0.25 },
               scale: { duration: 0.4 },
             }}
             drag="x"
             dragConstraints={{ left: 0, right: 0 }}
-            dragElastic={0.6} // Делаем drag более "резиновым"
+            dragElastic={0.6}
             onDragEnd={(e, { offset, velocity }) => {
-              // Добавляем проверку скорости (velocity), чтобы листалось легче
-              const swipe = Math.abs(offset.x) * velocity.x;
               if (offset.x < -100 || velocity.x < -500) onNext();
               else if (offset.x > 100 || velocity.x > 500) onPrev();
             }}
@@ -136,60 +248,80 @@ const PhotoFullscreenViewer = ({
               maxHeight: "100%",
               objectFit: "contain",
               position: "absolute",
-              willChange: "transform, opacity", // Подсказываем браузеру вынести в GPU
+              willChange: "transform, opacity",
               filter: isHighRes ? "none" : "blur(10px)",
-              // Чтобы блюр не тормозил анимацию, применяем его только когда картинка "в центре"
               transition: "filter 0.5s ease-out",
             }}
           />
         </AnimatePresence>
 
-        {/* Информация */}
-        {!hideLabels && currentPhotoInfo && (
-          <motion.div
-            key={`info-${index}`}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            style={{
-              position: "absolute",
-              bottom: 30,
-              left: "50%",
-              transform: "translateX(-50%)",
-              backgroundColor: "rgba(0, 0, 0, 0.75)",
-              padding: "15px 25px",
-              borderRadius: "12px",
-              textAlign: "center",
-              color: "#fff",
-              zIndex: 10,
-              backdropFilter: "blur(5px)",
-              maxWidth: "80%",
-              pointerEvents: "none",
-            }}
-          >
-            <Typography variant="h6">{currentPhotoInfo.title}</Typography>
-            <Typography variant="body2" sx={{ opacity: 0.8, mb: 1 }}>
-              {currentPhotoInfo.description}
-            </Typography>
-            <Typography
-              variant="caption"
-              sx={{
-                display: "block",
-                borderTop: "1px solid rgba(255,255,255,0.2)",
-                pt: 1,
+        {/* --- ИНФОРМАЦИОННАЯ ПАНЕЛЬ --- */}
+        <AnimatePresence>
+          {showInfo && currentPhotoInfo && (
+            <motion.div
+              key={`info-${index}`}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 20 }}
+              style={{
+                position: "absolute",
+                bottom: 30,
+                left: "50%",
+                transform: "translateX(-50%)",
+                backgroundColor: "rgba(0, 0, 0, 0.85)", // Чуть плотнее фон для читаемости тегов
+                padding: "15px 25px",
+                borderRadius: "16px",
+                textAlign: "center",
+                color: "#fff",
+                zIndex: 10,
+                backdropFilter: "blur(8px)",
+                maxWidth: "85%",
+                pointerEvents: "auto", // Изменил на auto, если захотите сделать теги кликабельными
+                border: "1px solid rgba(255,255,255,0.15)",
+                boxShadow: "0 10px 30px rgba(0,0,0,0.5)",
               }}
             >
-              {currentPhotoInfo.ownerText} |{" "}
-              {currentPhotoInfo.datePhoto &&
-                `📅 ${currentPhotoInfo.datePhoto} | `}{" "}
-              🏷️ На фото: {currentPhotoInfo.peopleText || "—"}
-            </Typography>
-          </motion.div>
-        )}
+              <Typography
+                variant="h6"
+                sx={{ lineHeight: 1.2, mb: 1, fontWeight: 700 }}
+              >
+                {currentPhotoInfo.title || ""}
+              </Typography>
 
-        {/* Навигация */}
+              {/* ОПИСАНИЕ С ПОДСВЕТКОЙ ТЕГОВ */}
+              <Typography
+                variant="body2"
+                sx={{ opacity: 0.9, mb: 2, lineHeight: 1.6 }}
+              >
+                {renderTextWithTags(currentPhotoInfo.description)}
+              </Typography>
+
+              <Typography
+                variant="caption"
+                sx={{
+                  display: "block",
+                  borderTop: "1px solid rgba(255,255,255,0.2)",
+                  pt: 1.5,
+                  fontSize: "0.75rem",
+                  letterSpacing: "0.03em",
+                  color: "rgba(255,255,255,0.7)",
+                }}
+              >
+                {currentPhotoInfo.ownerText} |{" "}
+                {currentPhotoInfo.datePhoto &&
+                  `📅 ${currentPhotoInfo.datePhoto} | `}
+                🏷️ На фото: {currentPhotoInfo.peopleText || "—"}
+              </Typography>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* --- НАВИГАЦИЯ (СТРЕЛКИ) --- */}
         <IconButton
-          onClick={onPrev}
+          onClick={(e) => {
+            e.stopPropagation();
+            onPrev();
+          }}
           disabled={index === 0}
           sx={{
             position: "absolute",
@@ -197,12 +329,18 @@ const PhotoFullscreenViewer = ({
             zIndex: 2,
             color: "#fff",
             bgcolor: "rgba(255,255,255,0.1)",
+            "&:hover": { bgcolor: "rgba(255,255,255,0.2)" },
+            "&.Mui-disabled": { color: "rgba(255,255,255,0.1)" },
           }}
         >
           <ArrowBackIosNewIcon fontSize="large" />
         </IconButton>
+
         <IconButton
-          onClick={onNext}
+          onClick={(e) => {
+            e.stopPropagation();
+            onNext();
+          }}
           disabled={index === photos.length - 1}
           sx={{
             position: "absolute",
@@ -210,6 +348,8 @@ const PhotoFullscreenViewer = ({
             zIndex: 2,
             color: "#fff",
             bgcolor: "rgba(255,255,255,0.1)",
+            "&:hover": { bgcolor: "rgba(255,255,255,0.2)" },
+            "&.Mui-disabled": { color: "rgba(255,255,255,0.1)" },
           }}
         >
           <ArrowForwardIosIcon fontSize="large" />

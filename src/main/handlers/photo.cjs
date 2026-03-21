@@ -6,6 +6,75 @@ const archiver = require("archiver");
 const PDFDocument = require("pdfkit");
 
 module.exports = (settingsStore) => {
+  global.globalHashtags = new Set();
+
+  // Вспомогательная функция для добавления тегов в память "на лету"
+  function updateGlobalHashtagsFromPhoto(photo) {
+    if (!photo) return;
+    const tags = global.globalHashtags; // Берем наш глобальный сет
+
+    if (Array.isArray(photo.hashtags)) {
+      photo.hashtags.forEach((tag) => tags.add(tag.trim().toLowerCase()));
+    }
+    if (photo.description) {
+      const matches = photo.description.match(/#[\p{L}\d_]+/gu);
+      if (matches) {
+        matches.forEach((tag) => tags.add(tag.toLowerCase()));
+      }
+    }
+  }
+
+  // Функция сканирования всех папок
+  async function rebuildHashtagIndex() {
+    const baseDir = path.join(app.getPath("documents"), "Genealogy", "people");
+    console.log("🔍 Начинаю поиск по адресу:", baseDir); // ЛОГ 1
+
+    const newTags = new Set();
+
+    try {
+      const folders = await fs.promises.readdir(baseDir);
+      console.log("📂 Найдено папок людей:", folders.length); // ЛОГ 2
+
+      for (const folder of folders) {
+        const filePath = path.join(baseDir, folder, "photos.json");
+
+        try {
+          const content = await fs.promises.readFile(filePath, "utf-8");
+          const photos = JSON.parse(content);
+
+          photos.forEach((photo) => {
+            // ПРОВЕРКА 1: Если теги в массиве hashtags
+            if (Array.isArray(photo.hashtags)) {
+              photo.hashtags.forEach((tag) =>
+                newTags.add(tag.trim().toLowerCase()),
+              );
+            }
+
+            // ПРОВЕРКА 2: Если теги "зашиты" в описании через #
+            if (photo.description) {
+              const matches = photo.description.match(/#[\p{L}\d_]+/gu);
+              if (matches) {
+                matches.forEach((tag) => newTags.add(tag.toLowerCase()));
+              }
+            }
+          });
+        } catch (e) {
+          // console.log(`⏩ Файл не найден или пуст в папке: ${folder}`);
+        }
+      }
+
+      global.globalHashtags = newTags;
+      console.log(
+        `✅ Итоговый индекс: [${Array.from(globalHashtags).join(", ")}]`,
+      ); // ЛОГ 3
+    } catch (err) {
+      console.error("❌ Критическая ошибка сканера:", err);
+    }
+  }
+
+  // Вызываем при старте приложения (после готовности)
+  app.whenReady().then(rebuildHashtagIndex);
+
   // Вспомогательная функция для получения путей
   const getUserPaths = (personId) => {
     const baseDir = path.join(
@@ -57,13 +126,13 @@ module.exports = (settingsStore) => {
 
     try {
       // 1. Создаем рабочую WebP версию для интерфейса
-      await sharp(sourcePath)
+      await sharp(sourcePath, { failOn: "none" })
         .rotate()
         .webp({ quality: settings.quality })
         .toFile(path.join(paths.webp, webpFilename));
 
       // 2. Создаем превью
-      await sharp(sourcePath)
+      await sharp(sourcePath, { failOn: "none" })
         .rotate()
         .resize(300, 300, { fit: "inside" })
         .webp({ quality: 50 })
@@ -90,6 +159,8 @@ module.exports = (settingsStore) => {
 
       photos.push(newPhoto);
       fs.writeFileSync(paths.meta, JSON.stringify(photos, null, 2));
+
+      updateGlobalHashtagsFromPhoto(newPhoto);
 
       return newPhoto;
     } catch (err) {
@@ -402,5 +473,14 @@ module.exports = (settingsStore) => {
 
     doc.end();
     return filePath;
+  });
+
+  // ---
+  // ---   # Хештеги
+  // ---
+
+  // Обработчик для фронтенда
+  ipcMain.handle("hashtags:getGlobal", () => {
+    return Array.from(globalHashtags).sort();
   });
 };

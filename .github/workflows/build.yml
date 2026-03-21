@@ -11,20 +11,17 @@ permissions:
   contents: write
 
 jobs:
-  # ──────────────────────────────────────────────────
+  # --- Сборка для macOS ---
   build-mac:
     name: Build macOS .dmg
     runs-on: macos-latest
-    outputs:
-      dmg-path: ${{ steps.find-dmg.outputs.path }}
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
+      - uses: actions/checkout@v4
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
+          cache: "npm"
 
       - name: Install deps
         run: npm ci --legacy-peer-deps
@@ -35,30 +32,23 @@ jobs:
       - name: Build DMG (ARM64)
         run: npx electron-builder --mac --arm64 --publish never
 
-      - name: Find built .dmg
-        id: find-dmg
-        run: |
-          FILE=$(ls dist_electron/*.dmg)
-          echo "path=$FILE" >> $GITHUB_OUTPUT
-
       - name: Upload macOS artifact
         uses: actions/upload-artifact@v4
         with:
           name: macos-build
-          path: dist_electron/**
+          path: dist_electron/
 
-  # ──────────────────────────────────────────────────
+  # --- Сборка для Windows ---
   build-win:
     name: Build Windows installer
     runs-on: windows-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
+      - uses: actions/checkout@v4
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
+          cache: "npm"
 
       - name: Install deps
         run: npm ci --legacy-peer-deps
@@ -73,25 +63,19 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: windows-build
-          path: |
-            dist_electron/*.exe
-            dist_electron/*.blockmap
-            dist_electron/latest.yml
+          path: dist_electron/
 
-  # ──────────────────────────────────────────────────
+  # --- Сборка для Linux ---
   build-linux:
     name: Build Linux AppImage
     runs-on: ubuntu-latest
-    outputs:
-      appimg-path: ${{ steps.find-appimg.outputs.path }}
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
+      - uses: actions/checkout@v4
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
+          cache: "npm"
 
       - name: Install deps
         run: npm ci --legacy-peer-deps
@@ -102,145 +86,43 @@ jobs:
       - name: Build AppImage
         run: npm run dist:linux
 
-      - name: Find AppImage
-        id: find-appimg
-        run: |
-          FILE=$(ls dist_electron/*.AppImage)
-          echo "path=$FILE" >> $GITHUB_OUTPUT
-
       - name: Upload Linux artifact
         uses: actions/upload-artifact@v4
         with:
           name: linux-build
-          path: dist_electron/**
+          path: dist_electron/
 
-  # ──────────────────────────────────────────────────
+  # --- Создание Релиза ---
   release:
-    name: Create GitHub Release and upload assets
+    name: Create GitHub Release
     runs-on: ubuntu-latest
     needs: [build-mac, build-win, build-linux]
-    permissions:
-      contents: write
-
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
-      - name: Get version
-        id: get-version
-        shell: bash
-        run: |
-          VERSION=$(node -p "require('./package.json').version")
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
-
-      - name: Download macOS build
+      # Скачиваем всё, что собрали в предыдущих шагах
+      - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
-          name: macos-build
-          path: artifacts/macos
+          path: artifacts
 
-      - name: Download Windows build
-        uses: actions/download-artifact@v4
+      - name: Create Release and Upload Assets
+        uses: softprops/action-gh-release@v2
         with:
-          name: windows-build
-          path: artifacts/windows
-
-      - name: Download Linux build
-        uses: actions/download-artifact@v4
-        with:
-          name: linux-build
-          path: artifacts/linux
-
-      - name: Create GitHub Release
-        id: create-release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: "${{ env.VERSION }}"
-          release_name: "${{ env.VERSION }}"
+          tag_name: ${{ github.event.inputs.version }}
+          name: "Release ${{ github.event.inputs.version }}"
           draft: false
           prerelease: false
-
-      - name: Upload Windows full installer
-        uses: actions/upload-release-asset@v1
+          # Указываем пути ко ВСЕМ файлам разом.
+          # Это заменяет те 10 блоков "Upload release asset", что были в конце твоего файла.
+          files: |
+            artifacts/windows-build/*.exe
+            artifacts/windows-build/*.blockmap
+            artifacts/windows-build/latest.yml
+            artifacts/macos-build/*.dmg
+            artifacts/macos-build/*.blockmap
+            artifacts/macos-build/latest-mac.yml
+            artifacts/linux-build/*.AppImage
+            artifacts/linux-build/latest-linux.yml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create-release.outputs.upload_url }}
-          asset_path: artifacts/windows/Genealogy-Setup-${{ env.VERSION }}.exe
-          asset_name: "Genealogy-Setup-${{ env.VERSION }}.exe"
-          asset_content_type: application/octet-stream
-
-      - name: Upload Windows blockmap
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create-release.outputs.upload_url }}
-          asset_path: artifacts/windows/Genealogy-Setup-${{ env.VERSION }}.exe.blockmap
-          asset_name: "Genealogy-Setup-${{ env.VERSION }}.exe.blockmap"
-          asset_content_type: application/octet-stream
-
-      - name: Upload Windows latest.yml
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create-release.outputs.upload_url }}
-          asset_path: artifacts/windows/latest.yml
-          asset_name: latest.yml
-          asset_content_type: application/x-yaml
-
-      # ──────────────────────────────────────────────────
-
-      - name: Upload macOS .dmg
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create-release.outputs.upload_url }}
-          asset_path: artifacts/macos/Genealogy-${{ env.VERSION }}.dmg
-          asset_name: "Genealogy-${{ env.VERSION }}.dmg"
-          asset_content_type: application/octet-stream
-
-      - name: Upload macOS .blockmap
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create-release.outputs.upload_url }}
-          asset_path: artifacts/macos/Genealogy-${{ env.VERSION }}.dmg.blockmap
-          asset_name: "Genealogy-${{ env.VERSION }}.dmg.blockmap"
-          asset_content_type: application/octet-stream
-
-      - name: Upload macOS .yml
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create-release.outputs.upload_url }}
-          asset_path: artifacts/macos/latest-mac.yml
-          asset_name: latest-mac.yml
-          asset_content_type: application/x-yaml
-
-      # ──────────────────────────────────────────────────
-
-      - name: Upload Linux AppImage
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create-release.outputs.upload_url }}
-          asset_path: artifacts/linux/Genealogy-${{ env.VERSION }}.AppImage
-          asset_name: "Genealogy-${{ env.VERSION }}.AppImage"
-          asset_content_type: application/octet-stream
-
-      - name: Upload Linux .yml
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create-release.outputs.upload_url }}
-          asset_path: artifacts/linux/latest-linux.yml
-          asset_name: latest-linux.yml
-          asset_content_type: application/x-yaml

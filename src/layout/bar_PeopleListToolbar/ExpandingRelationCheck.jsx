@@ -37,12 +37,12 @@ export default function ExpandingRelationCheck({ checked, onChange }) {
           size="small"
           sx={{
             color: checked ? "primary.main" : "white",
-            p: "9px",
+            p: "8px",
             transition: "transform 0.3s ease",
             transform: checked ? "scale(1.1)" : "scale(1)",
           }}
         >
-          <FamilyRestroomIcon fontSize="small" />
+          <FamilyRestroomIcon />
         </IconButton>
 
         {checked && (

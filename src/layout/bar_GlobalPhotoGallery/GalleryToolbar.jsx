@@ -3,7 +3,7 @@ import { Stack } from "@mui/material";
 import ExpandingPeopleSelect from "./ExpandingPeopleSelect";
 import ExpandingGroupSelect from "./ExpandingGroupSelect";
 import ExpandingSelect from "./ExpandingSelect";
-import ExpandingSearch from "./ExpandingSearch";
+import ExpandingSearch from "../../components/ExpandingSearch";
 
 export default function GalleryToolbar({
   allPeople,
@@ -45,9 +45,11 @@ export default function GalleryToolbar({
 
       {/* ПОИСК */}
       <ExpandingSearch
+        scope={"gallery"}
         value={search}
         onChange={setSearch}
-        placeholder="Поиск по галерее..."
+        placeholder="Поиск по описанию и тегам..."
+        enableHashtags={true}
       />
     </Stack>
   );

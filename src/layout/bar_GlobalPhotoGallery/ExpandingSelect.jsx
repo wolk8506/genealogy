@@ -78,9 +78,9 @@ export default function ExpandingSelect({
 
   return (
     <StyledContainer onClick={handleOpen}>
-      <IconButton size="small" sx={{ color: "white", p: "9px" }}>
+      <IconButton size="small" sx={{ color: "white", p: "8px" }}>
         {/* На главной кнопке показываем иконку текущего направления */}
-        {<SortIcon fontSize="small" />}
+        {<SortIcon />}
         {selectedOption ? selectedOption.icon : <SortIcon fontSize="small" />}
       </IconButton>
 

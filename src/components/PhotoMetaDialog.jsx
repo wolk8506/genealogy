@@ -107,18 +107,6 @@ export default function PhotoMetaDialog({ openDialog, meta, onClose }) {
                   </Typography>
                 </Box>
               )}
-              {/* <Typography
-                variant="caption"
-                sx={{
-                  mt: 1,
-                  display: "block",
-                  color: "text.secondary",
-                  fontStyle: "italic",
-                }}
-              >
-                {file.name}
-                {console.log(file)}
-              </Typography> */}
             </Paper>
           ))}
         </Stack>

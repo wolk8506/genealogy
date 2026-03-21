@@ -94,6 +94,8 @@ contextBridge.exposeInMainWorld("photoAPI", {
       filename,
     );
   },
+
+  getGlobalHashtags: () => ipcRenderer.invoke("hashtags:getGlobal"),
   // onDownload: (callback) => {
   //   // Очищаем предыдущие попытки, чтобы не было дублей
   //   ipcRenderer.removeAllListeners("photo:download");
@@ -114,6 +116,7 @@ contextBridge.exposeInMainWorld("photosAPI", {
     ipcRenderer.invoke("photos:saveFile", id, filename, buffer),
   read: (id) => ipcRenderer.invoke("photos:read", id),
   write: (id, data) => ipcRenderer.invoke("photos:write", id, data),
+  // Добавляем получение глобальных хештегов
 });
 
 // 🧬 Биография ✅
@@ -304,4 +307,7 @@ contextBridge.exposeInMainWorld("updater", {
 //🚪 Выход из приложения
 contextBridge.exposeInMainWorld("electronAPI", {
   quitApp: () => ipcRenderer.send("app:quit"),
+  getDiskUsage: () => ipcRenderer.invoke("get-disk-usage"),
+  getDetailedStorageStats: () =>
+    ipcRenderer.invoke("get-detailed-storage-stats"),
 });

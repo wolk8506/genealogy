@@ -83,8 +83,8 @@ export default function ExpandingGroupSelect({ value, onChange }) {
 
   return (
     <StyledContainer $expanded={isExpanded} onClick={handleOpen}>
-      <IconButton size="small" sx={{ color: "white", p: "9px" }}>
-        <CurrentIcon fontSize="small" />
+      <IconButton size="small" sx={{ color: "white", p: "8px" }}>
+        <CurrentIcon />
       </IconButton>
 
       {isExpanded && (

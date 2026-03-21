@@ -23,7 +23,7 @@ export default function PersonAvatar({
         }
 
         const url = `${path}?t=${Date.now()}`;
-        // console.log("🖼️ avatar path:", url);
+
         if (isMounted) setSrc(url);
       });
     }

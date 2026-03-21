@@ -1,3 +1,4 @@
+// MainLayout.jsx
 import { styled, useTheme } from "@mui/material/styles";
 
 import {
@@ -9,7 +10,7 @@ import {
 } from "@mui/material";
 
 import MuiAppBar from "@mui/material/AppBar";
-
+import { alpha } from "@mui/material/styles";
 import InfoIcon from "@mui/icons-material/Info";
 import ArchiveIcon from "@mui/icons-material/Archive";
 import MenuIcon from "@mui/icons-material/Menu";
@@ -20,10 +21,11 @@ import PersonAddAlt1Icon from "@mui/icons-material/PersonAddAlt1";
 import GroupIcon from "@mui/icons-material/Group";
 import AddPhotoAlternateIcon from "@mui/icons-material/AddPhotoAlternate";
 import CollectionsIcon from "@mui/icons-material/Collections";
+// import { ToggleButton, ToggleButtonGroup } from "@mui/material";
 
 import { useLocation, matchPath, Link as RouterLink } from "react-router-dom"; // Link переименован в RouterLink
 import { Routes, Route } from "react-router-dom"; // BrowserRouter обычно оборачивает App
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import AppDrawer, { DrawerHeader } from "./AppDrawer";
 import SettingsPage from "../pages/Page_Settings/SettingsPage";
@@ -44,6 +46,7 @@ import UserGuideModal from "./UserGuideModal";
 
 import GalleryToolbar from "./bar_GlobalPhotoGallery/GalleryToolbar";
 import PeopleListToolbar from "./bar_PeopleListToolbar/PeopleListToolbar";
+import PersonToolbar from "./bar_PeopleToolbar/PersonToolbar";
 
 const drawerItems = [
   { text: "Люди", icon: <GroupIcon />, path: "/" },
@@ -135,6 +138,56 @@ export default function MainLayout() {
     setFilters((prev) => ({ ...prev, [key]: value }));
   };
   // !!!  ▲▲▲   PeopleList  ▲▲▲
+  // !!!  ▼▼▼   Person Page  ▼▼▼
+  // info
+  const personPageRef = useRef(null);
+  // tree
+  const [treeMode, setTreeMode] = useState("descendants");
+  const treePageRef = useRef(null); // Для вызова handleExport
+  // photo
+  const [activeElement, setActiveElement] = useState("info"); // "info" - анкета, "photo" - фотографии
+  const [galleryPersonSearch, setGalleryPersonSearch] = useState("");
+  const [galleryGroupBy, setGalleryGroupBy] = useState("none");
+  const [gallerySortDir, setGallerySortDir] = useState("desc");
+  // bio
+  const [isBioEditing, setIsBioEditing] = useState(false);
+  const bioExecRef = useRef(null); // Ссылка на команды Milkdown
+  const bioRequestToggleRef = useRef(null); // Сюда BiographySection положит свою функцию проверки "грязности"
+
+  // Чтобы открыть диалог загрузки из Toolbar, нам понадобится триггер или глобальный стейт
+  const [uploadTrigger, setUploadTrigger] = useState(0);
+  const match = matchPath("/person/:id", location.pathname);
+
+  useEffect(() => {
+    // Если мы НЕ на странице человека, сбрасываем выбор на "информацию"
+    if (!match) {
+      setActiveElement("info");
+      setUploadTrigger(0);
+      setGalleryPersonSearch("");
+    }
+  }, [location.pathname, match]);
+  // Добавьте сброс при смене вкладок внутри карточки
+  useEffect(() => {
+    if (activeElement !== "photo") {
+      setUploadTrigger(0);
+    }
+  }, [activeElement]);
+
+  const handleTabChange = (newTab) => {
+    // Проверяем через реф, "грязная" ли био
+    const isDirty = bioRequestToggleRef.current?.checkDirty?.();
+
+    if (activeElement === "bio" && isBioEditing && isDirty) {
+      // Если грязная — не меняем вкладку сразу, а просим био открыть модалку
+      bioRequestToggleRef.current.askSave(`changeTab:${newTab}`);
+    } else {
+      // Если не грязная или мы не в био — просто переключаем
+      setActiveElement(newTab);
+    }
+  };
+
+  // !!!  ▲▲▲   Person Page  ▲▲▲
+
   // Оборачиваем в useCallback, чтобы функцию можно было безопасно передавать вниз
   const refreshAppData = useCallback(async () => {
     try {
@@ -247,7 +300,7 @@ export default function MainLayout() {
   }, [location.pathname]); // пересчитываем при смене маршрута
   // ------------------------------------------------------
   const [person, setPerson] = useState(null);
-  const match = matchPath("/person/:id", location.pathname);
+  // const match = matchPath("/person/:id", location.pathname);
   const id = Number(match?.params?.id);
 
   useEffect(() => {
@@ -317,6 +370,48 @@ export default function MainLayout() {
             </IconButton>
 
             <NavigationButtons />
+
+            {match && (
+              <PersonToolbar
+                activeElement={activeElement}
+                setActiveElement={handleTabChange}
+                infoProps={{
+                  personPageRef: personPageRef,
+                }}
+                photoProps={{
+                  search: galleryPersonSearch,
+                  setSearch: setGalleryPersonSearch,
+                  groupBy: galleryGroupBy,
+                  setGroupBy: setGalleryGroupBy,
+                  sortDir: gallerySortDir,
+                  setSortDir: setGallerySortDir,
+                  onAddPhoto: () => setUploadTrigger((prev) => prev + 1),
+                }}
+                bioProps={{
+                  isEditing: isBioEditing,
+                  requestToggleEdit: () =>
+                    bioRequestToggleRef.current?.toggle(),
+                  execRef: bioExecRef,
+                }}
+                treeProps={{
+                  treeMode: treeMode,
+                  setTreeMode: setTreeMode,
+                  onExport: () => {
+                    if (treePageRef.current) {
+                      treePageRef.current.handleExport();
+                    } else {
+                      console.warn("Древо еще не загружено или не в фокусе");
+                    }
+                  },
+                  zoomIn: () => {
+                    treePageRef.current?.zoomIn(); // Убедись, что имя рефа совпадает!
+                  },
+                  zoomOut: () => treePageRef.current?.zoomOut(),
+                  fitView: () => treePageRef.current?.fitView(),
+                }}
+              />
+            )}
+
             {/* 2. Если мы в галерее, показываем фильтры прямо здесь */}
             {isGalleryPage && (
               <GalleryToolbar
@@ -356,7 +451,7 @@ export default function MainLayout() {
             )}
 
             {/* Заголовок для остальных страниц */}
-            {!isGalleryPage && location.pathname !== "/" && (
+            {!isGalleryPage && !match && location.pathname !== "/" && (
               <Box
                 sx={{
                   display: "flex",
@@ -376,7 +471,18 @@ export default function MainLayout() {
           changesCount={changesCount}
         />
 
-        <Box component="main" sx={{ flexGrow: 1, pt: 1, pr: 3, pb: 3, pl: 3 }}>
+        <Box
+          component="main"
+          sx={{
+            flexGrow: 1,
+            pt: 1,
+            pr: 1,
+            pb: 3,
+            pl: 1,
+            width: "calc(100% - 64px)",
+            // height: "100vh",
+          }}
+        >
           <DrawerHeader />
           <UpdateBanner onOpenSettings={() => navigate("/settings")} />
           <Routes>
@@ -417,7 +523,31 @@ export default function MainLayout() {
               }
             />
             <Route path="/people" element={<PeopleListPage />} />
-            <Route path="/person/:id" element={<PersonPage />} />
+            <Route
+              path="/person/:id"
+              element={
+                <PersonPage
+                  ref={personPageRef}
+                  activeElement={activeElement}
+                  galleryProps={{
+                    search: galleryPersonSearch,
+                    groupBy: galleryGroupBy,
+                    sortDir: gallerySortDir,
+                    uploadTrigger: uploadTrigger,
+                  }}
+                  bioProps={{
+                    isEditing: isBioEditing,
+                    setIsEditing: setIsBioEditing,
+                    execRef: bioExecRef,
+                    requestToggleRef: bioRequestToggleRef, // Передаем реф для регистрации функции
+                  }}
+                  treeProps={{
+                    mode: treeMode,
+                    treePageRef: treePageRef, // Передаем реф
+                  }}
+                />
+              }
+            />
             <Route path="/archive" element={<ArchivedPeoplePage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/photoUploader" element={<PhotoUploader />} />
