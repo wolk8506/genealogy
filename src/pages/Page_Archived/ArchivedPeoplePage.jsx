@@ -30,6 +30,7 @@ import {
   Divider,
   Chip,
   useMediaQuery,
+  Alert,
 } from "@mui/material";
 import {
   Archive as ArchiveIcon,
@@ -43,15 +44,18 @@ import PersonAvatar from "../../components/PersonAvatar";
 import ExportConfirmModal from "../../components/ExportConfirmModal";
 import { exportPeopleToZip } from "../utils/exportToZip";
 import { useTheme } from "@mui/material/styles";
-import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
-import { Fab, Zoom } from "@mui/material";
+
 import ErrorIcon from "@mui/icons-material/Error";
 import CameraAltIcon from "@mui/icons-material/CameraAlt";
 import PieChartIcon from "@mui/icons-material/PieChart";
 import PersonIcon from "@mui/icons-material/Person";
 import PhotoConverterModal from "./PhotoConverterModal";
 import SettingsIcon from "@mui/icons-material/Settings";
-import FolderSharedIcon from "@mui/icons-material/FolderShared";
+import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
+import SdStorageIcon from "@mui/icons-material/SdStorage";
+import AccountTreeIcon from "@mui/icons-material/AccountTree";
+import CollectionsIcon from "@mui/icons-material/Collections";
+import SettingsSuggestIcon from "@mui/icons-material/SettingsSuggest";
 import SaveIcon from "@mui/icons-material/Save";
 import PhotoSizeSelectLargeIcon from "@mui/icons-material/PhotoSizeSelectLarge";
 import PhotoLibraryIcon from "@mui/icons-material/PhotoLibrary";
@@ -61,8 +65,17 @@ import FolderOpenIcon from "@mui/icons-material/FolderOpen";
 import AutoFixHighIcon from "@mui/icons-material/AutoFixHigh";
 import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 import { ImportDecisionModal } from "../Page_Settings/ImportDecisionModal";
+import { ButtonScrollTop } from "../../components/ButtonScrollTop";
+import { alpha } from "@mui/material/styles";
+
+// Иконки
+
+import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 
 export default function ArchivePage() {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === "dark";
+  const isSmall = useMediaQuery(theme.breakpoints.down("md"));
   const [people, setPeople] = useState([]);
   const [tab, setTab] = useState(0);
   const [selected, setSelected] = useState([]);
@@ -71,7 +84,7 @@ export default function ArchivePage() {
   const [isSaving, setIsSaving] = useState(false);
   const [saveDone, setSaveDone] = useState(false);
   const [search, setSearch] = useState("");
-  const [showScrollTop, setShowScrollTop] = useState(false);
+
   const [exportStatus, setExportStatus] = useState("Подготовка архива...");
   const [exportError, setExportError] = useState(false);
   const [sizes, setSizes] = useState({});
@@ -115,9 +128,7 @@ export default function ArchivePage() {
   });
   const [storageModalOpen, setStorageModalOpen] = useState(false);
   const [storageStats, setStorageStats] = useState(null);
-  const theme = useTheme();
-  const isDark = theme.palette.mode === "dark";
-  const isSmall = useMediaQuery(theme.breakpoints.down("md"));
+
   //----------
   // Загрузка при старте
   useEffect(() => {
@@ -267,7 +278,6 @@ export default function ArchivePage() {
         basePath: basePath,
         defaultFilename: `Full_Backup_${Date.now()}.zip`,
         onProgress: (payload) => {
-          console.log(payload.message);
           setArchiveProgress((prev) => ({
             ...prev,
             ...payload,
@@ -340,17 +350,6 @@ export default function ArchivePage() {
     return Math.round(archiveProgress.percent || 0);
   })();
 
-  // Вычисляем общий размер выбранных людей (сумма МБ)
-  const totalSelectedSize = useMemo(() => {
-    return selected
-      .reduce((acc, id) => {
-        const personData = sizes[id];
-        const sizeValue = personData ? parseFloat(personData.size) : 0;
-        return acc + sizeValue;
-      }, 0)
-      .toFixed(2);
-  }, [selected, sizes]);
-
   // Вычисляем общее количество фото выбранных (по оригиналам)
   const totalSelectedPhotos = useMemo(() => {
     return selected.reduce((acc, id) => {
@@ -358,18 +357,6 @@ export default function ArchivePage() {
       return acc + (personData ? parseInt(personData.count, 10) : 0);
     }, 0);
   }, [selected, sizes]);
-
-  useEffect(() => {
-    const handleScroll = () => {
-      setShowScrollTop(window.scrollY > 300);
-    };
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
-
-  const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  };
 
   useEffect(() => {
     loadAll();
@@ -601,14 +588,98 @@ export default function ArchivePage() {
     }
   };
 
-  const handleOpenStorageInfo = async () => {
-    const data = await window.appAPI.getDetailedStorageStats();
-    setStorageStats(data);
-    setStorageModalOpen(true);
+  // Функция для форматирования размера
+  const formatSize = (bytes) => {
+    return (bytes / (1024 * 1024)).toFixed(2) + " МБ";
+  };
+  // _________________________
+  const [diskInfo, setDiskInfo] = useState({ total: 0, free: 0 });
+  const [expanded, setExpanded] = useState(false);
+
+  const formatStorage = (mb) => {
+    const val = parseFloat(mb);
+    if (!val || isNaN(val)) return "0 GB";
+    if (val < 1024) return `${val.toFixed(1)} MB`;
+    return `${(val / 1024).toFixed(1)} GB`;
   };
 
-  // Функция для форматирования размера
-  const formatSize = (bytes) => (bytes / (1024 * 1024)).toFixed(2) + " МБ";
+  useEffect(() => {
+    const loadAllData = async () => {
+      try {
+        // 1. Запрос общего состояния диска (то, что мы делали для полоски)
+        const diskData = await window.electronAPI.getDiskUsage();
+        if (diskData) setDiskInfo(diskData);
+
+        // 2. Запрос детальной статистики (то, что раньше было в handleOpenStorageInfo)
+        const detailedData = await window.appAPI.getDetailedStorageStats();
+        if (detailedData) setStorageStats(detailedData);
+      } catch (error) {
+        console.error("Ошибка загрузки статистики:", error);
+      }
+    };
+
+    loadAllData();
+
+    // Если у тебя есть интервал обновления, можно оставить его
+    const interval = setInterval(loadAllData, 60000); // Обновлять раз в минуту
+    return () => clearInterval(interval);
+  }, []);
+
+  // Основные переменные для расчетов
+  const total = diskInfo.total || 1;
+  const free = diskInfo.free;
+  const library = parseFloat(totalSize) || 0;
+
+  // "Другое" — это (Всего - Свободно - Моя библиотека)
+  const other = Math.max(0, total - free - library);
+
+  // Проценты для полоски
+  const libPct = (library / total) * 100;
+  const otherPct = (other / total) * 100;
+
+  function StatRow({ icon, label, value }) {
+    return (
+      <ListItem disableGutters>
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            gap: 1.5,
+            width: "100%",
+          }}
+        >
+          <Box
+            sx={{
+              display: "flex",
+              p: 0.5,
+              bgcolor: "action.hover",
+              borderRadius: 1,
+            }}
+          >
+            {icon}
+          </Box>
+          <Box sx={{ flexGrow: 1 }}>
+            <Typography
+              variant="caption"
+              sx={{
+                color: "text.secondary",
+                display: "block",
+                lineHeight: 1.2,
+              }}
+            >
+              {label}
+            </Typography>
+            <Typography
+              variant="body2"
+              sx={{ fontWeight: 700, fontSize: "0.8rem" }}
+            >
+              {value}
+            </Typography>
+          </Box>
+        </Box>
+      </ListItem>
+    );
+  }
 
   return (
     <Box sx={{ p: 0 }}>
@@ -708,15 +779,6 @@ export default function ArchivePage() {
                     gap: 2,
                   }}
                 >
-                  {/* <span
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 3,
-                    }}
-                  >
-                    <FolderIcon sx={{ fontSize: 16 }} /> {totalSelectedSize} МБ
-                  </span> */}
                   <span
                     style={{
                       display: "flex",
@@ -974,286 +1036,968 @@ export default function ArchivePage() {
           >
             <StorageIcon color="primary" /> Управление данными и медиа
           </Typography>
-
-          <Grid container spacing={3}>
-            {/* ЛЕВАЯ КОЛОНКА: Основные инструменты */}
-            <Grid item xs={12} md={7}>
-              <Stack spacing={3}>
-                {/* КАРТОЧКА: Резервное копирование */}
-                <Card
-                  variant="outlined"
-                  sx={{
-                    borderRadius: 3,
-                    border: "1px solid",
-                    borderColor: "divider",
-                  }}
-                >
-                  <Box
+          <>
+            <Grid
+              container
+              spacing={3}
+              alignItems="flex-start"
+              justifyContent={"space-around"}
+            >
+              {/* ЛЕВАЯ КОЛОНКА (например, 7 из 12) */}
+              <Grid item xs={12} md={7}>
+                <Stack spacing={3}>
+                  {/* КАРТОЧКА: Резервное копирование */}
+                  <Card
+                    variant="outlined"
                     sx={{
-                      p: 2,
-                      bgcolor: "action.hover",
-                      borderBottom: "1px solid",
+                      width: "600px",
+                      borderRadius: 3,
+                      border: "1px solid",
                       borderColor: "divider",
+                      overflow: "hidden",
+                      bgcolor: "background.paper",
+                    }}
+                  >
+                    {/* ШАПКА */}
+                    <Box
+                      sx={{
+                        p: 2,
+                        bgcolor: "action.hover",
+                        borderBottom: "1px solid",
+                        borderColor: "divider",
+                        display: "flex",
+                        // alignItems: "center",
+                        gap: 1.5,
+                      }}
+                    >
+                      <PieChartIcon color="primary" sx={{ fontSize: 20 }} />
+                      <Typography
+                        variant="subtitle2"
+                        sx={{
+                          fontWeight: 800,
+                          textTransform: "uppercase",
+                          fontSize: "0.7rem",
+                          letterSpacing: 1,
+                        }}
+                      >
+                        Статистика хранилища
+                      </Typography>
+                    </Box>
+
+                    <Box sx={{ p: 2.5 }}>
+                      <Stack spacing={3}>
+                        {/* 1. ВИЗУАЛИЗАЦИЯ ДИСКА */}
+                        {/* 1. ВИЗУАЛИЗАЦИЯ ДИСКА */}
+                        <Box>
+                          <Stack
+                            direction="row"
+                            justifyContent="space-between"
+                            alignItems="center"
+                            sx={{ mb: 2 }}
+                          >
+                            <Stack
+                              direction="row"
+                              spacing={1}
+                              alignItems="center"
+                            >
+                              <StorageIcon
+                                sx={{
+                                  fontSize: 20,
+                                  color: "text.secondary",
+                                  opacity: 0.8,
+                                }}
+                              />
+                              <Box>
+                                <Typography
+                                  variant="caption"
+                                  sx={{
+                                    color: "text.secondary",
+                                    fontWeight: 700,
+                                    textTransform: "uppercase",
+                                    fontSize: "0.6rem",
+                                    letterSpacing: 0.5,
+                                  }}
+                                >
+                                  Системный том
+                                </Typography>
+                                <Typography
+                                  variant="subtitle1"
+                                  sx={{ fontWeight: 800, lineHeight: 1 }}
+                                >
+                                  {formatStorage(total)}
+                                </Typography>
+                              </Box>
+                            </Stack>
+
+                            <Box sx={{ textAlign: "right" }}>
+                              <Typography
+                                variant="caption"
+                                sx={{
+                                  color: "primary.main",
+                                  fontWeight: 800,
+                                  bgcolor: alpha(
+                                    theme.palette.primary.main,
+                                    0.1,
+                                  ),
+                                  px: 1,
+                                  py: 0.2,
+                                  borderRadius: 1,
+                                }}
+                              >
+                                Занято:{" "}
+                                {(((total - free) / total) * 100).toFixed(0)}%
+                              </Typography>
+                            </Box>
+                          </Stack>
+
+                          {/* Полоска прогресса (Трёхцветная) */}
+                          <Box
+                            sx={{
+                              height: 14,
+                              width: "100%",
+                              // alignItems: "center",
+                              bgcolor: alpha(theme.palette.divider, 0.2),
+                              borderRadius: 7,
+                              overflow: "hidden",
+                              display: "flex",
+                              boxShadow: `inset 0 1px 3px ${alpha("#000", 0.1)}`,
+                              mb: 3,
+                            }}
+                          >
+                            {/* Библиотека */}
+                            <Box
+                              sx={{
+                                width: `${libPct}%`,
+                                bgcolor: "primary.main",
+                                transition: "width 1s",
+                              }}
+                            />
+                            {/* Другие файлы */}
+                            <Box
+                              sx={{
+                                width: `${otherPct}%`,
+                                bgcolor: alpha(
+                                  theme.palette.text.disabled,
+                                  0.5,
+                                ),
+                                borderLeft: "1px solid rgba(255,255,255,0.2)",
+                              }}
+                            />
+                            {/* Доступно (остаток полоски — автоматически прозрачный/фон) */}
+                          </Box>
+
+                          {/* ЛЕГЕНДА С ДВУХСТРОЧНОЙ ПОДПИСЬЮ */}
+                          <Grid container spacing={2}>
+                            {/* Библиотека */}
+                            <Grid item xs={4}>
+                              <Stack direction="row" spacing={1}>
+                                <Box
+                                  sx={{
+                                    // alignItems: "center",
+                                    width: 10,
+                                    height: 10,
+                                    borderRadius: "2px",
+                                    bgcolor: "primary.main",
+                                    mt: 0.5,
+                                  }}
+                                />
+                                <Box>
+                                  <Typography
+                                    variant="caption"
+                                    sx={{
+                                      display: "block",
+                                      fontSize: "0.65rem",
+                                      fontWeight: 700,
+                                      lineHeight: 1.1,
+                                      color: "text.secondary",
+                                    }}
+                                  >
+                                    Файлы библиотеки
+                                  </Typography>
+                                  <Typography
+                                    variant="body2"
+                                    sx={{ fontWeight: 800 }}
+                                  >
+                                    {formatStorage(library)}
+                                  </Typography>
+                                </Box>
+                              </Stack>
+                            </Grid>
+
+                            {/* Другое */}
+                            <Grid item xs={4}>
+                              <Stack direction="row" spacing={1}>
+                                <Box
+                                  sx={{
+                                    width: 10,
+                                    height: 10,
+                                    borderRadius: "2px",
+                                    bgcolor: alpha(
+                                      theme.palette.text.disabled,
+                                      0.8,
+                                    ),
+                                    mt: 0.5,
+                                  }}
+                                />
+                                <Box>
+                                  <Typography
+                                    variant="caption"
+                                    sx={{
+                                      display: "block",
+                                      fontSize: "0.65rem",
+                                      fontWeight: 700,
+                                      lineHeight: 1.1,
+                                      color: "text.secondary",
+                                    }}
+                                  >
+                                    Система и кэш
+                                  </Typography>
+                                  <Typography
+                                    variant="body2"
+                                    sx={{ fontWeight: 800 }}
+                                  >
+                                    {formatStorage(total - free - library)}
+                                  </Typography>
+                                </Box>
+                              </Stack>
+                            </Grid>
+
+                            {/* Доступно */}
+                            <Grid item xs={4}>
+                              <Stack direction="row" spacing={1}>
+                                <Box
+                                  sx={{
+                                    width: 10,
+                                    height: 10,
+                                    borderRadius: "2px",
+                                    bgcolor: alpha(theme.palette.divider, 0.8),
+                                    mt: 0.5,
+                                    border: "1px solid divider",
+                                  }}
+                                />
+                                <Box>
+                                  <Typography
+                                    variant="caption"
+                                    sx={{
+                                      display: "block",
+                                      fontSize: "0.65rem",
+                                      fontWeight: 700,
+                                      lineHeight: 1.1,
+                                      color: "text.secondary",
+                                    }}
+                                  >
+                                    Доступно (прибл.)
+                                  </Typography>
+                                  <Typography
+                                    variant="body2"
+                                    sx={{
+                                      fontWeight: 800,
+                                      color:
+                                        free < 10240 ? "error.main" : "inherit",
+                                    }}
+                                  >
+                                    {formatStorage(free)}
+                                  </Typography>
+                                </Box>
+                              </Stack>
+                            </Grid>
+                          </Grid>
+                        </Box>
+
+                        <Divider sx={{ borderStyle: "dashed" }} />
+
+                        {/* 2. ПОДРОБНАЯ СТАТИСТИКА (ИЗ МОДАЛКИ) */}
+                        <Grid container spacing={9} justifyContent={"center"}>
+                          {/* Секция МЕДИА */}
+                          <Grid item xs={12} sm={6}>
+                            <Typography
+                              variant="overline"
+                              sx={{
+                                fontWeight: 900,
+                                color: "primary.main",
+                                ml: 1,
+                              }}
+                            >
+                              Медиа файлы
+                            </Typography>
+                            <List
+                              data-density="compact"
+                              sx={{ "& .MuiListItem-root": { px: 1, py: 0.5 } }}
+                            >
+                              <StatRow
+                                icon={
+                                  <CameraAltIcon
+                                    sx={{ fontSize: 18 }}
+                                    color="primary"
+                                  />
+                                }
+                                label="Оригиналы"
+                                value={formatSize(storageStats?.original || 0)}
+                              />
+                              <StatRow
+                                icon={
+                                  <PhotoSizeSelectLargeIcon
+                                    sx={{ fontSize: 18 }}
+                                    color="action"
+                                  />
+                                }
+                                label="Сжатые (WebP)"
+                                value={formatSize(storageStats?.webp || 0)}
+                              />
+                              <StatRow
+                                icon={
+                                  <PhotoLibraryIcon
+                                    sx={{ fontSize: 18 }}
+                                    color="disabled"
+                                  />
+                                }
+                                label="Превью (Thumbs)"
+                                value={formatSize(storageStats?.thumbs || 0)}
+                              />
+                            </List>
+                          </Grid>
+
+                          {/* Секция ДАННЫЕ */}
+                          <Grid item xs={12} sm={6}>
+                            <Typography
+                              variant="overline"
+                              sx={{
+                                fontWeight: 900,
+                                color: "secondary.main",
+                                ml: 1,
+                              }}
+                            >
+                              Инфо и БД
+                            </Typography>
+                            <List
+                              data-density="compact"
+                              sx={{ "& .MuiListItem-root": { px: 1, py: 0.5 } }}
+                            >
+                              <StatRow
+                                icon={
+                                  <DescriptionIcon
+                                    sx={{ fontSize: 18 }}
+                                    color="secondary"
+                                  />
+                                }
+                                label="Биографии (BIO)"
+                                value={formatSize(storageStats?.bio || 0)}
+                              />
+                              <StatRow
+                                icon={
+                                  <StorageIcon
+                                    sx={{ fontSize: 18 }}
+                                    color="success"
+                                  />
+                                }
+                                label="База данных"
+                                value={formatSize(storageStats?.db || 0)}
+                              />
+                              <Button
+                                fullWidth
+                                variant="text"
+                                size="small"
+                                startIcon={<FolderOpenIcon />}
+                                onClick={() => window.appAPI.openDataFolder()}
+                                sx={{
+                                  justifyContent: "flex-start",
+                                  mt: 1,
+                                  fontSize: "0.65rem",
+                                  opacity: 0.7,
+                                }}
+                              >
+                                Открыть директорию
+                              </Button>
+                            </List>
+                          </Grid>
+                        </Grid>
+
+                        <Divider />
+
+                        {/* 3. КНОПКИ ДЕЙСТВИЙ */}
+                        <Stack direction="row" spacing={2}>
+                          <Button
+                            fullWidth
+                            variant="contained"
+                            startIcon={<SaveIcon />}
+                            onClick={handleExportAll}
+                            sx={{
+                              borderRadius: 2,
+                              py: 1,
+                              boxShadow: "none",
+                              fontWeight: "bold",
+                            }}
+                          >
+                            Бэкап
+                          </Button>
+                          <Button
+                            fullWidth
+                            variant="outlined"
+                            startIcon={<RestoreIcon />}
+                            onClick={handleImportAll}
+                            sx={{ borderRadius: 2, py: 1, fontWeight: "bold" }}
+                          >
+                            Импорт
+                          </Button>
+                        </Stack>
+                      </Stack>
+                    </Box>
+                  </Card>
+
+                  {/* КАРТОЧКА: Настройки импорта */}
+                  <Card
+                    variant="outlined"
+                    sx={{
+                      borderRadius: 3,
+                      height: "100%", // Растягиваем по высоте родителя
+                      width: "600px",
                       display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
+                      flexDirection: "column",
+                      bgcolor: alpha(theme.palette.background.paper, 0.4),
+                    }}
+                  >
+                    <Box sx={{ p: 3, flexGrow: 1 }}>
+                      <Typography
+                        variant="subtitle1"
+                        sx={{
+                          fontWeight: 700,
+                          mb: 3,
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 1.5,
+                        }}
+                      >
+                        <SettingsIcon color="primary" /> Параметры обработки
+                        новых фото
+                      </Typography>
+
+                      <Stack spacing={5}>
+                        {/* Секция: Оригиналы */}
+                        <Box>
+                          <FormControlLabel
+                            sx={{
+                              ml: 0,
+                              mb: 1,
+                              width: "100%",
+                              justifyContent: "space-between",
+                              flexDirection: "row-reverse",
+                            }}
+                            control={
+                              <Switch
+                                checked={importSettings.keepOriginals}
+                                onChange={(e) =>
+                                  handleSettingChange({
+                                    keepOriginals: e.target.checked,
+                                  })
+                                }
+                              />
+                            }
+                            label={
+                              <Typography
+                                variant="body2"
+                                sx={{ fontWeight: 700 }}
+                              >
+                                Сохранять исходные файлы
+                              </Typography>
+                            }
+                          />
+                          <Box
+                            sx={{
+                              display: "flex",
+                              gap: 1.5,
+                              p: 2,
+                              borderRadius: 2,
+                              bgcolor: alpha(theme.palette.info.main, 0.05),
+                              border: `1px solid ${alpha(theme.palette.info.main, 0.1)}`,
+                            }}
+                          >
+                            <InfoOutlinedIcon
+                              sx={{ fontSize: 18, color: "info.main", mt: 0.3 }}
+                            />
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                              sx={{ lineHeight: 1.4 }}
+                            >
+                              При включении система создаст копию в папке{" "}
+                              <b>"originals"</b>. Это гарантирует, что вы всегда
+                              сможете вернуться к исходному качеству, но требует
+                              в 2-3 раза больше дискового пространства.
+                            </Typography>
+                          </Box>
+                        </Box>
+
+                        {/* Секция: Качество WebP */}
+                        <Box>
+                          <Stack
+                            direction="row"
+                            justifyContent="space-between"
+                            alignItems="center"
+                            sx={{ mb: 2 }}
+                          >
+                            <Box>
+                              <Typography
+                                variant="body2"
+                                sx={{ fontWeight: 700 }}
+                              >
+                                Степень сжатия WebP
+                              </Typography>
+                              <Typography
+                                variant="caption"
+                                color="text.secondary"
+                              >
+                                Баланс между размером файла и четкостью
+                              </Typography>
+                            </Box>
+                            <Chip
+                              label={`${importSettings.quality}%`}
+                              size="small"
+                              color="primary"
+                              sx={{ fontWeight: 800, borderRadius: "6px" }}
+                            />
+                          </Stack>
+
+                          <Box sx={{ px: 1, mb: 3 }}>
+                            <Slider
+                              value={importSettings.quality}
+                              min={10}
+                              max={100}
+                              step={5}
+                              marks={[
+                                { value: 10, label: "Min" },
+                                { value: 80, label: "Рекомендуется" },
+                                { value: 100, label: "Max" },
+                              ]}
+                              onChange={(_, v) =>
+                                setImportSettings((p) => ({ ...p, quality: v }))
+                              }
+                              onChangeCommitted={(_, v) =>
+                                handleSettingChange({ quality: v })
+                              }
+                              sx={{
+                                "& .MuiSlider-markLabel": {
+                                  fontSize: "0.65rem",
+                                  fontWeight: 600,
+                                },
+                              }}
+                            />
+                          </Box>
+
+                          <Box
+                            sx={{
+                              p: 2,
+                              borderRadius: 2,
+                              bgcolor: alpha(theme.palette.warning.main, 0.05),
+                              border: `1px solid ${alpha(theme.palette.warning.main, 0.1)}`,
+                            }}
+                          >
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                              sx={{ display: "block", lineHeight: 1.4 }}
+                            >
+                              <b>80%</b> — золотая середина. Фото визуально
+                              неотличимы от оригинала, но весят на 60% меньше.
+                              При <b>100%</b> сжатие почти отсутствует, что
+                              увеличит нагрузку на сеть.
+                            </Typography>
+                          </Box>
+                        </Box>
+                      </Stack>
+                    </Box>
+                  </Card>
+                </Stack>
+              </Grid>
+
+              {/* ПРАВАЯ КОЛОНКА (например, 5 из 12) */}
+              <Grid item xs={12} md={5}>
+                <Stack spacing={3}>
+                  {/* Мастер оптимизации (оставляем без изменений) */}
+                  <Card
+                    sx={{
+                      width: "600px",
+                      p: 0,
+                      borderRadius: 3,
+                      border: "1px solid",
+                      borderColor: "divider",
+                      height: "530px",
+                      display: "flex",
+                      flexDirection: "column",
+                      overflow: "hidden",
+                      bgcolor: "background.paper",
+                      boxShadow: "0 4px 20px rgba(0,0,0,0.05)",
+                    }}
+                  >
+                    {/* ШАПКА */}
+                    <Box
+                      sx={{
+                        p: 2,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 1.5,
+                        bgcolor: "action.hover",
+                        borderBottom: "1px solid",
+                        borderColor: "divider",
+                      }}
+                    >
+                      <AutoFixHighIcon color="primary" sx={{ fontSize: 18 }} />
+                      <Typography
+                        variant="subtitle2"
+                        sx={{
+                          fontWeight: 800,
+                          textTransform: "uppercase",
+                          fontSize: "0.7rem",
+                          letterSpacing: 1,
+                        }}
+                      >
+                        Интеллектуальный помощник
+                      </Typography>
+                    </Box>
+
+                    <Box
+                      sx={{
+                        p: 3,
+                        flexGrow: 1,
+                        display: "flex",
+                        flexDirection: "column",
+                        justifyContent: "space-between",
+                      }}
+                    >
+                      {/* ЦЕНТРАЛЬНЫЙ БЛОК: Иконка и Описание */}
+                      <Box sx={{ textAlign: "center", mb: 3 }}>
+                        <Box
+                          sx={{
+                            position: "relative",
+                            display: "inline-flex",
+                            mb: 2,
+                            "&::after": {
+                              content: '""',
+                              position: "absolute",
+                              // width: "100%",
+                              height: "100%",
+                              bgcolor: "primary.main",
+                              filter: "blur(35px)",
+                              opacity: 0.15,
+                              zIndex: 0,
+                            },
+                          }}
+                        >
+                          <AutoFixHighIcon
+                            sx={{
+                              fontSize: 80,
+                              color: "primary.main",
+                              position: "relative",
+                              zIndex: 1,
+                            }}
+                          />
+                        </Box>
+
+                        <Typography
+                          variant="h6"
+                          sx={{ fontWeight: 900, mb: 1 }}
+                        >
+                          Мастер оптимизации
+                        </Typography>
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            color: "text.secondary",
+                            lineHeight: 1.5,
+                            px: 1,
+                          }}
+                        >
+                          Автоматизированная система подготовки медиа-файлов для
+                          быстрой работы архива.
+                        </Typography>
+                      </Box>
+
+                      {/* СПИСОК ФУНКЦИЙ: Заполняет пространство */}
+                      <Stack spacing={1} sx={{ mb: "auto" }}>
+                        {[
+                          {
+                            title: "Конвертация в WebP",
+                            desc: "Уменьшение веса фото до 70% без потери четкости",
+                            icon: (
+                              <SdStorageIcon
+                                sx={{ fontSize: 18 }}
+                                color="primary"
+                              />
+                            ),
+                          },
+                          {
+                            title: "Генерация миниатюр",
+                            desc: "Мгновенная загрузка превью в дереве и списках",
+                            icon: (
+                              <CollectionsIcon
+                                sx={{ fontSize: 18 }}
+                                color="primary"
+                              />
+                            ),
+                          },
+                          {
+                            title: "Умное хранение",
+                            desc: "Разделение оригиналов и оптимизированных копий",
+                            icon: (
+                              <AccountTreeIcon
+                                sx={{ fontSize: 18 }}
+                                color="primary"
+                              />
+                            ),
+                          },
+                        ].map((item, i) => (
+                          <Box
+                            key={i}
+                            sx={{
+                              display: "flex",
+                              gap: 2,
+                              px: 1.5,
+                              pt: 1,
+                              pb: 0.5,
+                              borderRadius: 2,
+                              bgcolor: alpha(theme.palette.action.hover, 0.4),
+                            }}
+                          >
+                            <Box sx={{ mt: 0.5 }}>{item.icon}</Box>
+                            <Box>
+                              <Typography
+                                variant="caption"
+                                sx={{
+                                  fontWeight: 800,
+                                  display: "block",
+                                  color: "text.primary",
+                                  lineHeight: 1,
+                                }}
+                              >
+                                {item.title}
+                              </Typography>
+                              <Typography
+                                variant="caption"
+                                sx={{
+                                  fontSize: "0.65rem",
+                                  color: "text.secondary",
+                                }}
+                              >
+                                {item.desc}
+                              </Typography>
+                            </Box>
+                          </Box>
+                        ))}
+                      </Stack>
+
+                      {/* НИЖНИЙ БЛОК */}
+                      <Box sx={{ mt: 3 }}>
+                        <Button
+                          fullWidth
+                          variant="contained"
+                          // size="large"
+                          startIcon={<SettingsSuggestIcon />}
+                          onClick={() => setConverterOpen(true)}
+                          sx={{
+                            // py: 2,
+                            borderRadius: 3,
+                            fontWeight: 800,
+                            fontSize: "0.9rem",
+                            textTransform: "none",
+                            boxShadow: `0 8px 20px ${alpha(theme.palette.primary.main, 0.25)}`,
+                            "&:hover": {
+                              bgcolor: "primary.dark",
+                              transform: "translateY(-2px)",
+                            },
+                            transition: "all 0.2s",
+                          }}
+                        >
+                          Настроить и запустить
+                        </Button>
+                      </Box>
+                    </Box>
+                  </Card>
+
+                  {/* Опасная зона */}
+                  <Card
+                    variant="outlined"
+                    sx={{
+                      // width: "100%",
+                      width: "600px",
+                      p: 2.5,
+                      borderRadius: 3,
+                      border: "1px dashed",
+                      borderColor: "error.main",
+                      bgcolor: alpha(theme.palette.error.main, 0.02),
+                      flexGrow: 1,
                     }}
                   >
                     <Typography
                       variant="subtitle2"
                       sx={{
-                        fontWeight: 700,
-                        textTransform: "uppercase",
-                        fontSize: "0.75rem",
-                        letterSpacing: 1,
-                      }}
-                    >
-                      Инструменты архива
-                    </Typography>
-                    <Chip
-                      label={totalSize ? `${totalSize} MB` : "..."}
-                      size="small"
-                      color="primary"
-                      variant="outlined"
-                      icon={<FolderSharedIcon />}
-                      onClick={handleOpenStorageInfo}
-                      sx={{
-                        fontWeight: "bold",
-                        cursor: "pointer",
-                        "&:hover": { bgcolor: "primary.light", color: "white" },
-                        p: 1.7,
-                      }}
-                    />
-                  </Box>
-                  <Box sx={{ p: 2.5 }}>
-                    <Grid container spacing={2}>
-                      <Grid item xs={6}>
-                        <Button
-                          fullWidth
-                          variant="contained"
-                          startIcon={<SaveIcon />}
-                          onClick={handleExportAll}
-                          sx={{ borderRadius: 2, py: 1.2, boxShadow: "none" }}
-                        >
-                          Создать бэкап
-                        </Button>
-                      </Grid>
-                      <Grid item xs={6}>
-                        <Button
-                          fullWidth
-                          variant="outlined"
-                          startIcon={<RestoreIcon />}
-                          onClick={handleImportAll}
-                          sx={{ borderRadius: 2, py: 1.2 }}
-                        >
-                          Восстановить
-                        </Button>
-                      </Grid>
-                    </Grid>
-                  </Box>
-                </Card>
-
-                {/* КАРТОЧКА: Настройки импорта */}
-                <Card variant="outlined" sx={{ borderRadius: 3 }}>
-                  <Box sx={{ p: 2.5 }}>
-                    <Typography
-                      variant="subtitle1"
-                      sx={{
-                        fontWeight: 700,
-                        mb: 2.5,
+                        fontWeight: 800,
+                        color: "error.main",
+                        mb: 2,
                         display: "flex",
                         alignItems: "center",
                         gap: 1,
+                        textTransform: "uppercase",
+                        letterSpacing: 1,
                       }}
                     >
-                      <SettingsIcon fontSize="small" color="action" /> Параметры
-                      обработки для новых фото
+                      <WarningAmberIcon fontSize="small" /> Опасная зона
                     </Typography>
 
-                    <Stack spacing={4}>
-                      <FormControlLabel
+                    <Stack spacing={2.5}>
+                      {/* Блок Оригиналы */}
+                      <Box
                         sx={{
-                          ml: 0,
-                          width: "100%",
-                          justifyContent: "space-between",
-                          flexDirection: "row-reverse",
+                          p: 2,
+                          borderRadius: 2,
+                          bgcolor: isDark ? alpha("#000", 0.2) : "#fff",
+                          border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
                         }}
-                        control={
-                          <Switch
-                            checked={importSettings.keepOriginals}
-                            onChange={(e) =>
-                              handleSettingChange({
-                                keepOriginals: e.target.checked,
-                              })
-                            }
-                          />
-                        }
-                        label={
-                          <Box>
-                            <Typography
-                              variant="body2"
-                              sx={{ fontWeight: 600 }}
-                            >
-                              Сохранять оригиналы
-                            </Typography>
-                            <Typography
-                              variant="caption"
-                              color="text.secondary"
-                            >
-                              Хранить исходники в папке "original"
-                            </Typography>
-                          </Box>
-                        }
-                      />
-
-                      <Box>
-                        <Stack
-                          direction="row"
-                          justifyContent="space-between"
-                          sx={{ mb: 1 }}
+                      >
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            fontWeight: 700,
+                            color: "text.primary",
+                            display: "block",
+                            mb: 0.5,
+                          }}
                         >
-                          <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                            Качество WebP
-                          </Typography>
-                          <Chip
-                            label={`${importSettings.quality}%`}
-                            size="small"
-                            color="primary"
-                            sx={{ fontWeight: 800 }}
-                          />
-                        </Stack>
-                        <Slider
-                          value={importSettings.quality}
-                          min={10}
-                          max={100}
-                          step={5}
-                          marks={[
-                            { value: 10, label: "10" },
-                            { value: 80, label: "80" },
-                            { value: 100, label: "100" },
-                          ]}
-                          onChange={(_, v) =>
-                            setImportSettings((p) => ({ ...p, quality: v }))
-                          }
-                          onChangeCommitted={(_, v) =>
-                            handleSettingChange({ quality: v })
-                          }
-                        />
+                          ОРИГИНАЛЬНЫЕ ФОТО
+                        </Typography>
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            color: "text.secondary",
+                            display: "block",
+                            mb: 1.5,
+                            lineHeight: 1.3,
+                          }}
+                        >
+                          Занимают много места, но хранят исходное качество.
+                          <Box
+                            component="span"
+                            sx={{ color: "error.main", fontWeight: 600 }}
+                          >
+                            {" "}
+                            Удаление необратимо
+                          </Box>{" "}
+                          — вернуть качество после будет невозможно.
+                        </Typography>
+                        <Button
+                          fullWidth
+                          size="small"
+                          color="error"
+                          variant="outlined"
+                          onClick={() => handleClearData("originals")}
+                          sx={{
+                            borderRadius: "8px",
+                            fontWeight: 700,
+                            textTransform: "none",
+                          }}
+                        >
+                          Удалить оригиналы
+                        </Button>
                       </Box>
-                    </Stack>
-                  </Box>
-                </Card>
-              </Stack>
-            </Grid>
 
-            {/* ПРАВАЯ КОЛОНКА: Оптимизация и Опасная зона */}
-            <Grid item xs={12} md={5}>
-              <Stack spacing={3} sx={{ height: "100%" }}>
-                {/* Оптимизация */}
-                <Card
-                  sx={{
-                    p: 2.5,
-                    borderRadius: 3,
-                    bgcolor: "primary.main",
-                    color: "primary.contrastText",
-                    display: "flex",
-                    flexDirection: "column",
-                    justifyContent: "center",
-                    textAlign: "center",
-                  }}
-                >
-                  <Typography
-                    variant="subtitle1"
-                    sx={{ fontWeight: 700, mb: 1 }}
-                  >
-                    Мастер оптимизации
-                  </Typography>
-                  <Typography variant="caption" sx={{ mb: 2, opacity: 0.9 }}>
-                    Автоматическое создание WebP версий и миниатюр для всей
-                    библиотеки
-                  </Typography>
-                  <Button
-                    variant="contained"
-                    color="secondary"
-                    startIcon={<AutoFixHighIcon />}
-                    onClick={() => setConverterOpen(true)}
-                    sx={{
-                      borderRadius: 2,
-                      fontWeight: 700,
-                      bgcolor: "white",
-                      color: "primary.main",
-                      "&:hover": { bgcolor: "#f0f0f0" },
-                    }}
-                  >
-                    Запустить анализ
-                  </Button>
-                </Card>
-
-                {/* Опасная зона */}
-                <Card
-                  variant="outlined"
-                  sx={{
-                    p: 2.5,
-                    borderRadius: 3,
-                    border: "1px dashed",
-                    borderColor: "error.main",
-                    bgcolor: "rgba(211, 47, 47, 0.03)",
-                    flexGrow: 1,
-                  }}
-                >
-                  <Typography
-                    variant="subtitle2"
-                    sx={{
-                      fontWeight: 800,
-                      color: "error.main",
-                      mb: 11,
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 1,
-                    }}
-                  >
-                    <WarningAmberIcon fontSize="small" /> Опасная зона
-                  </Typography>
-
-                  <Stack spacing={2}>
-                    <Stack direction="row" spacing={1}>
-                      <Button
-                        fullWidth
-                        size="small"
-                        color="error"
-                        variant="outlined"
-                        onClick={() => handleClearData("originals")}
-                        sx={{ fontSize: "0.7rem", fontWeight: 700 }}
+                      {/* Блок Кэш */}
+                      <Box
+                        sx={{
+                          p: 2,
+                          borderRadius: 2,
+                          bgcolor: isDark ? alpha("#000", 0.2) : "#fff",
+                          border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+                        }}
                       >
-                        Очистить оригиналы
-                      </Button>
-                      <Button
-                        fullWidth
-                        size="small"
-                        color="error"
-                        variant="outlined"
-                        onClick={() => handleClearData("cache")}
-                        sx={{ fontSize: "0.7rem", fontWeight: 700 }}
-                      >
-                        Очистить кэш
-                      </Button>
-                    </Stack>
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            fontWeight: 700,
+                            color: "text.primary",
+                            display: "block",
+                            mb: 0.5,
+                          }}
+                        >
+                          ВРЕМЕННЫЙ КЭШ (WEB-ВЕРСИИ)
+                        </Typography>
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            color: "text.secondary",
+                            display: "block",
+                            mb: 1.5,
+                            lineHeight: 1.3,
+                          }}
+                        >
+                          Используется для быстрой загрузки превью в браузере.
+                          Можно безопасно удалить для очистки места, кэш
+                          пересоберется автоматически при просмотре.
+                        </Typography>
+                        <Button
+                          fullWidth
+                          size="small"
+                          color="error"
+                          variant="outlined"
+                          onClick={() => handleClearData("cache")}
+                          sx={{
+                            borderRadius: "8px",
+                            fontWeight: 700,
+                            textTransform: "none",
+                          }}
+                        >
+                          Удалить кэш
+                        </Button>
+                      </Box>
 
-                    <Button
-                      fullWidth
-                      color="error"
-                      variant="contained"
-                      startIcon={<DeleteForeverIcon />}
-                      onClick={() => setResetDialogOpen(true)}
-                      sx={{ py: 1.5, fontWeight: 700, boxShadow: "none" }}
-                    >
-                      Полный сброс базы
-                    </Button>
-                  </Stack>
-                </Card>
-              </Stack>
+                      {/* Финальное предупреждение и Сброс */}
+                      <Stack spacing={1}>
+                        <Box
+                          sx={{
+                            display: "flex",
+                            alignItems: "flex-start",
+                            gap: 1,
+                            px: 1,
+                            color: "error.main",
+                          }}
+                        >
+                          <InfoOutlinedIcon sx={{ fontSize: 16, mt: 0.2 }} />
+                          <Typography
+                            variant="caption"
+                            sx={{
+                              fontWeight: 600,
+                              fontStyle: "italic",
+                              lineHeight: 1.2,
+                            }}
+                          >
+                            Перед удалением убедитесь, что у вас создана
+                            резервная копия данных на внешнем носителе!
+                          </Typography>
+                        </Box>
+
+                        <Button
+                          fullWidth
+                          color="error"
+                          variant="contained"
+                          startIcon={<DeleteForeverIcon />}
+                          onClick={() => setResetDialogOpen(true)}
+                          sx={{
+                            py: 1.5,
+                            borderRadius: 2,
+                            fontWeight: 800,
+                            boxShadow: "none",
+                            "&:hover": {
+                              bgcolor: "error.dark",
+                              boxShadow: `0 4px 12px ${alpha(theme.palette.error.main, 0.3)}`,
+                            },
+                          }}
+                        >
+                          Полный сброс базы данных
+                        </Button>
+                      </Stack>
+                    </Stack>
+                  </Card>
+                </Stack>
+              </Grid>
             </Grid>
-          </Grid>
+          </>
 
           <PhotoConverterModal
             open={converterOpen}
@@ -1544,21 +2288,8 @@ export default function ArchivePage() {
           </Box>
         )}
       </Backdrop>
-      <Zoom in={showScrollTop}>
-        <Fab
-          color="primary"
-          size="small"
-          onClick={scrollToTop}
-          sx={{
-            position: "fixed",
-            bottom: 24,
-            right: 24,
-            zIndex: 1000,
-          }}
-        >
-          <KeyboardArrowUpIcon />
-        </Fab>
-      </Zoom>
+
+      <ButtonScrollTop />
     </Box>
   );
 }

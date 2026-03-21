@@ -16,7 +16,7 @@ ipcMain.handle("photos:saveFile", async (event, id, filename, buffer) => {
     "people",
     String(id),
     "photos",
-    filename
+    filename,
   );
 
   await fs.promises.mkdir(path.dirname(file), { recursive: true });
@@ -29,7 +29,7 @@ ipcMain.handle("photos:write", async (event, personId, data) => {
     "Genealogy",
     "people",
     String(personId),
-    "photos.json"
+    "photos.json",
   );
 
   await fs.promises.mkdir(path.dirname(filePath), { recursive: true });
@@ -68,7 +68,7 @@ ipcMain.handle("photos:getPath", async (event, photoId) => {
           peopleDir,
           folder,
           "photos",
-          photo.filename
+          photo.filename,
         );
         return `file://${photoPath}`;
       }
@@ -87,10 +87,31 @@ ipcMain.handle("photos:save", async (event, id, photos) => {
     "Genealogy",
     "people",
     String(id),
-    "photos.json"
+    "photos.json",
   );
   await fs.promises.writeFile(file, JSON.stringify(photos, null, 2), "utf-8");
 });
+
+// ipcMain.handle("photos:save", async (event, id, photos) => {
+//   const file = path.join(
+//     app.getPath("documents"),
+//     "Genealogy",
+//     "people",
+//     String(id),
+//     "photos.json",
+//   );
+
+//   await fs.promises.writeFile(file, JSON.stringify(photos, null, 2), "utf-8");
+
+//   // Обновляем кэш тегов, чтобы фронтенд сразу видел изменения
+//   // Внутри photos:save после записи файла
+//   photos.forEach((p) => {
+//     p.hashtags?.forEach((tag) => globalHashtags.add(tag.trim().toLowerCase()));
+//     // И если парсишь из описания:
+//     const matches = p.description?.match(/#[\p{L}\d_]+/gu);
+//     matches?.forEach((tag) => globalHashtags.add(tag.toLowerCase()));
+//   });
+// });
 
 ipcMain.handle("photos:read", async (event, personId) => {
   const filePath = path.join(
@@ -98,7 +119,7 @@ ipcMain.handle("photos:read", async (event, personId) => {
     "Genealogy",
     "people",
     String(personId),
-    "photos.json"
+    "photos.json",
   );
 
   try {
@@ -109,3 +130,6 @@ ipcMain.handle("photos:read", async (event, personId) => {
     throw err;
   }
 });
+
+// МОДИФИЦИРУЕМ ТВОЙ СУЩЕСТВУЮЩИЙ КХЕНДЛЕР СОХРАНЕНИЯ
+// Чтобы при сохранении фото индекс обновлялся автоматически

@@ -11,19 +11,24 @@ import {
   ListItemIcon,
   ListItemText,
   Autocomplete,
+  Typography,
 } from "@mui/material";
 import { Box } from "@mui/material";
+import { alpha, useTheme } from "@mui/material/styles";
+import EditNoteIcon from "@mui/icons-material/EditNote";
+import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
+
+// ICON
 import BloodtypeIcon from "@mui/icons-material/Bloodtype";
-import ManIcon from "@mui/icons-material/Man";
 import VisibilityIcon from "@mui/icons-material/Visibility";
-import InfoIcon from "@mui/icons-material/Info";
-// import PersonIcon from "@mui/icons-material/Person";
-import FlagIcon from "@mui/icons-material/Flag";
-import PublicIcon from "@mui/icons-material/Public";
 import ColorLensIcon from "@mui/icons-material/ColorLens";
+import ManIcon from "@mui/icons-material/Man";
+import InfoIcon from "@mui/icons-material/Info";
+import FlagIcon from "@mui/icons-material/Flag";
 import PhoneIcon from "@mui/icons-material/Phone";
 import EmailIcon from "@mui/icons-material/Email";
 import FaceIcon from "@mui/icons-material/Face";
+
 import nationalities from "./nationalities.json";
 
 const FACT_TYPES = [
@@ -319,6 +324,8 @@ export default function FactsEditorDialog({
   onSave,
   onDelete,
 }) {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === "dark";
   const [type, setType] = useState(FACT_TYPES[0]);
   const [value, setValue] = useState("");
 
@@ -332,6 +339,7 @@ export default function FactsEditorDialog({
   const handleSave = () => {
     const v = value.trim();
     if (!v) return;
+
     onSave?.({ type, value: v });
     onClose?.();
   };
@@ -347,58 +355,75 @@ export default function FactsEditorDialog({
       onClose={onClose}
       PaperProps={{
         sx: {
-          borderRadius: "15px",
+          borderRadius: "20px",
+          backgroundImage: "none", // Убираем стандартное наложение в темной теме
+          bgcolor: isDark ? alpha(theme.palette.background.paper, 0.9) : "#fff",
+          backdropFilter: "blur(10px)", // Эффект размытия фона за диалогом
+          border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+          boxShadow: theme.shadows[20],
         },
       }}
       maxWidth="xs"
       fullWidth
     >
-      <DialogTitle>
-        {initialFact ? "Редактировать факт" : "Добавить факт"}
+      <DialogTitle
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          gap: 1.5,
+          pb: 1,
+          fontWeight: 600,
+        }}
+      >
+        {initialFact ? (
+          <EditNoteIcon color="primary" fontSize="large" />
+        ) : (
+          <AddCircleOutlineIcon color="primary" fontSize="large" />
+        )}
+        {initialFact ? "Редактировать факт" : "Новый факт"}
       </DialogTitle>
-      <DialogContent>
-        <Stack spacing={2} sx={{ mt: 1 }}>
+
+      <DialogContent sx={{ pt: "12px !important" }}>
+        <Stack spacing={3}>
+          {" "}
+          {/* Увеличили расстояние для "воздуха" */}
           <TextField
             select
-            label="Тип"
+            label="Выберите категорию"
             value={type}
             onChange={(e) => {
               setType(e.target.value);
               setValue("");
             }}
             size="small"
-            sx={{ width: "395px" }} // ширина поля, подбери по вкусу
+            fullWidth
             SelectProps={{
-              // меню (Paper) и рендер выбранного значения
               MenuProps: {
                 PaperProps: {
-                  sx: { borderRadius: "12px", minWidth: 240 },
+                  sx: {
+                    borderRadius: "16px",
+                    mt: 1,
+                    boxShadow: "0 8px 32px rgba(0,0,0,0.15)",
+                    border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+                  },
                 },
               },
               renderValue: (selected) => (
-                <Box
-                  sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 1,
-                    whiteSpace: "nowrap",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                  }}
-                >
-                  <Box sx={{ display: "flex", alignItems: "center" }}>
-                    {getIcon(selected)}
-                  </Box>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
                   <Box
-                    component="span"
                     sx={{
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
+                      display: "flex",
+                      color: theme.palette.primary.main,
+                      bgcolor: alpha(theme.palette.primary.main, 0.1),
+                      p: 0.5,
+                      borderRadius: "8px",
                     }}
                   >
-                    {selected}
+                    {getIcon(selected)}
                   </Box>
+                  <Typography variant="body2" fontWeight={500}>
+                    {selected}
+                  </Typography>
                 </Box>
               ),
             }}
@@ -407,34 +432,69 @@ export default function FactsEditorDialog({
               <MenuItem
                 key={t}
                 value={t}
-                sx={{ display: "flex", alignItems: "center" }}
+                sx={{
+                  mx: 1,
+                  my: 0.5,
+                  borderRadius: "8px",
+                  "&.Mui-selected": {
+                    bgcolor: alpha(theme.palette.primary.main, 0.1),
+                  },
+                }}
               >
-                <ListItemIcon sx={{ minWidth: 36 }}>{getIcon(t)}</ListItemIcon>
-                <ListItemText
-                  primary={t}
-                  primaryTypographyProps={{ noWrap: true }} // запрет переноса в пункте меню
-                />
+                <ListItemIcon
+                  sx={{ minWidth: 38, color: theme.palette.primary.main }}
+                >
+                  {getIcon(t)}
+                </ListItemIcon>
+                <ListItemText primary={t} />
               </MenuItem>
             ))}
           </TextField>
-          <FactInput
-            type={type}
-            value={value}
-            setValue={setValue}
-            gender={person.gender}
-          />
+          {/* Контейнер для FactInput, чтобы добавить ему легкий акцент */}
+          <Box
+            sx={{
+              p: 2,
+              borderRadius: "12px",
+              bgcolor: alpha(theme.palette.action.hover, 0.04),
+              border: `1px dashed ${alpha(theme.palette.divider, 0.2)}`,
+            }}
+          >
+            <FactInput
+              type={type}
+              value={value}
+              setValue={setValue}
+              gender={person.gender}
+            />
+          </Box>
         </Stack>
       </DialogContent>
-      <DialogActions sx={{ pr: "24px", pl: "24px", pb: "16px" }}>
+
+      <DialogActions sx={{ p: 3, pt: 1 }}>
         {initialFact && (
-          <Button color="error" onClick={handleDelete} sx={{ mr: "auto" }}>
+          <Button
+            variant="text"
+            color="error"
+            onClick={handleDelete}
+            sx={{ mr: "auto", borderRadius: "10px" }}
+          >
             Удалить
           </Button>
         )}
-        <Button onClick={onClose}>Отмена</Button>
-
-        <Button onClick={handleSave} variant="contained">
-          Сохранить
+        <Button onClick={onClose} sx={{ borderRadius: "10px", px: 3 }}>
+          Отмена
+        </Button>
+        <Button
+          onClick={handleSave}
+          variant="contained"
+          disableElevation
+          sx={{
+            borderRadius: "10px",
+            px: 4,
+            fontWeight: 600,
+            boxShadow: `0 4px 14px 0 ${alpha(theme.palette.primary.main, 0.39)}`,
+          }}
+        >
+          {initialFact ? "Обновить" : "Добавить"}
         </Button>
       </DialogActions>
     </Dialog>

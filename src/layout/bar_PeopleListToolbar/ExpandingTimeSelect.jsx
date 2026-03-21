@@ -64,17 +64,12 @@ const timeOptions = [
     icon: <CalendarMonthIcon fontSize="small" />,
     key: 4,
   },
-  {
-    value: "month",
-    label: "Месяц",
-    icon: <CalendarMonthIcon fontSize="small" />,
-    key: 5,
-  },
+
   {
     value: "year",
     label: "За год",
     icon: <EventNoteIcon fontSize="small" />, // Четкая иконка календаря с заметкой
-    key: 6,
+    key: 5,
   },
 ];
 
@@ -99,8 +94,8 @@ export default function ExpandingTimeSelect({
 
   return (
     <StyledContainer $expanded={isExpanded} onClick={handleOpen}>
-      <IconButton size="small" sx={{ color: "white", p: "9px" }}>
-        <BaseIcon fontSize="small" color={isExpanded ? "primary" : "inherit"} />
+      <IconButton size="small" sx={{ color: "white", p: "8px" }}>
+        <BaseIcon color={isExpanded ? "primary" : "inherit"} />
       </IconButton>
 
       {isExpanded && (

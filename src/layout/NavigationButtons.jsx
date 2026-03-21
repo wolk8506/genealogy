@@ -27,23 +27,23 @@ export default function NavigationButtons() {
       }}
     >
       <IconButton
-        sx={{ color: "white", p: "9px" }}
+        sx={{ color: "white", p: "8px" }}
         color={isDark ? "primary" : "default"}
         onClick={() => canGoBack && navigate(-1)}
         disabled={!canGoBack}
         size="small"
       >
-        <ArrowBackIosIcon fontSize="inherit" />
+        <ArrowBackIosIcon />
       </IconButton>
       <Divider orientation="vertical" variant="middle" flexItem />
       <IconButton
-        sx={{ color: "white", p: "9px" }}
+        sx={{ color: "white", p: "8px" }}
         color={isDark ? "primary" : "default"}
         onClick={() => canGoForward && navigate(1)}
         disabled={!canGoForward}
         size="small"
       >
-        <ArrowForwardIosIcon fontSize="inherit" />
+        <ArrowForwardIosIcon />
       </IconButton>
     </Box>
   );

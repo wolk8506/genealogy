@@ -18,7 +18,7 @@ import {
 } from "@mui/material";
 
 import DeleteIcon from "@mui/icons-material/Delete";
-import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
+// import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
 
 import { Badge } from "@mui/material";
 import DescriptionIcon from "@mui/icons-material/Description"; // Для биографии
@@ -26,6 +26,7 @@ import PhotoLibraryIcon from "@mui/icons-material/PhotoLibrary"; // Для фо�
 
 import appIcon from "../../img/app_icon.png";
 import { Link } from "react-router-dom";
+import { ButtonScrollTop } from "../../components/ButtonScrollTop";
 
 /* Аватар по ID фото */
 function PersonAvatar({ foto, initials }) {
@@ -85,7 +86,7 @@ export default function PeopleListPage({
 }) {
   const [people, setPeople] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showScrollTop, setShowScrollTop] = useState(false);
+  // const [showScrollTop, setShowScrollTop] = useState(false);
 
   const theme = useTheme();
   const isDark = theme.palette.mode === "dark";
@@ -112,13 +113,13 @@ export default function PeopleListPage({
     });
   }, []);
 
-  useEffect(() => {
-    const handleScroll = () => setShowScrollTop(window.scrollY > 300);
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+  // useEffect(() => {
+  //   const handleScroll = () => setShowScrollTop(window.scrollY > 300);
+  //   window.addEventListener("scroll", handleScroll);
+  //   return () => window.removeEventListener("scroll", handleScroll);
+  // }, []);
 
-  const scrollToTop = () => window.scrollTo({ top: 0, behavior: "smooth" });
+  // const scrollToTop = () => window.scrollTo({ top: 0, behavior: "smooth" });
 
   useEffect(() => {
     window.peopleAPI.getAll().then((data) => {
@@ -595,7 +596,7 @@ export default function PeopleListPage({
                                       alignItems="center"
                                       spacing={0.7}
                                       sx={{
-                                        color: "text.secondary",
+                                        // color: "text.secondary",
                                         bgcolor: isDark
                                           ? "rgba(255,255,255,0.05)"
                                           : "rgba(0,0,0,0.04)",
@@ -622,7 +623,7 @@ export default function PeopleListPage({
                                       alignItems="center"
                                       spacing={0.7}
                                       sx={{
-                                        color: "text.secondary",
+                                        // color: "text.secondary",
                                         bgcolor: isDark
                                           ? "rgba(255,255,255,0.05)"
                                           : "rgba(0,0,0,0.04)",
@@ -676,16 +677,7 @@ export default function PeopleListPage({
       </Stack>
 
       {/* Кнопка вверх */}
-      <Zoom in={showScrollTop}>
-        <Fab
-          color="primary"
-          size="small"
-          onClick={scrollToTop}
-          sx={{ position: "fixed", bottom: 24, right: 24, zIndex: 1000 }}
-        >
-          <KeyboardArrowUpIcon />
-        </Fab>
-      </Zoom>
+      <ButtonScrollTop />
     </>
   );
 }

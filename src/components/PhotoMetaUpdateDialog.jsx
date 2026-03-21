@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import {
   Dialog,
   DialogContent,
@@ -15,12 +15,16 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  Divider,
 } from "@mui/material";
-import { useTheme } from "@mui/material/styles";
+import { alpha } from "@mui/material/styles";
+import { useTheme, darken } from "@mui/material/styles";
 import CloseIcon from "@mui/icons-material/Close";
 import CustomDatePickerDialog from "./CustomDatePickerDialog";
 import EditIcon from "@mui/icons-material/Edit";
 import EditOffIcon from "@mui/icons-material/EditOff";
+import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
+import HashtagInput from "./HashtagInput";
 
 export default function PhotoMetaUpdateDialog({
   open, // Открыт ли диалог (openDialogUpdate)
@@ -45,6 +49,8 @@ export default function PhotoMetaUpdateDialog({
     filename: "",
     aspectRatio: "4/3",
   });
+
+  // --- СОСТОЯНИЕ ДЛЯ ХЕШТЕГОВ ---
 
   const [rename, setRename] = useState(false);
   const [newFilename, setNewFilename] = useState("");
@@ -113,6 +119,11 @@ export default function PhotoMetaUpdateDialog({
 
     try {
       const oldData = initialRef.current;
+      const extractedHashtags = local.description
+        ? (local.description.match(/#[\p{L}\d_]+/gu) || []).map((t) =>
+            t.toLowerCase(),
+          )
+        : [];
       const finalFilename = rename
         ? newFilename || oldData.filename
         : oldData.filename;
@@ -144,6 +155,7 @@ export default function PhotoMetaUpdateDialog({
         ...meta,
         ...local,
         filename: finalFilename,
+        hashtags: extractedHashtags,
       };
 
       // 3. Синхронизация JSON баз
@@ -182,6 +194,15 @@ export default function PhotoMetaUpdateDialog({
     }
   };
 
+  // --- ЛОГИКА #ХЕШТЕГОВ ---
+
+  const [uniqueTags, setUniqueTags] = useState([]);
+  useEffect(() => {
+    window.photoAPI.getGlobalHashtags().then((tags) => {
+      setUniqueTags(tags);
+    });
+  }, [open]);
+
   return (
     <Dialog
       open={open}
@@ -190,26 +211,48 @@ export default function PhotoMetaUpdateDialog({
       fullWidth
       PaperProps={{
         sx: {
-          borderRadius: "20px",
+          borderRadius: "24px",
           backgroundImage: "none",
+          bgcolor: isDark ? alpha(theme.palette.background.paper, 0.9) : "#fff",
+          backdropFilter: "blur(15px)",
+          border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+          boxShadow: theme.shadows[24],
           overflow: "hidden",
         },
       }}
     >
+      {/* Шапка диалога */}
       <Box
         sx={{
-          p: 2,
+          p: 2.5,
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          borderBottom: `1px solid ${theme.palette.divider}`,
-          bgcolor: isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.02)",
+          borderBottom: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+          bgcolor: isDark ? alpha("#fff", 0.02) : alpha("#000", 0.01),
         }}
       >
-        <Typography variant="h6" sx={{ fontWeight: 600, ml: 1 }}>
-          Редактирование фото
-        </Typography>
-        <IconButton onClick={onClose} size="small">
+        <Stack direction="row" alignItems="center" spacing={1.5}>
+          <Box
+            sx={{
+              p: 1,
+              borderRadius: "12px",
+              bgcolor: alpha(theme.palette.primary.main, 0.1),
+              color: theme.palette.primary.main,
+              display: "flex",
+            }}
+          >
+            <EditIcon />
+          </Box>
+          <Typography variant="h6" sx={{ fontWeight: 700 }}>
+            Редактирование фотографии
+          </Typography>
+        </Stack>
+        <IconButton
+          onClick={onClose}
+          size="small"
+          sx={{ borderRadius: "10px" }}
+        >
           <CloseIcon />
         </IconButton>
       </Box>
@@ -218,148 +261,170 @@ export default function PhotoMetaUpdateDialog({
         <Box
           sx={{ display: "flex", flexDirection: { xs: "column", md: "row" } }}
         >
+          {/* ЛЕВАЯ КОЛОНКА: Превью */}
           <Box
             sx={{
               flex: 1,
-              bgcolor: isDark ? "#121212" : "#f5f5f5",
+              bgcolor: isDark ? alpha("#000", 0.2) : "#f8f9fa",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              p: 3,
-              minHeight: 300,
+              p: 4,
+              minHeight: 400,
               position: "relative",
+              borderRight: {
+                md: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+              },
             }}
           >
             <Box
               component="img"
               src={previewUrl}
+              alt="Превью"
               sx={{
                 maxWidth: "100%",
-                maxHeight: 450,
+                maxHeight: 480,
                 objectFit: "contain",
-                borderRadius: "12px",
-                boxShadow: "0 10px 30px rgba(0,0,0,0.3)",
+                borderRadius: "16px",
+                boxShadow: "0 20px 40px rgba(0,0,0,0.25)",
                 transition: "transform 0.3s ease",
                 "&:hover": { transform: "scale(1.02)" },
               }}
             />
-            {/* Бейдж с форматом */}
+
+            {/* Информационный бейдж ID */}
             <Box
               sx={{
                 position: "absolute",
                 bottom: 20,
                 right: 20,
-                bgcolor: "rgba(0,0,0,0.6)",
-                color: "#fff",
-                // color: "red",
+                bgcolor: alpha("#000", 0.6),
+                color: alpha("#fff", 0.9),
                 px: 1.5,
-                py: 0.5,
-                borderRadius: "8px",
-                fontSize: "0.75rem",
-                backdropFilter: "blur(4px)",
+                py: 0.6,
+                borderRadius: "10px",
+                fontSize: "0.7rem",
+                fontWeight: 600,
+                letterSpacing: "0.5px",
+                backdropFilter: "blur(8px)",
+                border: `1px solid ${alpha("#fff", 0.1)}`,
               }}
             >
-              ID: {local?.id || "---"}
+              PHOTO ID: {local?.id || "---"}
             </Box>
           </Box>
 
-          <Box sx={{ flex: 1.2, p: 3 }}>
-            <Stack spacing={2}>
-              <TextField
-                label="Заголовок"
-                size="small"
-                fullWidth
-                variant="filled"
-                value={local.title}
-                onChange={(e) =>
-                  setLocal((s) => ({ ...s, title: e.target.value }))
-                }
-              />
+          {/* ПРАВАЯ КОЛОНКА: Форма редактирования */}
+          <Box sx={{ flex: 1.2, p: 4 }}>
+            <Stack spacing={3}>
+              {/* Секция: Метаданные */}
+              <Stack spacing={2.5}>
+                <TextField
+                  label="Заголовок"
+                  fullWidth
+                  variant="outlined"
+                  value={local.title}
+                  onChange={(e) =>
+                    setLocal((s) => ({ ...s, title: e.target.value }))
+                  }
+                  InputProps={{ sx: { borderRadius: "12px" } }}
+                />
 
-              <TextField
-                label="Описание"
-                size="small"
-                fullWidth
-                multiline
-                rows={2}
-                variant="filled"
-                value={local.description}
-                onChange={(e) =>
-                  setLocal((s) => ({ ...s, description: e.target.value }))
-                }
-              />
+                <HashtagInput
+                  value={local.description}
+                  onChange={(val) =>
+                    setLocal((s) => ({ ...s, description: val }))
+                  }
+                  suggestions={uniqueTags}
+                  placeholder="Описание и #теги..."
+                />
+              </Stack>
 
-              {mode === "global" && (
+              <Divider sx={{ opacity: 0.5 }} />
+
+              {/* Секция: Люди и папки */}
+              <Stack spacing={2.5}>
+                {mode === "global" && (
+                  <Autocomplete
+                    options={allPeople}
+                    getOptionLabel={(p) =>
+                      `${p.id} :: ${
+                        [p.firstName, p.lastName || p.maidenName]
+                          .filter(Boolean)
+                          .join(" ") || "Без имени"
+                      } `.trim()
+                    }
+                    value={allPeople.find((p) => p.id === local.owner) || null}
+                    onChange={(_, v) =>
+                      setLocal((s) => ({ ...s, owner: v ? v.id : null }))
+                    }
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        variant="outlined"
+                        label="Владелец (папка)"
+                      />
+                    )}
+                    sx={{
+                      "& .MuiOutlinedInput-root": { borderRadius: "12px" },
+                    }}
+                  />
+                )}
+
                 <Autocomplete
-                  size="small"
+                  multiple
                   options={allPeople}
                   getOptionLabel={(p) =>
-                    `${p.id} :: ${p.firstName} ${p.lastName || ""}`.trim()
+                    `${p.id} :: ${
+                      [p.firstName, p.lastName || p.maidenName]
+                        .filter(Boolean)
+                        .join(" ") || "Без имени"
+                    } `.trim()
                   }
-                  value={allPeople.find((p) => p.id === local.owner) || null}
+                  value={allPeople.filter((p) => local.people.includes(p.id))}
                   onChange={(_, v) =>
-                    setLocal((s) => ({ ...s, owner: v ? v.id : null }))
+                    setLocal((s) => ({ ...s, people: v.map((x) => x.id) }))
                   }
                   renderInput={(params) => (
                     <TextField
                       {...params}
-                      size="small"
-                      variant="filled"
-                      label="Владелец (папка)"
+                      variant="outlined"
+                      label="Кто на фото"
                     />
                   )}
+                  ChipProps={{ sx: { borderRadius: "8px", fontWeight: 500 } }}
+                  sx={{ "& .MuiOutlinedInput-root": { borderRadius: "12px" } }}
                 />
-              )}
+              </Stack>
 
-              <Autocomplete
-                multiple
-                size="small"
-                options={allPeople}
-                getOptionLabel={(p) =>
-                  `${p.id} :: ${p.firstName} ${p.lastName || ""}`.trim()
-                }
-                value={allPeople.filter((p) => local.people.includes(p.id))}
-                onChange={(_, v) =>
-                  setLocal((s) => ({ ...s, people: v.map((x) => x.id) }))
-                }
-                renderInput={(params) => (
-                  <TextField {...params} variant="filled" label="Кто на фото" />
-                )}
-              />
-
+              {/* Секция: Дата и Формат */}
               <Stack direction="row" spacing={2}>
                 <TextField
-                  size="small"
                   label="Дата снимка"
                   value={local.datePhoto}
                   onClick={() => setDatePickerOpen(true)}
                   fullWidth
-                  variant="filled"
-                  InputProps={{ readOnly: true }}
-                />
-                <CustomDatePickerDialog
-                  open={datePickerOpen}
-                  onClose={() => setDatePickerOpen(false)}
-                  initialDate={local.datePhoto}
-                  format="YYYY-MM-DD"
-                  showTime={true}
-                  onSave={(d) => {
-                    setLocal((s) => ({ ...s, datePhoto: d }));
-                    setDatePickerOpen(false);
+                  variant="outlined"
+                  InputProps={{
+                    readOnly: true,
+                    sx: { borderRadius: "12px" },
+                    startAdornment: (
+                      <CalendarMonthIcon
+                        sx={{ mr: 1, color: "action.active", fontSize: 20 }}
+                      />
+                    ),
                   }}
                 />
 
-                <FormControl
-                  size="small"
-                  variant="filled"
-                  sx={{ minWidth: 120 }}
-                >
+                <FormControl variant="outlined" sx={{ minWidth: 140 }}>
                   <InputLabel>Формат</InputLabel>
                   <Select
                     value={local.aspectRatio}
+                    label="Формат"
                     onChange={(e) =>
                       setLocal((s) => ({ ...s, aspectRatio: e.target.value }))
                     }
+                    sx={{ borderRadius: "12px" }}
                   >
                     <MenuItem value="4/3">4:3</MenuItem>
                     <MenuItem value="1/1">1:1</MenuItem>
@@ -369,18 +434,23 @@ export default function PhotoMetaUpdateDialog({
                 </FormControl>
               </Stack>
 
+              {/* Секция: Системное (Имя файла) */}
               <Box
                 sx={{
                   p: 2,
-                  borderRadius: 2,
-                  bgcolor: "action.hover",
-                  border: "1px dashed",
-                  borderColor: "divider",
+                  borderRadius: "16px",
+                  bgcolor: isDark
+                    ? alpha("#000", 0.15)
+                    : alpha(theme.palette.action.hover, 0.05),
+                  border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+                  transition: "0.3s",
+                  borderStyle: rename ? "solid" : "dashed",
+                  borderColor: rename ? theme.palette.primary.main : "divider",
                 }}
               >
                 <Stack direction="row" spacing={1} alignItems="center">
                   <TextField
-                    label="Имя файла"
+                    label="Имя файла на диске"
                     value={rename ? newFilename : local.filename}
                     onChange={(e) => setNewFilename(e.target.value)}
                     size="small"
@@ -389,12 +459,24 @@ export default function PhotoMetaUpdateDialog({
                     InputProps={{
                       readOnly: !rename,
                       disableUnderline: !rename,
+                      sx: {
+                        fontSize: "0.85rem",
+                        fontWeight: 500,
+                        fontFamily: "monospace",
+                      },
                     }}
                   />
                   <IconButton
                     size="small"
-                    variant={rename ? "contained" : "text"}
                     onClick={() => setRename(!rename)}
+                    sx={{
+                      bgcolor: rename
+                        ? alpha(theme.palette.primary.main, 0.1)
+                        : "transparent",
+                      color: rename
+                        ? theme.palette.primary.main
+                        : "action.active",
+                    }}
                   >
                     {rename ? <EditOffIcon /> : <EditIcon />}
                   </IconButton>
@@ -405,23 +487,58 @@ export default function PhotoMetaUpdateDialog({
         </Box>
       </DialogContent>
 
-      <DialogActions sx={{ p: 3, borderTop: 1, borderColor: "divider" }}>
-        <Button onClick={onClose} disabled={saving}>
+      <DialogActions
+        sx={{
+          px: 4,
+          py: 3,
+          borderTop: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+          gap: 1.5,
+        }}
+      >
+        <Button
+          onClick={onClose}
+          sx={{
+            borderRadius: "12px",
+            px: 3,
+            fontWeight: 600,
+            textTransform: "none",
+          }}
+        >
           Отмена
         </Button>
         <Button
           variant="contained"
           onClick={handleSave}
           disabled={saving}
-          sx={{ borderRadius: "10px", px: 4, minWidth: 160 }}
+          disableElevation
+          sx={{
+            borderRadius: "12px",
+            px: 5,
+            py: 1.2,
+            fontWeight: 700,
+            textTransform: "none",
+            boxShadow: `0 8px 20px -6px ${alpha(theme.palette.primary.main, 0.5)}`,
+          }}
         >
           {saving ? (
-            <CircularProgress size={24} color="inherit" />
+            <CircularProgress size={22} color="inherit" />
           ) : (
-            "Сохранить"
+            "Сохранить изменения"
           )}
         </Button>
       </DialogActions>
+
+      <CustomDatePickerDialog
+        open={datePickerOpen}
+        onClose={() => setDatePickerOpen(false)}
+        initialDate={local.datePhoto}
+        format="YYYY-MM-DD"
+        showTime={true}
+        onSave={(d) => {
+          setLocal((s) => ({ ...s, datePhoto: d }));
+          setDatePickerOpen(false);
+        }}
+      />
     </Dialog>
   );
 }

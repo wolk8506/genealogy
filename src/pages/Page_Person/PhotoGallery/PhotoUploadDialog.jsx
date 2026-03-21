@@ -18,13 +18,16 @@ import {
   Box,
   Divider,
   IconButton,
+  CircularProgress,
 } from "@mui/material";
-
+import { alpha, useTheme } from "@mui/material/styles";
 import CloseIcon from "@mui/icons-material/Close";
 import AddPhotoAlternateIcon from "@mui/icons-material/AddPhotoAlternate";
-
+import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
+import EditIcon from "@mui/icons-material/Edit";
 import heic2any from "heic2any";
 import CustomDatePickerDialog from "../../../components/CustomDatePickerDialog";
+import HashtagInput from "../../../components/HashtagInput";
 
 export default function PhotoUploadDialog({
   open,
@@ -34,6 +37,9 @@ export default function PhotoUploadDialog({
   onPhotoAdded,
 }) {
   // ———————————————————————————
+  const theme = useTheme();
+  const isDark = theme.palette.mode === "dark";
+  const [saving, setSaving] = useState(false); // Состояние загрузки
   // Поля формы
   const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [title, setTitle] = useState("");
@@ -59,6 +65,15 @@ export default function PhotoUploadDialog({
   // ———————————————————————————
   // Новый чекбокс: оставлять модалку открытой
   const [keepOpen, setKeepOpen] = useState(false);
+
+  //  загрузку списка тегов
+  const [uniqueTags, setUniqueTags] = useState([]);
+
+  useEffect(() => {
+    if (open) {
+      window.photoAPI.getGlobalHashtags().then(setUniqueTags);
+    }
+  }, [open, saving]);
 
   // Сброс формы при открытии (если keepOpen=false)
   useEffect(() => {
@@ -189,55 +204,146 @@ export default function PhotoUploadDialog({
   };
 
   // === 3) Сохранение ===
+  // const handleSave = async () => {
+  //   if (!filename) {
+  //     alert("Сначала выберите файл.");
+  //     return;
+  //   }
+
+  //   setSaving(true); // <--- ВКЛЮЧАЕМ СПИННЕР
+
+  //   // --- ДОБАВЛЯЕМ ПАРСИНГ ТЕГОВ ---
+  //   const extractedHashtags = description
+  //     ? (description.match(/#[\p{L}\d_]+/gu) || []).map((t) => t.toLowerCase())
+  //     : [];
+
+  //   const meta = {
+  //     title,
+  //     description,
+  //     hashtags: extractedHashtags,
+  //     people: [...new Set([...people.map((p) => p.id), personId])],
+  //     owner: currentUserId,
+  //     date: new Date().toISOString().split("T")[0],
+  //     datePhoto,
+  //     aspectRatio,
+  //   };
+
+  //   // Выбор метода сохранения (blob или путь)
+  //   let newPhoto = null;
+  //   if (convertedArrayBuffer) {
+  //     newPhoto = await window.photoAPI.saveBlobFile(
+  //       meta,
+  //       convertedArrayBuffer,
+  //       filename,
+  //     );
+  //   } else if (filePath) {
+  //     newPhoto = await window.photoAPI.saveWithFilename(meta, filePath);
+  //   } else {
+  //     newPhoto = await window.photoAPI.saveWithFilename(meta, filename);
+  //   }
+
+  //   if (newPhoto) {
+  //     onPhotoAdded(newPhoto);
+
+  //     if (keepOpen) {
+  //       // если «Добавить ещё» отмечено — очищаем всё, кроме datePhoto
+  //       setTitle("");
+  //       setDescription("");
+  //       setPeople([]);
+  //       setPreview(null);
+  //       setFilename(null);
+  //       setFilePath(null);
+  //       setAspectRatio("4/3");
+  //       setConvertedArrayBuffer(null);
+  //       setDragCounter(0);
+  //       // datePhoto оставляем без изменений
+  //     } else {
+  //       // иначе закрываем модалку
+  //       onClose();
+  //     }
+  //   }
+  // };
+
   const handleSave = async () => {
+    // 1. Валидация
     if (!filename) {
       alert("Сначала выберите файл.");
       return;
     }
 
-    const meta = {
-      title,
-      description,
-      people: [...new Set([...people.map((p) => p.id), personId])],
-      owner: currentUserId,
-      date: new Date().toISOString().split("T")[0],
-      datePhoto,
-      aspectRatio,
-    };
+    // 2. Включаем режим сохранения
+    setSaving(true);
 
-    // Выбор метода сохранения (blob или путь)
-    let newPhoto = null;
-    if (convertedArrayBuffer) {
-      newPhoto = await window.photoAPI.saveBlobFile(
-        meta,
-        convertedArrayBuffer,
-        filename,
-      );
-    } else if (filePath) {
-      newPhoto = await window.photoAPI.saveWithFilename(meta, filePath);
-    } else {
-      newPhoto = await window.photoAPI.saveWithFilename(meta, filename);
-    }
+    try {
+      // 3. Извлекаем хештеги из описания (сохраняем с решеткой в нижнем регистре)
+      const extractedHashtags = description
+        ? (description.match(/#[\p{L}\d_]+/gu) || []).map((t) =>
+            t.toLowerCase(),
+          )
+        : [];
 
-    if (newPhoto) {
-      onPhotoAdded(newPhoto);
+      // 4. Формируем объект метаданных
+      const meta = {
+        title: title.trim(),
+        description: description.trim(),
+        hashtags: extractedHashtags, // Массив для индекса поиска
+        people: [...new Set([...people.map((p) => p.id), personId])],
+        owner: currentUserId,
+        date: new Date().toISOString().split("T")[0],
+        datePhoto: datePhoto,
+        aspectRatio: aspectRatio,
+      };
 
-      if (keepOpen) {
-        // если «Добавить ещё» отмечено — очищаем всё, кроме datePhoto
-        setTitle("");
-        setDescription("");
-        setPeople([]);
-        setPreview(null);
-        setFilename(null);
-        setFilePath(null);
-        setAspectRatio("4/3");
-        setConvertedArrayBuffer(null);
-        setDragCounter(0);
-        // datePhoto оставляем без изменений
+      // 5. Выбор метода сохранения (Blob для HEIC/Drop или путь для локальных файлов)
+      let newPhoto = null;
+
+      if (convertedArrayBuffer) {
+        // Если была конвертация из HEIC или загрузка через Drop (ArrayBuffer)
+        newPhoto = await window.photoAPI.saveBlobFile(
+          meta,
+          convertedArrayBuffer,
+          filename,
+        );
+      } else if (filePath) {
+        // Если выбран обычный файл через диалог (есть прямой путь)
+        newPhoto = await window.photoAPI.saveWithFilename(meta, filePath);
       } else {
-        // иначе закрываем модалку
-        onClose();
+        // Фолбэк (на случай странных сценариев)
+        newPhoto = await window.photoAPI.saveWithFilename(meta, filename);
       }
+
+      // 6. Обработка результата
+      if (newPhoto) {
+        // Уведомляем родительский компонент о добавлении
+        onPhotoAdded(newPhoto);
+
+        if (keepOpen) {
+          // Если стоит галочка "Добавить ещё" — сбрасываем почти всё
+          setTitle("");
+          setDescription("");
+          setPeople([]);
+          setPreview(null);
+          setFilename(null);
+          setFilePath(null);
+          setAspectRatio("4/3");
+          setConvertedArrayBuffer(null);
+          setDragCounter(0);
+          // datePhoto НЕ очищаем для удобства серийной загрузки
+        } else {
+          // Закрываем модальное окно
+          onClose();
+        }
+      } else {
+        throw new Error("Ошибка при обработке фото на стороне сервера.");
+      }
+    } catch (err) {
+      console.error("Save failed:", err);
+      alert(
+        "Не удалось сохранить фото: " + (err.message || "Неизвестная ошибка"),
+      );
+    } finally {
+      // 7. Выключаем спиннер в любом случае
+      setSaving(false);
     }
   };
 
@@ -252,30 +358,48 @@ export default function PhotoUploadDialog({
       fullWidth
       PaperProps={{
         sx: {
-          borderRadius: "20px",
+          borderRadius: "24px",
           backgroundImage: "none",
+          bgcolor: isDark ? alpha(theme.palette.background.paper, 0.9) : "#fff",
+          backdropFilter: "blur(15px)",
+          border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+          boxShadow: theme.shadows[24],
           overflow: "hidden",
         },
       }}
     >
-      {/* Шапка диалога — как в Edit */}
+      {/* Шапка диалога */}
       <Box
         sx={{
-          p: 2,
+          p: 2.5,
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          borderBottom: (theme) => `1px solid ${theme.palette.divider}`,
-          bgcolor: (theme) =>
-            theme.palette.mode === "dark"
-              ? "rgba(255,255,255,0.05)"
-              : "rgba(0,0,0,0.02)",
+          borderBottom: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+          bgcolor: isDark ? alpha("#fff", 0.02) : alpha("#000", 0.01),
         }}
       >
-        <Typography variant="h6" sx={{ fontWeight: 600, ml: 1 }}>
-          Добавление новой фотографии
-        </Typography>
-        <IconButton onClick={onClose} size="small">
+        <Stack direction="row" alignItems="center" spacing={1.5}>
+          <Box
+            sx={{
+              p: 1,
+              borderRadius: "12px",
+              bgcolor: alpha(theme.palette.primary.main, 0.1),
+              color: theme.palette.primary.main,
+              display: "flex",
+            }}
+          >
+            <AddPhotoAlternateIcon />
+          </Box>
+          <Typography variant="h6" sx={{ fontWeight: 700 }}>
+            Добавление фотографии
+          </Typography>
+        </Stack>
+        <IconButton
+          onClick={onClose}
+          size="small"
+          sx={{ borderRadius: "10px" }}
+        >
           <CloseIcon />
         </IconButton>
       </Box>
@@ -284,18 +408,20 @@ export default function PhotoUploadDialog({
         <Box
           sx={{ display: "flex", flexDirection: { xs: "column", md: "row" } }}
         >
-          {/* Левая колонка: Загрузка / Превью */}
+          {/* ЛЕВАЯ КОЛОНКА: Загрузка / Превью */}
           <Box
             sx={{
               flex: 1,
-              bgcolor: (theme) =>
-                theme.palette.mode === "dark" ? "#121212" : "#f5f5f5",
+              bgcolor: isDark ? alpha("#000", 0.2) : "#f8f9fa",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              p: 3,
-              minHeight: 400,
+              p: 4,
+              minHeight: 450,
               position: "relative",
+              borderRight: {
+                md: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+              },
             }}
           >
             {!preview ? (
@@ -304,129 +430,173 @@ export default function PhotoUploadDialog({
                 onDragEnter={() => setDragCounter((c) => c + 1)}
                 onDragLeave={() => setDragCounter((c) => Math.max(c - 1, 0))}
                 onDrop={onDrop}
+                onClick={handleFileSelect}
                 sx={{
                   width: "100%",
                   height: "100%",
-                  minHeight: 300,
+                  minHeight: 320,
                   border: "2px dashed",
-                  borderColor: isDragging ? "primary.main" : "divider",
-                  bgcolor: isDragging ? "action.selected" : "transparent",
-                  borderRadius: "12px",
+                  borderColor: isDragging
+                    ? "primary.main"
+                    : alpha(theme.palette.divider, 0.2),
+                  bgcolor: isDragging
+                    ? alpha(theme.palette.primary.main, 0.05)
+                    : "transparent",
+                  borderRadius: "20px",
                   display: "flex",
                   flexDirection: "column",
                   alignItems: "center",
                   justifyContent: "center",
-                  transition: "0.3s",
+                  transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
                   cursor: "pointer",
-                  "&:hover": { bgcolor: "rgba(0,0,0,0.02)" },
+                  "&:hover": {
+                    bgcolor: alpha(theme.palette.primary.main, 0.02),
+                    borderColor: theme.palette.primary.main,
+                  },
                 }}
-                onClick={handleFileSelect}
               >
-                <AddPhotoAlternateIcon
-                  sx={{ fontSize: 48, mb: 2, color: "text.secondary" }}
-                />
-                <Typography color="text.secondary">
-                  Перетащите фото или нажмите для выбора
+                <Box
+                  sx={{
+                    p: 2,
+                    borderRadius: "50%",
+                    bgcolor: alpha(theme.palette.primary.main, 0.05),
+                    mb: 2,
+                  }}
+                >
+                  <AddPhotoAlternateIcon
+                    sx={{ fontSize: 40, color: theme.palette.primary.main }}
+                  />
+                </Box>
+                <Typography variant="body1" sx={{ fontWeight: 600, mb: 0.5 }}>
+                  Выберите файл
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  или перетащите его сюда
                 </Typography>
               </Box>
             ) : (
-              <Box
-                sx={{
-                  position: "relative",
-                  width: "100%",
-                  textAlign: "center",
-                }}
-              >
+              <Box sx={{ position: "relative", width: "100%", zIndex: 1 }}>
                 <Box
                   component="img"
                   src={preview}
                   alt="Превью"
                   sx={{
                     maxWidth: "100%",
-                    maxHeight: 450,
+                    maxHeight: 480,
                     objectFit: "contain",
-                    borderRadius: "12px",
-                    boxShadow: "0 10px 30px rgba(0,0,0,0.3)",
+                    borderRadius: "16px",
+                    boxShadow: "0 20px 40px rgba(0,0,0,0.25)",
+                    transition: "transform 0.3s ease",
+                    "&:hover": { transform: "scale(1.01)" },
                   }}
                 />
                 <Button
                   variant="contained"
                   size="small"
                   onClick={handleFileSelect}
-                  // sx={{ borderRadius: "10px" }}
+                  startIcon={<EditIcon sx={{ fontSize: 16 }} />}
                   sx={{
                     position: "absolute",
-                    color: "orange",
-                    top: 10,
-                    right: 10,
-                    bgcolor: "rgba(0,0,0,0.6)",
-                    backdropFilter: "blur(4px)",
-                    borderRadius: "10px",
-                    "&:hover": { bgcolor: "rgba(0,0,0,0.8)" },
+                    top: 12,
+                    right: 12,
+                    bgcolor: alpha("#000", 0.6),
+                    backdropFilter: "blur(8px)",
+                    borderRadius: "12px",
+                    textTransform: "none",
+                    fontWeight: 600,
+                    "&:hover": { bgcolor: alpha("#000", 0.8) },
                   }}
                 >
-                  Сменить файл
+                  Сменить
                 </Button>
               </Box>
             )}
           </Box>
 
-          {/* Правая колонка: Форма */}
-          <Box sx={{ flex: 1.2, p: 3 }}>
-            <Stack spacing={2.5}>
+          {/* ПРАВАЯ КОЛОНКА: Форма */}
+          <Box sx={{ flex: 1.2, p: 4 }}>
+            <Stack spacing={3.5}>
+              {/* Секция Основное */}
               <Box>
                 <Typography
-                  variant="overline"
-                  color="text.secondary"
-                  sx={{ fontWeight: "bold" }}
+                  variant="caption"
+                  sx={{
+                    textTransform: "uppercase",
+                    letterSpacing: "1px",
+                    fontWeight: 800,
+                    color: theme.palette.primary.main,
+                    display: "block",
+                    mb: 2,
+                  }}
                 >
                   Основные сведения
                 </Typography>
-                <Stack spacing={2} sx={{ mt: 1 }}>
+                <Stack spacing={2}>
                   <TextField
                     fullWidth
                     label="Заголовок"
-                    variant="filled"
+                    variant="outlined"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
+                    slotProps={{
+                      input: { sx: { borderRadius: "12px" } },
+                    }}
                   />
-                  <TextField
-                    fullWidth
-                    label="Описание"
-                    multiline
-                    rows={2}
-                    variant="filled"
+
+                  <HashtagInput
                     value={description}
-                    onChange={(e) => setDescription(e.target.value)}
+                    onChange={setDescription}
+                    suggestions={uniqueTags}
+                    placeholder="Описание и #теги..."
                   />
                 </Stack>
               </Box>
 
+              {/* Секция Детали */}
               <Box>
                 <Typography
-                  variant="overline"
-                  color="text.secondary"
-                  sx={{ fontWeight: "bold" }}
+                  variant="caption"
+                  sx={{
+                    textTransform: "uppercase",
+                    letterSpacing: "1px",
+                    fontWeight: 800,
+                    color: theme.palette.primary.main,
+                    display: "block",
+                    mb: 2,
+                  }}
                 >
-                  Детали и теги
+                  Детали и люди
                 </Typography>
-                <Stack spacing={2} sx={{ mt: 1 }}>
+                <Stack spacing={2}>
                   <Autocomplete
                     multiple
                     options={allPeople}
-                    getOptionLabel={(o) =>
-                      `${o.id} :: ${o.firstName || ""} ${o.lastName || ""}`.trim()
+                    getOptionLabel={(p) =>
+                      `${p.id} :: ${
+                        [p.firstName, p.lastName || p.maidenName]
+                          .filter(Boolean)
+                          .join(" ") || "Без имени"
+                      } `.trim()
                     }
                     value={people}
                     onChange={(e, v) => setPeople(v)}
                     renderInput={(params) => (
                       <TextField
                         {...params}
-                        variant="filled"
+                        variant="outlined"
                         label="Кто на фото"
                       />
                     )}
-                    ChipProps={{ size: "small", sx: { borderRadius: "8px" } }}
+                    slotProps={{
+                      paper: { sx: { borderRadius: "12px", mt: 1 } },
+                    }}
+                    ChipProps={{
+                      size: "small",
+                      sx: { borderRadius: "8px", fontWeight: 500 },
+                    }}
+                    sx={{
+                      "& .MuiOutlinedInput-root": { borderRadius: "12px" },
+                    }}
                   />
 
                   <Stack direction="row" spacing={2}>
@@ -434,17 +604,26 @@ export default function PhotoUploadDialog({
                       label="Дата снимка"
                       value={datePhoto || ""}
                       onClick={() => setDatePickerOpen(true)}
-                      variant="filled"
+                      variant="outlined"
                       fullWidth
-                      placeholder="ГГГГ-ММ-ДД"
-                      InputProps={{ readOnly: true }}
+                      InputProps={{
+                        readOnly: true,
+                        sx: { borderRadius: "12px" },
+                        startAdornment: (
+                          <CalendarMonthIcon
+                            sx={{ mr: 1, color: "action.active", fontSize: 20 }}
+                          />
+                        ),
+                      }}
                     />
 
-                    <FormControl variant="filled" sx={{ minWidth: 140 }}>
+                    <FormControl variant="outlined" sx={{ minWidth: 140 }}>
                       <InputLabel>Формат</InputLabel>
                       <Select
                         value={aspectRatio}
+                        label="Формат"
                         onChange={(e) => setAspectRatio(e.target.value)}
+                        sx={{ borderRadius: "12px" }}
                       >
                         <MenuItem value="4/3">4:3</MenuItem>
                         <MenuItem value="1/1">1:1</MenuItem>
@@ -455,20 +634,33 @@ export default function PhotoUploadDialog({
                 </Stack>
               </Box>
 
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={keepOpen}
-                    onChange={(e) => setKeepOpen(e.target.checked)}
-                    size="small"
-                  />
-                }
-                label={
-                  <Typography variant="body2">
-                    Оставить окно открытым (для загрузки нескольких)
-                  </Typography>
-                }
-              />
+              <Box
+                sx={{
+                  p: 1.5,
+                  borderRadius: "14px",
+                  bgcolor: keepOpen
+                    ? alpha(theme.palette.primary.main, 0.05)
+                    : "transparent",
+                  border: `1px solid ${keepOpen ? alpha(theme.palette.primary.main, 0.1) : "transparent"}`,
+                  transition: "0.3s",
+                }}
+              >
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={keepOpen}
+                      onChange={(e) => setKeepOpen(e.target.checked)}
+                      size="small"
+                      sx={{ borderRadius: "4px" }}
+                    />
+                  }
+                  label={
+                    <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                      Оставить окно открытым
+                    </Typography>
+                  }
+                />
+              </Box>
             </Stack>
           </Box>
         </Box>
@@ -476,28 +668,48 @@ export default function PhotoUploadDialog({
 
       <DialogActions
         sx={{
-          px: 3,
-          py: 2,
-          borderTop: (theme) => `1px solid ${theme.palette.divider}`,
+          px: 4,
+          py: 3,
+          borderTop: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+          gap: 1.5,
         }}
       >
-        <Button onClick={onClose} sx={{ borderRadius: "10px" }}>
+        <Button
+          onClick={onClose}
+          sx={{
+            borderRadius: "12px",
+            px: 3,
+            textTransform: "none",
+            fontWeight: 600,
+          }}
+        >
           Отмена
         </Button>
         <Button
           variant="contained"
           onClick={handleSave}
+          disabled={saving}
+          disableElevation
           sx={{
-            borderRadius: "10px",
-            px: 4,
-            boxShadow: "0 4px 14px 0 rgba(0,118,255,0.39)",
+            borderRadius: "12px",
+            px: 5,
+            py: 1.2,
+            textTransform: "none",
+            fontWeight: 700,
+            boxShadow: `0 8px 20px -6px ${alpha(theme.palette.primary.main, 0.5)}`,
+            "&:hover": {
+              boxShadow: `0 12px 25px -6px ${alpha(theme.palette.primary.main, 0.6)}`,
+            },
           }}
         >
-          Сохранить фото
+          {saving ? (
+            <CircularProgress size={22} color="inherit" />
+          ) : (
+            "Сохранить фото"
+          )}
         </Button>
       </DialogActions>
 
-      {/* Вынесенный календарь (как в Edit) */}
       <CustomDatePickerDialog
         open={datePickerOpen}
         onClose={() => setDatePickerOpen(false)}

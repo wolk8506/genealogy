@@ -14,8 +14,16 @@ import {
   Alert,
   Paper,
   Divider,
+  Box,
+  Grid,
 } from "@mui/material";
 import CustomDatePickerDialog from "../../components/CustomDatePickerDialog";
+import { alpha, useTheme } from "@mui/material/styles";
+import PersonIcon from "@mui/icons-material/Person";
+import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
+import AccountTreeIcon from "@mui/icons-material/AccountTree";
+import FemaleIcon from "@mui/icons-material/Female";
+import MaleIcon from "@mui/icons-material/Male";
 
 export default function PersonEditDialog({
   open,
@@ -24,6 +32,8 @@ export default function PersonEditDialog({
   onSave,
   allPeople = [],
 }) {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === "dark";
   const [form, setForm] = useState({});
   const [error, setError] = useState("");
   const [saved, setSaved] = useState(false);
@@ -230,191 +240,297 @@ export default function PersonEditDialog({
         maxWidth="sm"
         PaperProps={{
           sx: {
-            borderRadius: "15px",
+            borderRadius: "24px",
+            backgroundImage: "none",
+            bgcolor: isDark
+              ? alpha(theme.palette.background.paper, 0.85)
+              : "#fff",
+            backdropFilter: "blur(16px)",
+            border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+            boxShadow: theme.shadows[24],
           },
         }}
       >
-        <DialogTitle>Редактировать человека</DialogTitle>
-        <DialogContent>
-          <Paper
-            elevation={1}
-            sx={{ p: 2, bgcolor: "background.paper", borderRadius: "15px" }}
-          >
-            <Typography variant="subtitle1">Личные данные</Typography>
-            <Stack spacing={2} sx={{ mt: 1 }}>
-              {error && <Alert severity="error">{error}</Alert>}
-              <TextField
-                label="Имя"
-                size="small"
-                fullWidth
-                value={form.firstName || ""}
-                onChange={handleChange("firstName")}
-              />
-              <TextField
-                label="Фамилия"
-                size="small"
-                fullWidth
-                value={form.lastName || ""}
-                onChange={handleChange("lastName")}
-              />
-              <TextField
-                label="Отчество"
-                size="small"
-                fullWidth
-                value={form.patronymic || ""}
-                onChange={handleChange("patronymic")}
-              />
-              <TextField
-                label="Девичья фамилия"
-                size="small"
-                fullWidth
-                disabled={form.gender === "male"}
-                value={form.maidenName || ""}
-                onChange={handleChange("maidenName")}
-              />
-              <TextField
-                label="Пол"
-                size="small"
-                fullWidth
-                select
-                value={form.gender || ""}
-                onChange={handleChange("gender")}
+        <DialogTitle
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            gap: 1.5,
+            fontWeight: 600,
+          }}
+        >
+          <PersonIcon color="primary" />
+          Редактировать профиль
+        </DialogTitle>
+
+        <DialogContent sx={{ pt: "10px !important" }}>
+          <Stack spacing={4}>
+            {error && (
+              <Alert severity="error" sx={{ borderRadius: "12px" }}>
+                {error}
+              </Alert>
+            )}
+
+            {/* Секция 1: Личные данные */}
+            <Box>
+              <Typography
+                variant="overline"
+                sx={{
+                  color: "primary.main",
+                  fontWeight: 700,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1,
+                  mb: 2,
+                }}
               >
-                <MenuItem value="male">Мужской</MenuItem>
-                <MenuItem value="female">Женский</MenuItem>
-              </TextField>
-            </Stack>
+                <PersonIcon sx={{ fontSize: 18 }} /> Личные данные
+              </Typography>
+              <Grid container spacing={2}>
+                <Grid item xs={12} sm={4}>
+                  <TextField
+                    label="Фамилия"
+                    size="small"
+                    fullWidth
+                    value={form.lastName || ""}
+                    onChange={handleChange("lastName")}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={4}>
+                  <TextField
+                    label="Имя"
+                    size="small"
+                    fullWidth
+                    value={form.firstName || ""}
+                    onChange={handleChange("firstName")}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={4}>
+                  <TextField
+                    label="Отчество"
+                    size="small"
+                    fullWidth
+                    value={form.patronymic || ""}
+                    onChange={handleChange("patronymic")}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    label="Пол"
+                    size="small"
+                    fullWidth
+                    select
+                    value={form.gender || ""}
+                    onChange={handleChange("gender")}
+                    InputProps={{
+                      startAdornment: form.gender ? (
+                        <Box
+                          sx={{
+                            mr: 1,
+                            display: "flex",
+                            color: "action.active",
+                          }}
+                        >
+                          {form.gender === "male" ? (
+                            <MaleIcon fontSize="small" />
+                          ) : (
+                            <FemaleIcon fontSize="small" />
+                          )}
+                        </Box>
+                      ) : null,
+                    }}
+                  >
+                    <MenuItem value="male">Мужской</MenuItem>
+                    <MenuItem value="female">Женский</MenuItem>
+                  </TextField>
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    label="Девичья фамилия"
+                    size="small"
+                    fullWidth
+                    disabled={form.gender === "male"}
+                    value={form.maidenName || ""}
+                    onChange={handleChange("maidenName")}
+                  />
+                </Grid>
+              </Grid>
+            </Box>
 
-            <Divider sx={{ my: 2 }} />
-
-            {/* Date & generation */}
-            <Typography variant="subtitle1">Дата и поколение</Typography>
-            <Stack spacing={2} sx={{ mt: 1 }}>
-              <TextField
-                label="Дата рождения"
-                size="small"
-                fullWidth
-                value={form.birthday || ""}
-                onClick={() => setBirthdayPickerOpen(true)}
-                InputProps={{ readOnly: true }}
-                placeholder="ДД.ММ.ГГГГ / ММ.ГГГГ / ГГГГ / неизвестно"
-              />
-              <TextField
-                label="Дата смерти"
-                size="small"
-                fullWidth
-                value={form.died || ""}
-                onClick={() => setDiedPickerOpen(true)}
-                InputProps={{ readOnly: true }}
-                placeholder="ДД.ММ.ГГГГ / ММ.ГГГГ / ГГГГ / неизвестно"
-              />
-              <TextField
-                label="Поколение"
-                size="small"
-                fullWidth
-                type="number"
-                inputProps={{ min: 1 }}
-                value={gen}
-                onChange={handleChange("generation")}
-              />
-            </Stack>
-            {/* модалки */}
-            <CustomDatePickerDialog
-              open={birthdayPickerOpen}
-              onClose={() => setBirthdayPickerOpen(false)}
-              initialDate={form.birthday}
-              format="DD.MM.YYYY"
-              showTime={true}
-              onSave={(newDate) => {
-                handleChange("birthday")({ target: { value: newDate } });
-                setBirthdayPickerOpen(false);
+            {/* Секция 2: Даты и Поколение */}
+            <Box
+              sx={{
+                p: 2,
+                borderRadius: "16px",
+                bgcolor: alpha(theme.palette.action.hover, 0.04),
+                border: `1px solid ${alpha(theme.palette.divider, 0.05)}`,
               }}
-            />
+            >
+              <Typography
+                variant="overline"
+                sx={{
+                  color: "text.secondary",
+                  fontWeight: 700,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1,
+                  mb: 2,
+                }}
+              >
+                <CalendarTodayIcon sx={{ fontSize: 18 }} /> Даты и поколение
+              </Typography>
+              <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+                <TextField
+                  label="Рождение"
+                  size="small"
+                  fullWidth
+                  value={form.birthday || ""}
+                  onClick={() => setBirthdayPickerOpen(true)}
+                  InputProps={{ readOnly: true, sx: { borderRadius: "10px" } }}
+                />
+                <TextField
+                  label="Смерть"
+                  size="small"
+                  fullWidth
+                  value={form.died || ""}
+                  onClick={() => setDiedPickerOpen(true)}
+                  InputProps={{ readOnly: true, sx: { borderRadius: "10px" } }}
+                />
+                <TextField
+                  label="Поколение"
+                  size="small"
+                  sx={{ width: { sm: "120px" } }}
+                  type="number"
+                  inputProps={{ min: 1 }}
+                  value={gen}
+                  onChange={handleChange("generation")}
+                />
+              </Stack>
+            </Box>
 
-            <CustomDatePickerDialog
-              open={diedPickerOpen}
-              onClose={() => setDiedPickerOpen(false)}
-              initialDate={form.died}
-              format="DD.MM.YYYY"
-              showTime={true}
-              onSave={(newDate) => {
-                handleChange("died")({ target: { value: newDate } });
-                setDiedPickerOpen(false);
-              }}
-            />
-
-            <Divider sx={{ my: 2 }} />
-
-            <Typography variant="subtitle1">Родственные связи</Typography>
-            <Stack spacing={2} sx={{ mt: 1 }}>
-              <Autocomplete
-                size="small"
-                options={filterGen(gen - 1).filter((p) => p.gender === "male")}
-                getOptionLabel={labelOf}
-                value={findById(form.father)}
-                onChange={handleSelect("father")}
-                renderInput={(params) => (
-                  <TextField {...params} label="Отец" fullWidth />
-                )}
-              />
-              <Autocomplete
-                size="small"
-                options={filterGen(gen - 1).filter(
-                  (p) => p.gender === "female"
-                )}
-                getOptionLabel={labelOf}
-                value={findById(form.mother)}
-                onChange={handleSelect("mother")}
-                renderInput={(params) => (
-                  <TextField {...params} label="Мать" fullWidth />
-                )}
-              />
-              <Autocomplete
-                size="small"
-                multiple
-                options={filterGen(gen)}
-                getOptionLabel={labelOf}
-                value={(form.siblings || []).map(findById).filter(Boolean)}
-                onChange={handleMulti("siblings")}
-                renderInput={(params) => (
-                  <TextField {...params} label="Братья/сестры" fullWidth />
-                )}
-              />
-              <Autocomplete
-                size="small"
-                multiple
-                options={filterGen(gen).filter(
-                  (p) => p.gender && p.gender !== form.gender
-                )}
-                getOptionLabel={labelOf}
-                value={(form.spouse || []).map(findById).filter(Boolean)}
-                onChange={handleMulti("spouse")}
-                renderInput={(params) => (
-                  <TextField {...params} label="Супруг(и)" fullWidth />
-                )}
-              />
-              <Autocomplete
-                size="small"
-                multiple
-                options={filterGen(gen + 1)}
-                getOptionLabel={labelOf}
-                value={(form.children || []).map(findById).filter(Boolean)}
-                onChange={handleMulti("children")}
-                renderInput={(params) => (
-                  <TextField {...params} label="Дети" fullWidth />
-                )}
-              />
-            </Stack>
-          </Paper>
+            {/* Секция 3: Родственные связи */}
+            <Box>
+              <Typography
+                variant="overline"
+                sx={{
+                  color: "text.secondary",
+                  fontWeight: 700,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1,
+                  mb: 2,
+                }}
+              >
+                <AccountTreeIcon sx={{ fontSize: 18 }} /> Родственные связи
+              </Typography>
+              <Stack spacing={2}>
+                <Stack direction="row" spacing={2}>
+                  <Autocomplete
+                    size="small"
+                    fullWidth
+                    options={filterGen(gen - 1).filter(
+                      (p) => p.gender === "male",
+                    )}
+                    getOptionLabel={labelOf}
+                    value={findById(form.father)}
+                    onChange={handleSelect("father")}
+                    renderInput={(params) => (
+                      <TextField {...params} label="Отец" />
+                    )}
+                  />
+                  <Autocomplete
+                    size="small"
+                    fullWidth
+                    options={filterGen(gen - 1).filter(
+                      (p) => p.gender === "female",
+                    )}
+                    getOptionLabel={labelOf}
+                    value={findById(form.mother)}
+                    onChange={handleSelect("mother")}
+                    renderInput={(params) => (
+                      <TextField {...params} label="Мать" />
+                    )}
+                  />
+                </Stack>
+                <Autocomplete
+                  size="small"
+                  multiple
+                  options={filterGen(gen)}
+                  getOptionLabel={labelOf}
+                  value={(form.siblings || []).map(findById).filter(Boolean)}
+                  onChange={handleMulti("siblings")}
+                  renderInput={(params) => (
+                    <TextField {...params} label="Братья / сестры" />
+                  )}
+                />
+                <Autocomplete
+                  size="small"
+                  multiple
+                  options={filterGen(gen).filter(
+                    (p) => p.gender && p.gender !== form.gender,
+                  )}
+                  getOptionLabel={labelOf}
+                  value={(form.spouse || []).map(findById).filter(Boolean)}
+                  onChange={handleMulti("spouse")}
+                  renderInput={(params) => (
+                    <TextField {...params} label="Супруг(и)" />
+                  )}
+                />
+                <Autocomplete
+                  size="small"
+                  multiple
+                  options={filterGen(gen + 1)}
+                  getOptionLabel={labelOf}
+                  value={(form.children || []).map(findById).filter(Boolean)}
+                  onChange={handleMulti("children")}
+                  renderInput={(params) => (
+                    <TextField {...params} label="Дети" />
+                  )}
+                />
+              </Stack>
+            </Box>
+          </Stack>
         </DialogContent>
 
-        <DialogActions sx={{ pr: "24px", pl: "24px", pb: "16px" }}>
-          <Button onClick={onClose}>Отмена</Button>
-          <Button onClick={handleSubmit} variant="contained">
+        <DialogActions sx={{ p: 3, pt: 1 }}>
+          <Button onClick={onClose} sx={{ borderRadius: "10px" }}>
+            Отмена
+          </Button>
+          <Button
+            onClick={handleSubmit}
+            variant="contained"
+            disableElevation
+            sx={{
+              borderRadius: "10px",
+              px: 4,
+              fontWeight: 600,
+              boxShadow: `0 4px 14px 0 ${alpha(theme.palette.primary.main, 0.39)}`,
+            }}
+          >
             Сохранить
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Твои модалки и снекбар - оставляем как есть */}
+      <CustomDatePickerDialog
+        open={birthdayPickerOpen}
+        onClose={() => setBirthdayPickerOpen(false)}
+        initialDate={form.birthday}
+        showTime={true} // включить выбор времени
+        onSave={(newDate) =>
+          handleChange("birthday")({ target: { value: newDate } })
+        }
+      />
+      <CustomDatePickerDialog
+        open={diedPickerOpen}
+        onClose={() => setDiedPickerOpen(false)}
+        initialDate={form.died}
+        showTime={true} // включить выбор времени
+        onSave={(newDate) =>
+          handleChange("died")({ target: { value: newDate } })
+        }
+      />
 
       <Snackbar
         open={saved}
@@ -422,7 +538,13 @@ export default function PersonEditDialog({
         onClose={() => setSaved(false)}
         anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
       >
-        <Alert severity="success">Данные сохранены</Alert>
+        <Alert
+          severity="success"
+          variant="filled"
+          sx={{ borderRadius: "10px" }}
+        >
+          Данные сохранены
+        </Alert>
       </Snackbar>
     </>
   );

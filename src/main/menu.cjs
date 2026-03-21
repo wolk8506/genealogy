@@ -80,18 +80,18 @@ function buildMenuTemplate() {
       label: "Помощь",
       submenu: [
         // About для Windows/Linux
-        ...(!isMac
-          ? [
-              {
-                label: "О Приложении",
-                click: () =>
-                  BrowserWindow.getAllWindows()[0].webContents.send(
-                    "app:open-about"
-                  ),
-              },
-              { type: "separator" },
-            ]
-          : []),
+        // ...(!isMac
+        //   ? [
+        //       {
+        //         label: "О Приложении",
+        //         click: () =>
+        //           BrowserWindow.getAllWindows()[0].webContents.send(
+        //             "app:open-about"
+        //           ),
+        //       },
+        //       { type: "separator" },
+        //     ]
+        //   : []),
         // {
         //   label: "Сайт проекта",
         //   click: () =>

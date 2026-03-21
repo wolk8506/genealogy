@@ -22,6 +22,9 @@ import ZoomOutIcon from "@mui/icons-material/ZoomOut";
 import heic2any from "heic2any";
 import getCroppedImg from "../utils/cropImage";
 import { Buffer } from "buffer";
+import { alpha, useTheme } from "@mui/material/styles";
+import CloudUploadIcon from "@mui/icons-material/CloudUpload";
+import CropIcon from "@mui/icons-material/Crop";
 
 export default function AvatarEditorDialog({
   open,
@@ -29,6 +32,8 @@ export default function AvatarEditorDialog({
   personId,
   onSaved,
 }) {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === "dark";
   const [imageSrc, setImageSrc] = useState(null);
   const [fallback, setFallback] = useState(null);
   const [crop, setCrop] = useState({ x: 0, y: 0 });
@@ -82,7 +87,7 @@ export default function AvatarEditorDialog({
         }
       }
     },
-    [imageSrc, croppedPreview]
+    [imageSrc, croppedPreview],
   );
 
   // Общий хелпер: читаем File или Blob или ArrayBuffer, возвращаем Data URL
@@ -200,121 +205,220 @@ export default function AvatarEditorDialog({
       maxWidth="sm"
       PaperProps={{
         sx: {
-          borderRadius: "15px",
+          borderRadius: "24px",
+          backgroundImage: "none",
+          bgcolor: isDark ? alpha(theme.palette.background.paper, 0.9) : "#fff",
+          backdropFilter: "blur(15px)",
+          border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+          boxShadow: theme.shadows[24],
         },
       }}
     >
-      <DialogTitle>Редактировать аватар</DialogTitle>
-      <DialogContent>
-        <Stack spacing={2} alignItems="center" mb={2}>
-          <Avatar
-            src={croppedPreview || fallback}
-            sx={{ width: 120, height: 120 }}
-          />
+      <DialogTitle
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          gap: 1.5,
+          fontWeight: 600,
+        }}
+      >
+        <CropIcon color="primary" />
+        Редактировать аватар
+      </DialogTitle>
 
-          <Typography variant="body2" color="text.secondary">
-            {imageSrc ? "Новый аватар (превью кропа)" : "Текущий аватар"}{" "}
-          </Typography>
-        </Stack>
-
-        {!imageSrc ? (
-          <Box
-            onDragOver={(e) => e.preventDefault()}
-            onDragEnter={(e) => {
-              e.preventDefault();
-              setDragCounter((c) => c + 1);
-            }}
-            onDragLeave={(e) => {
-              e.preventDefault();
-              setDragCounter((c) => Math.max(c - 1, 0));
-            }}
-            onDrop={handleDrop}
-            sx={{
-              border: "2px dashed",
-              borderColor: isDragging ? "primary.main" : "divider",
-              bgcolor: isDragging ? "action.selected" : "action.hover",
-              borderRadius: 2,
-              p: 3,
-              textAlign: "center",
-              transition: "0.3s",
-            }}
-          >
-            <Typography color="text.secondary" mb={1}>
-              Перетащите изображение сюда или
-            </Typography>
-            <Button
-              variant="outlined"
-              startIcon={<PhotoCameraIcon />}
-              component="label"
-            >
-              Выбрать фото
-              <input
-                type="file"
-                hidden
-                accept="image/*,.heic"
-                onChange={handleFileChange}
-              />
-            </Button>
-          </Box>
-        ) : (
-          <Box sx={{ position: "relative", width: "100%", height: 300 }}>
-            <Cropper
-              image={imageSrc}
-              crop={crop}
-              zoom={zoom}
-              aspect={1}
-              onCropChange={setCrop}
-              onZoomChange={setZoom}
-              onCropComplete={onCropComplete}
-              zoomWithScroll={true}
+      <DialogContent sx={{ pb: 3 }}>
+        <Stack spacing={3} alignItems="center">
+          {/* Верхнее превью */}
+          <Box sx={{ position: "relative" }}>
+            <Avatar
+              src={croppedPreview || fallback}
+              sx={{
+                width: 140,
+                height: 140,
+                border: `4px solid ${theme.palette.background.paper}`,
+                boxShadow: theme.shadows[8],
+              }}
             />
-            <Stack direction="row" spacing={1} alignItems="center" mt={2}>
-              <IconButton
-                onClick={handleZoomOut}
-                disabled={zoom <= minZoom}
-                variant="outlined"
-                size="small"
-              >
-                <ZoomOutIcon />
-              </IconButton>
-              <Slider
-                value={zoom}
-                min={minZoom}
-                max={maxZoom}
-                step={stepZoom}
-                marks={[
-                  { value: 1, label: "1x" },
-                  { value: 3, label: "3x (граница)" },
-                  { value: 5, label: "5x" },
-                  { value: 10, label: "10x" },
-                ]}
-                onChange={(e, v) => setZoom(v)}
-                sx={{ flexGrow: 1 }}
-              />
-              <IconButton
-                onClick={handleZoomIn}
-                disabled={zoom >= maxZoom}
-                variant="outlined"
-                size="small"
-              >
-                <ZoomInIcon />
-              </IconButton>
-            </Stack>
+            <Box
+              sx={{
+                position: "absolute",
+                bottom: 5,
+                right: 5,
+                bgcolor: "primary.main",
+                borderRadius: "50%",
+                p: 0.5,
+                display: "flex",
+                color: "#fff",
+                border: `2px solid ${theme.palette.background.paper}`,
+              }}
+            >
+              <PhotoCameraIcon sx={{ fontSize: 18 }} />
+            </Box>
           </Box>
-        )}
+
+          {!imageSrc ? (
+            /* Твоя зона Drop-zone с новым стилем */
+            <Box
+              onDragOver={(e) => e.preventDefault()}
+              onDragEnter={(e) => {
+                e.preventDefault();
+                setDragCounter((c) => c + 1);
+              }}
+              onDragLeave={(e) => {
+                e.preventDefault();
+                setDragCounter((c) => Math.max(c - 1, 0));
+              }}
+              onDrop={handleDrop}
+              sx={{
+                width: "100%",
+                border: "2px dashed",
+                borderColor: isDragging
+                  ? "primary.main"
+                  : alpha(theme.palette.divider, 0.5),
+                bgcolor: isDragging
+                  ? alpha(theme.palette.primary.main, 0.05)
+                  : alpha(theme.palette.action.hover, 0.03),
+                borderRadius: "20px",
+                p: 5,
+                textAlign: "center",
+                transition: "all 0.3s ease",
+                cursor: "pointer",
+                "&:hover": {
+                  borderColor: "primary.main",
+                  bgcolor: alpha(theme.palette.primary.main, 0.02),
+                },
+              }}
+            >
+              <CloudUploadIcon
+                sx={{
+                  fontSize: 48,
+                  color: isDragging ? "primary.main" : "text.disabled",
+                  mb: 2,
+                }}
+              />
+              <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
+                Перетащите фото сюда
+              </Typography>
+              <Typography variant="body2" color="text.secondary" mb={3}>
+                Поддерживаются JPG, PNG, HEIC
+              </Typography>
+              <Button
+                variant="contained"
+                component="label"
+                disableElevation
+                sx={{ borderRadius: "10px", px: 4 }}
+              >
+                Выбрать файл
+                <input
+                  type="file"
+                  hidden
+                  accept="image/*,.heic"
+                  onChange={handleFileChange}
+                />
+              </Button>
+            </Box>
+          ) : (
+            /* Секция Кроппера */
+            <Box sx={{ width: "100%" }}>
+              <Box
+                sx={{
+                  position: "relative",
+                  width: "100%",
+                  height: 350,
+                  borderRadius: "16px",
+                  overflow: "hidden",
+                  border: `1px solid ${theme.palette.divider}`,
+                }}
+              >
+                <Cropper
+                  image={imageSrc}
+                  crop={crop}
+                  zoom={zoom}
+                  aspect={1}
+                  onCropChange={setCrop}
+                  onZoomChange={setZoom}
+                  onCropComplete={onCropComplete}
+                  zoomWithScroll={true}
+                />
+              </Box>
+
+              {/* Управление зумом */}
+              <Stack
+                direction="row"
+                spacing={2}
+                alignItems="center"
+                sx={{
+                  mt: 3,
+                  px: 2,
+                  py: 1.5,
+                  bgcolor: alpha(theme.palette.action.hover, 0.04),
+                  borderRadius: "12px",
+                }}
+              >
+                <IconButton
+                  onClick={handleZoomOut}
+                  disabled={zoom <= minZoom}
+                  size="small"
+                  sx={{ bgcolor: "background.paper", boxShadow: 1 }}
+                >
+                  <ZoomOutIcon fontSize="small" />
+                </IconButton>
+                <Slider
+                  value={zoom}
+                  min={minZoom}
+                  max={maxZoom}
+                  step={stepZoom}
+                  onChange={(e, v) => setZoom(v)}
+                  sx={{
+                    flexGrow: 1,
+                    "& .MuiSlider-thumb": { width: 16, height: 16 },
+                    "& .MuiSlider-valueLabel": { borderRadius: "6px" },
+                  }}
+                />
+                <IconButton
+                  onClick={handleZoomIn}
+                  disabled={zoom >= maxZoom}
+                  size="small"
+                  sx={{ bgcolor: "background.paper", boxShadow: 1 }}
+                >
+                  <ZoomInIcon fontSize="small" />
+                </IconButton>
+              </Stack>
+            </Box>
+          )}
+        </Stack>
       </DialogContent>
 
-      <DialogActions>
-        <Button onClick={handleClose} startIcon={<CancelIcon />}>
-          Закрыть
+      <DialogActions sx={{ p: 3, pt: 1 }}>
+        <Button
+          onClick={handleClose}
+          startIcon={<CancelIcon />}
+          sx={{ borderRadius: "10px", color: "text.secondary" }}
+        >
+          Отмена
         </Button>
-        <Button color="error" onClick={handleReset} startIcon={<RestoreIcon />}>
-          Сбросить
+        <Button
+          color="inherit"
+          onClick={handleReset}
+          startIcon={<RestoreIcon />}
+          sx={{ borderRadius: "10px", mr: "auto" }}
+        >
+          Сброс
         </Button>
         <Button
           onClick={uploadCropped}
+          variant="contained"
           startIcon={<SaveIcon />}
           disabled={!imageSrc}
+          disableElevation
+          sx={{
+            borderRadius: "10px",
+            px: 4,
+            fontWeight: 600,
+            boxShadow: imageSrc
+              ? `0 4px 14px 0 ${alpha(theme.palette.primary.main, 0.39)}`
+              : "none",
+          }}
         >
           Сохранить
         </Button>

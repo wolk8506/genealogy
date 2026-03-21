@@ -6,7 +6,7 @@ import MaleIcon from "@mui/icons-material/Male";
 import FemaleIcon from "@mui/icons-material/Female";
 import RestoreFromTrashIcon from "@mui/icons-material/RestoreFromTrash";
 
-import ExpandingSearch from "./ExpandingSearch";
+import ExpandingSearch from "../../components/ExpandingSearch";
 import ExpandingTimeSelect from "./ExpandingTimeSelect";
 import ExpandingGenSelect from "./ExpandingGenSelect";
 import ExpandingRelationCheck from "./ExpandingRelationCheck";

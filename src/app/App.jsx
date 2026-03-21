@@ -112,7 +112,7 @@ export default function App() {
       >
         <CircularProgress size={64} thickness={5} />
         <Typography variant="h6" sx={{ mt: 2 }}>
-          Загрузка темы…
+          Загрузка…
         </Typography>
       </Box>
     );

@@ -23,7 +23,7 @@ const StyledContainer = styled(Box, {
   borderColor: theme.palette.divider,
   transition: "all 0.3s ease",
   height: 40,
-  minWidth: 40,
+  // minWidth: 40,
   paddingRight: $expanded ? 12 : 0,
   cursor: "pointer",
   // backgroundColor: $expanded ? "rgba(255,255,255,0.08)" : "transparent",
@@ -72,17 +72,13 @@ export default function ExpandingGenSelect({ options, value, onChange }) {
             size="small"
             sx={{
               color: "white",
-              p: "9px",
+              p: "8px",
               "&:hover": {
                 backgroundColor: "transparent",
               },
             }}
           >
-            <LayersIcon
-              fontSize="small"
-              color={isExpanded ? "primary" : "inherit"}
-              sx={{}}
-            />
+            <LayersIcon color={isExpanded ? "primary" : "inherit"} />
           </IconButton>
 
           {isExpanded && (

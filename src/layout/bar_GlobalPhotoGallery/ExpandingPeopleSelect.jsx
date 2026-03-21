@@ -91,14 +91,14 @@ export default function ExpandingPeopleSelect({
         bgcolor: isMenuOpen ? "rgba(255,255,255,0.08)" : "transparent",
       }}
     >
-      <IconButton size="small" sx={{ color: "white", p: "9px" }}>
+      <IconButton size="small" sx={{ color: "white", p: "8px" }}>
         {/* <Badge
           badgeContent={
             selectedPeople.length > 1 ? `+${selectedPeople.length - 1}` : 0
           }
           color="secondary"
         > */}
-        <GroupIcon fontSize="small" />
+        <GroupIcon />
         {/* </Badge> */}
       </IconButton>
 

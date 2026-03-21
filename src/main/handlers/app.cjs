@@ -4,6 +4,8 @@ const { ipcMain, app, shell, BrowserWindow } = require("electron");
 const path = require("path");
 const fs = require("fs");
 const os = require("os");
+const { exec } = require("child_process");
+// const checkDiskSpace = require("check-disk-space").default;
 
 function getUserPaths(personId) {
   const userDataPath = app.getPath("userData"); // или твой путь к документам
@@ -44,6 +46,47 @@ ipcMain.handle("app:getPlatform", () => {
 });
 ipcMain.handle("app:getSysVersions", () => {
   return process.versions;
+});
+
+ipcMain.handle("get-disk-usage", async () => {
+  return new Promise((resolve) => {
+    if (process.platform === "darwin") {
+      // macOS: используем df -m (результат в мегабайтах)
+      // /System/Volumes/Data — это место, где лежат твои файлы
+      exec("df -m /System/Volumes/Data", (err, stdout) => {
+        if (err) return resolve({ total: 0, free: 0 });
+
+        const lines = stdout.trim().split("\n");
+        if (lines.length > 1) {
+          const parts = lines[1].split(/\s+/);
+          // parts[1] - всего, parts[3] - доступно
+          resolve({
+            total: parseInt(parts[1]),
+            free: parseInt(parts[3]),
+          });
+        } else {
+          resolve({ total: 0, free: 0 });
+        }
+      });
+    } else if (process.platform === "win32") {
+      // Windows: PowerShell возвращает точный объект
+      const psCommand =
+        'Powershell "Get-PSDrive C | Select-Object Size,Free | ConvertTo-Json"';
+      exec(psCommand, (err, stdout) => {
+        try {
+          const data = JSON.parse(stdout);
+          resolve({
+            total: Math.round(data.Size / (1024 * 1024)),
+            free: Math.round(data.Free / (1024 * 1024)),
+          });
+        } catch (e) {
+          resolve({ total: 0, free: 0 });
+        }
+      });
+    } else {
+      resolve({ total: 0, free: 0 });
+    }
+  });
 });
 
 ipcMain.handle("app:getBuildDate", () => {
