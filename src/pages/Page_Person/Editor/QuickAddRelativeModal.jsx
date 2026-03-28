@@ -17,6 +17,8 @@ import {
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import PersonAddIcon from "@mui/icons-material/PersonAdd";
+import FemaleIcon from "@mui/icons-material/Female";
+import MaleIcon from "@mui/icons-material/Male";
 
 export default function QuickAddRelativeModal({
   open,
@@ -222,6 +224,7 @@ export default function QuickAddRelativeModal({
                 <TextField
                   label="Фамилия"
                   fullWidth
+                  sx={{ width: "244px" }}
                   size="small"
                   value={lastName}
                   onChange={(e) => setLastName(e.target.value)}
@@ -235,6 +238,7 @@ export default function QuickAddRelativeModal({
                 <TextField
                   label="Имя"
                   fullWidth
+                  sx={{ width: "244px" }}
                   size="small"
                   value={firstName}
                   onChange={(e) => setFirstName(e.target.value)}
@@ -248,6 +252,7 @@ export default function QuickAddRelativeModal({
                 <TextField
                   label="Отчество"
                   fullWidth
+                  sx={{ width: "244px" }}
                   size="small"
                   value={patronymic}
                   onChange={(e) => setPatronymic(e.target.value)}
@@ -261,6 +266,7 @@ export default function QuickAddRelativeModal({
                   <TextField
                     label="Девичья фамилия"
                     fullWidth
+                    sx={{ width: "244px" }}
                     size="small"
                     disabled={gender === "male"}
                     value={gender === "male" ? "" : maidenName}
@@ -277,6 +283,7 @@ export default function QuickAddRelativeModal({
                     select
                     label="Пол"
                     fullWidth
+                    sx={{ width: "244px" }}
                     size="small"
                     value={gender}
                     onChange={(e) => setGender(e.target.value)}
@@ -291,6 +298,21 @@ export default function QuickAddRelativeModal({
                           },
                         },
                       },
+                      startAdornment: gender && (
+                        <Box
+                          sx={{
+                            mr: 1,
+                            display: "flex",
+                            color: "action.active",
+                          }}
+                        >
+                          {gender === "male" ? (
+                            <MaleIcon fontSize="small" />
+                          ) : (
+                            <FemaleIcon fontSize="small" />
+                          )}
+                        </Box>
+                      ),
                     }}
                   >
                     <MenuItem
