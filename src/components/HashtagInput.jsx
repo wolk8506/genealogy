@@ -141,7 +141,7 @@ const HashtagInput = ({ value, onChange, suggestions = [], placeholder }) => {
 
   return (
     <Box ref={containerRef} sx={{ position: "relative", width: "100%" }}>
-      {/* Слой подсветки */}
+      {/* //!!! Слой подсветки */}
       <Box
         sx={{
           position: "absolute",
@@ -149,7 +149,7 @@ const HashtagInput = ({ value, onChange, suggestions = [], placeholder }) => {
           left: 0,
           right: 0,
           bottom: 0,
-          p: "16.5px 14px",
+          p: "8.5px 14px", //!!! корректировать здесь!!!!
           whiteSpace: "pre-wrap",
           wordBreak: "break-word",
           fontSize: "1rem",

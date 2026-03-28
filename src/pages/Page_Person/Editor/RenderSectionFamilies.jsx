@@ -12,27 +12,66 @@ import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
 import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
 import { RenderSectionChildren } from "./RenderSectionChildren";
 import { RenderPersonItem } from "../info/RenderPersonItem";
+import { EmptyPersonSlot } from "./EmptyPersonSlot";
 
-export const RenderSectionFamilies = ({ people = [], soloChildren = [] }) => {
+export const RenderSectionFamilies = ({
+  person = {},
+  people = [],
+  soloChildren = [],
+  onUnlinkChild,
+  onUnlinkSpouse,
+  onLinkSpouse,
+  onLinkChild,
+  activeDragType,
+  onDragEnd,
+  onMoveSpouse,
+  draggedPersonData,
+}) => {
   const [index, setIndex] = useState(0);
   const theme = useTheme();
 
   // --- ПОДГОТОВКА СПИСКА ---
   const renderList = [];
-  if (soloChildren.length > 0)
-    renderList.push({ type: "solo_children", data: soloChildren || [] });
+  renderList.push({ type: "solo_children", data: soloChildren || [] });
   people.forEach((fam) => {
     if (fam.partner) renderList.push({ type: "family", data: fam });
   });
-  // renderList.push({ type: "empty_spouse_slot" });
+  renderList.push({ type: "empty_spouse_slot" });
 
   const totalItems = renderList.length;
   const visibleItems = renderList.slice(index, index + 2);
 
   // --- ЛОГИКА ПОДСВЕТКИ (ТВОЯ РАБОЧАЯ ВЕРСИЯ) ---
+  const getDropStatus = (item) => {
+    const dragType =
+      typeof activeDragType === "object"
+        ? activeDragType?.type
+        : activeDragType;
+    if (dragType !== "child") return false;
+    if (!draggedPersonData || !person) return false;
+
+    const child = draggedPersonData;
+    const myGender = person.gender;
+    const motherIdInDB = myGender === "male" ? child.mother : child.father;
+
+    const isMotherInFamilies =
+      motherIdInDB &&
+      people.some(
+        (fam) => fam.partner && String(fam.partner.id) === String(motherIdInDB),
+      );
+
+    if (isMotherInFamilies) {
+      if (item.type === "family") {
+        const blockPartnerId = item.data?.partner?.id || item.data?.partnerId;
+        return String(blockPartnerId) === String(motherIdInDB);
+      }
+      return false;
+    }
+    return item.type === "solo_children";
+  };
 
   const handleNext = () =>
-    index < totalItems - 1 && setIndex((prev) => prev + 1);
+    index < totalItems - 2 && setIndex((prev) => prev + 1);
   const handlePrev = () => index > 0 && setIndex((prev) => prev - 1);
 
   return (
@@ -108,6 +147,8 @@ export const RenderSectionFamilies = ({ people = [], soloChildren = [] }) => {
         alignItems="flex-start"
       >
         {visibleItems.map((item) => {
+          const isDroppable = getDropStatus(item);
+
           // Базовый стиль колонки (теперь без подсветки границ всей колонки)
           const columnStyle = {
             flex: "0 0 360px",
@@ -118,18 +159,16 @@ export const RenderSectionFamilies = ({ people = [], soloChildren = [] }) => {
           if (item.type === "solo_children") {
             return (
               <Stack key="solo-group" alignItems="center" sx={columnStyle}>
-                <Divider
-                  orientation="vertical"
-                  sx={{ height: renderList.length > 1 ? 124 : 0 }}
-                />
+                <Divider orientation="vertical" sx={{ height: 124 }} />
 
                 <Box sx={{ width: "100%" }}>
                   <RenderSectionChildren
                     people={item.data}
-                    title={
-                      people.length > 1 ? "Ребенок вне брака" : "Дети вне брака"
-                    }
-                    row={people.length < 1 && soloChildren.length > 1 ? 2 : 1}
+                    onUnlink={onUnlinkChild}
+                    onLink={(id) => onLinkChild(id, null)}
+                    activeDragType={activeDragType}
+                    onDragEnd={onDragEnd}
+                    isDroppable={isDroppable}
                   />
                 </Box>
               </Stack>
@@ -138,19 +177,12 @@ export const RenderSectionFamilies = ({ people = [], soloChildren = [] }) => {
 
           if (item.type === "family") {
             const fam = item.data;
+            const spouseIndex = people.findIndex(
+              (f) => f.partner?.id === fam.partner.id,
+            );
 
             return (
-              <Stack
-                key={fam.partner.id}
-                alignItems="center"
-                // sx={}
-                sx={{
-                  ...columnStyle,
-                  width: people.length === 1 ? "760px" : "360px", // Ширина подстраивается
-                  // transition: "all 0.3s ease",
-                  alignItems: "center",
-                }}
-              >
+              <Stack key={fam.partner.id} alignItems="center" sx={columnStyle}>
                 {/* <Divider orientation="vertical" sx={{ height: 30 }} /> */}
                 <Divider
                   orientation="vertical"
@@ -169,6 +201,13 @@ export const RenderSectionFamilies = ({ people = [], soloChildren = [] }) => {
                     spacing={1}
                     // sx={{ mb: 1 }}
                   >
+                    <IconButton
+                      size="small"
+                      disabled={spouseIndex === 0}
+                      onClick={() => onMoveSpouse(spouseIndex, -1)}
+                    >
+                      <ArrowBackIosNewIcon sx={{ fontSize: 12 }} />
+                    </IconButton>
                     <Typography
                       variant="caption"
                       sx={{
@@ -180,16 +219,26 @@ export const RenderSectionFamilies = ({ people = [], soloChildren = [] }) => {
                     >
                       {fam.partner.gender === "male" ? "Супруг" : "Супруга"}
                     </Typography>
+                    <IconButton
+                      size="small"
+                      disabled={spouseIndex === people.length - 2}
+                      onClick={() => onMoveSpouse(spouseIndex, 1)}
+                    >
+                      <ArrowForwardIosIcon sx={{ fontSize: 12 }} />
+                    </IconButton>
                   </Stack>
                 </Divider>
                 {/* Секция супруга (не светится) */}
 
-                <Box sx={{ width: "360px", px: 2 }}>
-                  <RenderPersonItem p={fam.partner} link={true} />
+                <Box sx={{ width: "100%", px: 2 }}>
+                  <RenderPersonItem
+                    p={fam.partner}
+                    onUnlink={() => onUnlinkSpouse(fam.partner.id)}
+                    unlinkPosition="top"
+                  />
                 </Box>
 
                 {/* Секция детей (СВЕТИТСЯ ТОЛЬКО ОНА) */}
-                {}
                 <Box sx={{ width: "100%", px: 1, pb: 1 }}>
                   <Box>
                     <RenderSectionChildren
@@ -199,13 +248,13 @@ export const RenderSectionFamilies = ({ people = [], soloChildren = [] }) => {
                           : "Ребенок"
                       }
                       people={fam.children}
-                      row={
-                        soloChildren.length === 0 &&
-                        people.length === 1 &&
-                        fam.children.length > 1
-                          ? 2
-                          : 1
-                      }
+                      onUnlink={onUnlinkChild}
+                      onLink={(id) => onLinkChild(id, fam.partner.id)}
+                      activeDragType={activeDragType}
+                      onDragEnd={onDragEnd}
+                      isDroppable={isDroppable}
+                      info={true}
+                      parentGender={fam.partner.gender}
                     />
                   </Box>
                 </Box>
@@ -213,6 +262,37 @@ export const RenderSectionFamilies = ({ people = [], soloChildren = [] }) => {
             );
           }
 
+          if (item.type === "empty_spouse_slot") {
+            return (
+              <Stack
+                key="empty-slot"
+                alignItems="center"
+                sx={{ flex: "0 0 360px" }}
+              >
+                <Divider
+                  orientation="vertical"
+                  sx={{
+                    height: "60px",
+                    "& .MuiDivider-wrapper": {
+                      padding: "0 8px",
+                    },
+                    textTransform: "uppercase",
+                    color: "text.disabled",
+                  }}
+                >
+                  Новый союз
+                </Divider>
+
+                <EmptyPersonSlot
+                  label="супруга(у)"
+                  acceptType="spouse"
+                  activeDragType={activeDragType}
+                  onDragEnd={onDragEnd}
+                  onDrop={onLinkSpouse}
+                />
+              </Stack>
+            );
+          }
           return null;
         })}
       </Stack>

@@ -69,17 +69,28 @@ ipcMain.handle("get-disk-usage", async () => {
         }
       });
     } else if (process.platform === "win32") {
-      // Windows: PowerShell возвращает точный объект
+      // Используем WMI, это надежнее чем PSDrive
       const psCommand =
-        'Powershell "Get-PSDrive C | Select-Object Size,Free | ConvertTo-Json"';
+        'Powershell "Get-WmiObject Win32_LogicalDisk -Filter \\"DeviceID=\'C:\'\\" | Select-Object Size,FreeSpace | ConvertTo-Json"';
+
       exec(psCommand, (err, stdout) => {
         try {
-          const data = JSON.parse(stdout);
+          // PowerShell иногда выводит лишние пробелы или пустые строки
+          const cleanedStdout = stdout.trim();
+          if (!cleanedStdout) return resolve({ total: 0, free: 0 });
+
+          const data = JSON.parse(cleanedStdout);
+
+          // На Windows свойства называются Size и FreeSpace
+          const totalBytes = data.Size || 0;
+          const freeBytes = data.FreeSpace || 0;
+
           resolve({
-            total: Math.round(data.Size / (1024 * 1024)),
-            free: Math.round(data.Free / (1024 * 1024)),
+            total: Math.round(totalBytes / (1024 * 1024)),
+            free: Math.round(freeBytes / (1024 * 1024)),
           });
         } catch (e) {
+          console.error("Ошибка парсинга диска Windows:", e);
           resolve({ total: 0, free: 0 });
         }
       });
@@ -299,62 +310,6 @@ ipcMain.handle("app:getPersonFolderSize", async (event, personId) => {
   }
 });
 
-// ipcMain.handle("app:getPersonFolderSize", async (event, personId) => {
-//   const cleanId = String(personId).trim();
-//   const rootPath = path.join(
-//     app.getPath("documents"),
-//     "Genealogy",
-//     "people",
-//     cleanId,
-//   );
-//   const jsonPath = path.join(rootPath, "photos.json");
-
-//   let totalSize = 0;
-//   let photoCount = 0;
-
-//   try {
-//     // 1. Считаем количество записей из JSON (База данных)
-//     if (fs.existsSync(jsonPath)) {
-//       const content = fs.readFileSync(jsonPath, "utf8");
-//       try {
-//         const data = JSON.parse(content);
-//         // Если в файле массив объектов, берем его длину
-//         photoCount = Array.isArray(data) ? data.length : 0;
-//       } catch (e) {
-//         console.error(`Ошибка парсинга JSON для ID ${cleanId}:`, e);
-//       }
-//     }
-
-//     // 2. Рекурсивная функция для подсчета физического размера (МБ)
-//     function walk(dir) {
-//       if (!fs.existsSync(dir)) return;
-//       const files = fs.readdirSync(dir, { withFileTypes: true });
-
-//       for (const file of files) {
-//         const fullPath = path.join(dir, file.name);
-//         if (file.isDirectory()) {
-//           walk(fullPath);
-//         } else {
-//           const stats = fs.statSync(fullPath);
-//           totalSize += stats.size;
-//           // Больше не инкрементируем photoCount здесь,
-//           // так как мы уже взяли точное число из JSON выше
-//         }
-//       }
-//     }
-
-//     walk(rootPath);
-
-//     return {
-//       size: (totalSize / (1024 * 1024)).toFixed(2), // Физический вес всей папки
-//       count: photoCount, // Количество "законных" фото из базы
-//     };
-//   } catch (err) {
-//     console.error(`Ошибка при обработке папки ID ${cleanId}:`, err);
-//     return { size: "0.00", count: 0 };
-//   }
-// });
-
 // *  Очистка папки `Genealogy` от данных
 ipcMain.handle("app:full-reset", async () => {
   // Путь к вашей папке данных (обычно в Documents/Genealogy)
@@ -374,5 +329,36 @@ ipcMain.handle("app:full-reset", async () => {
   } catch (error) {
     console.error("Ошибка при полной очистке:", error);
     throw error;
+  }
+});
+// * L O G
+
+ipcMain.handle("app:logHistory", async (event, entry) => {
+  try {
+    const dirPath = path.join(app.getPath("documents"), "Genealogy");
+    const logPath = path.join(dirPath, "history.jsonl");
+
+    // 1. Проверяем/создаем папку (на случай если это самое первое действие в приложении)
+    if (!fs.existsSync(dirPath)) {
+      fs.mkdirSync(dirPath, { recursive: true });
+    }
+
+    // 2. Готовим строку лога (JSON + перенос строки)
+    const logEntry =
+      JSON.stringify({
+        timestamp: entry.timestamp || new Date().toISOString(),
+        title: entry.title,
+        message: entry.message,
+        type: entry.type,
+      }) + "\n";
+
+    // 3. 'a' — флаг append (дозапись в конец файла, создаст файл если его нет)
+    fs.appendFileSync(logPath, logEntry, "utf-8");
+
+    return { success: true };
+  } catch (error) {
+    console.error("Не удалось записать лог в файл:", error);
+    // Не выкидываем ошибку (throw), чтобы не ломать основной UI из-за проблем с логами
+    return { success: false, error: error.message };
   }
 });

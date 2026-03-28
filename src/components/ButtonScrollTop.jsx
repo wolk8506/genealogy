@@ -51,7 +51,7 @@ export const ButtonScrollTop = ({
           color: "rgb(255,255,255,0.5)",
           bottom: 24,
           right: 24,
-          zIndex: 2000,
+          zIndex: 1000,
           // Стили Glass
           bgcolor: isDark
             ? alpha(theme.palette.divider, 0.1)

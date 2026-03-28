@@ -7,6 +7,7 @@ import {
   Slide,
   Stack,
   Typography,
+  alpha,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import EditIcon from "@mui/icons-material/Edit";
@@ -37,6 +38,7 @@ const MilkdownEditor = ({
   execRef,
   setIsDirty,
   onImageClick,
+  onImageAdded,
 }) => {
   const editorRef = useRef(null);
   const isEditingRef = useRef(isEditing);
@@ -143,6 +145,9 @@ const MilkdownEditor = ({
       insertImage: async () => {
         const file = await window.bioAPI.addImage(personId);
         if (file) {
+          // Сообщаем BiographySection, что в папку упал новый файл
+          onImageAdded?.(file);
+
           editorRef.current?.action((ctx) => {
             const view = ctx.get(editorViewCtx);
             const node = ctx.get(parserCtx)(`![img](${file})`).content
@@ -159,12 +164,18 @@ const MilkdownEditor = ({
       ref={containerRef}
       sx={{
         mt: 2,
-        "& .milkdown": { backgroundColor: "transparent", color: "#eee" },
+        "& .milkdown": {
+          backgroundColor: "transparent",
+          color: (theme) =>
+            theme.palette.mode === "dark" ? "#e0e0e0" : "#1a1a1a",
+        },
         "& .milkdown .editor": {
           minHeight: "500px",
           outline: "none",
           pb: "100px",
-          color: "#eee",
+          // color: "#eee",
+          color: (theme) =>
+            theme.palette.mode === "dark" ? "#e0e0e0" : "#1a1a1a",
           fontSize: "1.05rem",
           lineHeight: 1.7,
           // ВАЖНО: сохраняем переносы строк
@@ -241,8 +252,14 @@ export default function BiographySection({
   const [previewImg, setPreviewImg] = useState(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [pendingAction, setPendingAction] = useState(null);
+  const [sessionImages, setSessionImages] = useState([]);
 
   const saveRef = useRef(null);
+
+  // Очищаем список при входе в режим редактирования
+  useEffect(() => {
+    if (isEditing) setSessionImages([]);
+  }, [isEditing]);
 
   // Регистрация методов в рефе для MainLayout
   useEffect(() => {
@@ -283,19 +300,23 @@ export default function BiographySection({
 
   const handleSaveAndExecute = async () => {
     const markdown = saveRef.current?.();
-
-    // Проверяем, что результат — это строка (даже если она пустая)
     if (typeof markdown === "string") {
       await window.bioAPI.save(personId, markdown);
       setIsDirty(false);
       setBio(markdown);
+      setSessionImages([]); // Очищаем, так как файлы теперь "закреплены" в MD
       executePending();
     }
   };
 
-  const handleDiscardAndExecute = () => {
+  const handleDiscardAndExecute = async () => {
+    // Если были добавлены изображения, удаляем их физически из папки
+    if (sessionImages.length > 0) {
+      await window.bioAPI.deleteImages(personId, sessionImages);
+    }
+
     setIsDirty(false);
-    // Просто выполняем то, что хотели сделать до модалки
+    setSessionImages([]);
     executePending();
   };
 
@@ -331,54 +352,131 @@ export default function BiographySection({
 
   return (
     <>
-      <Box>
+      <Box
+        sx={{ display: "flex", height: "100%", bgcolor: "background.default" }}
+      >
         <Box
           sx={{
             flex: 1,
             overflowY: "auto",
-            bgcolor: "#1e1e1e",
+            // Используем стандартный фон темы для подложки
+            bgcolor: "background.default",
+            py: { xs: 2, md: 4 },
+            px: { xs: 2, md: 0 },
           }}
         >
           <Box
             sx={{
               maxWidth: "900px",
-
               mx: "auto",
-              my: 4,
-              p: 4,
-              bgcolor: "#2c2c2c",
+              // Адаптивные отступы
+              p: { xs: 2, md: 5 },
+
+              // ЦВЕТ ЛИСТА
+              bgcolor: (theme) =>
+                theme.palette.mode === "dark"
+                  ? "#1a1a1a" // Глубокий темный (чуть темнее прошлого, для благородства)
+                  : "#ffffff",
+
               minHeight: "100vh",
-              boxShadow: "0 10px 30px rgba(0,0,0,0.5)",
-              borderRadius: "8px",
-              border: "1px solid #333",
+              borderRadius: "24px",
+              border: "1px solid",
+
+              // ЦВЕТ ГРАНИЦЫ
+              borderColor: (theme) =>
+                theme.palette.mode === "dark"
+                  ? "rgba(255, 255, 255, 0.05)" // Почти невидимая в темноте
+                  : "rgba(0, 0, 0, 0.08)",
+
+              // ОБЪЕМНЫЕ ТЕНИ
+              boxShadow: (theme) =>
+                theme.palette.mode === "dark"
+                  ? `
+          0 20px 40px rgba(0,0,0,0.8), 
+          inset 0 0 0 1px rgba(255,255,255,0.05)
+        ` // Внешняя тень + внутренний тонкий контур для объема
+                  : "0 10px 40px rgba(0,0,0,0.06)",
+
+              // ИСПРАВЛЕНИЕ ЦВЕТА ТЕКСТА
+              color: (theme) =>
+                theme.palette.mode === "dark" ? "#e0e0e0" : "#1a1a1a", // Насыщенный черный для светлой темы
+
+              transition: "transform 0.3s ease, background-color 0.3s ease",
+              "&:hover": {
+                transform: "translateY(-2px)", // Легкий эффект парения при наведении
+              },
             }}
           >
             {activeElement === "bio" && bio === "" && !isEditing && (
-              <Box sx={{ textAlign: "center", py: 10, color: "text.disabled" }}>
-                <FeedIcon sx={{ fontSize: 60, opacity: 0.3 }} />
-                <Typography>Биография пока не заполнена</Typography>
+              <Box
+                sx={{
+                  textAlign: "center",
+                  py: 15,
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  gap: 2,
+                  "& .milkdown": {
+                    color: (theme) =>
+                      theme.palette.mode === "light"
+                        ? "#1a1a1a !important"
+                        : "inherit",
+                    fontSize: "1.1rem",
+                    lineHeight: 1.7,
+                  },
+                }}
+              >
+                <Box
+                  sx={{
+                    p: 3,
+                    borderRadius: "50%",
+                    bgcolor: (theme) => alpha(theme.palette.primary.main, 0.05),
+                  }}
+                >
+                  <FeedIcon
+                    sx={{ fontSize: 80, color: "text.disabled", opacity: 0.2 }}
+                  />
+                </Box>
+                <Typography
+                  variant="h6"
+                  sx={{ color: "text.secondary", fontWeight: 500 }}
+                >
+                  Биография пока не заполнена
+                </Typography>
                 <Button
+                  variant="outlined"
                   startIcon={<EditIcon />}
                   onClick={() => setIsEditing(true)}
-                  sx={{ mt: 2 }}
+                  sx={{
+                    mt: 1,
+                    borderRadius: "12px",
+                    px: 3,
+                    textTransform: "none",
+                  }}
                 >
                   Начать писать
                 </Button>
               </Box>
             )}
+
             {activeElement === "bio" && bio !== null && (
-              <MilkdownProvider key={personId + (isEditing ? "_ed" : "_vw")}>
-                <MilkdownEditor
-                  content={bio || " "} // Передаем пробел, чтобы Milkdown не ругался на null
-                  isEditing={isEditing}
-                  personDir={personDir}
-                  personId={personId}
-                  onSaveRef={saveRef}
-                  execRef={execRef}
-                  setIsDirty={setIsDirty}
-                  onImageClick={setPreviewImg}
-                />
-              </MilkdownProvider>
+              <Box sx={{ position: "relative" }}>
+                <MilkdownProvider key={personId + (isEditing ? "_ed" : "_vw")}>
+                  <MilkdownEditor
+                    onImageAdded={(file) =>
+                      setSessionImages((prev) => [...prev, file])
+                    }
+                    content={bio || " "}
+                    isEditing={isEditing}
+                    personDir={personDir}
+                    personId={personId}
+                    onSaveRef={saveRef}
+                    execRef={execRef}
+                    setIsDirty={setIsDirty}
+                    onImageClick={setPreviewImg}
+                  />
+                </MilkdownProvider>
+              </Box>
             )}
             <ButtonScrollTop />
           </Box>
@@ -388,59 +486,69 @@ export default function BiographySection({
       <Dialog
         open={confirmOpen}
         onClose={() => setConfirmOpen(false)}
-        // Добавляем плавный переход
         TransitionComponent={Slide}
         TransitionProps={{ direction: "down" }}
         PaperProps={{
           sx: {
-            bgcolor: "#242424", // Более глубокий темный
-            color: "white",
-            borderRadius: "16px",
-            backgroundImage: "none", // Убираем стандартное осветление MUI
-            border: "1px solid #444",
-            boxShadow: "0 20px 40px rgba(0,0,0,0.6)",
+            // Адаптивный фон: в темной теме чуть прозрачный для блюра, в светлой — белый
+            bgcolor: (theme) =>
+              theme.palette.mode === "dark"
+                ? alpha(theme.palette.background.paper, 0.8)
+                : theme.palette.background.paper,
+            backdropFilter: "blur(16px)",
+            backgroundImage: "none",
+            borderRadius: "24px", // Увеличил до 24px для единства стиля
+            border: "1px solid",
+            borderColor: "divider", // Системный цвет границы (адаптивный)
+            boxShadow: (theme) => theme.shadows[24],
+            overflow: "hidden",
           },
         }}
       >
         <Box sx={{ p: 4, minWidth: 320, textAlign: "center" }}>
-          {/* Иконка для привлечения внимания */}
+          {/* Иконка */}
           <Box
             sx={{
-              width: 56,
-              height: 56,
-              borderRadius: "50%",
-              bgcolor: "rgba(144, 202, 249, 0.1)",
+              width: 64,
+              height: 64,
+              borderRadius: "20px",
+              bgcolor: (theme) => alpha(theme.palette.primary.main, 0.1),
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
               mx: "auto",
-              mb: 2,
+              mb: 2.5,
             }}
           >
-            <EditIcon sx={{ color: "#90caf9", fontSize: 32 }} />
+            <EditIcon sx={{ color: "primary.main", fontSize: 32 }} />
           </Box>
 
-          <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
+          <Typography
+            variant="h6"
+            sx={{ fontWeight: 700, mb: 1, color: "text.primary" }}
+          >
             Сохранить правки?
           </Typography>
 
-          <Typography variant="body2" sx={{ color: "#aaa", mb: 3 }}>
-            У вас есть несохраненные изменения в биографии.
+          <Typography
+            variant="body2"
+            sx={{ color: "text.secondary", mb: 4, px: 2 }}
+          >
+            У вас есть несохраненные изменения в биографии. Выберите действие.
           </Typography>
 
           <Stack spacing={1.5}>
             <Button
               variant="contained"
-              size="small"
               fullWidth
               onClick={handleSaveAndExecute}
               sx={{
-                borderRadius: "12px",
-                py: 1.2,
+                borderRadius: "14px",
+                py: 1.5,
                 textTransform: "none",
-                fontWeight: 600,
-                bgcolor: "#1976d2",
-                "&:hover": { bgcolor: "#1565c0" },
+                fontWeight: 700,
+                boxShadow: (theme) =>
+                  `0 4px 12px ${alpha(theme.palette.primary.main, 0.3)}`,
               }}
             >
               Сохранить и выйти
@@ -448,18 +556,18 @@ export default function BiographySection({
 
             <Button
               variant="outlined"
-              size="small"
               fullWidth
               onClick={handleDiscardAndExecute}
               sx={{
-                borderRadius: "12px",
-                py: 1.2,
+                borderRadius: "14px",
+                py: 1.5,
                 textTransform: "none",
-                color: "#ff8a80",
-                borderColor: "#ff8a80",
+                fontWeight: 600,
+                color: "error.main",
+                borderColor: (theme) => alpha(theme.palette.error.main, 0.5),
                 "&:hover": {
-                  borderColor: "#ff5252",
-                  bgcolor: "rgba(255, 138, 128, 0.05)",
+                  borderColor: "error.main",
+                  bgcolor: (theme) => alpha(theme.palette.error.main, 0.05),
                 },
               }}
             >
@@ -468,15 +576,17 @@ export default function BiographySection({
 
             <Button
               variant="text"
-              size="small"
               fullWidth
               onClick={() => setConfirmOpen(false)}
               sx={{
-                borderRadius: "12px",
-                py: 1,
+                borderRadius: "14px",
+                py: 1.2,
                 textTransform: "none",
-                color: "#777",
-                "&:hover": { color: "#eee" },
+                color: "text.secondary",
+                "&:hover": {
+                  color: "text.primary",
+                  bgcolor: (theme) => alpha(theme.palette.action.hover, 0.05),
+                },
               }}
             >
               Продолжить редактирование
@@ -490,52 +600,76 @@ export default function BiographySection({
         open={Boolean(previewImg)}
         onClose={() => setPreviewImg(null)}
         maxWidth="xl"
-        // Добавляем прозрачный фон для Backdrop, чтобы клик по краям отрабатывал мягче
+        // Делаем сам фон Backdrop (затемнение вокруг) очень плотным
+        slotProps={{
+          backdrop: {
+            sx: {
+              backgroundColor: "rgba(0, 0, 0, 0.9)",
+              backdropFilter: "blur(8px)",
+            },
+          },
+        }}
         PaperProps={{
-          sx: { bgcolor: "transparent", boxShadow: "none" },
+          sx: {
+            bgcolor: "transparent",
+            boxShadow: "none",
+            overflow: "hidden", // Убираем скроллы у самой бумаги
+          },
         }}
       >
         <Box
-          onClick={() => setPreviewImg(null)} // ЗАКРЫТИЕ ПРИ КЛИКЕ В ЛЮБОМ МЕСТЕ BOX
+          onClick={() => setPreviewImg(null)}
           sx={{
-            p: 1,
             position: "relative",
-            bgcolor: "#000",
-            lineHeight: 0,
-            cursor: "pointer", // Курсор указывает, что клик сработает
             display: "flex",
             justifyContent: "center",
             alignItems: "center",
-            minWidth: "100px",
-            minHeight: "100px",
+            cursor: "zoom-out", // Показывает, что клик уменьшит/закроет
+            p: { xs: 1, md: 2 },
           }}
         >
+          {/* Кнопка закрытия — более современная и заметная */}
           <IconButton
-            size="small"
             onClick={(e) => {
-              e.stopPropagation(); // Предотвращаем двойной вызов, если нужно
+              e.stopPropagation();
               setPreviewImg(null);
             }}
             sx={{
-              position: "absolute",
-              top: 10,
-              right: 10,
+              position: "fixed", // Фиксируем относительно экрана, чтобы не прыгала
+              top: 20,
+              right: 20,
               color: "white",
-              zIndex: 1,
-              bgcolor: "rgba(0,0,0,0.5)",
-              "&:hover": { bgcolor: "rgba(0,0,0,0.8)" },
+              bgcolor: "rgba(255, 255, 255, 0.1)",
+              backdropFilter: "blur(4px)",
+              border: "1px solid rgba(255, 255, 255, 0.2)",
+              zIndex: 10,
+              "&:hover": {
+                bgcolor: "rgba(255, 255, 255, 0.2)",
+                transform: "rotate(90deg)", // Легкая анимация для красоты
+              },
+              transition: "all 0.3s ease",
             }}
           >
             <CloseIcon />
           </IconButton>
-          <img
+
+          <Box
+            component="img"
             src={previewImg}
-            style={{
-              maxWidth: "100%",
-              maxHeight: "90vh",
+            alt="Preview"
+            sx={{
+              maxWidth: "95vw",
+              maxHeight: "95vh",
               objectFit: "contain",
+              borderRadius: "12px", // Мягкие углы у самого фото
+              boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.5)", // Тень под фото для объема
+              // Плавное появление картинки
+              animation: "fadeIn 0.3s ease-out",
+              "@keyframes fadeIn": {
+                from: { opacity: 0, transform: "scale(0.95)" },
+                to: { opacity: 1, transform: "scale(1)" },
+              },
             }}
-            alt="zoom"
           />
         </Box>
       </Dialog>

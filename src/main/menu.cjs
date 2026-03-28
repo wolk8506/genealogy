@@ -43,7 +43,7 @@ function buildMenuTemplate() {
           label: "Добавить человека",
           click: () => {
             const win = BrowserWindow.getAllWindows()[0];
-            win.webContents.send("navigate", "/add");
+            win.webContents.send("navigate", "/?action=add");
           },
         },
         {

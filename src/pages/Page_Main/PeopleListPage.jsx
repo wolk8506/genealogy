@@ -10,23 +10,26 @@ import {
   ListItemButton,
   Grid,
   useTheme,
-  Fab,
-  Zoom,
   Paper,
-  Divider,
   Tooltip,
+  Chip,
+  Box,
+  alpha,
 } from "@mui/material";
 
 import DeleteIcon from "@mui/icons-material/Delete";
-// import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
+import AddPersonModal from "../../components/Dialog/AddPeopleDialog";
+import { useSearchParams } from "react-router-dom";
 
-import { Badge } from "@mui/material";
 import DescriptionIcon from "@mui/icons-material/Description"; // Для биографии
+import PersonAddAlt1Icon from "@mui/icons-material/PersonAddAlt1";
+import SettingsBackupRestoreIcon from "@mui/icons-material/SettingsBackupRestore";
 import PhotoLibraryIcon from "@mui/icons-material/PhotoLibrary"; // Для фото
 
 import appIcon from "../../img/app_icon.png";
 import { Link } from "react-router-dom";
 import { ButtonScrollTop } from "../../components/ButtonScrollTop";
+import { useNotificationStore } from "../../store/useNotificationStore";
 
 /* Аватар по ID фото */
 function PersonAvatar({ foto, initials }) {
@@ -74,19 +77,24 @@ function checkDateFilter(dateStr, filter) {
   }
 }
 
-export default function PeopleListPage({
-  search,
-  filters,
-  sortOrder,
-  statsOpen,
-  setStatsOpen,
-  filterOpen,
-  setFilterOpen,
-  setFilters,
-}) {
+export default function PeopleListPage({ search, filters, sortOrder }) {
   const [people, setPeople] = useState([]);
   const [loading, setLoading] = useState(true);
-  // const [showScrollTop, setShowScrollTop] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const isModalOpen = searchParams.get("action") === "add";
+
+  const addNotification = useNotificationStore(
+    (state) => state.addNotification,
+  );
+
+  const handleCloseModal = () => {
+    window.peopleAPI.getAll().then((data) => {
+      setPeople(data || []);
+      setLoading(false);
+      if (data) loadAllStats(data);
+    });
+    setSearchParams({});
+  };
 
   const theme = useTheme();
   const isDark = theme.palette.mode === "dark";
@@ -113,23 +121,7 @@ export default function PeopleListPage({
     });
   }, []);
 
-  // useEffect(() => {
-  //   const handleScroll = () => setShowScrollTop(window.scrollY > 300);
-  //   window.addEventListener("scroll", handleScroll);
-  //   return () => window.removeEventListener("scroll", handleScroll);
-  // }, []);
-
-  // const scrollToTop = () => window.scrollTo({ top: 0, behavior: "smooth" });
-
-  useEffect(() => {
-    window.peopleAPI.getAll().then((data) => {
-      setPeople(data || []);
-      setLoading(false);
-    });
-  }, []);
-
   const active = useMemo(() => people.filter((p) => !p.archived), [people]);
-  // const archived = useMemo(() => people.filter((p) => p.archived), [people]);
 
   const filtered = useMemo(() => {
     let res = active.filter((p) => {
@@ -177,6 +169,19 @@ export default function PeopleListPage({
     });
     const data = await window.peopleAPI.getAll();
     setPeople(data);
+    const p = people.filter((el) => el.id === id)[0];
+    const name =
+      [`${p.id} ::`, p.firstName, p.patronymic, p.lastName || p.maidenName]
+        .filter(Boolean)
+        .join(" ") || `ID ${p.id}`;
+
+    addNotification({
+      timestamp: new Date().toISOString(),
+      title: "Человек перемещен в корзину",
+      message: `Из дерева удален: ${name} `,
+      type: "warning",
+      link: `/archive`,
+    });
   };
 
   if (loading) {
@@ -193,29 +198,121 @@ export default function PeopleListPage({
 
   if (!people.length) {
     return (
-      <Stack
-        spacing={2}
-        alignItems="center"
-        justifyContent="center"
-        sx={{ mt: 10 }}
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          minHeight: "calc(100vh - 80px)", // Центрируем относительно экрана
+          px: 3,
+          textAlign: "center",
+          animation: "fadeIn 0.8s ease-out", // Простая анимация появления
+          "@keyframes fadeIn": {
+            from: { opacity: 0, transform: "translateY(20px)" },
+            to: { opacity: 1, transform: "translateY(0)" },
+          },
+        }}
       >
-        <Avatar src={appIcon} sx={{ width: 80, height: 80 }} />
-        <Typography variant="h5">Генеалогия</Typography>
-        <Typography variant="h6" color="text.secondary">
-          Пока нет записей
-        </Typography>
-        <Typography variant="body2" color="text.secondary" textAlign="center">
-          Добавьте первого человека или восстановите из резервной копии.
-        </Typography>
-        <Stack direction="row" spacing={2} sx={{ mt: 2 }}>
-          <Button variant="contained" component={Link} to="/add">
-            Добавить человека
-          </Button>
-          <Button variant="outlined" component={Link} to="/settings">
-            Восстановить архив
-          </Button>
-        </Stack>
-      </Stack>
+        {/* Центральная карточка */}
+        <Box
+          sx={{
+            p: { xs: 4, md: 6 },
+            maxWidth: 500,
+            borderRadius: "24px",
+            bgcolor: alpha(theme.palette.background.paper, 0.4),
+            border: "1px solid",
+            borderColor: "divider",
+            backdropFilter: "blur(10px)",
+            boxShadow: "0 8px 32px rgba(0,0,0,0.1)",
+          }}
+        >
+          <Stack spacing={3} alignItems="center">
+            {/* Иконка с эффектом свечения */}
+            <Box sx={{ position: "relative" }}>
+              <Box
+                sx={{
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  bgcolor: theme.palette.primary.main,
+                  filter: "blur(25px)",
+                  opacity: 0.15,
+                  borderRadius: "50%",
+                }}
+              />
+              <Avatar
+                src={appIcon}
+                sx={{
+                  width: 100,
+                  height: 100,
+                  border: "4px solid",
+                  borderColor: "background.paper",
+                  boxShadow: theme.shadows[4],
+                }}
+              />
+            </Box>
+
+            <Box>
+              <Typography variant="h4" sx={{ fontWeight: 800, mb: 1 }}>
+                Генеалогия
+              </Typography>
+              <Typography
+                variant="body1"
+                sx={{ color: "text.secondary", maxWidth: 350, mx: "auto" }}
+              >
+                Ваше семейное древо пока пустует. Начните историю с первого
+                предка.
+              </Typography>
+            </Box>
+
+            <Stack spacing={2} sx={{ width: "100%", mt: 2 }}>
+              <Button
+                variant="contained"
+                component={Link}
+                to="/?action=add"
+                size="large"
+                startIcon={<PersonAddAlt1Icon />}
+                sx={{
+                  borderRadius: "12px",
+                  py: 1.5,
+                  textTransform: "none",
+                  fontSize: "1rem",
+                  fontWeight: 700,
+                  boxShadow: "0 4px 14px 0 rgba(0,118,255,0.39)",
+                }}
+              >
+                Добавить первого человека
+              </Button>
+
+              <Button
+                variant="outlined"
+                component={Link}
+                to="/settings"
+                size="large"
+                startIcon={<SettingsBackupRestoreIcon />}
+                sx={{
+                  borderRadius: "12px",
+                  py: 1.2,
+                  textTransform: "none",
+                  borderColor: alpha(theme.palette.divider, 0.5),
+                  color: "text.primary",
+                  "&:hover": {
+                    borderColor: "text.primary",
+                    bgcolor: alpha(theme.palette.text.primary, 0.05),
+                  },
+                }}
+              >
+                Восстановить из архива
+              </Button>
+            </Stack>
+          </Stack>
+        </Box>
+
+        <AddPersonModal open={isModalOpen} onClose={handleCloseModal} />
+      </Box>
     );
   }
 
@@ -229,455 +326,381 @@ export default function PeopleListPage({
   const children = (singleMatch?.children || []).map(findById).filter(Boolean);
   const siblings = (singleMatch?.siblings || []).map(findById).filter(Boolean);
 
-  // утилиту для проверки «сегодняшнего дня»
-  function isToday(dateStr) {
+  // утилиту для проверки «Прошло меньше 24 часов»
+  const isRecent = (dateStr) => {
     if (!dateStr) return false;
-    const d = new Date(dateStr);
-    const now = new Date();
-    return (
-      d.getFullYear() === now.getFullYear() &&
-      d.getMonth() === now.getMonth() &&
-      d.getDate() === now.getDate()
-    );
-  }
 
-  const renderPersonItem = (p) => {
+    const eventTime = new Date(dateStr).getTime();
+    const currentTime = new Date().getTime();
+    const oneDayInMs = 24 * 60 * 60 * 1000; // 86,400,000 мс
+
+    const diff = currentTime - eventTime;
+
+    // Событие считается недавним, если оно произошло меньше 24 часов назад
+    // и при этом время события не из будущего (diff >= 0)
+    return diff >= 0 && diff < oneDayInMs;
+  };
+
+  const PersonCard = ({ person, stats, onDelete, size = "full" }) => {
+    const theme = useTheme();
+    const isDark = theme.palette.mode === "dark";
+
     const name =
-      [p.firstName, p.lastName || p.maidenName].filter(Boolean).join(" ") ||
-      "Без имени";
+      [person.firstName, person.lastName || person.maidenName]
+        .filter(Boolean)
+        .join(" ") || "Без имени";
     const initials =
-      (p.firstName?.[0] || "") +
-      (p.lastName?.[0] || (p.maidenName?.[0] ? p.maidenName?.[1] : ""));
+      (person.firstName?.[0] || "") +
+      (person.lastName?.[0] || person.maidenName?.[1] || "");
 
-    const stats = personStats[p.id] || { count: 0, hasBio: false };
+    const createdToday = isRecent(person.createdAt);
+    const editedToday = isRecent(person.editedAt);
+    const showBadge = createdToday || editedToday;
+    const labelColor = createdToday ? "success" : "info";
+    const labelText = createdToday ? "Новый" : "Изменен";
 
-    // определяем условия
-    const createdToday = isToday(p.createdAt);
-    const editedToday = isToday(p.editedAt);
-
-    let badgeColor = "secondary";
-    let invisible = true;
-    if (createdToday) {
-      badgeColor = "success"; // зелёный для новых
-      invisible = false;
-    } else if (editedToday) {
-      badgeColor = "warning"; // жёлтый для обновлённых
-      invisible = false;
-    }
+    const isSmall = size === "small";
 
     return (
       <ListItemButton
-        key={p.id}
         component={Link}
-        to={`/person/${p.id}`}
-        sx={{ p: 0, textDecoration: "none", width: "100%", borderRadius: 3 }}
+        to={`/person/${person.id}`}
+        sx={{
+          p: 0,
+          borderRadius: "16px",
+          width: "100%", // Растягиваем саму кнопку
+          display: "flex",
+          "&.MuiButtonBase-root": {
+            alignItems: "stretch", // Гарантируем растягивание контента по вертикали, если нужно
+          },
+        }}
       >
         <Paper
-          elevation={1}
+          elevation={0}
           sx={{
+            flexGrow: 1, // КРИТИЧНО: заставляет Paper занять всё место в кнопке
             width: "100%",
             display: "flex",
             alignItems: "center",
-            p: 1,
-            borderRadius: 2,
-            backgroundColor: isDark ? "#2a2a2a" : "#fff",
-            transition: "transform 0.2s, box-shadow 0.2s",
-            "&:hover": { transform: "translateY(-4px)", boxShadow: 4 },
+            p: isSmall ? 1 : 1.5,
+            borderRadius: "16px",
+            bgcolor: isDark ? "rgba(42, 42, 42, 0.6)" : "#fff",
+            border: "1px solid",
+            borderColor: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)",
+            backdropFilter: isDark ? "blur(10px)" : "none",
+            position: "relative",
+            transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+            "&:hover": {
+              transform: isSmall ? "none" : "translateY(-4px)",
+              boxShadow: isDark
+                ? "0 12px 24px rgba(0,0,0,0.4)"
+                : "0 8px 16px rgba(0,0,0,0.05)",
+              borderColor: "primary.main",
+              bgcolor: isDark ? "rgba(42, 42, 42, 0.8)" : "#fff",
+            },
           }}
         >
-          <ListItemAvatar>
-            <Badge
-              color={badgeColor}
-              variant="dot"
-              invisible={invisible}
-              overlap="circular"
-              anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-            >
-              <PersonAvatar foto={p.id} initials={initials} />
-            </Badge>
+          <ListItemAvatar sx={{ minWidth: isSmall ? 52 : 64 }}>
+            {/* Можно добавить Badge прямо на аватар, если хочешь вернуть точку */}
+            <PersonAvatar foto={person.id} initials={initials} />
           </ListItemAvatar>
+
           <ListItemText
-            primary={name}
-            secondary={
+            primaryTypographyProps={{ component: "div" }}
+            secondaryTypographyProps={{ component: "div" }}
+            primary={
               <Stack
-                component="span"
                 direction="row"
                 alignItems="center"
-                mt={1}
-                spacing={2}
+                spacing={1}
+                flexWrap="wrap"
               >
                 <Typography
-                  component="span"
-                  variant="caption"
                   sx={{
-                    color: "text.secondary",
-                    bgcolor: isDark
-                      ? "rgba(255,255,255,0.05)"
-                      : "rgba(0,0,0,0.04)",
-                    px: 1,
-                    py: 0.2,
-                    borderRadius: "6px",
-                    fontFamily: "monospace",
-                    border: `1px solid ${theme.palette.divider}`,
+                    fontWeight: 700,
+                    fontSize: isSmall ? "0.95rem" : "1.1rem",
                   }}
                 >
-                  ID: {p.id}
+                  {name}
                 </Typography>
-                {/* Индикатор Биографии */}
-                {stats.hasBio && (
-                  <Tooltip title="Биография заполнена">
-                    <DescriptionIcon
-                      sx={{
-                        fontSize: 16,
-                        color: "primary.main",
-                        opacity: 0.8,
-                      }}
-                    />
-                  </Tooltip>
-                )}
-                {/* Индикатор Фото */}
-                {stats.count > 0 && (
-                  <Tooltip title={`Фотографий: ${stats.count}`}>
-                    <Stack
-                      component="span"
-                      direction="row"
-                      alignItems="center"
-                      spacing={0.7}
-                      sx={{
-                        opacity: 0.7,
-                        color: "primary.main",
-                      }}
-                    >
-                      <PhotoLibraryIcon sx={{ fontSize: 14 }} />
-                      <Typography
-                        component="span"
-                        variant="caption"
-                        fontWeight="700"
-                      >
-                        {/* {stats.count} */}
-                      </Typography>
-                    </Stack>
-                  </Tooltip>
+                {showBadge && (
+                  <Chip
+                    size="small"
+                    label={labelText}
+                    sx={{
+                      height: 18,
+                      fontSize: "9px",
+                      fontWeight: 900,
+                      borderRadius: "6px",
+                      bgcolor: alpha(theme.palette[labelColor].main, 0.1),
+                      color: `${labelColor}.main`,
+                      border: `1px solid ${alpha(theme.palette[labelColor].main, 0.2)}`,
+                    }}
+                  />
                 )}
               </Stack>
             }
-            sx={{ ml: 1 }}
+            secondary={
+              <Stack
+                direction="row"
+                spacing={isSmall ? 1 : 2}
+                mt={0.5}
+                component="div"
+                alignItems="center"
+              >
+                <Typography
+                  variant="caption"
+                  component="span"
+                  sx={{
+                    bgcolor: isDark
+                      ? "rgba(255,255,255,0.05)"
+                      : "rgba(0,0,0,0.04)",
+                    px: 0.8,
+                    py: 0.2,
+                    borderRadius: "6px",
+                    fontSize: "0.7rem",
+                    fontFamily: "monospace",
+                    border: "1px solid",
+                    borderColor: "divider",
+                  }}
+                >
+                  ID {person.id}
+                </Typography>
+
+                {!isSmall && stats?.hasBio && (
+                  <Tooltip title="Биография заполнена">
+                    <DescriptionIcon
+                      sx={{ fontSize: 16, color: "primary.main", opacity: 0.7 }}
+                    />
+                  </Tooltip>
+                )}
+
+                {stats?.count > 0 && (
+                  <Stack
+                    direction="row"
+                    spacing={0.5}
+                    alignItems="center"
+                    sx={{ color: "info.main" }}
+                    component="span"
+                  >
+                    <PhotoLibraryIcon sx={{ fontSize: 16, opacity: 0.7 }} />
+                    {!isSmall && (
+                      <Typography variant="caption" fontWeight="800">
+                        {stats.count}
+                      </Typography>
+                    )}
+                  </Stack>
+                )}
+              </Stack>
+            }
           />
+
           <Button
             size="small"
-            color="warning"
+            color="error"
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
-              handleArchive(p.id);
+              onDelete(person.id);
             }}
-            sx={{ ml: "auto" }}
+            startIcon={<DeleteIcon sx={{ fontSize: 18 }} />}
+            sx={{
+              ml: "auto", // Прижимает кнопку вправо
+              px: isSmall ? 1 : 2,
+              borderRadius: "10px",
+              fontSize: "0.75rem",
+              fontWeight: 700,
+              opacity: isSmall ? 0.2 : 0.5,
+              transition: "0.2s",
+              whiteSpace: "nowrap", // Чтобы текст не переносился
+              "&:hover": {
+                opacity: 1,
+                bgcolor: alpha(theme.palette.error.main, 0.1),
+              },
+            }}
           >
-            {p.id === Number(search) && "В корзину"}
-
-            <DeleteIcon
-              fontSize="small"
-              sx={{ ml: p.id === Number(search) ? 0.5 : 6 }}
-            />
+            {!isSmall && "В корзину"}
           </Button>
         </Paper>
       </ListItemButton>
     );
   };
 
+  const renderRelationItem = (p) => (
+    <PersonCard
+      key={p.id}
+      person={p}
+      stats={personStats[p.id]}
+      onDelete={handleArchive}
+      size="small" // В связях используем компактный размер
+    />
+  );
+
   return (
     <>
-      <Stack spacing={2}>
-        {/* Родственные связи вместо поколений, если единственный результат */}
+      <Stack spacing={3} sx={{ width: "100%" }}>
         {singleMatch ? (
-          <Paper elevation={2} sx={{ p: 2, borderRadius: 3 }}>
-            <Typography variant="h6" sx={{ mb: 2 }}>
+          /* РЕЖИМ 1: РОДСТВЕННЫЕ СВЯЗИ */
+          <Paper
+            elevation={0}
+            sx={{
+              p: 3,
+              borderRadius: "24px",
+              bgcolor: isDark
+                ? "rgba(255, 255, 255, 0.02)"
+                : "rgba(0, 0, 0, 0.02)",
+              border: "1px solid",
+              borderColor: "divider",
+            }}
+          >
+            <Typography
+              variant="h6"
+              sx={{ mb: 3, fontWeight: 800, color: "primary.main" }}
+            >
               Родственные связи
             </Typography>
 
-            {/* Сам найденный человек */}
-            <Typography variant="subtitle2">Найденный человек</Typography>
-            <Stack spacing={1} sx={{ mt: 1, mb: 2 }}>
-              {renderPersonItem(singleMatch)}
-            </Stack>
+            <Box sx={{ mb: 4 }}>
+              <Typography variant="overline" sx={{ opacity: 0.6, ml: 1 }}>
+                Центральная фигура
+              </Typography>
+              <Box sx={{ mt: 1 }}>
+                <PersonCard
+                  person={singleMatch}
+                  stats={personStats[singleMatch.id]}
+                  onDelete={handleArchive}
+                  size="full"
+                />
+              </Box>
+            </Box>
 
-            <Grid container spacing={2}>
-              <Grid item xs={12} sm={6} md={4}>
-                <Typography variant="subtitle2">Родители</Typography>
-                <Stack spacing={1} sx={{ mt: 1 }}>
-                  {father ? (
-                    renderPersonItem(father)
-                  ) : (
-                    <Typography variant="body2" color="text.secondary">
-                      Отец не указан
-                    </Typography>
-                  )}
-                  {mother ? (
-                    renderPersonItem(mother)
-                  ) : (
-                    <Typography variant="body2" color="text.secondary">
-                      Мать не указана
-                    </Typography>
-                  )}
-                </Stack>
-              </Grid>
-
-              <Grid item xs={12} sm={6} md={4}>
-                <Typography variant="subtitle2">Супруги</Typography>
-                <Stack spacing={1} sx={{ mt: 1 }}>
-                  {spouses.length ? (
-                    spouses.map(renderPersonItem)
-                  ) : (
-                    <Typography variant="body2" color="text.secondary">
-                      Нет данных
-                    </Typography>
-                  )}
-                </Stack>
-              </Grid>
-
-              <Grid item xs={12} sm={6} md={4}>
-                <Typography variant="subtitle2">Дети</Typography>
-                <Stack spacing={1} sx={{ mt: 1 }}>
-                  {children.length ? (
-                    children.map(renderPersonItem)
-                  ) : (
-                    <Typography variant="body2" color="text.secondary">
-                      Нет данных
-                    </Typography>
-                  )}
-                </Stack>
-              </Grid>
-
-              <Grid item xs={12}>
-                <Typography variant="subtitle2">Братья/сёстры</Typography>
-                <Stack spacing={1} sx={{ mt: 1 }}>
-                  {siblings.length ? (
-                    siblings.map(renderPersonItem)
-                  ) : (
-                    <Typography variant="body2" color="text.secondary">
-                      Нет данных
-                    </Typography>
-                  )}
-                </Stack>
-              </Grid>
+            <Grid
+              container
+              spacing={3}
+              flexWrap={"nowrap"}
+              justifyContent={"space-between"}
+            >
+              {[
+                {
+                  title: "Родители",
+                  data: [father, mother].filter(Boolean),
+                  empty: "Не указаны",
+                },
+                { title: "Супруги", data: spouses, empty: "Нет данных" },
+                { title: "Дети", data: children, empty: "Нет данных" },
+                {
+                  title: "Братья / Сёстры",
+                  data: siblings,
+                  empty: "Нет данных",
+                  fullWidth: true,
+                },
+              ].map((section) => (
+                <Grid
+                  item
+                  xs={12}
+                  sm={section.fullWidth ? 12 : 6}
+                  md={section.fullWidth ? 12 : 4}
+                  key={section.title}
+                >
+                  <Typography
+                    variant="subtitle2"
+                    sx={{ mb: 1.5, fontWeight: 700, opacity: 0.8 }}
+                  >
+                    {section.title}
+                  </Typography>
+                  <Stack spacing={1}>
+                    {section.data.length > 0 ? (
+                      section.data.map(renderRelationItem)
+                    ) : (
+                      <Typography
+                        variant="caption"
+                        sx={{ fontStyle: "italic", opacity: 0.5, ml: 1 }}
+                      >
+                        {section.empty}
+                      </Typography>
+                    )}
+                  </Stack>
+                </Grid>
+              ))}
             </Grid>
-            <Divider sx={{ mt: 2 }} />
-            <Typography variant="caption" color="text.secondary">
-              Показаны связи для единственного результата поиска.
-            </Typography>
           </Paper>
         ) : (
-          /* Обычный рендер поколений */
+          /* РЕЖИМ 2: ПОКОЛЕНИЯ */
           gens.map((g) => (
             <Paper
               key={g}
-              elevation={2}
+              elevation={0}
               sx={{
-                p: 2,
-                mb: 3,
-                backgroundColor: isDark ? "#1e1e1e" : "#fafafa",
-                borderRadius: 3,
+                p: { xs: 2, md: 3 },
+                mb: 4,
+                borderRadius: "24px",
+                backgroundColor: isDark
+                  ? "rgba(255, 255, 255, 0.02)"
+                  : "rgba(0, 0, 0, 0.02)",
+                border: "1px solid",
+                borderColor: isDark
+                  ? "rgba(255, 255, 255, 0.05)"
+                  : "rgba(0, 0, 0, 0.05)",
+                position: "relative",
               }}
             >
-              <Typography variant="h6" sx={{ mb: 1, color: "primary.main" }}>
-                Поколение - {g} :: ({grouped[g].length})
-              </Typography>
-              <Grid container direction="column" spacing={2}>
-                {grouped[g].map((person) => {
-                  const name = [
-                    person.firstName,
-                    person.lastName || person.maidenName,
-                  ]
-                    .filter(Boolean)
-                    .join(" ");
-                  const initials =
-                    (person.firstName?.[0] || "") +
-                    (person.lastName?.[0] || person.maidenName?.[1] || "");
+              <Box
+                sx={{
+                  position: "sticky",
+                  top: 0,
+                  zIndex: 10,
+                  py: 1.5,
+                  mb: 2,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1.5,
+                  bgcolor: isDark
+                    ? alpha("#1a1a1a", 0.9)
+                    : alpha("#fafafa", 0.9),
+                  backdropFilter: "blur(12px)",
+                  mx: -1,
+                  px: 2,
+                  borderRadius: "16px",
+                }}
+              >
+                <Box
+                  sx={{
+                    width: 4,
+                    height: 20,
+                    bgcolor: "primary.main",
+                    borderRadius: 2,
+                  }}
+                />
+                <Typography
+                  variant="h6"
+                  sx={{ fontWeight: 800, color: "primary.main" }}
+                >
+                  Поколение {g}
+                </Typography>
+                <Typography variant="body2" sx={{ opacity: 0.5 }}>
+                  ({grouped[g].length})
+                </Typography>
+              </Box>
 
-                  const stats = personStats[person.id] || {
-                    count: 0,
-                    hasBio: false,
-                  };
-
-                  // проверка дат
-                  const createdToday = isToday(person.createdAt);
-                  const editedToday = isToday(person.editedAt);
-
-                  let badgeColor = "secondary";
-                  let invisible = true;
-                  if (createdToday) {
-                    badgeColor = "success";
-                    invisible = false;
-                  } else if (editedToday) {
-                    badgeColor = "warning";
-                    invisible = false;
-                  }
-
-                  return (
-                    <Grid size={{ xs: 12 }} key={person.id}>
-                      <ListItemButton
-                        component={Link}
-                        to={`/person/${person.id}`}
-                        sx={{
-                          p: 0,
-                          textDecoration: "none",
-                          width: "100%",
-                          borderRadius: 3,
-                        }}
-                      >
-                        <Paper
-                          elevation={1}
-                          sx={{
-                            width: "100%",
-                            display: "flex",
-                            alignItems: "center",
-                            p: 1,
-                            borderRadius: 2,
-                            backgroundColor: isDark ? "#2a2a2a" : "#fff",
-                            transition: "transform 0.2s, box-shadow 0.2s",
-                            "&:hover": {
-                              transform: "translateY(-4px)",
-                              boxShadow: 4,
-                            },
-                            overflow: "hidden",
-                            backgroundClip: "padding-box",
-                          }}
-                        >
-                          <ListItemAvatar>
-                            <Badge
-                              color={badgeColor}
-                              variant="dot"
-                              invisible={invisible}
-                              overlap="circular"
-                              anchorOrigin={{
-                                vertical: "bottom",
-                                horizontal: "right",
-                              }}
-                            >
-                              <PersonAvatar
-                                foto={person.id}
-                                initials={initials}
-                              />
-                            </Badge>
-                          </ListItemAvatar>
-                          <ListItemText
-                            primary={name || "Без имени"}
-                            secondary={
-                              <Stack
-                                mt={1}
-                                component="span"
-                                direction="row"
-                                alignItems="center"
-                                spacing={4}
-                              >
-                                <Typography
-                                  component="span"
-                                  variant="caption"
-                                  sx={{
-                                    color: "text.secondary",
-                                    bgcolor: isDark
-                                      ? "rgba(255,255,255,0.05)"
-                                      : "rgba(0,0,0,0.04)",
-                                    px: 1,
-                                    py: 0.2,
-                                    borderRadius: "10px",
-                                    fontFamily: "monospace",
-                                    border: `1px solid ${theme.palette.divider}`,
-                                  }}
-                                >
-                                  ID: {person.id}
-                                </Typography>
-                                {/* Индикатор Биографии */}
-                                {stats.hasBio && (
-                                  <Tooltip title="Биография заполнена">
-                                    <Stack
-                                      component="span"
-                                      direction="row"
-                                      alignItems="center"
-                                      spacing={0.7}
-                                      sx={{
-                                        // color: "text.secondary",
-                                        bgcolor: isDark
-                                          ? "rgba(255,255,255,0.05)"
-                                          : "rgba(0,0,0,0.04)",
-                                        px: 1,
-                                        py: 0.4,
-                                        borderRadius: "10px",
-                                        fontFamily: "monospace",
-                                        border: `1px solid ${theme.palette.divider}`,
-                                        //
-                                        opacity: 0.7,
-                                        color: "primary.main",
-                                      }}
-                                    >
-                                      <DescriptionIcon sx={{ fontSize: 17 }} />
-                                    </Stack>
-                                  </Tooltip>
-                                )}
-                                {/* Индикатор Фото */}
-                                {stats.count > 0 && (
-                                  <Tooltip title={`Фотографий: ${stats.count}`}>
-                                    <Stack
-                                      component="span"
-                                      direction="row"
-                                      alignItems="center"
-                                      spacing={0.7}
-                                      sx={{
-                                        // color: "text.secondary",
-                                        bgcolor: isDark
-                                          ? "rgba(255,255,255,0.05)"
-                                          : "rgba(0,0,0,0.04)",
-                                        px: 1,
-                                        py: 0.2,
-                                        borderRadius: "10px",
-                                        fontFamily: "monospace",
-                                        border: `1px solid ${theme.palette.divider}`,
-                                        //
-                                        opacity: 0.7,
-                                        color: "primary.main",
-                                      }}
-                                    >
-                                      <PhotoLibraryIcon sx={{ fontSize: 17 }} />
-                                      <Typography
-                                        component="span"
-                                        variant="caption"
-                                        fontWeight="700"
-                                      >
-                                        {stats.count}
-                                      </Typography>
-                                    </Stack>
-                                  </Tooltip>
-                                )}
-                              </Stack>
-                            }
-                            sx={{ ml: 1 }}
-                          />
-                          <Button
-                            size="small"
-                            color="warning"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              handleArchive(person.id);
-                            }}
-                            sx={{ ml: "auto", borderRadius: "10px" }}
-                            endIcon={<DeleteIcon fontSize="small" />}
-                          >
-                            В корзину
-                          </Button>
-                        </Paper>
-                      </ListItemButton>
-                    </Grid>
-                  );
-                })}
+              <Grid container spacing={2} flexDirection={"column"}>
+                {grouped[g].map((person) => (
+                  <Grid key={person.id} item xs={12}>
+                    <PersonCard
+                      person={person}
+                      stats={personStats[person.id]}
+                      onDelete={handleArchive}
+                      size="full" // В основном списке всегда полный размер
+                    />
+                  </Grid>
+                ))}
               </Grid>
             </Paper>
           ))
         )}
       </Stack>
 
-      {/* Кнопка вверх */}
       <ButtonScrollTop />
+      <AddPersonModal open={isModalOpen} onClose={handleCloseModal} />
     </>
   );
 }

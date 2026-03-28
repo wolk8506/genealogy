@@ -20,7 +20,7 @@ export default function LicenseModal({ open, onClose }) {
       <DialogContent dividers>
         <Typography variant="body2" sx={{ whiteSpace: "pre-line" }}>
           {`
-Copyright © 2025 nebula.9371.  
+Copyright © 2026 nebula.9371.  
 All rights reserved.
 
 

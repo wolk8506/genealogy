@@ -55,6 +55,7 @@ export default function App() {
       createTheme({
         palette: { mode },
         components: {
+          // 1. Глобальные стили (ваши скроллбары)
           MuiCssBaseline: {
             styleOverrides: (themeParam) => ({
               "*::-webkit-scrollbar": {
@@ -93,6 +94,83 @@ export default function App() {
               },
             }),
           },
+
+          // 2. Скругление для всех текстовых полей
+          MuiOutlinedInput: {
+            styleOverrides: {
+              root: {
+                borderRadius: "12px", // Установите нужное значение (например, 12px или 16px)
+                // Можно также сразу задать стили для рамок, если нужно
+                "& .MuiOutlinedInput-notchedOutline": {
+                  transition: "border-color 0.2s ease-in-out",
+                },
+              },
+            },
+          },
+
+          // 3. Опционально: скругление для кнопок, чтобы всё было в одном стиле
+          MuiButton: {
+            styleOverrides: {
+              root: {
+                borderRadius: "10px",
+                textTransform: "none", // Убирает капс у кнопок (обычно хорошо смотрится со скруглениями)
+              },
+            },
+          },
+
+          // 4. Скругление для выпадающих списков (Paper внутри Select/Autocomplete)
+          MuiPaper: {
+            styleOverrides: {
+              rounded: {
+                borderRadius: "16px",
+              },
+            },
+          },
+
+          // 5. Глобальная настройка для всех TextField (включая DatePicker)
+          MuiTextField: {
+            defaultProps: {
+              size: "small", // Чтобы везде по умолчанию был маленький размер
+            },
+            styleOverrides: {
+              root: {
+                // Гарантируем, что радиус из OutlinedInput применится здесь
+                "& .MuiOutlinedInput-root": {
+                  borderRadius: "12px",
+                },
+              },
+            },
+          },
+
+          // 6. Специально для полей DatePicker (если они используют внутренние стили)
+          MuiInputBase: {
+            styleOverrides: {
+              root: {
+                borderRadius: "12px",
+              },
+            },
+          },
+
+          // 7. Фикс специально для MUI X (v7+) - Поля ввода календарей
+          MuiPickersOutlinedInput: {
+            styleOverrides: {
+              root: {
+                borderRadius: "12px", // Тот же радиус, что и везде
+                "& .MuiOutlinedInput-notchedOutline": {
+                  transition: "border-color 0.2s ease-in-out",
+                },
+              },
+            },
+          },
+
+          // На всякий случай для других типов полей MUI X (если используете стандартные или заполненные)
+          MuiPickersInputBase: {
+            styleOverrides: {
+              root: {
+                borderRadius: "12px",
+              },
+            },
+          },
         },
       }),
     [mode],
@@ -108,10 +186,11 @@ export default function App() {
           alignItems: "center",
           justifyContent: "center",
           bgcolor: "background.default",
+          bgcolor: "#121212",
         }}
       >
         <CircularProgress size={64} thickness={5} />
-        <Typography variant="h6" sx={{ mt: 2 }}>
+        <Typography variant="h6" sx={{ mt: 2, color: "divider" }}>
           Загрузка…
         </Typography>
       </Box>

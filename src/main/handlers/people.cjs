@@ -4,12 +4,24 @@ const fs = require("fs");
 const { personDir, dataPath } = require("../config.cjs");
 
 ipcMain.handle("people:saveAll", async (event, people) => {
-  const filePath = path.join(
-    app.getPath("documents"),
-    "Genealogy",
-    "genealogy-data.json"
-  );
-  fs.writeFileSync(filePath, JSON.stringify(people, null, 2), "utf-8");
+  try {
+    const dirPath = path.join(app.getPath("documents"), "Genealogy");
+    const filePath = path.join(dirPath, "genealogy-data.json");
+
+    // 1. Создаем папку, если её нет.
+    // { recursive: true } — магия, которая создаст всю цепочку папок и не упадет, если папка уже есть.
+    if (!fs.existsSync(dirPath)) {
+      fs.mkdirSync(dirPath, { recursive: true });
+    }
+
+    // 2. Теперь спокойно пишем файл
+    fs.writeFileSync(filePath, JSON.stringify(people, null, 2), "utf-8");
+
+    return { success: true };
+  } catch (error) {
+    console.error("Ошибка при сохранении файла:", error);
+    throw error; // Пробрасываем ошибку на фронтенд для обработки в UI
+  }
 });
 
 ipcMain.handle("people:delete", async (event, id) => {
@@ -28,7 +40,7 @@ ipcMain.handle("people:delete", async (event, id) => {
     await fs.promises.writeFile(
       peoplePath,
       JSON.stringify(updated, null, 2),
-      "utf-8"
+      "utf-8",
     );
 
     console.log(`🗑️ Удалён человек ${id} из genealogy-data.json и файлов`);
@@ -43,7 +55,7 @@ ipcMain.handle("people:upsert", async (event, person) => {
   const file = path.join(
     app.getPath("documents"),
     "Genealogy",
-    "genealogy-data.json"
+    "genealogy-data.json",
   );
   let people = [];
   try {
@@ -112,7 +124,7 @@ ipcMain.handle("people:update", async (event, id, updatedData) => {
     const filePath = path.join(
       app.getPath("documents"),
       "Genealogy",
-      "genealogy-data.json"
+      "genealogy-data.json",
     );
     const people = JSON.parse(fs.readFileSync(filePath, "utf-8"));
     const index = people.findIndex((p) => p.id === id);

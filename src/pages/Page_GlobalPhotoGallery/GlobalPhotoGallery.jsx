@@ -131,6 +131,7 @@ export default function GlobalPhotoGallery({
         // Собираем всё текстовое содержимое фото для поиска в одну строку
         // Добавляем теги/хештеги из описания или отдельного поля, если оно есть
         const photoContent = `
+      ${p.id || ""} 
       ${p.title || ""} 
       ${p.description || ""} 
       ${p.fileName || ""} 
@@ -421,7 +422,7 @@ export default function GlobalPhotoGallery({
       sx={{
         display: "flex",
         flexDirection: "column",
-        height: "calc(100vh - 96px)",
+        height: "calc(100vh - 80px)",
         bgcolor: "background.default",
         position: "relative",
       }}

@@ -133,19 +133,16 @@ export default function SettingsPage() {
 
     // 2) Подписаться на ответ
     window.updater.onAvailable((info) => {
-      // console.log("👀 Update available:", info);
       setUpdateInfo(info);
     });
 
     // 3) Подписаться на прогресс
     window.updater.onProgress((pct) => {
-      // console.log("📊 Progress:", pct);
       setProgress(pct);
     });
 
     // 4) Подписаться на завершение
     window.updater.onDownloaded((path) => {
-      // console.log("✅ Downloaded to:", path);
       setDownloaded(true);
       setFilePath(path);
     });
@@ -849,7 +846,6 @@ export default function SettingsPage() {
                           color="primary"
                           size="small"
                           onClick={() => {
-                            // console.log("👆 Download click, info:", updateInfo);
                             window.updater.download(updateInfo);
                           }}
                         >

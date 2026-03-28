@@ -2,7 +2,6 @@ import { Stack, Divider, Paper, Box } from "@mui/material";
 import { RenderPersonItem } from "./RenderPersonItem";
 
 export const RenderSectionChildren = ({ title, people, row = 1 }) => {
-  // console.log("row: ", row);
   if (!people || people.length === 0) return null;
 
   return (
@@ -31,7 +30,7 @@ export const RenderSectionChildren = ({ title, people, row = 1 }) => {
           display: "flex",
           justifyContent: "center",
           flexWrap: "wrap",
-          // maxWidth: "736px",
+          // width: "736px",
           width: row === 1 ? "360px" : people.length !== 1 ? "736px" : "360",
           gap: 2,
           borderRadius: 5,
@@ -40,7 +39,7 @@ export const RenderSectionChildren = ({ title, people, row = 1 }) => {
       >
         {people.map((p) => (
           <Box key={p.id} width={"352px"}>
-            <RenderPersonItem p={p} />
+            <RenderPersonItem p={p} link={true} />
           </Box>
         ))}
       </Paper>

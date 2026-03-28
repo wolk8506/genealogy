@@ -26,9 +26,7 @@ const FamilyTreePage = forwardRef(({ allPeople, person_id, treeMode }, ref) => {
   };
 
   return (
-    <Box
-      sx={{ height: "calc(100vh - 80px)", width: "100%", bgcolor: "#121212" }}
-    >
+    <Box sx={{ height: "calc(100vh - 80px)", width: "100%" }}>
       <FamilyTree
         ref={ref} // Тот самый реф из MainLayout
         mode={treeMode}

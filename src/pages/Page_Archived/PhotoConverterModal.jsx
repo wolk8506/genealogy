@@ -23,17 +23,15 @@ import StopIcon from "@mui/icons-material/Stop";
 import { alpha } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import { useSnackbar } from "notistack";
-
-const qualityGrades = [
-  { value: 60, label: "Эконом" },
-  { value: 80, label: "Баланс" },
-  { value: 95, label: "Максимум" },
-];
+import { useNotificationStore } from "../../store/useNotificationStore";
 
 export default function PhotoConverterModal({ open, onClose }) {
   const theme = useTheme();
   const isDark = theme.palette.mode === "dark";
   const { enqueueSnackbar } = useSnackbar();
+  const addNotification = useNotificationStore(
+    (state) => state.addNotification,
+  );
 
   // Состояния настроек
   const [quality, setQuality] = useState(80);
@@ -77,14 +75,32 @@ export default function PhotoConverterModal({ open, onClose }) {
         enqueueSnackbar("Конвертация прервана пользователем", {
           variant: "info",
         });
+        addNotification({
+          timestamp: new Date().toISOString(),
+          title: "Мастер конвертации",
+          message: `Процесс конвертации фото прерван пользователем`,
+          type: "warning",
+        });
       } else if (result?.success) {
         enqueueSnackbar(`Успешно обработано фото: ${result.processed}`, {
           variant: "success",
+        });
+        addNotification({
+          timestamp: new Date().toISOString(),
+          title: "Мастер конвертации",
+          message: `Успешно обработано фото: ${result.processed}`,
+          type: "success",
         });
         onClose(); // Закрываем окно только при успешном завершении
       }
     } catch (err) {
       enqueueSnackbar("Ошибка при конвертации", { variant: "error" });
+      addNotification({
+        timestamp: new Date().toISOString(),
+        title: "Мастер конвертации",
+        message: `Ошибка в процессе конвертации фото`,
+        type: "error",
+      });
       console.error(err);
     } finally {
       setProcessing(false);

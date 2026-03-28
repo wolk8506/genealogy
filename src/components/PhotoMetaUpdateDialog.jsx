@@ -25,6 +25,7 @@ import EditIcon from "@mui/icons-material/Edit";
 import EditOffIcon from "@mui/icons-material/EditOff";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import HashtagInput from "./HashtagInput";
+import { useNotificationStore } from "../store/useNotificationStore";
 
 export default function PhotoMetaUpdateDialog({
   open, // Открыт ли диалог (openDialogUpdate)
@@ -38,6 +39,9 @@ export default function PhotoMetaUpdateDialog({
 }) {
   const theme = useTheme();
   const isDark = theme.palette.mode === "dark";
+  const addNotification = useNotificationStore(
+    (state) => state.addNotification,
+  );
 
   const [local, setLocal] = useState({
     id: null,
@@ -49,8 +53,6 @@ export default function PhotoMetaUpdateDialog({
     filename: "",
     aspectRatio: "4/3",
   });
-
-  // --- СОСТОЯНИЕ ДЛЯ ХЕШТЕГОВ ---
 
   const [rename, setRename] = useState(false);
   const [newFilename, setNewFilename] = useState("");
@@ -186,9 +188,21 @@ export default function PhotoMetaUpdateDialog({
       }
 
       onClose();
+      addNotification({
+        timestamp: new Date().toISOString(),
+        title: "Фото",
+        message: `Обновлено фото ID: ${updatedEntry.id ?? null}. \nВладелец ID: ${updatedEntry.owner ?? ""}. \nИмя файла: ${updatedEntry?.filename ?? ""} `,
+        type: "success",
+      });
     } catch (e) {
       console.error("Save failed", e);
       alert("Ошибка: " + (e.message || e));
+      addNotification({
+        timestamp: new Date().toISOString(),
+        title: "Фото",
+        message: "Ошибка: " + (e.message || e),
+        type: "error",
+      });
     } finally {
       setSaving(false);
     }
@@ -416,7 +430,11 @@ export default function PhotoMetaUpdateDialog({
                   }}
                 />
 
-                <FormControl variant="outlined" sx={{ minWidth: 140 }}>
+                <FormControl
+                  size="small"
+                  variant="outlined"
+                  sx={{ minWidth: 140 }}
+                >
                   <InputLabel>Формат</InputLabel>
                   <Select
                     value={local.aspectRatio}
