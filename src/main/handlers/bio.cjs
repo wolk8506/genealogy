@@ -1,158 +1,3 @@
-// // bio.cjs
-// const { ipcMain, app, dialog } = require("electron");
-// const path = require("path");
-// const fs = require("fs");
-
-// const getBioDir = (id) =>
-//   path.join(app.getPath("documents"), "Genealogy", "people", String(id));
-
-// ipcMain.handle("bio:load", async (event, id) => {
-//   const dir = getBioDir(id);
-//   const file = path.join(dir, "bio.md");
-//   if (!fs.existsSync(file)) return "";
-//   return fs.readFileSync(file, "utf-8");
-// });
-
-// ipcMain.handle("bio:save", async (event, id, content) => {
-//   const dir = getBioDir(id);
-//   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-
-//   const file = path.join(dir, "bio.md");
-//   fs.writeFileSync(file, content, "utf-8");
-
-//   // 🧹 Удаляем неиспользуемые изображения
-//   const usedFiles = [...content.matchAll(/\]\((.+?)\)/g)].map((m) => m[1]);
-//   const files = fs.readdirSync(dir);
-
-//   for (const f of files) {
-//     const fullPath = path.join(dir, f);
-//     const isUsed =
-//       usedFiles.includes(f) || usedFiles.includes(`file://${fullPath}`);
-
-//     const stat = fs.statSync(fullPath);
-//     const protectedNames = [
-//       "bio.md",
-//       "photos.json",
-//       "avatar",
-//       "avatar.png",
-//       "avatar.jpg",
-//       "avatar.webp",
-//     ];
-//     const isProtected = protectedNames.includes(f);
-
-//     if (stat.isFile() && !isUsed && !isProtected) {
-//       fs.unlinkSync(fullPath);
-//     }
-//   }
-// });
-
-// ipcMain.handle("bio:getFullImagePath", async (event, id, relPath) => {
-//   const baseDir = path.join(app.getPath("documents"), "Genealogy");
-//   const personDir = path.join(baseDir, "people", String(id));
-//   const fullPath = path.join(personDir, relPath);
-//   return `file://${fullPath}`;
-// });
-
-// ipcMain.handle("bio:addImage", async (event, id) => {
-//   const result = await dialog.showOpenDialog({
-//     title: "Выберите изображение",
-//     filters: [{ name: "Images", extensions: ["jpg", "jpeg", "png", "gif"] }],
-//     properties: ["openFile"],
-//   });
-
-//   if (result.canceled || result.filePaths.length === 0) return null;
-
-//   const source = result.filePaths[0];
-//   const ext = path.extname(source).toLowerCase();
-//   const dir = getBioDir(id);
-
-//   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-
-//   // 🔢 ищем все файлы по шаблону img_bio_XXXX.ext
-//   const files = fs.readdirSync(dir);
-//   const bioImages = files
-//     .map((f) => f.match(/^img_bio_(\d{4})\.(jpg|jpeg|png|gif)$/i))
-//     .filter(Boolean);
-
-//   let nextNum = 1;
-//   if (bioImages.length > 0) {
-//     const maxNum = Math.max(...bioImages.map((m) => parseInt(m[1], 10)));
-//     nextNum = maxNum + 1;
-//   }
-
-//   const filename = `img_bio_${String(nextNum).padStart(4, "0")}${ext}`;
-//   const dest = path.join(dir, filename);
-
-//   fs.copyFileSync(source, dest);
-
-//   return filename; // относительный путь
-// });
-
-// ipcMain.handle("bio:getImagePath", (event, id, filename) => {
-//   const dir = getBioDir(id);
-//   return `file://${path.join(dir, filename)}`;
-// });
-
-// ipcMain.handle("bio:saveImage", async (event, id, filename, buffer) => {
-//   const dir = getBioDir(id);
-//   const filePath = path.join(dir, filename);
-//   await fs.promises.mkdir(dir, { recursive: true });
-//   await fs.promises.writeFile(filePath, buffer);
-// });
-
-// const getPersonDir = (id, baseDir) => path.join(baseDir, "people", String(id));
-
-// // 📄 Чтение bio.md
-// console.log("📡 Регистрируем обработчик bio:read");
-// ipcMain.handle("bio:read", async (event, id) => {
-//   console.log("📡 bio:read вызван для", id);
-
-//   const baseDir = path.join(app.getPath("documents"), "Genealogy");
-
-//   const filePath = path.join(baseDir, "people", String(id), "bio.md");
-
-//   try {
-//     await fs.promises.access(filePath, fs.constants.F_OK);
-//     const content = await fs.promises.readFile(filePath, "utf-8");
-//     console.log(
-//       "📤 bio.md content (main.js):",
-//       content.slice(0, 100),
-//       typeof content,
-//     );
-//     return content;
-//   } catch (err) {
-//     console.warn(`❌ bio.md не найден или не читается: ${filePath}`, err);
-//     return null;
-//   }
-// });
-
-// // 🖼️ Получение абсолютного пути к изображению
-// ipcMain.handle("bio:resolveImagePath", async (event, id, relPath) => {
-//   const baseDir = path.join(app.getPath("documents"), "Genealogy");
-
-//   return path.join(getPersonDir(id, baseDir), relPath);
-// });
-
-// // 🧱 Чтение изображения как Buffer
-// ipcMain.handle("bio:readImage", async (event, id, relPath) => {
-//   const baseDir = path.join(app.getPath("documents"), "Genealogy");
-
-//   const fullPath = path.join(getPersonDir(id, baseDir), relPath);
-//   const buffer = await fs.promises.readFile(fullPath);
-//   return buffer;
-// });
-
-// ipcMain.handle("bio:write", async (event, id, text) => {
-//   const file = path.join(
-//     app.getPath("documents"),
-//     "Genealogy",
-//     "people",
-//     String(id),
-//     "bio.md",
-//   );
-//   await fs.promises.writeFile(file, text, "utf-8");
-// });
-// ----------------------------------------------------------------------------------
 // bio.cjs
 const { ipcMain, app, dialog } = require("electron");
 const path = require("path");
@@ -249,4 +94,23 @@ ipcMain.handle("bio:resolveImagePath", async (event, id, relPath) => {
   const personDir = getBioDir(id);
   // relPath теперь приходит как "bio_images/img_..."
   return path.join(personDir, relPath);
+});
+// Удаляет во время отмены
+ipcMain.handle("bio:deleteImages", async (event, id, filenames) => {
+  const imagesDir = getBioImagesDir(id);
+  if (!fs.existsSync(imagesDir)) return;
+
+  for (const relPath of filenames) {
+    // relPath может быть "bio_images/name.jpg" или просто "name.jpg"
+    const filename = path.basename(relPath);
+    const filePath = path.join(imagesDir, filename);
+
+    if (fs.existsSync(filePath)) {
+      try {
+        fs.unlinkSync(filePath);
+      } catch (e) {
+        console.error(`Ошибка при удалении временного файла ${filename}:`, e);
+      }
+    }
+  }
 });

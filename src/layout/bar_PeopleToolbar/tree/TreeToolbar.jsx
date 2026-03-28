@@ -41,10 +41,11 @@ export default function TreeToolbar({ treeProps }) {
             height: "40px",
             gap: 1,
             "& .MuiToggleButton-root": {
+              color: "white",
               border: "none",
               borderRadius: 6,
               "&.Mui-selected": {
-                bgcolor: "#444",
+                bgcolor: "divider",
                 color: "#90caf9",
               },
             },

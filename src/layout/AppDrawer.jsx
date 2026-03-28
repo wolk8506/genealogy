@@ -14,9 +14,10 @@ import {
 import { Link as RouterLink, useLocation, matchPath } from "react-router-dom";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
-import PersonIcon from "@mui/icons-material/Person";
+// import PersonIcon from "@mui/icons-material/Person";
+import GroupsIcon from "@mui/icons-material/Groups";
 
-const drawerWidth = 240;
+const drawerWidth = 200;
 
 const openedMixin = (theme) => ({
   width: drawerWidth,
@@ -64,7 +65,7 @@ const StyledDrawer = styled(MuiDrawer, {
   }),
 }));
 
-export default function AppDrawer({ open, onClose, items, changesCount }) {
+export default function AppDrawer({ open, onClose, items }) {
   const theme = useTheme();
   const location = useLocation();
 
@@ -81,8 +82,8 @@ export default function AppDrawer({ open, onClose, items, changesCount }) {
       </DrawerHeader>
       <Divider />
       <List>
-        {items.map(({ text, icon, path }) => {
-          // Логика активного пункта
+        {/* 1. ОБЯЗАТЕЛЬНО вытаскиваем onClick из item */}
+        {items.map(({ text, icon, path, onClick }) => {
           let isActive = location.pathname === path;
           if (path === "/" && matchPath("/person/:id", location.pathname)) {
             isActive = true;
@@ -91,11 +92,12 @@ export default function AppDrawer({ open, onClose, items, changesCount }) {
           return (
             <ListItem key={text} disablePadding sx={{ display: "block" }}>
               <ListItemButton
-                component={RouterLink}
-                to={path}
+                // 2. УДАЛЯЕМ component={RouterLink} и to={path}
+                // Теперь навигацией управляет только функция onClick
+                onClick={onClick}
                 selected={isActive}
                 sx={{
-                  minHeight: 48,
+                  minHeight: 64,
                   px: 2.5,
                   justifyContent: open ? "initial" : "center",
                   "&.Mui-selected": {
@@ -110,13 +112,7 @@ export default function AppDrawer({ open, onClose, items, changesCount }) {
                     justifyContent: "center",
                   }}
                 >
-                  {path === "/" ? (
-                    <Badge badgeContent={changesCount} color="secondary">
-                      <PersonIcon />
-                    </Badge>
-                  ) : (
-                    icon
-                  )}
+                  {path === "/" ? <GroupsIcon /> : icon}
                 </ListItemIcon>
                 <ListItemText primary={text} sx={{ opacity: open ? 1 : 0 }} />
               </ListItemButton>

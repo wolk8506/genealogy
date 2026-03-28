@@ -67,7 +67,7 @@ export default function PersonEvents({
           bottom: -10,
           right: -10,
           fontSize: "150px",
-          color: "text.primary",
+          color: "primary.main",
           opacity: 0.03,
           pointerEvents: "none",
         }}

@@ -30,6 +30,7 @@ import EmailIcon from "@mui/icons-material/Email";
 import FaceIcon from "@mui/icons-material/Face";
 
 import nationalities from "./nationalities.json";
+import NumberField from "../../../components/NumberField";
 
 const FACT_TYPES = [
   "Рост",
@@ -127,12 +128,25 @@ function FactInput({ type, value, setValue, gender }) {
   switch (type) {
     case "Рост":
       return (
-        <TextField
+        // <TextField
+        //   label="Рост (см)"
+        //   type="number"
+        //   inputProps={{ step: 0.1, min: 45, max: 300 }}
+        //   value={value}
+        //   onChange={(e) => setValue(e.target.value)}
+        //   size="small"
+        //   placeholder="Напр., 175.5"
+        //   fullWidth
+        // />
+        <NumberField
           label="Рост (см)"
-          type="number"
-          inputProps={{ step: 0.1, min: 10 }}
+          // type="number"
+          step={0.1}
+          min={45}
+          max={300}
           value={value}
-          onChange={(e) => setValue(e.target.value)}
+          onValueChange={(val) => setValue(val)}
+          onChange={(val) => setValue(val)}
           size="small"
           placeholder="Напр., 175.5"
           fullWidth

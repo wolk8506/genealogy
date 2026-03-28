@@ -44,7 +44,7 @@ export default function PhotoToolbar({
         <Tooltip title="Сортировка">
           <IconButton
             onClick={() => setSortDir((p) => (p === "asc" ? "desc" : "asc"))}
-            color="inherit"
+            sx={{ color: "white", p: "8px" }}
           >
             <SortIcon
               sx={{ transform: sortDir === "desc" ? "none" : "scaleY(-1)" }}

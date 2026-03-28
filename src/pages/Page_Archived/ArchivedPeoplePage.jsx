@@ -32,6 +32,7 @@ import {
   useMediaQuery,
   Alert,
 } from "@mui/material";
+import { useNotificationStore } from "../../store/useNotificationStore";
 import {
   Archive as ArchiveIcon,
   People as PeopleIcon,
@@ -51,7 +52,8 @@ import PieChartIcon from "@mui/icons-material/PieChart";
 import PersonIcon from "@mui/icons-material/Person";
 import PhotoConverterModal from "./PhotoConverterModal";
 import SettingsIcon from "@mui/icons-material/Settings";
-import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
+import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+
 import SdStorageIcon from "@mui/icons-material/SdStorage";
 import AccountTreeIcon from "@mui/icons-material/AccountTree";
 import CollectionsIcon from "@mui/icons-material/Collections";
@@ -75,6 +77,10 @@ import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 export default function ArchivePage() {
   const theme = useTheme();
   const isDark = theme.palette.mode === "dark";
+  const addNotification = useNotificationStore(
+    (state) => state.addNotification,
+  );
+
   const isSmall = useMediaQuery(theme.breakpoints.down("md"));
   const [people, setPeople] = useState([]);
   const [tab, setTab] = useState(0);
@@ -295,6 +301,12 @@ export default function ArchivePage() {
       if (!archivePath) {
         setIsSaving(false);
         setExportStatus("Отменено пользователем");
+        addNotification({
+          timestamp: new Date().toISOString(),
+          title: "Бэкап",
+          message: `Отменено пользователем`,
+          type: "warning",
+        });
         return; // Прерываем выполнение, чтобы не сработал setSaveDone(true)
       }
 
@@ -303,10 +315,22 @@ export default function ArchivePage() {
       setSaveDone(true);
       setArchiveProgress((prev) => ({ ...prev, phase: "done", percent: 100 }));
       setExportStatus("✅ Полный архив сохранён");
+      addNotification({
+        timestamp: new Date().toISOString(),
+        title: "Бэкап",
+        message: `✅ Полный архив сохранён`,
+        type: "success",
+      });
       fetchTotalSize();
     } catch (e) {
       setExportError(true);
       setExportStatus("Ошибка: " + e.message);
+      addNotification({
+        timestamp: new Date().toISOString(),
+        title: "Бэкап",
+        message: "Ошибка: " + e.message,
+        type: "error",
+      });
     }
   };
   const handleImportAll = async () => {
@@ -322,8 +346,20 @@ export default function ArchivePage() {
       await window.importAPI.importZip(zipPath);
       // После импорта обновляем список людей
       loadAll();
+      addNotification({
+        timestamp: new Date().toISOString(),
+        title: "Импорт",
+        message: "Импорт из ZIP архива выполнен успешно",
+        type: "success",
+      });
     } catch (err) {
       setImportStatus(`❌ Ошибка: ${err.message}`);
+      addNotification({
+        timestamp: new Date().toISOString(),
+        title: "Импорт",
+        message: `❌ Ошибка: ${err.message}`,
+        type: "error",
+      });
     } finally {
       setIsImporting(false);
     }
@@ -467,6 +503,25 @@ export default function ArchivePage() {
     await window.peopleAPI.update(id, { archived: toArchive });
     await loadAll();
     setSelected((prev) => prev.filter((x) => x !== id));
+
+    const p = people.filter((el) => el.id === id)[0];
+    const name =
+      [`${p.id} ::`, p.firstName, p.patronymic, p.lastName || p.maidenName]
+        .filter(Boolean)
+        .join(" ") || `ID ${p.id}`;
+
+    addNotification({
+      timestamp: new Date().toISOString(),
+      title: toArchive
+        ? "Человек перемещен в корзину"
+        : "Человек восстановлен из корзины",
+      message: toArchive
+        ? `Из дерева удален: ${name} `
+        : `В дерево восстановлен: ${name} `,
+      type: toArchive ? "warning" : "success",
+      // Если у вас есть роутинг, можно передать линк на карточку:
+      link: toArchive ? `/archive` : `/person/${id}`,
+    });
   };
 
   const handleDeleteForever = async (id) => {
@@ -527,6 +582,35 @@ export default function ArchivePage() {
 
     // 5) перезагружаем список
     await loadAll();
+
+    // 🔔 Notification
+    // const p = people.filter((el) => el.id === id)[0];
+    const name =
+      [
+        `${person.id} ::`,
+        person.firstName,
+        person.patronymic,
+        person.lastName || person.maidenName,
+      ]
+        .filter(Boolean)
+        .join(" ") || `ID ${person.id}`;
+    const connections = [
+      person.children, //[],
+      person.father, // 80001,
+      person.mother, // null,
+      person.siblings, // [],
+      person.spouse, //[],
+    ]
+      .flat()
+      .filter(Boolean)
+      .join(", ");
+
+    addNotification({
+      timestamp: new Date().toISOString(),
+      title: "Человек удален",
+      message: `Из корзины удален: ${name} \n Затронутые связи: ${connections.length > 1 ? connections : "отсутствуют"}`,
+      type: "error",
+    });
   };
 
   const { enqueueSnackbar } = useSnackbar();
@@ -551,13 +635,31 @@ export default function ArchivePage() {
         enqueueSnackbar(`Данные (${label}) успешно удалены`, {
           variant: "success",
         });
+        addNotification({
+          timestamp: new Date().toISOString(),
+          title: "⚠️ Опасная зона",
+          message: `Данные (${label}) успешно удалены`,
+          type: "success",
+        });
       } else {
         enqueueSnackbar(`Не удалось удалить ${label}`, { variant: "error" });
+        addNotification({
+          timestamp: new Date().toISOString(),
+          title: "⚠️ Опасная зона",
+          message: `Не удалось удалить ${label}`,
+          type: "error",
+        });
       }
     } catch (error) {
       console.error("Ошибка при удалении:", error);
       enqueueSnackbar("Произошла системная ошибка при удалении", {
         variant: "error",
+      });
+      addNotification({
+        timestamp: new Date().toISOString(),
+        title: "⚠️ Опасная зона",
+        message: "Произошла системная ошибка при удалении",
+        type: "error",
       });
     }
   };
@@ -578,12 +680,24 @@ export default function ArchivePage() {
         enqueueSnackbar("Все данные (база и фото) полностью удалены", {
           variant: "success",
         });
+        addNotification({
+          timestamp: new Date().toISOString(),
+          title: "⚠️ Опасная зона",
+          message: `Все данные (база и фото) полностью удалены`,
+          type: "success",
+        });
         loadAll(); // Обновляем список (станет пустым)
         fetchTotalSize(); // Обновляем размер папки
       }
     } catch (err) {
       enqueueSnackbar("Ошибка при очистке: " + err.message, {
         variant: "error",
+      });
+      addNotification({
+        timestamp: new Date().toISOString(),
+        title: "⚠️ Опасная зона",
+        message: "Ошибка при очистке: " + err.message,
+        type: "error",
       });
     }
   };
@@ -594,7 +708,6 @@ export default function ArchivePage() {
   };
   // _________________________
   const [diskInfo, setDiskInfo] = useState({ total: 0, free: 0 });
-  const [expanded, setExpanded] = useState(false);
 
   const formatStorage = (mb) => {
     const val = parseFloat(mb);
@@ -939,79 +1052,129 @@ export default function ArchivePage() {
       )}
       {tab === 1 && (
         <List disablePadding>
-          {archived.map((p) => (
-            <Paper
-              key={p.id}
-              elevation={1}
+          {archived.length === 0 ? ( // --- ЗАГЛУШКА ПРИ ПУСТОМ СПИСККЕ ---
+            <Box
               sx={{
-                mb: 1,
-                "&:hover": { boxShadow: 4 },
-                borderRadius: 3,
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                py: 10,
+                px: 3,
+                borderRadius: 4,
+                bgcolor: isDark ? alpha("#fff", 0.02) : alpha("#000", 0.02),
+                border: "2px dashed",
+                borderColor: "divider",
               }}
             >
-              <ListItem
-                secondaryAction={
-                  <Stack direction="row" spacing={1}>
-                    <Button
-                      size="small"
-                      color="success"
-                      variant="outlined"
-                      onClick={() => handleToggleArchive(p.id, false)}
-                    >
-                      Восстановить
-                      <RestoreIcon sx={{ ml: 0.5 }} />
-                    </Button>
-                    <Button
-                      size="small"
-                      color="error"
-                      variant="outlined"
-                      onClick={() => handleDeleteForever(p.id)}
-                    >
-                      Удалить навсегда
-                      <DeleteForeverIcon sx={{ ml: 0.5 }} />
-                    </Button>
-                  </Stack>
-                }
+              <Box
+                sx={{
+                  p: 2,
+                  borderRadius: "50%",
+                  // Используем нейтральный или зеленый цвет, т.к. пустая корзина — это хорошо
+                  bgcolor: alpha(theme.palette.success.main, 0.1),
+                  mb: 2,
+                }}
               >
-                <ListItemAvatar>
-                  <PersonAvatar
-                    personId={p.id}
-                    initials={
-                      (p.firstName?.[0] || "") +
-                      (p.lastName?.[0] ||
-                        (p.maidenName?.[0] ? p.maidenName?.[1] : ""))
-                    }
-                    size={40}
-                  />
-                </ListItemAvatar>
-                <ListItemText
-                  primary={
-                    [p.firstName, p.lastName || p.maidenName]
-                      .filter(Boolean)
-                      .join(" ") || "Без имени"
-                  }
-                  secondary={
-                    <Typography
-                      variant="caption"
-                      sx={{
-                        color: "text.secondary",
-                        bgcolor: isDark
-                          ? "rgba(255,255,255,0.05)"
-                          : "rgba(0,0,0,0.04)",
-                        px: 1,
-                        py: 0.2,
-                        borderRadius: "6px",
-                        fontFamily: "monospace",
-                        border: `1px solid ${theme.palette.divider}`,
-                      }}
-                    >
-                      ID: {p.id}
-                    </Typography>
-                  }
+                <DeleteOutlineIcon
+                  sx={{ fontSize: 40, color: "success.main", opacity: 0.5 }}
                 />
-              </ListItem>
-            </Paper>
-          ))}
+              </Box>
+              <Typography
+                variant="h6"
+                sx={{ fontWeight: 700, color: "text.secondary" }}
+              >
+                Корзина пуста
+              </Typography>
+              <Typography
+                variant="body2"
+                sx={{
+                  color: "text.disabled",
+                  mt: 1,
+                  textAlign: "center",
+                  maxWidth: 300,
+                }}
+              >
+                Здесь будут временно храниться люди, которых вы решили удалить
+                из основного списка.
+              </Typography>
+            </Box>
+          ) : (
+            // --- КОД СТРАНИИЦЫ ---
+            archived.map((p) => (
+              <Paper
+                key={p.id}
+                elevation={1}
+                sx={{
+                  mb: 1,
+                  "&:hover": { boxShadow: 4 },
+                  borderRadius: 3,
+                }}
+              >
+                <ListItem
+                  secondaryAction={
+                    <Stack direction="row" spacing={1}>
+                      <Button
+                        size="small"
+                        color="success"
+                        variant="outlined"
+                        onClick={() => handleToggleArchive(p.id, false)}
+                      >
+                        Восстановить
+                        <RestoreIcon sx={{ ml: 0.5 }} />
+                      </Button>
+                      <Button
+                        size="small"
+                        color="error"
+                        variant="outlined"
+                        onClick={() => handleDeleteForever(p.id)}
+                      >
+                        Удалить навсегда
+                        <DeleteForeverIcon sx={{ ml: 0.5 }} />
+                      </Button>
+                    </Stack>
+                  }
+                >
+                  <ListItemAvatar>
+                    <PersonAvatar
+                      personId={p.id}
+                      initials={
+                        (p.firstName?.[0] || "") +
+                        (p.lastName?.[0] ||
+                          (p.maidenName?.[0] ? p.maidenName?.[1] : ""))
+                      }
+                      size={40}
+                    />
+                  </ListItemAvatar>
+                  <ListItemText
+                    primary={
+                      [p.firstName, p.lastName || p.maidenName]
+                        .filter(Boolean)
+                        .join(" ") || "Без имени"
+                    }
+                    secondary={
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          color: "text.secondary",
+                          bgcolor: isDark
+                            ? "rgba(255,255,255,0.05)"
+                            : "rgba(0,0,0,0.04)",
+                          px: 1,
+                          py: 0.2,
+                          borderRadius: "6px",
+                          fontFamily: "monospace",
+                          border: `1px solid ${theme.palette.divider}`,
+                        }}
+                      >
+                        ID: {p.id}
+                      </Typography>
+                    }
+                  />
+                </ListItem>
+              </Paper>
+            ))
+          )}
         </List>
       )}
 

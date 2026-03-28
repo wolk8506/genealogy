@@ -38,7 +38,7 @@ export const RenderSectionParent = ({ title, people }) => {
         >
           {people[0].gender === "male" ? "Отец" : "Мать"}
         </Divider>
-        {<RenderPersonItem p={people[0]} />}
+        {<RenderPersonItem p={people[0]} link={true} />}
 
         <Divider
           orientation="vertical"
@@ -80,7 +80,7 @@ export const RenderSectionParent = ({ title, people }) => {
             >
               {people[1].gender === "male" ? "Отец" : "Мать"}
             </Divider>
-            {<RenderPersonItem p={people[1]} />}
+            {<RenderPersonItem p={people[1]} link={true} />}
 
             <Divider
               orientation="vertical"

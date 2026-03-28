@@ -12,18 +12,19 @@ import {
   Typography,
   Snackbar,
   Alert,
-  Paper,
-  Divider,
   Box,
   Grid,
 } from "@mui/material";
-import CustomDatePickerDialog from "../../components/CustomDatePickerDialog";
+
 import { alpha, useTheme } from "@mui/material/styles";
 import PersonIcon from "@mui/icons-material/Person";
 import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
 import AccountTreeIcon from "@mui/icons-material/AccountTree";
 import FemaleIcon from "@mui/icons-material/Female";
 import MaleIcon from "@mui/icons-material/Male";
+import { useNotificationStore } from "../../store/useNotificationStore";
+import CustomDatePickerDialog from "../../components/CustomDatePickerDialog";
+import NumberField from "../../components/NumberField";
 
 export default function PersonEditDialog({
   open,
@@ -34,6 +35,9 @@ export default function PersonEditDialog({
 }) {
   const theme = useTheme();
   const isDark = theme.palette.mode === "dark";
+  const addNotification = useNotificationStore(
+    (state) => state.addNotification,
+  );
   const [form, setForm] = useState({});
   const [error, setError] = useState("");
   const [saved, setSaved] = useState(false);
@@ -57,6 +61,19 @@ export default function PersonEditDialog({
       if (prevGen.current != null && v !== prevGen.current) {
         alert("Изменение поколения может нарушить связи.");
         prevGen.current = v;
+      }
+    }
+    setForm((f) => ({ ...f, [field]: v }));
+  };
+  // Специальный обработчик для NumberField (принимает сразу число)
+  const handleNumberChange = (field) => (val) => {
+    let v = val;
+    if (field === "generation") {
+      // Ваша логика проверки изменения поколения
+      if (prevGen.current != null && v !== prevGen.current) {
+        // Можно оставить alert или заменить на более мягкое уведомление
+        alert("Изменение поколения может нарушить связи.");
+        // Если нужно подтверждение, можно добавить логику здесь
       }
     }
     setForm((f) => ({ ...f, [field]: v }));
@@ -229,6 +246,49 @@ export default function PersonEditDialog({
     setSaved(true);
     onSave?.(fresh); // можно передать свежие данные наверх
     onClose();
+
+    // 1. Исправленная функция разницы массивов
+    const getDiff = (oldArr = [], newArr = []) => {
+      // Находим тех, кто добавился
+      const added = newArr.filter((x) => !oldArr.includes(x));
+      // Находим тех, кто был удален
+      const removed = oldArr.filter((x) => !newArr.includes(x));
+
+      let parts = [];
+      if (added.length > 0) parts.push(`+${added.join(",")}`);
+      if (removed.length > 0) parts.push(`-${removed.join(",")}`);
+
+      return parts.join(" ");
+    };
+
+    // 2. Сбор логов (убедись, что переменные определены)
+    const logs = [];
+
+    if (oldFather !== newFather)
+      logs.push(`Отец: ${oldFather || "нет"} → ${newFather || "нет"}`);
+    if (oldMother !== newMother)
+      logs.push(`Мать: ${oldMother || "нет"} → ${newMother || "нет"}`);
+
+    const spouseDiff = getDiff(oldSpouse, newSpouse);
+    if (spouseDiff) logs.push(`Супруги: ${spouseDiff}`);
+
+    const childDiff = getDiff(oldChildren, newChildren);
+    if (childDiff) logs.push(`Дети: ${childDiff}`);
+
+    const sibDiff = getDiff(oldSiblings, newSiblings);
+    if (sibDiff) logs.push(`Сиблинги: ${sibDiff}`);
+
+    // 3. Финальный текст
+    // Если твой компонент уведомлений не понимает \n, оставь пробел или ;
+    const details = logs.length > 0 ? `\nДетали: ${logs.join("; ")}` : "";
+
+    addNotification({
+      timestamp: new Date().toISOString(),
+      title: "Человек обновлен",
+      message: `Обновлены данные: ${person.firstName.trim()} ${person.lastName.trim()}${details}`,
+      type: "success",
+      link: `/person/${person.id}`,
+    });
   };
 
   return (
@@ -396,14 +456,23 @@ export default function PersonEditDialog({
                   onClick={() => setDiedPickerOpen(true)}
                   InputProps={{ readOnly: true, sx: { borderRadius: "10px" } }}
                 />
-                <TextField
+                {/* <TextField
                   label="Поколение"
                   size="small"
-                  sx={{ width: { sm: "120px" } }}
+                  sx={{ width: { sx: "120px" } }}
                   type="number"
                   inputProps={{ min: 1 }}
                   value={gen}
                   onChange={handleChange("generation")}
+                /> */}
+                <NumberField
+                  label="Поколение"
+                  size="small"
+                  fullWidth
+                  min={1}
+                  max={20}
+                  value={gen}
+                  onValueChange={handleNumberChange("generation")}
                 />
               </Stack>
             </Box>

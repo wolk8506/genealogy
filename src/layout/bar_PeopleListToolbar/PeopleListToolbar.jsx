@@ -1,16 +1,14 @@
 import React from "react";
-import { Stack, Typography, useTheme, Box, Divider } from "@mui/material";
+import { Stack, Box, Tooltip, IconButton } from "@mui/material";
+import { useNavigate } from "react-router-dom";
 
-import PeopleIcon from "@mui/icons-material/People";
-import MaleIcon from "@mui/icons-material/Male";
-import FemaleIcon from "@mui/icons-material/Female";
-import RestoreFromTrashIcon from "@mui/icons-material/RestoreFromTrash";
-
+import PersonAddAlt1Icon from "@mui/icons-material/PersonAddAlt1";
 import ExpandingSearch from "../../components/ExpandingSearch";
 import ExpandingTimeSelect from "./ExpandingTimeSelect";
 import ExpandingGenSelect from "./ExpandingGenSelect";
 import ExpandingRelationCheck from "./ExpandingRelationCheck";
 import ExpandingSortButton from "./ExpandingSortButton";
+import { StatisticPopover } from "./StatisticPopover";
 
 export default function PeopleListToolbar({
   people = [],
@@ -25,7 +23,12 @@ export default function PeopleListToolbar({
   updateFilter,
   allGenerations,
 }) {
-  const theme = useTheme();
+  const navigate = useNavigate();
+
+  const handleOpenAddModal = () => {
+    // Переходим на корень и добавляем параметр
+    navigate("/?action=add");
+  };
 
   // РАСЧЕТ СТАТИСТИКИ
   const stats = React.useMemo(() => {
@@ -39,9 +42,24 @@ export default function PeopleListToolbar({
     };
   }, [people]);
 
+  const [anchorEl, setAnchorEl] = React.useState(null);
+
+  const handleClick = (event) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleClose = () => {
+    setAnchorEl(null);
+  };
+
+  const open = Boolean(anchorEl);
+  const id = open ? "simple-popover" : undefined;
+
   return (
     <Stack direction="row" spacing={1.5} alignItems="center" ml="auto">
       {/* 1. СТАТИСТИКА (Компактно) */}
+      <StatisticPopover people={people} />
+      {/* Открытие модалки добавления человека */}
       <Box
         sx={{
           display: "inline-flex",
@@ -53,49 +71,15 @@ export default function PeopleListToolbar({
           color: "text.secondary",
         }}
       >
-        <Stack
-          direction="row"
-          spacing={0.7}
-          sx={{ color: "white", py: "10px", pr: "5px", pl: "10px" }}
-        >
-          <PeopleIcon fontSize="small" color="primary" />
-          <Typography variant="body2" fontWeight="600">
-            {stats.total}
-          </Typography>
-        </Stack>
-        <Divider orientation="vertical" variant="middle" flexItem />
-        <Stack
-          direction="row"
-          spacing={0.7}
-          sx={{ color: "white", py: "10px", pr: "5px", pl: "2px" }}
-        >
-          <MaleIcon fontSize="small" color="info" />
-          <Typography variant="body2" fontWeight="600">
-            {stats.males}
-          </Typography>
-        </Stack>
-        <Divider orientation="vertical" variant="middle" flexItem />
-        <Stack
-          direction="row"
-          spacing={0.7}
-          sx={{ color: "white", py: "10px", pr: "5px", pl: "2px" }}
-        >
-          <FemaleIcon fontSize="small" color="secondary" />
-          <Typography variant="body2" fontWeight="600">
-            {stats.females}
-          </Typography>
-        </Stack>
-        <Divider orientation="vertical" variant="middle" flexItem />
-        <Stack
-          direction="row"
-          spacing={0.7}
-          sx={{ color: "white", py: "10px", pr: "10px", pl: "2px" }}
-        >
-          <RestoreFromTrashIcon fontSize="small" color="warning" />
-          <Typography variant="body2" fontWeight="600">
-            {stats.trash}
-          </Typography>
-        </Stack>
+        <Tooltip title="Добавить человека">
+          <IconButton
+            onClick={handleOpenAddModal}
+            size="small"
+            sx={{ color: "white", p: "8px" }}
+          >
+            <PersonAddAlt1Icon color={"inherit"} />
+          </IconButton>
+        </Tooltip>
       </Box>
 
       {/* Фильтр по дате создания */}

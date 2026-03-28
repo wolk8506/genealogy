@@ -47,6 +47,7 @@ import UserGuideModal from "./UserGuideModal";
 import GalleryToolbar from "./bar_GlobalPhotoGallery/GalleryToolbar";
 import PeopleListToolbar from "./bar_PeopleListToolbar/PeopleListToolbar";
 import PersonToolbar from "./bar_PeopleToolbar/PersonToolbar";
+import { NotificationBell } from "./NotificationBell";
 
 const drawerItems = [
   { text: "Люди", icon: <GroupIcon />, path: "/" },
@@ -55,7 +56,7 @@ const drawerItems = [
     icon: <CollectionsIcon />,
     path: "/globalPhotoGallery",
   },
-  { text: "Добавить человека", icon: <PersonAddAlt1Icon />, path: "/add" },
+  // { text: "Добавить человека", icon: <PersonAddAlt1Icon />, path: "/add" },
   {
     text: "Загрузить фото",
     icon: <AddPhotoAlternateIcon />,
@@ -66,7 +67,7 @@ const drawerItems = [
   { text: "О приложении", icon: <InfoIcon />, path: "/about" },
 ];
 
-const drawerWidth = 240;
+const drawerWidth = 200;
 
 const AppBar = styled(MuiAppBar, {
   shouldForwardProp: (prop) => prop !== "open",
@@ -141,6 +142,9 @@ export default function MainLayout() {
   // !!!  ▼▼▼   Person Page  ▼▼▼
   // info
   const personPageRef = useRef(null);
+  // --- 1. Новые стейты и рефы ---
+  const [isInfoEditing, setIsInfoEditing] = useState(false);
+  const infoRequestToggleRef = useRef(null); // Ссылка на методы InfoSection (toggle, checkDirty, save, cancel)
   // tree
   const [treeMode, setTreeMode] = useState("descendants");
   const treePageRef = useRef(null); // Для вызова handleExport
@@ -173,19 +177,77 @@ export default function MainLayout() {
     }
   }, [activeElement]);
 
-  const handleTabChange = (newTab) => {
-    // Проверяем через реф, "грязная" ли био
-    const isDirty = bioRequestToggleRef.current?.checkDirty?.();
+  // --- 2. Обновленный обработчик смены вкладок ---
 
-    if (activeElement === "bio" && isBioEditing && isDirty) {
-      // Если грязная — не меняем вкладку сразу, а просим био открыть модалку
-      bioRequestToggleRef.current.askSave(`changeTab:${newTab}`);
-    } else {
-      // Если не грязная или мы не в био — просто переключаем
-      setActiveElement(newTab);
+  const handleTabChange = (newTab) => {
+    if (!newTab || typeof newTab !== "string") return;
+    if (newTab === activeElement) return;
+
+    // 1. ПРОВЕРКА АНКЕТЫ (Info)
+    if (activeElement === "info" && isInfoEditing) {
+      // Спрашиваем у рефа, есть ли изменения
+      const isInfoDirty = infoRequestToggleRef.current?.checkDirty?.() || false;
+
+      if (isInfoDirty) {
+        const confirmLeave = window.confirm(
+          "В анкете есть несохраненные изменения. При переключении вкладки они будут потеряны. Продолжить?",
+        );
+        if (!confirmLeave) return; // Блокируем переключение, выходим из функции
+      }
+
+      // Если пользователь нажал ОК или изменений нет —
+      // сбрасываем режим редактирования перед уходом
+      setIsInfoEditing(false);
     }
+
+    // 2. ПРОВЕРКА БИОГРАФИИ (Bio)
+    if (activeElement === "bio" && isBioEditing) {
+      const isBioDirty = bioRequestToggleRef.current?.checkDirty?.() || false;
+
+      if (isBioDirty) {
+        const confirmLeave = window.confirm(
+          "В биографии есть несохраненные изменения. Выйти?",
+        );
+        if (!confirmLeave) return;
+      }
+      setIsBioEditing(false);
+    }
+
+    // 3. ГАРАНТИРОВАННЫЙ ПЕРЕХОД (если проверки пройдены или их не было)
+    setActiveElement(newTab);
   };
 
+  // --- 3. Функция блокировки для Drawer (бокового меню) ---
+
+  const handleNavigationAttempt = (path) => {
+    // 1. Собираем статусы "грязности" из рефов
+    const isInfoDirty = infoRequestToggleRef.current?.checkDirty?.() || false;
+    const isBioDirty = bioRequestToggleRef.current?.checkDirty?.() || false;
+
+    // 2. Если мы в режиме редактирования И есть изменения
+    if ((isInfoEditing && isInfoDirty) || (isBioEditing && isBioDirty)) {
+      // Показываем системное окно подтверждения
+      const confirmLeave = window.confirm(
+        "У вас есть несохраненные изменения. Если вы покинете страницу, они будут потеряны. Перейти?",
+      );
+
+      if (!confirmLeave) {
+        // Пользователь нажал "Отмена" — остаемся на текущей странице
+        return;
+      }
+
+      // Если пользователь нажал "ОК" — сбрасываем стейты редактирования,
+      // чтобы при возврате не висел режим правки
+      setIsInfoEditing(false);
+      setIsBioEditing(false);
+    }
+
+    // 3. Если правок нет ИЛИ пользователь разрешил уйти — переходим
+    navigate(path);
+    setOpen(false); // Закрываем боковое меню
+    setIsInfoEditing(false);
+    setIsBioEditing(false);
+  };
   // !!!  ▲▲▲   Person Page  ▲▲▲
 
   // Оборачиваем в useCallback, чтобы функцию можно было безопасно передавать вниз
@@ -282,23 +344,6 @@ export default function MainLayout() {
     setOpen(false);
   };
 
-  // ------------------------------------------------------
-  // Подсчет новых изменений для Badge
-  const [changesCount, setChangesCount] = useState(0);
-
-  useEffect(() => {
-    window.peopleAPI.getAll().then((data) => {
-      const lastVisit = localStorage.getItem("lastVisitPeoplePage");
-      const lastVisitTime = lastVisit ? new Date(lastVisit).getTime() : 0;
-      const count = data.filter((p) => {
-        const created = new Date(p.createdAt).getTime();
-        const edited = new Date(p.editedAt).getTime();
-        return created > lastVisitTime || edited > lastVisitTime;
-      }).length;
-      setChangesCount(count);
-    });
-  }, [location.pathname]); // пересчитываем при смене маршрута
-  // ------------------------------------------------------
   const [person, setPerson] = useState(null);
   // const match = matchPath("/person/:id", location.pathname);
   const id = Number(match?.params?.id);
@@ -370,13 +415,23 @@ export default function MainLayout() {
             </IconButton>
 
             <NavigationButtons />
+            <NotificationBell />
 
             {match && (
               <PersonToolbar
                 activeElement={activeElement}
                 setActiveElement={handleTabChange}
+                // infoProps={{
+                //   personPageRef: personPageRef,
+                // }}
                 infoProps={{
                   personPageRef: personPageRef,
+                  isEditing: isInfoEditing,
+                  // Эти функции должны быть проброшены в PersonPage -> InfoSection
+                  requestToggleEdit: () =>
+                    infoRequestToggleRef.current?.toggle(),
+                  onSave: () => infoRequestToggleRef.current?.save(),
+                  onCancel: () => infoRequestToggleRef.current?.cancel(),
                 }}
                 photoProps={{
                   search: galleryPersonSearch,
@@ -467,8 +522,11 @@ export default function MainLayout() {
         <AppDrawer
           open={open}
           onClose={handleDrawerClose}
-          items={drawerItems}
-          changesCount={changesCount}
+          // items={drawerItems}
+          items={drawerItems.map((item) => ({
+            ...item,
+            onClick: () => handleNavigationAttempt(item.path), // Перехватываем клик
+          }))}
         />
 
         <Box
@@ -477,9 +535,9 @@ export default function MainLayout() {
             flexGrow: 1,
             pt: 1,
             pr: 1,
-            pb: 3,
+            pb: 1,
             pl: 1,
-            width: "calc(100% - 64px)",
+            // width: "calc(100% - 64px)",
             // height: "100vh",
           }}
         >
@@ -528,6 +586,11 @@ export default function MainLayout() {
               element={
                 <PersonPage
                   ref={personPageRef}
+                  infoProps={{
+                    isEditing: isInfoEditing,
+                    setIsEditing: setIsInfoEditing,
+                    requestToggleRef: infoRequestToggleRef, // Реф для связи с тулбаром
+                  }}
                   activeElement={activeElement}
                   galleryProps={{
                     search: galleryPersonSearch,

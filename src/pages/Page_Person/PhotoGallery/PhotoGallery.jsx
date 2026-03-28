@@ -5,6 +5,7 @@ import React, {
   useRef,
   useCallback,
 } from "react";
+import { useNotificationStore } from "../../../store/useNotificationStore";
 import { Typography, Box, Stack, CircularProgress, Chip } from "@mui/material";
 import { useTheme, alpha } from "@mui/material/styles";
 import { GroupedVirtuoso } from "react-virtuoso";
@@ -45,6 +46,9 @@ export default function PhotoGallery({
 }) {
   const theme = useTheme();
   const isDark = theme.palette.mode === "dark";
+  const addNotification = useNotificationStore(
+    (state) => state.addNotification,
+  );
   const virtuosoRef = useRef(null);
   const pendingRef = useRef(new Set());
 
@@ -98,7 +102,7 @@ export default function PhotoGallery({
   const sortedBase = useMemo(() => {
     const result = photos.filter((p) => {
       const txt =
-        `${p.title || ""} ${p.description || ""} ${p.fileName || ""}`.toLowerCase();
+        `${p.id || ""} ${p.title || ""} ${p.description || ""} ${p.fileName || ""}`.toLowerCase();
       return txt.includes(search.toLowerCase());
     });
 
@@ -339,8 +343,18 @@ export default function PhotoGallery({
             return { thumbs: nt, full: nf };
           });
         }
+        addNotification({
+          title: "Фото удалено",
+          message: `Файл "${photo.filename}" успешно удален. Владелец ID: ${personId}`,
+          type: "warning",
+        });
       } catch (e) {
         console.error(e);
+        addNotification({
+          title: "Ошибка удаления",
+          message: e || "Не удалось удалить фото",
+          type: "error",
+        });
       }
     },
     [personId],
@@ -370,7 +384,7 @@ export default function PhotoGallery({
         sx={{
           display: "flex",
           flexDirection: "column",
-          height: "calc(100vh - 100px)", // ЗАДАЙТЕ ВЫСОТУ ТУТ (например, 700 или 80vh)
+          height: "calc(100vh - 80px)", // ЗАДАЙТЕ ВЫСОТУ ТУТ (например, 700 или 80vh)
           width: "100%",
           // position: "relative",
         }}

@@ -139,7 +139,8 @@ contextBridge.exposeInMainWorld("bioAPI", {
   getFullImagePath: (id, relPath) =>
     ipcRenderer.invoke("bio:getFullImagePath", id, relPath),
   write: (id, text) => ipcRenderer.invoke("bio:write", id, text),
-
+  deleteImages: (id, filenames) =>
+    ipcRenderer.invoke("bio:deleteImages", id, filenames),
   saveImage: (id, filename, buffer) =>
     ipcRenderer.invoke("bio:saveImage", id, filename, buffer),
 });
@@ -184,6 +185,7 @@ contextBridge.exposeInMainWorld("appAPI", {
     return () => ipcRenderer.removeListener("conv-prog", listener);
   },
   deleteMedia: (type) => ipcRenderer.invoke("photo:deleteMedia", type),
+  logHistory: (entry) => ipcRenderer.invoke("app:logHistory", entry),
 });
 //  лог
 contextBridge.exposeInMainWorld("logAPI", {

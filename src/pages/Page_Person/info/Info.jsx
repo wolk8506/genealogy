@@ -65,18 +65,32 @@ export default function Info({
 
   const findById = (id) => allPeople.find((p) => p.id === id);
 
-  const children = person.children?.map(findById).filter(Boolean);
   const families = buildFamiliesForPerson(person, allPeople);
   const father = person.father ? findById(person.father) : null;
   const mother = person.mother ? findById(person.mother) : null;
   // const siblings = person.siblings?.map(findById).filter(Boolean);
   const initials = (person.firstName?.[0] || "") + (person.lastName?.[0] || "");
-  const siblings = (person.siblings || [])
+  const children = person.children?.map(findById).filter(Boolean);
+  const soloChildren = children.filter(
+    (c) =>
+      !person.spouse?.includes(c.mother) && !person.spouse?.includes(c.father),
+  );
+  // 1. Вытаскиваем массивы ID детей отца и матери (если родители неизвестны, берем пустой массив)
+  const fatherChildrenIds = father?.children || [];
+  const motherChildrenIds = mother?.children || [];
+
+  // 2. Объединяем списки, убираем дубликаты через Set и исключаем ID самого человека
+  const siblingIds = Array.from(
+    new Set([...fatherChildrenIds, ...motherChildrenIds]),
+  ).filter((id) => String(id) !== String(person.id));
+
+  // 3. Мапим полученные ID в объекты и вычисляем тип родства
+  const siblings = siblingIds
     .map((id) => {
       const s = findById(id);
       if (!s) return null;
 
-      // Сравниваем родителей
+      // Проверяем совпадение родителей
       const sameFather =
         s.father && person.father && String(s.father) === String(person.father);
       const sameMother =
@@ -84,16 +98,16 @@ export default function Info({
 
       let kinship = "";
       if (sameFather && sameMother) {
-        kinship = "Общие родители";
+        kinship = "Общие родители"; // Полнородные братья/сестры
       } else if (sameFather) {
-        kinship = "Общий отец";
+        kinship = "Общий отец"; // Единокровные
       } else if (sameMother) {
-        kinship = "Общая мать";
+        kinship = "Общая мать"; // Единоутробные
       } else {
-        kinship = "Сводное родство"; // Если в базе указаны как сиблинги, но родители не совпадают
+        kinship = "Сводное родство"; // Резервный вариант, если связи запутаны
       }
 
-      return { ...s, kinship }; // Добавляем строку kinship в объект сиблинга
+      return { ...s, kinship };
     })
     .filter(Boolean);
 
@@ -104,19 +118,23 @@ export default function Info({
         display: "flex",
         justifyContent: "center",
         bgcolor: "background.default",
-        minWidth: "1300px", // Electron limit
+        minWidth: "1134px", // Electron limit // ! 1300
+        containerType: "inline-size", // ДОБАВИТЬ ЭТО
       }}
     >
       <Stack
         direction="row"
         sx={{
-          height: "calc(100vh - 100px)",
-          width: "1920px",
+          height: "calc(100vh - 80px)",
+          // maxWidth: "1920px",
+          // width: "1210px",
+          width: "clamp(1220px, (100cqi - 1300px) * 9999, 1920px)",
           /* 1430px - 1511px: Равномерные отступы по бокам за счет justifyContent */
           justifyContent: "space-around",
-          px: 2, // Минимальный внутренний отступ
+          // px: 2, // Минимальный внутренний отступ
           boxSizing: "border-box",
           overflow: "hidden",
+          transition: "all 0.3s ease", // Плавное сжатие при открытии меню
         }}
       >
         {/* ЛЕВЫЙ БЛОК (Инфо) - Фиксированный 802px */}
@@ -124,13 +142,14 @@ export default function Info({
           spacing={0.3}
           alignItems="center"
           sx={{
-            width: 800, // Чуть шире, чтобы компенсировать отступ для скролла
+            width: 785, // Чуть шире, чтобы компенсировать отступ для скролла
             flexShrink: 0,
             height: "100%",
             overflowY: "auto",
-            pr: 1.5, // Отступ справа, чтобы скроллбар не "прилипал" к карточкам
+            pr: 0.5, // Отступ справа, чтобы скроллбар не "прилипал" к карточкам
             pt: 1, // Небольшой отступ сверху
             pb: 4, // Отступ снизу, чтобы контент не упирался в край
+            // pr: 0.5,
 
             /* Стилизация скроллбара для левого блока */
             "&::-webkit-scrollbar": { width: "6px" },
@@ -383,7 +402,7 @@ export default function Info({
                 >
                   {siblings.map((s) => (
                     <Box key={s.id} sx={{ transform: "scale(0.95)" }}>
-                      <RenderPersonItem p={s} />
+                      <RenderPersonItem p={s} link={true} />
                     </Box>
                   ))}
                 </Box>
@@ -395,16 +414,8 @@ export default function Info({
             <RenderSectionFamilies
               title={person.gender === "male" ? "Супруга" : "Супруг"}
               people={families}
+              soloChildren={soloChildren}
             />
-            {families.length < 1 && (
-              <RenderSectionChildren
-                title={
-                  children.length > 1 ? `Дети (${children.length})` : "Ребенок"
-                }
-                people={children}
-                row={children.length > 1 ? 2 : 1}
-              />
-            )}
           </Stack>
         </Stack>
         <Divider orientation="vertical" flexItem sx={{ borderRightWidth: 1 }} />
@@ -416,17 +427,18 @@ export default function Info({
                2. После 1511px растет: 500 + (текущая ширина - 1511)
                3. Максимум 600px (рост не более 100px)
             */
-            width: "clamp(470px, calc(500px + (100vw - 1511px)), 600px)",
+            width: "clamp(386px, calc(370px + (100cqi - 1247px)), 650px)",
             flexShrink: 0,
             height: "100%",
             border: "1px solid",
             borderColor: "divider",
             borderRadius: "20px",
+            ml: 1,
             bgcolor: (theme) =>
               theme.palette.mode === "dark"
                 ? "rgba(255,255,255,0.01)"
                 : "rgba(0,0,0,0.01)",
-            transition: "width 0.1s ease-out", // Плавность при ресайзе Electron
+            transition: "width 0.3s ease", // Плавный ресайз
           }}
         >
           <Box
@@ -435,7 +447,7 @@ export default function Info({
               display: "flex",
               flexDirection: "column",
               minHeight: 0,
-              p: 2,
+              p: 1.5,
             }}
           >
             <Typography
@@ -445,7 +457,7 @@ export default function Info({
             >
               Хронология событий
             </Typography>
-            <Box sx={{ flex: 1, overflowY: "auto", pr: 1 }}>
+            <Box sx={{ flex: 1, overflowY: "auto" }}>
               <PersonEvents
                 allPeople={allPeople}
                 birthday={person.birthday}
@@ -464,7 +476,7 @@ export default function Info({
               display: "flex",
               flexDirection: "column",
               minHeight: 0,
-              p: 2,
+              p: 1.5,
             }}
           >
             <Typography
@@ -474,7 +486,7 @@ export default function Info({
             >
               Интересные факты
             </Typography>
-            <Box sx={{ flex: 1, overflowY: "auto", pr: 1 }}>
+            <Box sx={{ flex: 1, overflowY: "auto" }}>
               <PersonFacts
                 person={person}
                 facts={safeFacts}
@@ -494,13 +506,13 @@ export default function Info({
         currentAvatarPath={initials}
         onSaved={() => setRefreshPhotos((r) => r + 1)}
       />
-      <PersonEditDialog
+      {/* <PersonEditDialog
         open={editOpen}
         onClose={() => setEditOpen(false)}
         person={person}
         onSave={handleSave}
         allPeople={allPeople}
-      />
+      /> */}
       <EventEditorDialog
         allPeople={allPeople}
         open={eventEditorOpen}

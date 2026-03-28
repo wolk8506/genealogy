@@ -16,7 +16,7 @@ export default function ExportableAvatar({ personId, initials, size = 40 }) {
         }
 
         const url = `${path}?t=${Date.now()}`;
-        // console.log("🖼️ avatar path:", url);
+
         if (isMounted) setSrc(url);
       });
     }

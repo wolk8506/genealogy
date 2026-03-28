@@ -1,5 +1,5 @@
 import React from "react";
-import { Stack, Tooltip } from "@mui/material";
+import { Stack, Tooltip, Box, Button } from "@mui/material";
 
 // import PersonTabs from "./PersonTabs"; // Используем созданный ранее компонент
 import { ToggleButton, ToggleButtonGroup } from "@mui/material";
@@ -42,15 +42,17 @@ export default function ToolbarGroup({
           borderRadius: 7,
           borderColor: "divider",
           height: "40px",
+          // color: "white",
           gap: 1,
           "& .MuiToggleButton-root": {
-            // color: "#aaa",
+            color: "white",
             border: "none",
             borderRadius: 6,
             // mx: 0.5,
             // gap: 1,
             "&.Mui-selected": {
-              bgcolor: "#444",
+              // bgcolor: "text.secondary",
+              bgcolor: "divider",
               color: "#90caf9",
               // "&:hover": { bgcolor: "#555" },
             },
@@ -58,7 +60,7 @@ export default function ToolbarGroup({
         }}
       >
         <Tooltip title="Инфо">
-          <ToggleButton value="info">
+          <ToggleButton value="info" color="white">
             <PermIdentityIcon />
           </ToggleButton>
         </Tooltip>
@@ -81,8 +83,12 @@ export default function ToolbarGroup({
           </ToggleButton>
         </Tooltip>
       </ToggleButtonGroup>
+
       {activeElement === "info" && (
-        <InfoToolbar personRef={infoProps.personPageRef} />
+        <InfoToolbar
+          infoProps={infoProps} // ПЕРЕДАЕМ ВЕСЬ ОБЪЕКТ (тут лежат и методы, и реф)
+          personRef={infoProps.personPageRef} // Передаем реф страницы для фактов/событий
+        />
       )}
       {/* Если выбрана вкладка Фото, показываем дополнительные кнопки */}
       {activeElement === "photo" && (

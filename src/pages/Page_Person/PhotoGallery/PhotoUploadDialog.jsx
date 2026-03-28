@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import {
   Dialog,
-  DialogTitle,
   DialogContent,
   DialogActions,
   Button,
@@ -16,10 +15,10 @@ import {
   Checkbox,
   Typography,
   Box,
-  Divider,
   IconButton,
   CircularProgress,
 } from "@mui/material";
+import { useNotificationStore } from "../../../store/useNotificationStore";
 import { alpha, useTheme } from "@mui/material/styles";
 import CloseIcon from "@mui/icons-material/Close";
 import AddPhotoAlternateIcon from "@mui/icons-material/AddPhotoAlternate";
@@ -39,6 +38,9 @@ export default function PhotoUploadDialog({
   // ———————————————————————————
   const theme = useTheme();
   const isDark = theme.palette.mode === "dark";
+  const addNotification = useNotificationStore(
+    (state) => state.addNotification,
+  );
   const [saving, setSaving] = useState(false); // Состояние загрузки
   // Поля формы
   const [datePickerOpen, setDatePickerOpen] = useState(false);
@@ -204,65 +206,6 @@ export default function PhotoUploadDialog({
   };
 
   // === 3) Сохранение ===
-  // const handleSave = async () => {
-  //   if (!filename) {
-  //     alert("Сначала выберите файл.");
-  //     return;
-  //   }
-
-  //   setSaving(true); // <--- ВКЛЮЧАЕМ СПИННЕР
-
-  //   // --- ДОБАВЛЯЕМ ПАРСИНГ ТЕГОВ ---
-  //   const extractedHashtags = description
-  //     ? (description.match(/#[\p{L}\d_]+/gu) || []).map((t) => t.toLowerCase())
-  //     : [];
-
-  //   const meta = {
-  //     title,
-  //     description,
-  //     hashtags: extractedHashtags,
-  //     people: [...new Set([...people.map((p) => p.id), personId])],
-  //     owner: currentUserId,
-  //     date: new Date().toISOString().split("T")[0],
-  //     datePhoto,
-  //     aspectRatio,
-  //   };
-
-  //   // Выбор метода сохранения (blob или путь)
-  //   let newPhoto = null;
-  //   if (convertedArrayBuffer) {
-  //     newPhoto = await window.photoAPI.saveBlobFile(
-  //       meta,
-  //       convertedArrayBuffer,
-  //       filename,
-  //     );
-  //   } else if (filePath) {
-  //     newPhoto = await window.photoAPI.saveWithFilename(meta, filePath);
-  //   } else {
-  //     newPhoto = await window.photoAPI.saveWithFilename(meta, filename);
-  //   }
-
-  //   if (newPhoto) {
-  //     onPhotoAdded(newPhoto);
-
-  //     if (keepOpen) {
-  //       // если «Добавить ещё» отмечено — очищаем всё, кроме datePhoto
-  //       setTitle("");
-  //       setDescription("");
-  //       setPeople([]);
-  //       setPreview(null);
-  //       setFilename(null);
-  //       setFilePath(null);
-  //       setAspectRatio("4/3");
-  //       setConvertedArrayBuffer(null);
-  //       setDragCounter(0);
-  //       // datePhoto оставляем без изменений
-  //     } else {
-  //       // иначе закрываем модалку
-  //       onClose();
-  //     }
-  //   }
-  // };
 
   const handleSave = async () => {
     // 1. Валидация
@@ -314,6 +257,13 @@ export default function PhotoUploadDialog({
 
       // 6. Обработка результата
       if (newPhoto) {
+        // 🔔 Уведомление об успешном сохранении
+        addNotification({
+          title: "Фото добавлено",
+          message: `Файл "${filename}" успешно сохранен. Владелец: ${currentUserId}.`,
+          type: "success",
+          // Можно добавить ссылку на галерею или само фото, если есть роут
+        });
         // Уведомляем родительский компонент о добавлении
         onPhotoAdded(newPhoto);
 
@@ -338,6 +288,12 @@ export default function PhotoUploadDialog({
       }
     } catch (err) {
       console.error("Save failed:", err);
+      // 🔔 Уведомление об ошибке (вместо обычного alert для единообразия)
+      addNotification({
+        title: "Ошибка сохранения",
+        message: err.message || "Не удалось сохранить фото",
+        type: "error",
+      });
       alert(
         "Не удалось сохранить фото: " + (err.message || "Неизвестная ошибка"),
       );
