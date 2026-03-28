@@ -23,7 +23,8 @@ import {
 } from "@mui/material";
 // ! Иконка для строки поиска
 import PersonSearchIcon from "@mui/icons-material/PersonSearch";
-
+import FemaleIcon from "@mui/icons-material/Female";
+import MaleIcon from "@mui/icons-material/Male";
 import PersonIcon from "@mui/icons-material/Person";
 import EditIcon from "@mui/icons-material/Edit";
 import FingerprintIcon from "@mui/icons-material/Fingerprint"; // Или Fingerprint, или Dna
@@ -903,6 +904,7 @@ const Editor = forwardRef(
                   // bgcolor: "background.paper",
                   boxShadow: 2,
                   fontWeight: "bold",
+                  zIndex: 1,
                   // backdropFilter: "blur(14px)",
                   // "&MuiChip-root": { bgcolor: "background.paper" },
                 }}
@@ -1155,7 +1157,7 @@ const Editor = forwardRef(
                         justifyContent="flex-end"
                         alignItems="center"
                       >
-                        <TextField
+                        {/* <TextField
                           select
                           label="Пол"
                           value={form.gender || ""}
@@ -1163,6 +1165,35 @@ const Editor = forwardRef(
                           size="small"
                           variant="standard"
                           sx={{ minWidth: 100 }}
+                        >
+                          <MenuItem value="male">Мужской</MenuItem>
+                          <MenuItem value="female">Женский</MenuItem>
+                        </TextField> */}
+                        <TextField
+                          label="Пол"
+                          select
+                          size="small"
+                          fullWidth
+                          sx={{ width: "150px" }}
+                          value={form.gender || ""}
+                          onChange={handleChange("gender")}
+                          InputProps={{
+                            startAdornment: form.gender && (
+                              <Box
+                                sx={{
+                                  mr: 1,
+                                  display: "flex",
+                                  color: "action.active",
+                                }}
+                              >
+                                {form.gender === "male" ? (
+                                  <MaleIcon fontSize="small" />
+                                ) : (
+                                  <FemaleIcon fontSize="small" />
+                                )}
+                              </Box>
+                            ),
+                          }}
                         >
                           <MenuItem value="male">Мужской</MenuItem>
                           <MenuItem value="female">Женский</MenuItem>
