@@ -12,6 +12,8 @@ import AccountTreeIcon from "@mui/icons-material/AccountTree";
 import PhotoToolbar from "./photo/PhotoToolbar";
 import TreeToolbar from "./tree/TreeToolbar";
 import InfoToolbar from "./info/InfoToolbar";
+import FileCopyIcon from "@mui/icons-material/FileCopy";
+import FileToolbar from "./file/FileToolbar";
 // import TreeToolbar
 
 export default function ToolbarGroup({
@@ -38,17 +40,18 @@ export default function ToolbarGroup({
         onChange={(e, val) => val && setActiveElement(val)}
         size="small"
         sx={{
+          WebkitAppRegion: "no-drag",
           border: "1px solid",
           borderRadius: 7,
           borderColor: "divider",
-          height: "40px",
+          height: 34,
           // color: "white",
           gap: 1,
           "& .MuiToggleButton-root": {
             color: "white",
             border: "none",
             borderRadius: 6,
-            // mx: 0.5,
+            fontSize: 20,
             // gap: 1,
             "&.Mui-selected": {
               // bgcolor: "text.secondary",
@@ -61,28 +64,34 @@ export default function ToolbarGroup({
       >
         <Tooltip title="Инфо">
           <ToggleButton value="info" color="white">
-            <PermIdentityIcon />
+            <PermIdentityIcon fontSize="inherit" />
           </ToggleButton>
         </Tooltip>
 
         <Tooltip title="Фотоальбом">
           <ToggleButton value="photo">
-            <PhotoLibraryIcon />
+            <PhotoLibraryIcon fontSize="inherit" />
           </ToggleButton>
         </Tooltip>
 
         <Tooltip title="Биография">
           <ToggleButton value="bio">
-            <FeedIcon />
+            <FeedIcon fontSize="inherit" />
           </ToggleButton>
         </Tooltip>
 
         <Tooltip title="Древо">
           <ToggleButton value="tree">
-            <AccountTreeIcon />
+            <AccountTreeIcon fontSize="inherit" />
+          </ToggleButton>
+        </Tooltip>
+        <Tooltip title="Файлы">
+          <ToggleButton value="files">
+            <FileCopyIcon fontSize="inherit" />
           </ToggleButton>
         </Tooltip>
       </ToggleButtonGroup>
+      {activeElement === "files" && <FileToolbar />}
 
       {activeElement === "info" && (
         <InfoToolbar

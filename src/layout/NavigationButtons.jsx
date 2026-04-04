@@ -1,10 +1,13 @@
 import { Box, IconButton } from "@mui/material";
 import { useNavigate } from "react-router-dom";
+import NavigateBeforeIcon from "@mui/icons-material/NavigateBefore";
+import NavigateNextIcon from "@mui/icons-material/NavigateNext";
 import ArrowBackIosIcon from "@mui/icons-material/ArrowBackIos";
 import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
 import { styled, useTheme } from "@mui/material/styles";
 
 import Divider from "@mui/material/Divider";
+import ButtonConteiner from "../components/ButtonConteiner";
 
 export default function NavigationButtons() {
   const navigate = useNavigate();
@@ -15,36 +18,29 @@ export default function NavigationButtons() {
   const canGoForward = window.history.state?.idx < window.history.length - 1;
 
   return (
-    <Box
-      sx={{
-        display: "inline-flex",
-        alignItems: "center",
-        border: "1px solid",
-        borderColor: "divider",
-        borderRadius: 7,
-        height: 40,
-        color: "text.secondary",
-      }}
-    >
+    <ButtonConteiner>
       <IconButton
-        sx={{ color: "white", p: "8px" }}
+        sx={{
+          color: "white",
+          p: 0.5,
+        }}
         color={isDark ? "primary" : "default"}
         onClick={() => canGoBack && navigate(-1)}
         disabled={!canGoBack}
         size="small"
       >
-        <ArrowBackIosIcon />
+        <NavigateBeforeIcon />
       </IconButton>
       <Divider orientation="vertical" variant="middle" flexItem />
       <IconButton
-        sx={{ color: "white", p: "8px" }}
+        sx={{ color: "white", p: 0.5 }}
         color={isDark ? "primary" : "default"}
         onClick={() => canGoForward && navigate(1)}
         disabled={!canGoForward}
         size="small"
       >
-        <ArrowForwardIosIcon />
+        <NavigateNextIcon />
       </IconButton>
-    </Box>
+    </ButtonConteiner>
   );
 }

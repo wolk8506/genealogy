@@ -308,57 +308,6 @@ const Editor = forwardRef(
       });
     };
 
-    // const handleLinkChild = (childId, partnerId = null) => {
-    //   const cId = isNaN(childId) ? childId : Number(childId);
-    //   const pId = partnerId
-    //     ? isNaN(partnerId)
-    //       ? partnerId
-    //       : Number(partnerId)
-    //     : null;
-
-    //   const childInAll = localPeople.find((p) => String(p.id) === String(cId));
-    //   if (!childInAll) return;
-
-    //   // ПРОВЕРКА: Если мы добавляем в семью (pId не null)
-    //   if (pId) {
-    //     if (person.gender === "male") {
-    //       // Если у ребенка уже есть мать и это НЕ та, в чью семью мы его кладем
-    //       if (childInAll.mother && String(childInAll.mother) !== String(pId)) {
-    //         alert(
-    //           "У этого ребенка уже есть другая мать. Сначала удалите связь с ней.",
-    //         );
-    //         return; // Блокируем добавление к "чужой" матери
-    //       }
-    //     } else {
-    //       // Если мы мать и кладем в блок к отцу, у которого ребенок уже имеет другого отца
-    //       if (childInAll.father && String(childInAll.father) !== String(pId)) {
-    //         alert("У этого ребенка уже есть другой отец.");
-    //         return;
-    //       }
-    //     }
-    //   }
-
-    //   // Если проверка прошла — добавляем
-    //   setForm((prev) => ({
-    //     ...prev,
-    //     children: [...(prev.children || []), cId],
-    //   }));
-
-    //   // Обновляем локальный стейт для мгновенного отображения
-    //   setLocalPeople((prev) =>
-    //     prev.map((p) => {
-    //       if (String(p.id) === String(cId)) {
-    //         return {
-    //           ...p,
-    //           father: person.gender === "male" ? person.id : pId || p.father,
-    //           mother: person.gender === "female" ? person.id : pId || p.mother,
-    //         };
-    //       }
-    //       return p;
-    //     }),
-    //   );
-    // };
-
     const handleLinkChild = (childId, partnerId = null) => {
       const cId = isNaN(childId) ? childId : Number(childId);
       const pId = partnerId
@@ -822,12 +771,13 @@ const Editor = forwardRef(
           bgcolor: "background.default",
           minWidth: "1134px", // Electron limit // ! 1300
           containerType: "inline-size", // ДОБАВИТЬ ЭТО
+          pt: 1,
         }}
       >
         <Stack
           direction="row"
           sx={{
-            height: "calc(100vh - 80px)",
+            height: "calc(100vh - 60px)",
             // maxWidth: "1920px",
             // width: "1210px",
             width: "clamp(1220px, (100cqi - 1300px) * 9999, 1920px)",
@@ -849,7 +799,7 @@ const Editor = forwardRef(
               height: "100%",
               overflowY: "auto",
               pr: 0.7, // Отступ справа, чтобы скроллбар не "прилипал" к карточкам
-              pt: 1, // Небольшой отступ сверху
+              // pt: 1, // Небольшой отступ сверху
               pb: 4, // Отступ снизу, чтобы контент не упирался в край
 
               /* Стилизация скроллбара для левого блока */
@@ -1422,7 +1372,7 @@ const Editor = forwardRef(
                     }}
                   >
                     {lookupType === "father"
-                      ? "Создать нового Отеца"
+                      ? "Создать нового Отца"
                       : lookupType === "mother"
                         ? "Создать новую Мать"
                         : lookupType === "spouse"

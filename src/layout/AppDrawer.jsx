@@ -10,6 +10,7 @@ import {
   ListItemIcon,
   ListItemText,
   Badge,
+  Box,
 } from "@mui/material";
 import { Link as RouterLink, useLocation, matchPath } from "react-router-dom";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
@@ -40,12 +41,23 @@ const closedMixin = (theme) => ({
   },
 });
 
+// const DrawerHeader = styled("div")(({ theme }) => ({
+//   display: "flex",
+//   alignItems: "center",
+//   justifyContent: "flex-end",
+//   padding: theme.spacing(0, 1),
+//   ...theme.mixins.toolbar,
+// }));
+
 const DrawerHeader = styled("div")(({ theme }) => ({
   display: "flex",
   alignItems: "center",
   justifyContent: "flex-end",
   padding: theme.spacing(0, 1),
-  ...theme.mixins.toolbar,
+  // Заменяем стандартное поведение на фиксированное:
+  height: 50, // 50 (бар) + 20 (отступ под кнопки macOS)
+  minHeight: 50,
+  // top: 50,
 }));
 
 const StyledDrawer = styled(MuiDrawer, {
@@ -53,6 +65,7 @@ const StyledDrawer = styled(MuiDrawer, {
 })(({ theme, open }) => ({
   width: drawerWidth,
   flexShrink: 0,
+
   whiteSpace: "nowrap",
   boxSizing: "border-box",
   ...(open && {
@@ -71,7 +84,8 @@ export default function AppDrawer({ open, onClose, items }) {
 
   return (
     <StyledDrawer variant="permanent" open={open}>
-      <DrawerHeader>
+      <Box sx={{ height: 50 }} />
+      {/* <DrawerHeader>
         <IconButton onClick={onClose}>
           {theme.direction === "rtl" ? (
             <ChevronRightIcon />
@@ -79,8 +93,8 @@ export default function AppDrawer({ open, onClose, items }) {
             <ChevronLeftIcon />
           )}
         </IconButton>
-      </DrawerHeader>
-      <Divider />
+      </DrawerHeader> */}
+      {/* <Divider /> */}
       <List>
         {/* 1. ОБЯЗАТЕЛЬНО вытаскиваем onClick из item */}
         {items.map(({ text, icon, path, onClick }) => {

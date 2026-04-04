@@ -16,6 +16,7 @@ import CloseIcon from "@mui/icons-material/Close";
 const SelectContainer = styled(Box, {
   shouldForwardProp: (prop) => prop !== "$expanded",
 })(({ theme, $expanded }) => ({
+  WebkitAppRegion: "no-drag",
   display: "flex",
   alignItems: "center",
   borderRadius: 20,
@@ -23,7 +24,9 @@ const SelectContainer = styled(Box, {
     easing: theme.transitions.easing.sharp,
     duration: theme.transitions.duration.standard,
   }),
-  width: $expanded ? 420 : 40, // Чуть увеличил ширину для чипов
+  fontSize: 20,
+  height: 34,
+  width: $expanded ? 420 : 34, // Чуть увеличил ширину для чипов
   overflow: "hidden",
   cursor: "pointer",
 }));
@@ -91,14 +94,14 @@ export default function ExpandingPeopleSelect({
         bgcolor: isMenuOpen ? "rgba(255,255,255,0.08)" : "transparent",
       }}
     >
-      <IconButton size="small" sx={{ color: "white", p: "8px" }}>
+      <IconButton size="small" sx={{ color: "white", p: 1 }}>
         {/* <Badge
           badgeContent={
             selectedPeople.length > 1 ? `+${selectedPeople.length - 1}` : 0
           }
           color="secondary"
         > */}
-        <GroupIcon />
+        <GroupIcon fontSize="inherit" />
         {/* </Badge> */}
       </IconButton>
 

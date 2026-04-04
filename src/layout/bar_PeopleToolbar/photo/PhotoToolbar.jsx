@@ -36,18 +36,22 @@ export default function PhotoToolbar({
           border: "1px solid",
           borderColor: "divider",
           borderRadius: 7,
-          height: 40,
+          height: 34,
           color: "text.secondary",
+          fontSize: 20,
         }}
       >
         <ExpandingGroupSelect value={groupBy} onChange={setGroupBy} />
         <Tooltip title="Сортировка">
           <IconButton
             onClick={() => setSortDir((p) => (p === "asc" ? "desc" : "asc"))}
-            sx={{ color: "white", p: "8px" }}
+            sx={{ color: "white", p: 1, WebkitAppRegion: "no-drag" }}
           >
             <SortIcon
-              sx={{ transform: sortDir === "desc" ? "none" : "scaleY(-1)" }}
+              sx={{
+                transform: sortDir === "desc" ? "none" : "scaleY(-1)",
+                fontSize: "20px",
+              }}
             />
           </IconButton>
         </Tooltip>

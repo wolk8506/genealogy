@@ -6,10 +6,10 @@ import {
   Menu,
   MenuItem,
   Typography,
-  Checkbox,
   ListItemIcon,
   Divider,
   Tooltip,
+  alpha,
 } from "@mui/material";
 import LayersIcon from "@mui/icons-material/Layers";
 
@@ -21,14 +21,12 @@ const StyledContainer = styled(Box, {
   borderRadius: 20,
   border: "1px solid",
   borderColor: theme.palette.divider,
-  transition: "all 0.3s ease",
-  height: 40,
-  // minWidth: 40,
+  transition:
+    "transform 0.2s ease-out, box-shadow 0.2s ease-out, background-color 0.2s",
+  height: 34,
   paddingRight: $expanded ? 12 : 0,
   cursor: "pointer",
-  // backgroundColor: $expanded ? "rgba(255,255,255,0.08)" : "transparent",
   "&:hover": {
-    // borderColor: theme.palette.primary.main,
     backgroundColor: "rgba(255,255,255,0.08)",
   },
 }));
@@ -42,7 +40,6 @@ export default function ExpandingGenSelect({ options, value, onChange }) {
 
   const isExpanded = value.length > 0;
 
-  // Логика текста: выводим первые 2-3, если их много — пишем +N
   const renderLabel = () => {
     if (value.length === 0) return null;
     const visible = value.slice(0, 2);
@@ -66,19 +63,20 @@ export default function ExpandingGenSelect({ options, value, onChange }) {
 
   return (
     <>
-      <Tooltip title={"Фильтрация по поколениям"}>
+      <Tooltip title="Фильтрация по поколениям">
         <StyledContainer $expanded={isExpanded} onClick={handleOpen}>
           <IconButton
             size="small"
             sx={{
               color: "white",
-              p: "8px",
-              "&:hover": {
-                backgroundColor: "transparent",
-              },
+              p: 1,
+              "&:hover": { backgroundColor: "transparent" },
             }}
           >
-            <LayersIcon color={isExpanded ? "primary" : "inherit"} />
+            <LayersIcon
+              color={isExpanded ? "primary" : "inherit"}
+              fontSize="inherit"
+            />
           </IconButton>
 
           {isExpanded && (
@@ -88,7 +86,7 @@ export default function ExpandingGenSelect({ options, value, onChange }) {
                 color: "white",
                 whiteSpace: "nowrap",
                 ml: 0.5,
-                fontWeight: 600,
+                fontWeight: 700,
               }}
             >
               {renderLabel()}
@@ -101,53 +99,121 @@ export default function ExpandingGenSelect({ options, value, onChange }) {
         anchorEl={anchorEl}
         open={open}
         onClose={handleClose}
-        slotProps={{
-          paper: {
-            sx: { mt: 1, minWidth: 180, borderRadius: "12px", maxHeight: 400 },
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+        transformOrigin={{ vertical: "top", horizontal: "center" }}
+        PaperProps={{
+          sx: {
+            mt: 1.5,
+            minWidth: 180,
+            borderRadius: "16px",
+            overflow: "visible",
+            backgroundImage: "none",
+            bgcolor: (theme) =>
+              theme.palette.mode === "dark" ? "#1E1E1E" : "#FFFFFF",
+            border: "1px solid",
+            borderColor: "divider",
+            // Тот самый треугольник
+            "&::before": {
+              content: '""',
+              display: "block",
+              position: "absolute",
+              top: -6,
+              left: "calc(50% - 6px)",
+              width: 12,
+              height: 12,
+              bgcolor: "inherit",
+              borderLeft: "1px solid",
+              borderTop: "1px solid",
+              borderColor: "divider",
+              transform: "rotate(45deg)",
+              zIndex: 0,
+            },
           },
         }}
       >
-        <Typography
-          variant="overline"
-          sx={{ px: 2, py: 1, display: "block", color: "primary.main" }}
-        >
-          Поколения
-        </Typography>
-
-        {options.length === 0 && <MenuItem disabled>Нет данных</MenuItem>}
-
-        {options
-          .sort((a, b) => a - b)
-          .map((opt) => (
-            <MenuItem key={opt} onClick={() => handleToggle(opt)}>
-              <ListItemIcon>
-                <Checkbox
-                  size="small"
-                  checked={value.indexOf(opt) !== -1}
-                  sx={{ p: 0 }}
-                />
-              </ListItemIcon>
-              <Typography variant="body2">Поколение {opt}</Typography>
-            </MenuItem>
-          ))}
-
-        {/* Рендерим элементы по отдельности без обертки-фрагмента */}
-        {isExpanded && <Divider key="divider-gen" />}
-
-        {isExpanded && (
-          <MenuItem
-            key="reset-gen"
-            onClick={() => {
-              onChange(null, []);
-              handleClose();
+        <Box sx={{ position: "relative", zIndex: 1 }}>
+          <Typography
+            variant="overline"
+            sx={{
+              px: 2,
+              py: 1,
+              display: "block",
+              color: "primary.main",
+              fontWeight: 700,
             }}
-            sx={{ color: "error.main", justifyContent: "center" }}
           >
-            <Typography variant="caption" fontWeight="bold">
-              Сбросить
-            </Typography>
-          </MenuItem>
-        )}
+            Поколения
+          </Typography>
+
+          {options.length === 0 && <MenuItem disabled>Нет данных</MenuItem>}
+
+          {options
+            .sort((a, b) => a - b)
+            .map((opt) => {
+              const isSelected = value.indexOf(opt) !== -1;
+              return (
+                <MenuItem
+                  key={opt}
+                  onClick={() => handleToggle(opt)}
+                  sx={{
+                    mx: 1,
+                    my: 0.5,
+                    borderRadius: "8px",
+                    // Выделение цветом primary вместо чекбокса
+                    bgcolor: isSelected
+                      ? alpha("#2196f3", 0.15)
+                      : "transparent",
+                    "&:hover": {
+                      bgcolor: isSelected
+                        ? alpha("#2196f3", 0.25)
+                        : alpha("#fff", 0.05),
+                    },
+                    transition: "background-color 0.2s",
+                  }}
+                >
+                  <ListItemIcon sx={{ minWidth: "32px !important" }}>
+                    <LayersIcon
+                      sx={{
+                        fontSize: 18,
+                        color: isSelected ? "primary.main" : "text.secondary",
+                      }}
+                    />
+                  </ListItemIcon>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      fontWeight: isSelected ? 700 : 400,
+                      color: isSelected ? "white" : "text.secondary",
+                    }}
+                  >
+                    Поколение {opt}
+                  </Typography>
+                </MenuItem>
+              );
+            })}
+
+          {isExpanded && <Divider sx={{ my: 1 }} />}
+
+          {isExpanded && (
+            <MenuItem
+              key="reset-gen"
+              onClick={() => {
+                onChange(null, []);
+                handleClose();
+              }}
+              sx={{
+                color: "error.main",
+                justifyContent: "center",
+                mx: 1,
+                borderRadius: "8px",
+              }}
+            >
+              <Typography variant="caption" fontWeight="bold">
+                Сбросить фильтр
+              </Typography>
+            </MenuItem>
+          )}
+        </Box>
       </Menu>
     </>
   );

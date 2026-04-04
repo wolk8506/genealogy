@@ -362,3 +362,33 @@ ipcMain.handle("app:logHistory", async (event, entry) => {
     return { success: false, error: error.message };
   }
 });
+
+// * T A G
+// Путь к файлу в папке данных пользователя
+const TAGS_FILE = path.join(app.getPath("documents"), "Genealogy", "tags.json");
+
+// Метод сохранения
+ipcMain.handle("save-tags", async (event, data) => {
+  try {
+    const jsonString = JSON.stringify(data, null, 2);
+    fs.writeFileSync(TAGS_FILE, jsonString, "utf8");
+    return { success: true };
+  } catch (error) {
+    console.error("Failed to save tags:", error);
+    throw error;
+  }
+});
+
+// Метод загрузки
+ipcMain.handle("load-tags", async () => {
+  try {
+    if (fs.existsSync(TAGS_FILE)) {
+      const data = fs.readFileSync(TAGS_FILE, "utf8");
+      return JSON.parse(data);
+    }
+    return null; // Если файла нет, стор использует INITIAL_TAGS
+  } catch (error) {
+    console.error("Failed to load tags:", error);
+    return null;
+  }
+});

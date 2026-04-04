@@ -120,12 +120,13 @@ export default function Info({
         bgcolor: "background.default",
         minWidth: "1134px", // Electron limit // ! 1300
         containerType: "inline-size", // ДОБАВИТЬ ЭТО
+        pt: 1,
       }}
     >
       <Stack
         direction="row"
         sx={{
-          height: "calc(100vh - 80px)",
+          height: "calc(100vh - 68px)",
           // maxWidth: "1920px",
           // width: "1210px",
           width: "clamp(1220px, (100cqi - 1300px) * 9999, 1920px)",
@@ -147,7 +148,7 @@ export default function Info({
             height: "100%",
             overflowY: "auto",
             pr: 0.5, // Отступ справа, чтобы скроллбар не "прилипал" к карточкам
-            pt: 1, // Небольшой отступ сверху
+            // pt: 1, // Небольшой отступ сверху
             pb: 4, // Отступ снизу, чтобы контент не упирался в край
             // pr: 0.5,
 

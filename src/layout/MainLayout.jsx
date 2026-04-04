@@ -10,32 +10,32 @@ import {
 } from "@mui/material";
 
 import MuiAppBar from "@mui/material/AppBar";
-import { alpha } from "@mui/material/styles";
+// import { alpha } from "@mui/material/styles";
 import InfoIcon from "@mui/icons-material/Info";
 import ArchiveIcon from "@mui/icons-material/Archive";
 import MenuIcon from "@mui/icons-material/Menu";
 
 import PersonIcon from "@mui/icons-material/Person";
 import TuneIcon from "@mui/icons-material/Tune";
-import PersonAddAlt1Icon from "@mui/icons-material/PersonAddAlt1";
+// import PersonAddAlt1Icon from "@mui/icons-material/PersonAddAlt1";
 import GroupIcon from "@mui/icons-material/Group";
-import AddPhotoAlternateIcon from "@mui/icons-material/AddPhotoAlternate";
+import MenuOpenIcon from "@mui/icons-material/MenuOpen";
 import CollectionsIcon from "@mui/icons-material/Collections";
-// import { ToggleButton, ToggleButtonGroup } from "@mui/material";
+import DeleteIcon from "@mui/icons-material/Delete";
 
 import { useLocation, matchPath, Link as RouterLink } from "react-router-dom"; // Link переименован в RouterLink
 import { Routes, Route } from "react-router-dom"; // BrowserRouter обычно оборачивает App
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import AppDrawer, { DrawerHeader } from "./AppDrawer";
-import SettingsPage from "../pages/Page_Settings/SettingsPage";
-import AddPersonPage from "../pages/Page_AddPersonPage/AddPersonPage";
+
+// import AddPersonPage from "../pages/Page_AddPersonPage/AddPersonPage";
 import PersonPage from "../pages/Page_Person/PersonPage";
 import PeopleListPage from "../pages/Page_Main/PeopleListPage";
-import PhotoUploader from "../pages/Page_PhotoUploader/PhotoUploader";
+// import PhotoUploader from "../pages/Page_PhotoUploader/PhotoUploader";
 import GlobalPhotoGallery from "../pages/Page_GlobalPhotoGallery/GlobalPhotoGallery";
 import AboutPage from "../pages/Page_About/AboutPage";
-import ArchivedPeoplePage from "../pages/Page_Archived/ArchivedPeoplePage";
+import ArchivedPeoplePage from "../pages/Page_Settings/ArchivedPeoplePage";
 import { UpdateBanner } from "../pages/Page_Settings/UpdateBanner";
 
 import LicenseModal from "./LicenseModal";
@@ -49,6 +49,8 @@ import PeopleListToolbar from "./bar_PeopleListToolbar/PeopleListToolbar";
 import PersonToolbar from "./bar_PeopleToolbar/PersonToolbar";
 import { NotificationBell } from "./NotificationBell";
 
+import DeletedPeoplePage from "../pages/Page_Main/DeletedPeoplePage";
+
 const drawerItems = [
   { text: "Люди", icon: <GroupIcon />, path: "/" },
   {
@@ -57,17 +59,18 @@ const drawerItems = [
     path: "/globalPhotoGallery",
   },
   // { text: "Добавить человека", icon: <PersonAddAlt1Icon />, path: "/add" },
-  {
-    text: "Загрузить фото",
-    icon: <AddPhotoAlternateIcon />,
-    path: "/photoUploader",
-  },
-  { text: "Архив", icon: <ArchiveIcon />, path: "/archive" },
+  // {
+  //   text: "Загрузить фото",
+  //   icon: <AddPhotoAlternateIcon />,
+  //   path: "/photoUploader",
+  // },
+  // { text: "Архив", icon: <ArchiveIcon />, path: "/archive" },
   { text: "Настройки", icon: <TuneIcon />, path: "/settings" },
   { text: "О приложении", icon: <InfoIcon />, path: "/about" },
 ];
 
-const drawerWidth = 200;
+// const drawerWidth = 200;
+const drawerWidth = 0;
 
 const AppBar = styled(MuiAppBar, {
   shouldForwardProp: (prop) => prop !== "open",
@@ -105,7 +108,7 @@ export default function MainLayout() {
   // const [search, setSearch] = useState("");
   const [gallerySearch, setGallerySearch] = useState("");
   const [selectedPeople, setSelectedPeople] = useState([]);
-  const [groupBy, setGroupBy] = useState("none");
+  const [groupBy, setGroupBy] = useState("datePhoto");
   const [sortBy, setSortBy] = useState("date");
   const [sortDir, setSortDir] = useState("desc");
   const [allPeople, setAllPeople] = useState([]); // Нужно загрузить список людей здесь для Autocomplete
@@ -121,6 +124,7 @@ export default function MainLayout() {
     created: "",
     edited: "",
     gens: [],
+    tags: [],
     showRelations: false,
   });
 
@@ -337,7 +341,7 @@ export default function MainLayout() {
   }, [navigate]);
 
   const handleDrawerOpen = () => {
-    setOpen(true);
+    setOpen(!open);
   };
 
   const handleDrawerClose = () => {
@@ -391,14 +395,70 @@ export default function MainLayout() {
         </Typography>
       </Box>
     );
+  } else if (location.pathname === "/trash") {
+    pageTitle = (
+      <Box sx={{ display: "flex", alignItems: "center" }}>
+        <Box sx={{ display: "flex", alignItems: "center", mr: 2 }}>
+          <DeleteIcon color={isDark ? "primary" : "prymary"} />
+        </Box>
+        <Typography variant="h6" noWrap>
+          Корзина
+        </Typography>
+      </Box>
+    );
   }
+
+  // ---  РАБОТА С ПЛАТФОРМОЙ И РАЗМЕРОМ ОКНА. -------------
+  const [isMaximized, setIsMaximized] = useState(false);
+  const isMac = navigator.platform.toUpperCase().indexOf("MAC") >= 0;
+
+  useEffect(() => {
+    // Используем прямой доступ к API, который ты прописал
+    const handleState = (event, state) => setIsMaximized(state);
+
+    window.electron.ipcRenderer.on("window-state-change", handleState);
+
+    // КРИТИЧНО: Узнаем начальное состояние сразу
+    // Если в preload есть доступ к remote или ipcRenderer.sendSync
+    // setIsMaximized(window.electron.ipcRenderer.sendSync('get-window-state'));
+
+    return () => {
+      window.electron.ipcRenderer.removeAllListeners("window-state-change");
+    };
+  }, []);
+
+  // На Mac: если FullScreen -> 0, если окно -> 64px
+  const appBarHeight = isMac ? (isMaximized ? 0 : "64px") : 0;
+
+  // -------------------------------------------------------
 
   return (
     <>
-      <Box sx={{ display: "flex" }}>
+      <Box sx={{ display: "flex", height: 50 }}>
         <CssBaseline />
-        <AppBar position="fixed" open={open}>
-          <Toolbar>
+        <AppBar
+          position="fixed"
+          open={open}
+          sx={{
+            transition: "none !important",
+            // WebkitAppRegion: isMaximized ? "no-drag" : "drag",
+
+            WebkitAppRegion: "drag", // Делаем бар перетаскиваемым
+            height: 50,
+            // ----
+            // bgcolor: "transparent",
+            backdropFilter: "blur(4px)",
+          }}
+        >
+          <Toolbar
+            sx={{
+              minHeight: "50px !important", // Фиксируем высоту
+              height: 50,
+              ml: appBarHeight,
+              display: "flex",
+              alignItems: "center",
+            }}
+          >
             <IconButton
               color="inherit"
               aria-label="open drawer"
@@ -406,12 +466,13 @@ export default function MainLayout() {
               edge="start"
               sx={[
                 {
-                  marginRight: 5,
+                  marginRight: 1,
+                  WebkitAppRegion: "no-drag",
                 },
-                open && { display: "none" },
+                // open && { display: "none" },
               ]}
             >
-              <MenuIcon />
+              {!open ? <MenuIcon /> : <MenuOpenIcon />}
             </IconButton>
 
             <NavigationButtons />
@@ -506,17 +567,20 @@ export default function MainLayout() {
             )}
 
             {/* Заголовок для остальных страниц */}
-            {!isGalleryPage && !match && location.pathname !== "/" && (
-              <Box
-                sx={{
-                  display: "flex",
-                  width: "100%",
-                  justifyContent: "center",
-                }}
-              >
-                {pageTitle}
-              </Box>
-            )}
+            {!isGalleryPage &&
+              !match &&
+              location.pathname !== "/" &&
+              location.pathname !== "/archive" && (
+                <Box
+                  sx={{
+                    display: "flex",
+                    width: "100%",
+                    justifyContent: "center",
+                  }}
+                >
+                  {pageTitle}
+                </Box>
+              )}
           </Toolbar>
         </AppBar>
         <AppDrawer
@@ -533,7 +597,7 @@ export default function MainLayout() {
           component="main"
           sx={{
             flexGrow: 1,
-            pt: 1,
+            // pt: 1,
             pr: 1,
             pb: 1,
             pl: 1,
@@ -559,7 +623,7 @@ export default function MainLayout() {
                 />
               }
             />
-            <Route path="/add" element={<AddPersonPage />} />
+            {/* <Route path="/add" element={<AddPersonPage />} /> */}
             <Route
               path="/globalPhotoGallery"
               element={
@@ -611,10 +675,11 @@ export default function MainLayout() {
                 />
               }
             />
-            <Route path="/archive" element={<ArchivedPeoplePage />} />
-            <Route path="/settings" element={<SettingsPage />} />
-            <Route path="/photoUploader" element={<PhotoUploader />} />
+            <Route path="/settings" element={<ArchivedPeoplePage />} />
+
+            {/* <Route path="/photoUploader" element={<PhotoUploader />} /> */}
             <Route path="/about" element={<AboutPage />} />
+            <Route path="/trash" element={<DeletedPeoplePage />} />
           </Routes>
         </Box>
       </Box>

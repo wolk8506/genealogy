@@ -35,15 +35,18 @@ export default function TreeToolbar({ treeProps }) {
           onChange={(e, val) => val && setTreeMode(val)}
           size="small"
           sx={{
+            WebkitAppRegion: "no-drag",
             border: "1px solid",
             borderRadius: 7,
             borderColor: "divider",
-            height: "40px",
+            height: 34,
+
             gap: 1,
             "& .MuiToggleButton-root": {
               color: "white",
               border: "none",
               borderRadius: 6,
+              fontSize: 20,
               "&.Mui-selected": {
                 bgcolor: "divider",
                 color: "#90caf9",
@@ -53,22 +56,22 @@ export default function TreeToolbar({ treeProps }) {
         >
           <ToggleButton value="descendants">
             <Tooltip title="Потомки">
-              <AccountTreeIcon sx={{ rotate: "90deg" }} />
+              <AccountTreeIcon sx={{ rotate: "90deg" }} fontSize="inherit" />
             </Tooltip>
           </ToggleButton>
           <ToggleButton value="ancestors">
             <Tooltip title="Предки">
-              <AccountTreeIcon sx={{ rotate: "270deg" }} />
+              <AccountTreeIcon sx={{ rotate: "270deg" }} fontSize="inherit" />
             </Tooltip>
           </ToggleButton>
           <ToggleButton value="full">
             <Tooltip title="Полное древо">
-              <AccountTreeIcon />
+              <AccountTreeIcon fontSize="inherit" />
             </Tooltip>
           </ToggleButton>
           <ToggleButton value="radial">
             <Tooltip title="Радиальное">
-              <DataUsageIcon />
+              <DataUsageIcon fontSize="inherit" />
             </Tooltip>
           </ToggleButton>
         </ToggleButtonGroup>
@@ -78,27 +81,27 @@ export default function TreeToolbar({ treeProps }) {
             <IconButton
               onClick={zoomIn}
               size="small"
-              sx={{ color: "white", p: "8px" }}
+              sx={{ color: "white", p: 1 }}
             >
-              <ZoomInIcon />
+              <ZoomInIcon fontSize="inherit" />
             </IconButton>
           </Tooltip>
           <Tooltip title="Уменьшить">
             <IconButton
               onClick={zoomOut}
               size="small"
-              sx={{ color: "white", p: "8px" }}
+              sx={{ color: "white", p: 1 }}
             >
-              <ZoomOutIcon />
+              <ZoomOutIcon fontSize="inherit" />
             </IconButton>
           </Tooltip>
           <Tooltip title="Вписать в экран">
             <IconButton
               onClick={fitView}
               size="small"
-              sx={{ color: "white", p: "8px" }}
+              sx={{ color: "white", p: 1 }}
             >
-              <CenterFocusStrongIcon />
+              <CenterFocusStrongIcon fontSize="inherit" />
             </IconButton>
           </Tooltip>
         </ButtonConteiner>
@@ -108,9 +111,9 @@ export default function TreeToolbar({ treeProps }) {
           <IconButton
             onClick={onExport}
             size="small"
-            sx={{ color: "white", p: "8px" }}
+            sx={{ color: "white", p: 1 }}
           >
-            <PhotoCameraIcon />
+            <PhotoCameraIcon fontSize="inherit" />
           </IconButton>
         </Tooltip>
       </ButtonConteiner>

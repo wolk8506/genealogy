@@ -184,13 +184,13 @@ export const RenderSectionFamilies = ({ people = [], soloChildren = [] }) => {
                 </Divider>
                 {/* Секция супруга (не светится) */}
 
-                <Box sx={{ width: "360px", px: 2 }}>
+                <Box sx={{ width: "360px", px: 1 }}>
                   <RenderPersonItem p={fam.partner} link={true} />
                 </Box>
 
                 {/* Секция детей (СВЕТИТСЯ ТОЛЬКО ОНА) */}
                 {}
-                <Box sx={{ width: "100%", px: 1, pb: 1 }}>
+                <Box sx={{ width: "100%" }}>
                   <Box>
                     <RenderSectionChildren
                       title={

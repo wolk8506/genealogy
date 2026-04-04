@@ -1,5 +1,12 @@
 import React from "react";
-import { Stack, Box, Tooltip, IconButton } from "@mui/material";
+import {
+  Stack,
+  Box,
+  Tooltip,
+  IconButton,
+  Typography,
+  Badge,
+} from "@mui/material";
 import { useNavigate } from "react-router-dom";
 
 import PersonAddAlt1Icon from "@mui/icons-material/PersonAddAlt1";
@@ -9,6 +16,11 @@ import ExpandingGenSelect from "./ExpandingGenSelect";
 import ExpandingRelationCheck from "./ExpandingRelationCheck";
 import ExpandingSortButton from "./ExpandingSortButton";
 import { StatisticPopover } from "./StatisticPopover";
+import DeleteIcon from "@mui/icons-material/Delete";
+import { usePeopleListStore } from "../../store/usePeopleListStore";
+
+import ExpandingTagsFilter from "./ExpandingTegsFilter";
+import ButtonConteiner from "../../components/ButtonConteiner";
 
 export default function PeopleListToolbar({
   people = [],
@@ -30,57 +42,54 @@ export default function PeopleListToolbar({
     navigate("/?action=add");
   };
 
-  // РАСЧЕТ СТАТИСТИКИ
-  const stats = React.useMemo(() => {
-    const active = people.filter((p) => !p.archived);
-    const archived = people.filter((p) => p.archived);
-    return {
-      total: active.length,
-      males: active.filter((p) => p.gender === "male").length,
-      females: active.filter((p) => p.gender === "female").length,
-      trash: archived.length,
-    };
-  }, [people]);
-
-  const [anchorEl, setAnchorEl] = React.useState(null);
-
-  const handleClick = (event) => {
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleClose = () => {
-    setAnchorEl(null);
-  };
-
-  const open = Boolean(anchorEl);
-  const id = open ? "simple-popover" : undefined;
+  const hasArchived = usePeopleListStore((state) => state.hasArchived);
 
   return (
-    <Stack direction="row" spacing={1.5} alignItems="center" ml="auto">
+    <Stack
+      direction="row"
+      spacing={1.5}
+      alignItems="center"
+      ml="auto"
+      sx={{ WebkitAppRegion: "no-drag" }}
+    >
+      <ButtonConteiner>
+        <Tooltip title="Корзина">
+          <IconButton
+            onClick={() => navigate("/trash")}
+            size="small"
+            sx={{ color: "white", p: 1 }}
+          >
+            <Badge
+              badgeContent={4}
+              invisible={!hasArchived}
+              variant="dot"
+              color="warning"
+            >
+              <DeleteIcon color={"inherit"} fontSize="inherit" />
+            </Badge>
+          </IconButton>
+        </Tooltip>
+      </ButtonConteiner>
       {/* 1. СТАТИСТИКА (Компактно) */}
       <StatisticPopover people={people} />
+
+      <ExpandingTagsFilter
+        selectedTags={filters.tags}
+        onChange={(val) => updateFilter("tags", val)}
+      />
+
       {/* Открытие модалки добавления человека */}
-      <Box
-        sx={{
-          display: "inline-flex",
-          alignItems: "center",
-          border: "1px solid",
-          borderColor: "divider",
-          borderRadius: 7,
-          height: 40,
-          color: "text.secondary",
-        }}
-      >
+      <ButtonConteiner>
         <Tooltip title="Добавить человека">
           <IconButton
             onClick={handleOpenAddModal}
             size="small"
-            sx={{ color: "white", p: "8px" }}
+            sx={{ color: "white", p: 1 }}
           >
-            <PersonAddAlt1Icon color={"inherit"} />
+            <PersonAddAlt1Icon color={"inherit"} fontSize="inherit" />
           </IconButton>
         </Tooltip>
-      </Box>
+      </ButtonConteiner>
 
       {/* Фильтр по дате создания */}
       <ExpandingTimeSelect

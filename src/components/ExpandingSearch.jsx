@@ -27,12 +27,13 @@ const SearchContainer = styled(Box, {
   display: "flex",
   alignItems: "center",
   borderRadius: 20,
+  height: 34,
   padding: 0,
   transition: theme.transitions.create("width", {
     easing: theme.transitions.easing.sharp,
     duration: theme.transitions.duration.shorter,
   }),
-  width: $expanded ? 250 : 40,
+  width: $expanded ? 250 : 34,
   position: "relative",
   zIndex: 2,
 }));
@@ -210,7 +211,7 @@ export default function ExpandingSearch({
 
   return (
     <ClickAwayListener onClickAway={() => setIsFocused(false)}>
-      <Box sx={{ display: "inline-block" }}>
+      <Box sx={{ display: "inline-block", WebkitAppRegion: "no-drag" }}>
         <Tooltip title={!isExpanded ? tooltip : ""}>
           <SearchContainer
             ref={anchorRef}
@@ -228,9 +229,9 @@ export default function ExpandingSearch({
             <IconButton
               size="small"
               onClick={() => inputRef.current?.focus()}
-              sx={{ color: "white", p: "8px" }}
+              sx={{ color: "white", p: 1 }}
             >
-              <SearchIcon />
+              <SearchIcon fontSize="inherit" />
             </IconButton>
 
             <Box
@@ -296,6 +297,7 @@ export default function ExpandingSearch({
           style={{
             zIndex: 99999,
             width: anchorRef.current?.clientWidth || 250,
+            height: 34,
           }}
           modifiers={[{ name: "offset", options: { offset: [0, 8] } }]}
         >

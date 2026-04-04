@@ -11,7 +11,7 @@ const StyledContainer = styled(Box, {
   border: "1px solid",
   borderColor: theme.palette.divider,
   transition: "all 0.3s ease",
-  height: 40,
+  height: 34,
   paddingRight: $active ? 12 : 0,
   cursor: "pointer",
   // backgroundColor: $active ? "rgba(25, 118, 210, 0.15)" : "transparent",
@@ -37,12 +37,12 @@ export default function ExpandingRelationCheck({ checked, onChange }) {
           size="small"
           sx={{
             color: checked ? "primary.main" : "white",
-            p: "8px",
+            p: 1,
             transition: "transform 0.3s ease",
             transform: checked ? "scale(1.1)" : "scale(1)",
           }}
         >
-          <FamilyRestroomIcon />
+          <FamilyRestroomIcon fontSize="inherit" />
         </IconButton>
 
         {checked && (

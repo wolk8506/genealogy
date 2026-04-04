@@ -13,7 +13,7 @@ const StyledContainer = styled(Box, {
   border: "1px solid",
   borderColor: theme.palette.divider,
   transition: "all 0.3s ease",
-  height: 40,
+  height: 34,
   cursor: "pointer",
   overflow: "hidden",
   backgroundColor:
@@ -35,7 +35,7 @@ export default function ExpandingSortButton({ sortOrder, onToggle }) {
       }
     >
       <StyledContainer $sortOrder={sortOrder} onClick={onToggle}>
-        <IconButton size="small" sx={{ color: "white", p: "8px" }}>
+        <IconButton size="small" sx={{ color: "white", p: 1 }}>
           <SupervisorAccountIcon color={isDesc ? "primary" : "inherit"} />
           {isDesc ? (
             <KeyboardArrowDownIcon sx={{ fontSize: "1rem" }} />

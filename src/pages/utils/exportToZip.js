@@ -24,6 +24,7 @@ export const exportPeopleToZip = async ({
 
   try {
     // 1. ОПРЕДЕЛЕНИЕ basePath
+    let basePath = "";
     let samplePath = null;
     for (const p of people) {
       const photos = await window.photosAPI.getByOwner(p.id);
@@ -35,7 +36,33 @@ export const exportPeopleToZip = async ({
       if (samplePath) break;
     }
     if (!samplePath) samplePath = await window.avatarAPI.getPath("any");
-    if (!samplePath) throw new Error("Не удалось определить путь к данным.");
+    // Если прямого пути нет, ищем через первый доступный файл
+    if (!basePath) {
+      let samplePath = null;
+      for (const p of people) {
+        const photos = await window.photosAPI.getByOwner(p.id);
+        if (photos?.length > 0) {
+          samplePath = await window.photosAPI.getPath(photos[0].id);
+          if (samplePath) break;
+        }
+        samplePath = await window.avatarAPI.getPath(p.id);
+        if (samplePath) break;
+      }
+
+      // Если даже так не нашли (у людей нет фото), пробуем получить путь к "любому" аватару
+      if (!samplePath) samplePath = await window.avatarAPI.getPath("any");
+
+      if (samplePath) {
+        const peopleMarker = "/people/";
+        const markerIndex = samplePath.indexOf(peopleMarker);
+        if (markerIndex !== -1) {
+          basePath = samplePath.substring(
+            0,
+            markerIndex + peopleMarker.length - 1,
+          );
+        }
+      }
+    }
 
     const peopleMarker = "/people/";
     const markerIndex = samplePath.indexOf(peopleMarker);
@@ -43,7 +70,7 @@ export const exportPeopleToZip = async ({
       throw new Error("Некорректный формат пути: " + samplePath);
 
     // Очищаем путь от file:// и лишних символов для Node.js
-    const basePath = samplePath
+    basePath = samplePath
       .substring(0, markerIndex + peopleMarker.length - 1)
       .replace(/^file:\/\//, "")
       .replace(/%20/g, " ");
@@ -245,6 +272,51 @@ export const exportPeopleToZip = async ({
         }
       } catch (e) {
         console.error("Photos error", e);
+      }
+
+      // --- ПРОЧИЕ ФАЙЛЫ (Видео, Аудио, Документы) ---
+      try {
+        // Получаем список файлов через API, который мы создали ранее
+        const personFiles = await window.fileAPI.getPersonFiles(personId);
+
+        if (Array.isArray(personFiles) && personFiles.length > 0) {
+          const destFilesDir = `${personPath}/files`;
+          await window.fileAPI.ensureDir(destFilesDir);
+
+          // Путь к исходной папке файлов на диске
+          const srcFilesDir = `${basePath}/${personId}/files`
+            .replace(/\\/g, "/")
+            .replace(/\/+/g, "/")
+            .replace(/%20/g, " ");
+
+          for (const fileObj of personFiles) {
+            try {
+              const fileName = fileObj.name;
+              const srcFilePath = `${srcFilesDir}/${fileName}`;
+              const destFilePath = `${destFilesDir}/${fileName}`;
+
+              // Копируем файл во временную директорию архива
+              const res = await window.fileAPI.copyFile(
+                srcFilePath,
+                destFilePath,
+              );
+
+              if (res && res.success !== false) {
+                archiveFiles.push(destFilePath);
+              }
+            } catch (fileErr) {
+              console.warn(
+                `[exportToZip] Не удалось скопировать файл ${fileObj.name}:`,
+                fileErr,
+              );
+            }
+          }
+        }
+      } catch (e) {
+        console.warn(
+          `[exportToZip] Ошибка экспорта раздела "Файлы" для ${personId}:`,
+          e,
+        );
       }
 
       if ((i + 1) % 20 === 0) await new Promise((r) => setTimeout(r, 0));

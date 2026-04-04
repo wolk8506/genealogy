@@ -50,9 +50,10 @@ function buildMenuTemplate() {
           label: "Добавить фотографию",
           click: () => {
             const win = BrowserWindow.getAllWindows()[0];
-            win.webContents.send("navigate", "/photoUploader");
+            win.webContents.send("navigate", "/globalPhotoGallery?action=add");
           },
         },
+
         // {
         //   label: "Восстановление архива",
         //   click: () => {

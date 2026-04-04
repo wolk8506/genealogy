@@ -230,7 +230,7 @@ export const RenderSectionFamilies = ({
                 </Divider>
                 {/* Секция супруга (не светится) */}
 
-                <Box sx={{ width: "100%", px: 2 }}>
+                <Box sx={{ width: "100%", px: 1 }}>
                   <RenderPersonItem
                     p={fam.partner}
                     onUnlink={() => onUnlinkSpouse(fam.partner.id)}
@@ -239,7 +239,7 @@ export const RenderSectionFamilies = ({
                 </Box>
 
                 {/* Секция детей (СВЕТИТСЯ ТОЛЬКО ОНА) */}
-                <Box sx={{ width: "100%", px: 1, pb: 1 }}>
+                <Box sx={{ width: "100%", px: 0, pb: 0 }}>
                   <Box>
                     <RenderSectionChildren
                       title={
