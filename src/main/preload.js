@@ -107,6 +107,11 @@ contextBridge.exposeInMainWorld("photoAPI", {
   // },
 });
 
+contextBridge.exposeInMainWorld("tagsAPI", {
+  save: (data) => ipcRenderer.invoke("save-tags", data),
+  load: () => ipcRenderer.invoke("load-tags"),
+});
+
 // 📁 Фото (импорт/экспорт) ✅
 contextBridge.exposeInMainWorld("photosAPI", {
   getByOwner: (id) => ipcRenderer.invoke("photos:getByOwner", id),
@@ -223,6 +228,20 @@ contextBridge.exposeInMainWorld("fileAPI", {
     ),
   renameFile: (ownerId, oldFilename, newFilename) =>
     ipcRenderer.invoke("file:renameFile", ownerId, oldFilename, newFilename),
+
+  uploadPersonFile: (personId, fileName, fileBuffer, category) =>
+    ipcRenderer.invoke(
+      "upload-person-file",
+      personId,
+      fileName,
+      fileBuffer,
+      category,
+    ),
+
+  getPersonFiles: (personId) =>
+    ipcRenderer.invoke("get-person-files", personId),
+  deletePersonFile: (personId, fileName) =>
+    ipcRenderer.invoke("delete-person-file", personId, fileName),
 });
 
 contextBridge.exposeInMainWorld("pathAPI", {
@@ -312,4 +331,8 @@ contextBridge.exposeInMainWorld("electronAPI", {
   getDiskUsage: () => ipcRenderer.invoke("get-disk-usage"),
   getDetailedStorageStats: () =>
     ipcRenderer.invoke("get-detailed-storage-stats"),
+  onWindowStateChange: (callback) =>
+    ipcRenderer.on("window-state-change", (event, isMaximized) =>
+      callback(isMaximized),
+    ),
 });

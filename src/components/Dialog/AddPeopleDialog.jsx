@@ -115,6 +115,19 @@ export default function AddPersonModal({ open, onClose }) {
     return max + 1;
   };
 
+  // ТОЧЕЧНЫЙ СБРОС СВЯЗЕЙ ПРИ ИЗМЕНЕНИИ ПОКОЛЕНИЯ
+  const handleGenerationChange = (val) => {
+    if (val !== generation) {
+      setGeneration(val);
+      // Сбрасываем только родственные связи, так как они зависят от поколения
+      setFather(null);
+      setMother(null);
+      setSpouse([]);
+      setChildren([]);
+      setSiblings([]);
+    }
+  };
+
   const handleSave = async () => {
     setSaving(true);
     setError("");
@@ -477,8 +490,10 @@ export default function AddPersonModal({ open, onClose }) {
                     max={20}
                     value={generation}
                     // Попробуйте оба варианта, если один не сработает:
-                    onValueChange={(val) => setGeneration(val)}
-                    onChange={(val) => setGeneration(val)}
+                    // onValueChange={(val) => setGeneration(val)}
+                    // onChange={(val) => setGeneration(val)}
+                    onValueChange={handleGenerationChange}
+                    onChange={handleGenerationChange}
                   />
                 </Grid>
               </Grid>
@@ -532,7 +547,7 @@ export default function AddPersonModal({ open, onClose }) {
                     />
                   </Grid>
                 </Grid>
-                <Autocomplete
+                {/* <Autocomplete
                   size="small"
                   multiple
                   options={byGen(genNum)}
@@ -542,7 +557,7 @@ export default function AddPersonModal({ open, onClose }) {
                   renderInput={(params) => (
                     <TextField {...params} label="Братья / сестры" />
                   )}
-                />
+                /> */}
                 <Autocomplete
                   size="small"
                   multiple
@@ -559,7 +574,11 @@ export default function AddPersonModal({ open, onClose }) {
                 <Autocomplete
                   size="small"
                   multiple
-                  options={byGen(genNum + 1)}
+                  options={byGen(genNum + 1).filter((p) => {
+                    if (gender === "male") return !p.father;
+                    if (gender === "female") return !p.mother;
+                    return true; // Пока пол не выбран, показываем всех из поколения
+                  })}
                   getOptionLabel={getLabel}
                   value={children}
                   onChange={(_, v) => setChildren(v)}

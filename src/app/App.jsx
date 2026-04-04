@@ -10,12 +10,18 @@ import {
 
 import MainLayout from "../layout/MainLayout";
 import { ThemeContext } from "../theme/ThemeContext.cjs";
+import { useSettingsStore } from "../store/useSettingsStore";
 
 export default function App() {
   const [mode, setMode] = useState("light"); // фактическая тема
   const [auto, setAuto] = useState(true); // следовать за системой
   const [userPref, setUserPref] = useState("light"); // ручной выбор
   const [themeReady, setThemeReady] = useState(false);
+  const loadSettings = useSettingsStore((state) => state.loadSettings);
+
+  useEffect(() => {
+    loadSettings(); // Загружаем настройки из БД в память при старте
+  }, []);
 
   // начальная загрузка
   useEffect(() => {
@@ -186,7 +192,7 @@ export default function App() {
           alignItems: "center",
           justifyContent: "center",
           bgcolor: "background.default",
-          bgcolor: "#121212",
+          // bgcolor: "#121212",
         }}
       >
         <CircularProgress size={64} thickness={5} />

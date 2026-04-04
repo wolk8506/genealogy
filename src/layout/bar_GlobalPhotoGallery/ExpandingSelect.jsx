@@ -15,9 +15,12 @@ import SouthIcon from "@mui/icons-material/South"; // Стрелка вниз
 import SortByAlphaIcon from "@mui/icons-material/SortByAlpha";
 
 const StyledContainer = styled(Box)(({ theme }) => ({
+  WebkitAppRegion: "no-drag",
   display: "flex",
   alignItems: "center",
   borderRadius: 20,
+  height: 34,
+  fontSize: 20,
   border: "1px solid",
   borderColor: theme.palette.divider,
   transition: "all 0.3s ease",
@@ -78,10 +81,10 @@ export default function ExpandingSelect({
 
   return (
     <StyledContainer onClick={handleOpen}>
-      <IconButton size="small" sx={{ color: "white", p: "8px" }}>
+      <IconButton size="small" sx={{ color: "white", p: 1 }}>
         {/* На главной кнопке показываем иконку текущего направления */}
-        {<SortIcon />}
-        {selectedOption ? selectedOption.icon : <SortIcon fontSize="small" />}
+        {<SortIcon fontSize="inherit" />}
+        {selectedOption ? selectedOption.icon : <SortIcon fontSize="inherit" />}
       </IconButton>
 
       <Typography

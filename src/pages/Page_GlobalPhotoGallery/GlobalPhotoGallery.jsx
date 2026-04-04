@@ -23,11 +23,14 @@ import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import PhotoLibraryIcon from "@mui/icons-material/PhotoLibrary";
 import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
 import PhotoFullscreenViewer from "../../components/PhotoFullscreenViewer";
-import PhotoMetaUpdateDialog from "../../components/PhotoMetaUpdateDialog";
+import PhotoMetaUpdateDialog from "../../components/Dialog/PhotoMetaUpdateDialog";
 import PhotoCell from "../../components/PhotoCell";
 import onDownload from "../utils/onDownload";
 import PhotoMetaDialog from "../../components/PhotoMetaDialog";
 import { ButtonScrollTop } from "../../components/ButtonScrollTop";
+import PhotoUploadDialog from "../../components/Dialog/PhotoUploadDialog";
+import { useModalStore } from "../../store/useModalStore";
+import { useLocation } from "react-router-dom";
 
 const normalizePhotoDate = (dp) => {
   if (!dp) return null;
@@ -75,6 +78,29 @@ export default function GlobalPhotoGallery({
   const [isScrolling, setIsScrolling] = useState(false);
 
   const [scrollTop, setScrollTop] = useState(0);
+
+  const isOpen = useModalStore((state) => state.isGlobalPhotoUploadOpen);
+  const closeUpload = useModalStore((state) => state.closeGlobalPhotoUpload);
+  const location = useLocation();
+  const openUpload = useModalStore((state) => state.openGlobalPhotoUpload);
+
+  useEffect(() => {
+    // Создаем объект для работы с параметрами URL
+    const searchParams = new URLSearchParams(location.search);
+
+    // Если в URL есть ?action=add
+    if (searchParams.get("action") === "add") {
+      openUpload();
+
+      // Опционально: очистить URL после открытия, чтобы при обновлении
+      // страницы модалка не выскакивала снова (чистим историю)
+      window.history.replaceState(null, "", window.location.pathname);
+    }
+  }, [location, openUpload]);
+
+  const handlePhotoAdded = (newPhoto) => {
+    refresh(); // Обновляем список галереи
+  };
 
   useEffect(() => {
     const handleResize = () => setWindowWidth(window.innerWidth);
@@ -422,36 +448,11 @@ export default function GlobalPhotoGallery({
       sx={{
         display: "flex",
         flexDirection: "column",
-        height: "calc(100vh - 80px)",
+        height: "calc(100vh - 60px)",
         bgcolor: "background.default",
         position: "relative",
       }}
     >
-      {/* ИНДИКАТОР ПРИ СКРОЛЛЕ */}
-      {/* <Zoom
-        in={isScrolling && (groupBy === "datePhoto" || groupBy === "owner")}
-      >
-        <Paper
-          elevation={4}
-          sx={{
-            position: "fixed",
-            right: 80,
-            top: "50%",
-            transform: "translateY(-50%)",
-            zIndex: 1000,
-            px: 2,
-            py: 1,
-            borderRadius: "20px",
-            bgcolor: alpha(theme.palette.primary.main, 0.9),
-            color: "white",
-          }}
-        >
-          <Typography variant="subtitle2" fontWeight="bold">
-            {activeHeader}
-          </Typography>
-        </Paper>
-      </Zoom> */}
-
       <Box
         sx={{
           flexGrow: 1,
@@ -869,6 +870,12 @@ export default function GlobalPhotoGallery({
           await refresh();
         }}
         allPeople={allPeople}
+      />
+
+      <PhotoUploadDialog
+        open={isOpen}
+        onClose={closeUpload}
+        onPhotoAdded={handlePhotoAdded}
       />
     </Box>
   );

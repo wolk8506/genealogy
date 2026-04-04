@@ -56,27 +56,34 @@ export const NotificationBell = () => {
 
   return (
     <>
-      <Box sx={{ ml: 2, display: "inline-flex", alignItems: "center" }}>
+      <Box
+        sx={{
+          WebkitAppRegion: "no-drag",
+          ml: 2,
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          // gap: 1,
+          border: "1px solid",
+          borderColor: "divider",
+          borderRadius: 7,
+          height: 34,
+          color: "text.secondary",
+          fontSize: 20,
+        }}
+      >
         <IconButton
           onClick={handleOpen}
           sx={{
-            bgcolor: alpha("#fff", 0.05),
-            border: "1px solid",
-            borderColor: "divider",
-            "&:hover": { bgcolor: alpha("#fff", 0.1) },
+            p: 1,
+            // bgcolor: alpha("#fff", 0.05),
+            //   border: "1px solid",
+            //   borderColor: "divider",
+            //   "&:hover": { bgcolor: alpha("#fff", 0.1) },
           }}
         >
-          <Badge
-            variant="dot"
-            invisible={!hasNew}
-            sx={{
-              "& .MuiBadge-badge": {
-                bgcolor: "#ffc107",
-                // border: "2px solid #1a1a1a",
-              },
-            }}
-          >
-            <NotificationsIcon sx={{ color: "white" }} />
+          <Badge variant="dot" invisible={!hasNew} color="warning">
+            <NotificationsIcon sx={{ color: "white", fontSize: 18 }} />
           </Badge>
         </IconButton>
       </Box>

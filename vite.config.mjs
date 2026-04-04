@@ -8,6 +8,26 @@ export default defineConfig({
   build: {
     outDir: "dist",
     emptyOutDir: true,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes("node_modules")) {
+            if (id.includes("@mui")) {
+              return "vendor_mui";
+            }
+            if (
+              id.includes("react") ||
+              id.includes("react-dom") ||
+              id.includes("zustand")
+            ) {
+              return "vendor_core"; // Ядро реакта и стор отдельно
+            }
+            return "vendor";
+          }
+        },
+      },
+    },
+    chunkSizeWarningLimit: 4000, // Увеличиваем лимит до 4МБ
   },
   optimizeDeps: {
     esbuildOptions: {

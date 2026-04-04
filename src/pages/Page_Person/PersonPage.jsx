@@ -14,6 +14,7 @@ import PhotoGallery from "./PhotoGallery/PhotoGallery";
 import BiographySection from "./Bio/BiographySection";
 import Component_FamilyTree from "./FamilyTree/Component_FamilyTree";
 import Editor from "./Editor/Editor";
+import PersonFilesTab from "./File/PersonFilesTab";
 
 const PersonPage = forwardRef(
   ({ activeElement, galleryProps, bioProps, treeProps, infoProps }, ref) => {
@@ -117,6 +118,25 @@ const PersonPage = forwardRef(
         setFactsEditorOpen(true);
       },
     }));
+
+    // useEffect(() => {
+    //   // Устанавливаем заголовок при входе на вкладку
+    //   if (activeElement === "info")
+    //     document.title = `Genealogy :: Персональная страница [ id:${id} ]`;
+    //   if (activeElement === "photo")
+    //     document.title = `Genealogy :: Персональная страница [ id:${id} ] - Фотоальбом`;
+    //   if (activeElement === "bio")
+    //     document.title = `Genealogy :: Персональная страница [ id:${id} ] - Биография`;
+    //   if (activeElement === "tree")
+    //     document.title = `Genealogy :: Персональная страница [ id:${id} ] - Древо`;
+    //   if (activeElement === "files")
+    //     document.title = `Genealogy :: Персональная страница [ id:${id} ] – Файлы`;
+
+    //   // (Опционально) Возвращаем старое название при уходе с вкладки
+    //   return () => {
+    //     document.title = "Genealogy";
+    //   };
+    // }, [activeElement]);
 
     //  --- 🔄 ЗАГРУЗКА ДАННЫХ  - - - - - - - - - - - - - - -
 
@@ -488,6 +508,13 @@ const PersonPage = forwardRef(
               treeMode={treeProps.mode}
               ref={treeProps.treePageRef}
             />
+          </Box>
+        </Fade>
+
+        {/* Секция файлы */}
+        <Fade in={activeElement === "files"} unmountOnExit timeout={500}>
+          <Box>
+            <PersonFilesTab personId={person.id} />
           </Box>
         </Fade>
       </Stack>

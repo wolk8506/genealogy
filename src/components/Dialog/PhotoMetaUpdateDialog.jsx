@@ -20,12 +20,12 @@ import {
 import { alpha } from "@mui/material/styles";
 import { useTheme, darken } from "@mui/material/styles";
 import CloseIcon from "@mui/icons-material/Close";
-import CustomDatePickerDialog from "./CustomDatePickerDialog";
+import CustomDatePickerDialog from "../CustomDatePickerDialog";
 import EditIcon from "@mui/icons-material/Edit";
 import EditOffIcon from "@mui/icons-material/EditOff";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
-import HashtagInput from "./HashtagInput";
-import { useNotificationStore } from "../store/useNotificationStore";
+import HashtagInput from "../HashtagInput";
+import { useNotificationStore } from "../../store/useNotificationStore";
 
 export default function PhotoMetaUpdateDialog({
   open, // Открыт ли диалог (openDialogUpdate)
@@ -430,7 +430,7 @@ export default function PhotoMetaUpdateDialog({
                   }}
                 />
 
-                <FormControl
+                {/* <FormControl
                   size="small"
                   variant="outlined"
                   sx={{ minWidth: 140 }}
@@ -449,7 +449,7 @@ export default function PhotoMetaUpdateDialog({
                     <MenuItem value="3/4">3:4</MenuItem>
                     <MenuItem value="16/9">16:9</MenuItem>
                   </Select>
-                </FormControl>
+                </FormControl> */}
               </Stack>
 
               {/* Секция: Системное (Имя файла) */}

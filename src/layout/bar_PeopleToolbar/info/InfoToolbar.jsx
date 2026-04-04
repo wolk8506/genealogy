@@ -28,7 +28,8 @@ const InfoToolbar = ({ personRef, infoProps }) => {
           justifyContent: "center",
           width: "100%",
           position: "relative", // Важно для абсолютных детей
-          minHeight: "48px", // Фиксируем высоту
+          // minHeight: "48px", // Фиксируем высоту
+          fontSize: 20,
         }}
       >
         {/* Группа СЛЕВА: Отмена и Сохранение */}
@@ -50,7 +51,7 @@ const InfoToolbar = ({ personRef, infoProps }) => {
                   size="small"
                   sx={{ color: "white", p: "8px" }}
                 >
-                  <CancelIcon />
+                  <CancelIcon fontSize="inherit" />
                 </IconButton>
               </Tooltip>
               <Tooltip title="Сохранить изменения">
@@ -59,7 +60,7 @@ const InfoToolbar = ({ personRef, infoProps }) => {
                   size="small"
                   sx={{ color: "white", p: "8px" }}
                 >
-                  <SaveIcon />
+                  <SaveIcon fontSize="inherit" />
                 </IconButton>
               </Tooltip>
             </ButtonConteiner>
@@ -81,13 +82,17 @@ const InfoToolbar = ({ personRef, infoProps }) => {
               size="small"
               sx={{
                 color: "white",
-                p: "8px",
+                p: 1,
                 // Добавим поворот при редактировании для красоты
                 // transform: infoProps.isEditing ? "rotate(90deg)" : "none",
                 // transition: "transform 0.3s",
               }}
             >
-              {infoProps.isEditing ? <EditOffIcon /> : <CreateIcon />}
+              {infoProps.isEditing ? (
+                <EditOffIcon fontSize="inherit" />
+              ) : (
+                <CreateIcon fontSize="inherit" />
+              )}
             </IconButton>
           </Tooltip>
         </ButtonConteiner>
@@ -108,18 +113,18 @@ const InfoToolbar = ({ personRef, infoProps }) => {
                 <IconButton
                   onClick={() => personRef.current?.handleAddEvent()}
                   size="small"
-                  sx={{ color: "white", p: "8px" }}
+                  sx={{ color: "white", p: 1 }}
                 >
-                  <StarIcon />
+                  <StarIcon fontSize="inherit" />
                 </IconButton>
               </Tooltip>
               <Tooltip title="Добавить факт">
                 <IconButton
                   onClick={() => personRef.current?.handleAddFact()}
                   size="small"
-                  sx={{ color: "white", p: "8px" }}
+                  sx={{ color: "white", p: 1 }}
                 >
-                  <InfoIcon />
+                  <InfoIcon fontSize="inherit" />
                 </IconButton>
               </Tooltip>
             </ButtonConteiner>

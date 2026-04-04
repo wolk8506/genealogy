@@ -276,3 +276,83 @@ ipcMain.handle("photo:addOrUpdateOwnerJson", async (_, ownerId, photoObj) => {
     throw err;
   }
 });
+
+// --- ДОБАВЛЕНИЕ ФАЙЛОВ И ПРОСМОТР НА СТРАНИЦУ ФАЙЛЫ
+// Укажите базовый путь, где хранятся данные вашей программы
+// const PEOPLE_BASE = path.join(__dirname, "your_data_folder"); // Измените на вашу директорию
+
+ipcMain.handle(
+  "upload-person-file",
+  async (event, personId, fileName, fileBuffer, category) => {
+    try {
+      // Формируем путь: /your_data_folder/persons/{personId}/files
+      const personFilesDir = path.join(PEOPLE_BASE, String(personId), "files");
+
+      // Создаем папку, если её нет
+      if (!fs.existsSync(personFilesDir)) {
+        fs.mkdirSync(personFilesDir, { recursive: true });
+      }
+
+      // Сохраняем файл (переводим ArrayBuffer в Buffer для NodeJS)
+      const filePath = path.join(personFilesDir, fileName);
+      fs.writeFileSync(filePath, Buffer.from(fileBuffer));
+
+      return true;
+    } catch (error) {
+      console.error("Ошибка сохранения файла:", error);
+      throw error;
+    }
+  },
+);
+
+ipcMain.handle("get-person-files", async (event, personId) => {
+  try {
+    const personFilesDir = path.join(PEOPLE_BASE, String(personId), "files");
+
+    if (!fs.existsSync(personFilesDir)) {
+      return []; // Если папки нет, значит файлов нет
+    }
+
+    const files = fs.readdirSync(personFilesDir);
+
+    // Возвращаем массив с путями и типами
+    return files.map((file) => {
+      const ext = path.extname(file).toLowerCase();
+      let type = "unknown";
+      if ([".jpg", ".jpeg"].includes(ext)) type = "image";
+      if ([".mp4"].includes(ext)) type = "video";
+      if ([".mp3"].includes(ext)) type = "audio";
+      if ([".txt", ".pdf"].includes(ext)) type = "doc";
+
+      return {
+        name: file,
+        // Обязательно добавляем file:// чтобы браузер Chromium внутри Electron мог его открыть
+        path: `file://${path.join(personFilesDir, file)}`,
+        type: type,
+      };
+    });
+  } catch (error) {
+    console.error("Ошибка чтения файлов:", error);
+    throw error;
+  }
+});
+
+ipcMain.handle("delete-person-file", async (event, personId, fileName) => {
+  try {
+    const filePath = path.join(
+      PEOPLE_BASE,
+      String(personId),
+      "files",
+      fileName,
+    );
+
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath); // Удаляем файл
+      return { success: true };
+    }
+    return { success: false, error: "Файл не найден" };
+  } catch (error) {
+    console.error("Ошибка при удалении файла:", error);
+    return { success: false, error: error.message };
+  }
+});

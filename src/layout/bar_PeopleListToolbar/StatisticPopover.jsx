@@ -14,6 +14,7 @@ import MaleIcon from "@mui/icons-material/Male";
 import FemaleIcon from "@mui/icons-material/Female";
 import RestoreFromTrashIcon from "@mui/icons-material/RestoreFromTrash";
 import QueryStatsIcon from "@mui/icons-material/QueryStats";
+import ButtonConteiner from "../../components/ButtonConteiner";
 
 export const StatisticPopover = ({ people }) => {
   const [anchorEl, setAnchorEl] = React.useState(null);
@@ -42,29 +43,19 @@ export const StatisticPopover = ({ people }) => {
   const id = open ? "simple-popover" : undefined;
   return (
     <>
-      <Box
-        sx={{
-          display: "inline-flex",
-          alignItems: "center",
-          border: "1px solid",
-          borderColor: "divider",
-          borderRadius: 7,
-          height: 40,
-          color: "text.secondary",
-        }}
-      >
+      <ButtonConteiner>
         <Tooltip title="Статистика">
           <IconButton
             aria-describedby={id}
             variant="contained"
             onClick={handleClick}
             size="small"
-            sx={{ color: "white", p: "8px" }}
+            sx={{ color: "white", p: 1 }}
           >
-            <QueryStatsIcon color={"inherit"} />
+            <QueryStatsIcon color={"inherit"} fontSize="inherit" />
           </IconButton>
         </Tooltip>
-      </Box>
+      </ButtonConteiner>
 
       <Popover
         id={id}

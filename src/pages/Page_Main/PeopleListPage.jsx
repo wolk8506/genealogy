@@ -1,46 +1,30 @@
 import React, { useEffect, useState, useMemo } from "react";
 import {
   Avatar,
-  ListItemAvatar,
-  ListItemText,
   Typography,
   CircularProgress,
   Stack,
   Button,
-  ListItemButton,
   Grid,
   useTheme,
   Paper,
-  Tooltip,
-  Chip,
   Box,
   alpha,
 } from "@mui/material";
 
-import DeleteIcon from "@mui/icons-material/Delete";
 import AddPersonModal from "../../components/Dialog/AddPeopleDialog";
 import { useSearchParams } from "react-router-dom";
 
-import DescriptionIcon from "@mui/icons-material/Description"; // Для биографии
 import PersonAddAlt1Icon from "@mui/icons-material/PersonAddAlt1";
 import SettingsBackupRestoreIcon from "@mui/icons-material/SettingsBackupRestore";
-import PhotoLibraryIcon from "@mui/icons-material/PhotoLibrary"; // Для фото
 
 import appIcon from "../../img/app_icon.png";
 import { Link } from "react-router-dom";
 import { ButtonScrollTop } from "../../components/ButtonScrollTop";
 import { useNotificationStore } from "../../store/useNotificationStore";
-
-/* Аватар по ID фото */
-function PersonAvatar({ foto, initials }) {
-  const [src, setSrc] = useState(null);
-  useEffect(() => {
-    if (foto) window.avatarAPI.getPath(foto).then(setSrc);
-  }, [foto]);
-  return (
-    <Avatar src={src}>{!src && initials?.slice(0, 2).toUpperCase()}</Avatar>
-  );
-}
+import { PersonCard } from "./PersonCard";
+import { usePeopleListStore } from "../../store/usePeopleListStore";
+import { useTagsStore } from "../../store/useTagsStore";
 
 /* Проверка диапазонов дат */
 function checkDateFilter(dateStr, filter) {
@@ -78,6 +62,8 @@ function checkDateFilter(dateStr, filter) {
 }
 
 export default function PeopleListPage({ search, filters, sortOrder }) {
+  const setHasArchived = usePeopleListStore((state) => state.setHasArchived);
+  const personTags = useTagsStore((state) => state.personTags);
   const [people, setPeople] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchParams, setSearchParams] = useSearchParams();
@@ -115,11 +101,20 @@ export default function PeopleListPage({ search, filters, sortOrder }) {
   // Вызываем при загрузке списка
   useEffect(() => {
     window.peopleAPI.getAll().then((data) => {
-      setPeople(data || []);
+      const allPeople = data || [];
+      setPeople(allPeople);
       setLoading(false);
-      if (data) loadAllStats(data);
+
+      if (allPeople.length > 0) {
+        // 1. Проверяем наличие удаленных (архивированных) записей
+        const existsArchived = allPeople.some((p) => p.archived);
+        setHasArchived(existsArchived);
+
+        // 2. Загружаем статистику
+        loadAllStats(allPeople);
+      }
     });
-  }, []);
+  }, [setHasArchived]);
 
   const active = useMemo(() => people.filter((p) => !p.archived), [people]);
 
@@ -132,7 +127,19 @@ export default function PeopleListPage({ search, filters, sortOrder }) {
         !filters.gens.length || filters.gens.includes(String(p.generation));
       const matchCreated = checkDateFilter(p.createdAt, filters.created);
       const matchEdited = checkDateFilter(p.editedAt, filters.edited);
-      return matchSearch && matchGen && matchCreated && matchEdited;
+
+      // --- НОВАЯ ЛОГИКА ФИЛЬТРАЦИИ ПО МЕТКАМ ---
+      // Если в фильтре выбраны метки, проверяем, есть ли у человека ХОТЯ БЫ ОДНА из них (OR)
+      const myTags = personTags[p.id] || [];
+      const matchTags =
+        !filters.tags || filters.tags.length === 0
+          ? true // Если фильтр пуст, показываем всех
+          : filters.tags.some((tagId) => myTags.includes(tagId));
+      // -----------------------------------------
+
+      return (
+        matchSearch && matchGen && matchCreated && matchEdited && matchTags
+      ); // Добавили matchTags
     });
 
     res.sort((a, b) => {
@@ -142,7 +149,7 @@ export default function PeopleListPage({ search, filters, sortOrder }) {
     });
 
     return res;
-  }, [active, search, filters]);
+  }, [active, search, filters, personTags]);
 
   const grouped = useMemo(() => {
     return filtered.reduce((acc, p) => {
@@ -167,6 +174,7 @@ export default function PeopleListPage({ search, filters, sortOrder }) {
       archived: true,
       editedAt: new Date().toISOString(),
     });
+    setHasArchived(true);
     const data = await window.peopleAPI.getAll();
     setPeople(data);
     const p = people.filter((el) => el.id === id)[0];
@@ -326,206 +334,6 @@ export default function PeopleListPage({ search, filters, sortOrder }) {
   const children = (singleMatch?.children || []).map(findById).filter(Boolean);
   const siblings = (singleMatch?.siblings || []).map(findById).filter(Boolean);
 
-  // утилиту для проверки «Прошло меньше 24 часов»
-  const isRecent = (dateStr) => {
-    if (!dateStr) return false;
-
-    const eventTime = new Date(dateStr).getTime();
-    const currentTime = new Date().getTime();
-    const oneDayInMs = 24 * 60 * 60 * 1000; // 86,400,000 мс
-
-    const diff = currentTime - eventTime;
-
-    // Событие считается недавним, если оно произошло меньше 24 часов назад
-    // и при этом время события не из будущего (diff >= 0)
-    return diff >= 0 && diff < oneDayInMs;
-  };
-
-  const PersonCard = ({ person, stats, onDelete, size = "full" }) => {
-    const theme = useTheme();
-    const isDark = theme.palette.mode === "dark";
-
-    const name =
-      [person.firstName, person.lastName || person.maidenName]
-        .filter(Boolean)
-        .join(" ") || "Без имени";
-    const initials =
-      (person.firstName?.[0] || "") +
-      (person.lastName?.[0] || person.maidenName?.[1] || "");
-
-    const createdToday = isRecent(person.createdAt);
-    const editedToday = isRecent(person.editedAt);
-    const showBadge = createdToday || editedToday;
-    const labelColor = createdToday ? "success" : "info";
-    const labelText = createdToday ? "Новый" : "Изменен";
-
-    const isSmall = size === "small";
-
-    return (
-      <ListItemButton
-        component={Link}
-        to={`/person/${person.id}`}
-        sx={{
-          p: 0,
-          borderRadius: "16px",
-          width: "100%", // Растягиваем саму кнопку
-          display: "flex",
-          "&.MuiButtonBase-root": {
-            alignItems: "stretch", // Гарантируем растягивание контента по вертикали, если нужно
-          },
-        }}
-      >
-        <Paper
-          elevation={0}
-          sx={{
-            flexGrow: 1, // КРИТИЧНО: заставляет Paper занять всё место в кнопке
-            width: "100%",
-            display: "flex",
-            alignItems: "center",
-            p: isSmall ? 1 : 1.5,
-            borderRadius: "16px",
-            bgcolor: isDark ? "rgba(42, 42, 42, 0.6)" : "#fff",
-            border: "1px solid",
-            borderColor: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)",
-            backdropFilter: isDark ? "blur(10px)" : "none",
-            position: "relative",
-            transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-            "&:hover": {
-              transform: isSmall ? "none" : "translateY(-4px)",
-              boxShadow: isDark
-                ? "0 12px 24px rgba(0,0,0,0.4)"
-                : "0 8px 16px rgba(0,0,0,0.05)",
-              borderColor: "primary.main",
-              bgcolor: isDark ? "rgba(42, 42, 42, 0.8)" : "#fff",
-            },
-          }}
-        >
-          <ListItemAvatar sx={{ minWidth: isSmall ? 52 : 64 }}>
-            {/* Можно добавить Badge прямо на аватар, если хочешь вернуть точку */}
-            <PersonAvatar foto={person.id} initials={initials} />
-          </ListItemAvatar>
-
-          <ListItemText
-            primaryTypographyProps={{ component: "div" }}
-            secondaryTypographyProps={{ component: "div" }}
-            primary={
-              <Stack
-                direction="row"
-                alignItems="center"
-                spacing={1}
-                flexWrap="wrap"
-              >
-                <Typography
-                  sx={{
-                    fontWeight: 700,
-                    fontSize: isSmall ? "0.95rem" : "1.1rem",
-                  }}
-                >
-                  {name}
-                </Typography>
-                {showBadge && (
-                  <Chip
-                    size="small"
-                    label={labelText}
-                    sx={{
-                      height: 18,
-                      fontSize: "9px",
-                      fontWeight: 900,
-                      borderRadius: "6px",
-                      bgcolor: alpha(theme.palette[labelColor].main, 0.1),
-                      color: `${labelColor}.main`,
-                      border: `1px solid ${alpha(theme.palette[labelColor].main, 0.2)}`,
-                    }}
-                  />
-                )}
-              </Stack>
-            }
-            secondary={
-              <Stack
-                direction="row"
-                spacing={isSmall ? 1 : 2}
-                mt={0.5}
-                component="div"
-                alignItems="center"
-              >
-                <Typography
-                  variant="caption"
-                  component="span"
-                  sx={{
-                    bgcolor: isDark
-                      ? "rgba(255,255,255,0.05)"
-                      : "rgba(0,0,0,0.04)",
-                    px: 0.8,
-                    py: 0.2,
-                    borderRadius: "6px",
-                    fontSize: "0.7rem",
-                    fontFamily: "monospace",
-                    border: "1px solid",
-                    borderColor: "divider",
-                  }}
-                >
-                  ID {person.id}
-                </Typography>
-
-                {!isSmall && stats?.hasBio && (
-                  <Tooltip title="Биография заполнена">
-                    <DescriptionIcon
-                      sx={{ fontSize: 16, color: "primary.main", opacity: 0.7 }}
-                    />
-                  </Tooltip>
-                )}
-
-                {stats?.count > 0 && (
-                  <Stack
-                    direction="row"
-                    spacing={0.5}
-                    alignItems="center"
-                    sx={{ color: "info.main" }}
-                    component="span"
-                  >
-                    <PhotoLibraryIcon sx={{ fontSize: 16, opacity: 0.7 }} />
-                    {!isSmall && (
-                      <Typography variant="caption" fontWeight="800">
-                        {stats.count}
-                      </Typography>
-                    )}
-                  </Stack>
-                )}
-              </Stack>
-            }
-          />
-
-          <Button
-            size="small"
-            color="error"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              onDelete(person.id);
-            }}
-            startIcon={<DeleteIcon sx={{ fontSize: 18 }} />}
-            sx={{
-              ml: "auto", // Прижимает кнопку вправо
-              px: isSmall ? 1 : 2,
-              borderRadius: "10px",
-              fontSize: "0.75rem",
-              fontWeight: 700,
-              opacity: isSmall ? 0.2 : 0.5,
-              transition: "0.2s",
-              whiteSpace: "nowrap", // Чтобы текст не переносился
-              "&:hover": {
-                opacity: 1,
-                bgcolor: alpha(theme.palette.error.main, 0.1),
-              },
-            }}
-          >
-            {!isSmall && "В корзину"}
-          </Button>
-        </Paper>
-      </ListItemButton>
-    );
-  };
-
   const renderRelationItem = (p) => (
     <PersonCard
       key={p.id}
@@ -647,8 +455,8 @@ export default function PeopleListPage({ search, filters, sortOrder }) {
               <Box
                 sx={{
                   position: "sticky",
-                  top: 0,
-                  zIndex: 10,
+                  top: 50,
+                  zIndex: 20,
                   py: 1.5,
                   mb: 2,
                   display: "flex",

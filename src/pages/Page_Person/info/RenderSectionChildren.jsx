@@ -10,6 +10,7 @@ export const RenderSectionChildren = ({ title, people, row = 1 }) => {
         // maxWidth: "736px",
         // width: "360px",
         mt: "0px !important",
+        // p: 0,
       }}
     >
       <Divider

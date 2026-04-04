@@ -4,6 +4,7 @@ import ExpandingPeopleSelect from "./ExpandingPeopleSelect";
 import ExpandingGroupSelect from "./ExpandingGroupSelect";
 import ExpandingSelect from "./ExpandingSelect";
 import ExpandingSearch from "../../components/ExpandingSearch";
+import ExpandingAddPhotoButton from "./ExpandingAddPhotoButton";
 
 export default function GalleryToolbar({
   allPeople,
@@ -21,6 +22,9 @@ export default function GalleryToolbar({
 }) {
   return (
     <Stack direction="row" spacing={2} ml="auto">
+      {/* КНОПКА ДОБАВЛЕНИЯ ФОТО */}
+      <ExpandingAddPhotoButton />
+
       {/* КТО НА ФОТО */}
       <ExpandingPeopleSelect
         allPeople={allPeople}

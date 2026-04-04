@@ -19,8 +19,8 @@ import PersonPinCircleIcon from "@mui/icons-material/PersonPinCircle";
 import onDownload from "../../utils/onDownload";
 import PhotoFullscreenViewer from "../../../components/PhotoFullscreenViewer";
 import PhotoCell from "../../../components/PhotoCell";
-import PhotoMetaUpdateDialog from "../../../components/PhotoMetaUpdateDialog";
-import PhotoUploadDialog from "./PhotoUploadDialog";
+import PhotoMetaUpdateDialog from "../../../components/Dialog/PhotoMetaUpdateDialog";
+import PhotoUploadDialog from "../../../components/Dialog/PhotoUploadDialog";
 import PhotoMetaDialog from "../../../components/PhotoMetaDialog";
 import { ButtonScrollTop } from "../../../components/ButtonScrollTop";
 
@@ -91,7 +91,10 @@ export default function PhotoGallery({
 
   useEffect(() => {
     if (!personId) return; // Убрали !openMain
-    setIsLoading(true);
+    // setIsLoading(true);
+    if (refreshTrigger === 0) {
+      setIsLoading(true);
+    }
     window.photoAPI.getAll(personId).then((list) => {
       setPhotos(list || []);
       setIsLoading(false);
@@ -384,7 +387,7 @@ export default function PhotoGallery({
         sx={{
           display: "flex",
           flexDirection: "column",
-          height: "calc(100vh - 80px)", // ЗАДАЙТЕ ВЫСОТУ ТУТ (например, 700 или 80vh)
+          height: "calc(100vh - 60px)", // ЗАДАЙТЕ ВЫСОТУ ТУТ (например, 700 или 80vh)
           width: "100%",
           // position: "relative",
         }}
@@ -477,16 +480,7 @@ export default function PhotoGallery({
                               setFullscreen(true);
                             }}
                             onDownload={onDownload}
-                            // onEdit={(p) => {
-                            //   setEditingPhoto(p);
-                            //   setOpenEdit(true);
-                            // }}
                             onEdit={(p) => {
-                              // Находим индекс фото в текущем отфильтрованном списке
-                              const currentIdx = displayList.findIndex(
-                                (item) => item.id === p.id,
-                              );
-                              setIndex(currentIdx); // ОБЯЗАТЕЛЬНО обновляем индекс здесь
                               setEditingPhoto(p);
                               setOpenEdit(true);
                             }}
@@ -532,31 +526,9 @@ export default function PhotoGallery({
         <PhotoMetaUpdateDialog
           open={openEdit}
           meta={editingPhoto}
-          // onClose={async () => {
-          //   setOpenEdit(false);
-          //   setRefreshTrigger((r) => r + 1);
-          //   if (refresh) refresh();
-          // }}
           onClose={async () => {
             setOpenEdit(false);
-            // 1. Запускаем обновление данных
             setRefreshTrigger((r) => r + 1);
-
-            // 2. Ждем микросекунду, пока данные подгрузятся, и скроллим
-            // Используем тот же индекс, который уже лежит в стейте `index`
-            setTimeout(() => {
-              if (virtuosoRef.current && index !== -1) {
-                // Вычисляем строку (row), в которой находится это фото
-                const rowIndex = Math.floor(index / columnsCount);
-
-                virtuosoRef.current.scrollToIndex({
-                  index: rowIndex,
-                  align: "center",
-                  behavior: "smooth", // Сделаем плавно, чтобы видеть возврат
-                });
-              }
-            }, 300); // 300мс обычно хватает, чтобы API ответило и список перерисовался
-
             if (refresh) refresh();
           }}
           allPeople={allPeople}

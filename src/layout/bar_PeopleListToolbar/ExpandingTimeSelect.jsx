@@ -7,17 +7,19 @@ import {
   MenuItem,
   Typography,
   ListItemIcon,
+  Tooltip,
+  alpha,
+  Divider,
 } from "@mui/material";
 
 // Иконки
-import CalendarTodayIcon from "@mui/icons-material/CalendarToday"; // Для создания
-import UpdateIcon from "@mui/icons-material/Update"; // Для изменения
+import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
+import UpdateIcon from "@mui/icons-material/Update";
 import TodayIcon from "@mui/icons-material/Today";
 import DateRangeIcon from "@mui/icons-material/DateRange";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import HistoryToggleOffIcon from "@mui/icons-material/HistoryToggleOff";
 import EventNoteIcon from "@mui/icons-material/EventNote";
-import { key } from "@milkdown/kit/plugin/listener";
 
 const StyledContainer = styled(Box, {
   shouldForwardProp: (prop) => prop !== "$expanded",
@@ -27,15 +29,13 @@ const StyledContainer = styled(Box, {
   borderRadius: 20,
   border: "1px solid",
   borderColor: theme.palette.divider,
-  transition: "all 0.3s ease",
-  width: $expanded ? "auto" : 40,
+  transition:
+    "transform 0.2s ease-out, box-shadow 0.2s ease-out, background-color 0.2s",
+  height: 34,
   paddingRight: $expanded ? 12 : 0,
-  overflow: "hidden",
   cursor: "pointer",
-  // backgroundColor: $expanded ? "rgba(255,255,255,0.08)" : "transparent",
   "&:hover": {
-    // borderColor: theme.palette.primary.main,
-    backgroundColor: "rgba(255,255,255,0.12)",
+    backgroundColor: "rgba(255,255,255,0.08)",
   },
 }));
 
@@ -64,11 +64,10 @@ const timeOptions = [
     icon: <CalendarMonthIcon fontSize="small" />,
     key: 4,
   },
-
   {
     value: "year",
     label: "За год",
-    icon: <EventNoteIcon fontSize="small" />, // Четкая иконка календаря с заметкой
+    icon: <EventNoteIcon fontSize="small" />,
     key: 5,
   },
 ];
@@ -88,79 +87,132 @@ export default function ExpandingTimeSelect({
     timeOptions.find((o) => o.value === value) || timeOptions[0];
   const isExpanded = value !== "";
 
-  // Выбор базовой иконки в зависимости от типа фильтра (создание или правка)
   const BaseIcon = type === "created" ? CalendarTodayIcon : UpdateIcon;
   const labelPrefix = type === "created" ? "Создано" : "Изм.";
+  const tooltipTitle =
+    type === "created" ? "Фильтр по дате создания" : "Фильтр по дате изменения";
 
   return (
-    <StyledContainer $expanded={isExpanded} onClick={handleOpen}>
-      <IconButton size="small" sx={{ color: "white", p: "8px" }}>
-        <BaseIcon color={isExpanded ? "primary" : "inherit"} />
-      </IconButton>
+    <>
+      <Tooltip title={tooltipTitle}>
+        <StyledContainer $expanded={isExpanded} onClick={handleOpen}>
+          <IconButton size="small" sx={{ color: "white", p: "8px" }}>
+            <BaseIcon
+              color={isExpanded ? "primary" : "inherit"}
+              fontSize="inherit"
+            />
+          </IconButton>
 
-      {isExpanded && (
-        <Typography
-          variant="caption"
-          sx={{
-            color: "white",
-            whiteSpace: "nowrap",
-            ml: 0.5,
-            fontWeight: 600,
-          }}
-        >
-          {labelPrefix}: {selectedOption.label}
-        </Typography>
-      )}
+          {isExpanded && (
+            <Typography
+              variant="caption"
+              sx={{
+                color: "white",
+                whiteSpace: "nowrap",
+                ml: 0.5,
+                fontWeight: 700,
+              }}
+            >
+              {labelPrefix}: {selectedOption.label}
+            </Typography>
+          )}
+        </StyledContainer>
+      </Tooltip>
 
       <Menu
         anchorEl={anchorEl}
         open={open}
         onClose={handleClose}
-        onClick={(e) => e.stopPropagation()}
-        slotProps={{
-          paper: {
-            sx: {
-              mt: 1,
-              minWidth: 160,
-              borderRadius: "12px",
-              boxShadow: "0 8px 32px rgba(0,0,0,0.3)",
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+        transformOrigin={{ vertical: "top", horizontal: "center" }}
+        PaperProps={{
+          sx: {
+            mt: 1.5,
+            minWidth: 180,
+            borderRadius: "16px",
+            overflow: "visible",
+            backgroundImage: "none",
+            bgcolor: (theme) =>
+              theme.palette.mode === "dark" ? "#1E1E1E" : "#FFFFFF",
+            border: "1px solid",
+            borderColor: "divider",
+            // Хвостик меню
+            "&::before": {
+              content: '""',
+              display: "block",
+              position: "absolute",
+              top: -6,
+              left: "calc(50% - 6px)",
+              width: 12,
+              height: 12,
+              bgcolor: "inherit",
+              borderLeft: "1px solid",
+              borderTop: "1px solid",
+              borderColor: "divider",
+              transform: "rotate(45deg)",
+              zIndex: 0,
             },
           },
         }}
       >
-        <Typography
-          variant="overline"
-          sx={{
-            px: 2,
-            py: 1,
-            display: "block",
-            color: "primary.main",
-            fontWeight: "bold",
-          }}
-        >
-          {type === "created" ? "Дата создания" : "Дата изменения"}
-        </Typography>
-
-        {timeOptions.map((opt) => (
-          <MenuItem
-            key={opt.key}
-            selected={opt.value === value}
-            onClick={(e) => {
-              e.stopPropagation();
-              onChange(opt.value);
-              handleClose();
+        <Box sx={{ position: "relative", zIndex: 1 }}>
+          <Typography
+            variant="overline"
+            sx={{
+              px: 2,
+              py: 1,
+              display: "block",
+              color: "primary.main",
+              fontWeight: 700,
             }}
-            sx={{ py: 1 }}
           >
-            <ListItemIcon
-              sx={{ color: opt.value === value ? "primary.main" : "inherit" }}
-            >
-              {opt.icon}
-            </ListItemIcon>
-            <Typography variant="body2">{opt.label}</Typography>
-          </MenuItem>
-        ))}
+            {type === "created" ? "Дата создания" : "Дата изменения"}
+          </Typography>
+
+          {timeOptions.map((opt) => {
+            const isSelected = opt.value === value;
+            return (
+              <MenuItem
+                key={opt.key}
+                onClick={() => {
+                  onChange(opt.value);
+                  handleClose();
+                }}
+                sx={{
+                  mx: 1,
+                  my: 0.5,
+                  borderRadius: "8px",
+                  bgcolor: isSelected ? alpha("#2196f3", 0.15) : "transparent",
+                  "&:hover": {
+                    bgcolor: isSelected
+                      ? alpha("#2196f3", 0.25)
+                      : alpha("#fff", 0.05),
+                  },
+                  transition: "background-color 0.2s",
+                }}
+              >
+                <ListItemIcon
+                  sx={{
+                    minWidth: "32px !important",
+                    color: isSelected ? "primary.main" : "text.secondary",
+                  }}
+                >
+                  {opt.icon}
+                </ListItemIcon>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    fontWeight: isSelected ? 700 : 400,
+                    color: isSelected ? "white" : "text.secondary",
+                  }}
+                >
+                  {opt.label}
+                </Typography>
+              </MenuItem>
+            );
+          })}
+        </Box>
       </Menu>
-    </StyledContainer>
+    </>
   );
 }

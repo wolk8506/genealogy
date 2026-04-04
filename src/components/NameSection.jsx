@@ -1,6 +1,6 @@
 import { Divider, Typography } from "@mui/material";
 
-export default function NameSection({ title, icon: Icon }) {
+export default function NameSection({ title, icon }) {
   return (
     <Divider
       textAlign="left"
@@ -21,7 +21,7 @@ export default function NameSection({ title, icon: Icon }) {
         color="text.secondary"
         sx={{ display: "flex", alignItems: "center", gap: 1 }}
       >
-        <Icon color="inherit" />
+        {icon}
         {title}
       </Typography>
     </Divider>

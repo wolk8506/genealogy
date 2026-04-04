@@ -20,13 +20,15 @@ import LayersClearIcon from "@mui/icons-material/LayersClear";
 const StyledContainer = styled(Box, {
   shouldForwardProp: (prop) => prop !== "$expanded",
 })(({ theme, $expanded }) => ({
+  WebkitAppRegion: "no-drag",
   display: "flex",
   alignItems: "center",
   borderRadius: 20,
   border: "1px solid",
   borderColor: theme.palette.divider,
   transition: "all 0.3s ease",
-  width: $expanded ? "auto" : 40,
+  width: $expanded ? "auto" : 34,
+  height: 34,
   paddingRight: $expanded ? 12 : 0,
   overflow: "hidden",
   cursor: "pointer",
@@ -83,8 +85,8 @@ export default function ExpandingGroupSelect({ value, onChange }) {
 
   return (
     <StyledContainer $expanded={isExpanded} onClick={handleOpen}>
-      <IconButton size="small" sx={{ color: "white", p: "8px" }}>
-        <CurrentIcon />
+      <IconButton size="small" sx={{ color: "white", p: 1 }}>
+        <CurrentIcon fontSize="inherit" />
       </IconButton>
 
       {isExpanded && (
