@@ -6,7 +6,6 @@ import {
   Button,
   List,
   ListItem,
-  Backdrop,
   CircularProgress,
   LinearProgress,
   Grid,
@@ -31,9 +30,17 @@ import DescriptionIcon from "@mui/icons-material/Description";
 import StorageIcon from "@mui/icons-material/Storage";
 import FolderOpenIcon from "@mui/icons-material/FolderOpen";
 import { alpha } from "@mui/material/styles";
-import { ImportDecisionModal } from "./ImportDecisionModal";
+import { ImportDecisionInline } from "./ImportDecisionInline";
 
-export const StatisticCard = ({ cardStyle }) => {
+import { keyframes } from "@mui/system";
+
+// Анимация блеска
+const shimmer = keyframes`
+  0% { transform: translateX(-150%) skewX(-20deg); }
+  100% { transform: translateX(150%) skewX(-20deg); }
+`;
+
+export const StatisticCard = ({ cardStyle, loadAll }) => {
   const theme = useTheme();
   const addNotification = useNotificationStore(
     (state) => state.addNotification,
@@ -41,6 +48,8 @@ export const StatisticCard = ({ cardStyle }) => {
   const lastUpdateRef = useRef(0);
 
   const [storageStats, setStorageStats] = useState(null);
+
+  // --- Состояния экспорта (Бэкапа) ---
   const [isSaving, setIsSaving] = useState(false);
   const [saveDone, setSaveDone] = useState(false);
   const [exportStatus, setExportStatus] = useState("Подготовка архива...");
@@ -53,12 +62,14 @@ export const StatisticCard = ({ cardStyle }) => {
     totalFiles: 0,
     currentFile: "",
     message: "",
-    currentOwner: null, // Добавляем поле для имени текущего человека
+    currentOwner: null,
   });
-  // Для импорта
+
+  // --- Состояния импорта ---
   const [isImporting, setIsImporting] = useState(false);
   const [isImportingOpen, setIsImportingOpen] = useState(false);
   const [importStatus, setImportStatus] = useState("");
+  const [importError, setImportError] = useState(false); // Добавлено для фикса ошибки
   const [importProgress, setImportProgress] = useState({
     current: 0,
     total: 0,
@@ -67,24 +78,24 @@ export const StatisticCard = ({ cardStyle }) => {
   const [confirmConflicts, setConfirmConflicts] = useState([]);
   const [modalToAdd, setModalToAdd] = useState([]);
   const confirmResolveRef = useRef(null);
-  // disk info
+
+  // --- Состояния диска ---
   const [totalSize, setTotalSize] = useState(null);
   const [diskInfo, setDiskInfo] = useState({ total: 0, free: 0 });
+
   // Основные переменные для расчетов
   const total = diskInfo.total || 1;
   const free = diskInfo.free;
   const library = parseFloat(totalSize) || 0;
-  // "Другое" — это (Всего - Свободно - Моя библиотека)
   const other = Math.max(0, total - free - library);
-  // Проценты для полоски
+
   const libPct = (library / total) * 100;
   const otherPct = (other / total) * 100;
 
-  // Функция для форматирования размера
   const formatSize = (bytes) => {
     return (bytes / (1024 * 1024)).toFixed(2) + " МБ";
   };
-  //
+
   const formatStorage = (mb) => {
     const val = parseFloat(mb);
     if (!val || isNaN(val)) return "0 GB";
@@ -92,16 +103,13 @@ export const StatisticCard = ({ cardStyle }) => {
     return `${(val / 1024).toFixed(1)} GB`;
   };
 
-  // ---   I M P O R T  /  E X P O R T  --------------------------------
-
+  // --- Эффекты ---
   useEffect(() => {
     const loadAllData = async () => {
       try {
-        // 1. Запрос общего состояния диска (то, что мы делали для полоски)
         const diskData = await window.electronAPI.getDiskUsage();
         if (diskData) setDiskInfo(diskData);
 
-        // 2. Запрос детальной статистики (то, что раньше было в handleOpenStorageInfo)
         const detailedData = await window.appAPI.getDetailedStorageStats();
         if (detailedData) setStorageStats(detailedData);
       } catch (error) {
@@ -110,25 +118,20 @@ export const StatisticCard = ({ cardStyle }) => {
     };
 
     loadAllData();
-
-    // Если у тебя есть интервал обновления, можно оставить его
-    const interval = setInterval(loadAllData, 60000); // Обновлять раз в минуту
+    const interval = setInterval(loadAllData, 60000);
     return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {
     const handler = (event, data) => {
-      // data: { conflicts, toAdd, toUpdate }
       setModalToAdd(data.toAdd?.map((id) => ({ id })) || []);
       setConfirmConflicts(data.toUpdate || []);
-      // ВАЖНО: Скрываем индикатор прогресса, чтобы показать модалку выбора
       setIsImporting(false);
       setImportConfirmOpen(true);
 
       confirmResolveRef.current = (response) => {
         window.electron.ipcRenderer.send("import:confirm-response", response);
         setImportConfirmOpen(false);
-        // Возвращаем индикатор прогресса ПОСЛЕ выбора
         setIsImporting(true);
       };
     };
@@ -139,7 +142,6 @@ export const StatisticCard = ({ cardStyle }) => {
     };
   }, []);
 
-  // Подписка на прогресс импорта
   useEffect(() => {
     if (!window.importAPI?.onProgress) return;
     const removeListener = window.importAPI.onProgress((data) => {
@@ -160,22 +162,17 @@ export const StatisticCard = ({ cardStyle }) => {
 
   useEffect(() => {
     fetchTotalSize();
-    // Обновляем размер, если сработал триггер в приложении
     window.appAPI.onFolderSizeUpdated?.(() => fetchTotalSize());
   }, []);
+
   useEffect(() => {
     let lastUpdate = 0;
-
     const onProgressHandler = (data) => {
       if (!data || typeof data !== "object") return;
-
       const now = Date.now();
-      // Обновляем только если прошло 100мс или это финал/смена фазы
       if (now - lastUpdate > 100 || data.phase !== archiveProgress.phase) {
         lastUpdate = now;
-
         setArchiveProgress((prev) => {
-          // Проверка: если данные те же, не обновляем (предотвращает петлю)
           if (
             prev.percent === data.percent &&
             prev.processedFiles === data.processedFiles &&
@@ -186,7 +183,6 @@ export const StatisticCard = ({ cardStyle }) => {
           return {
             ...prev,
             ...data,
-            // Гарантируем, что если фаза записи, мы берем проценты из системы
             percent:
               typeof data.percent === "number" ? data.percent : prev.percent,
           };
@@ -207,7 +203,7 @@ export const StatisticCard = ({ cardStyle }) => {
     return () => {
       if (typeof off === "function") off();
     };
-  }, []);
+  }, [archiveProgress.phase]);
 
   const handleImportDecision = (response) => {
     if (confirmResolveRef.current) {
@@ -220,8 +216,6 @@ export const StatisticCard = ({ cardStyle }) => {
     setSaveDone(false);
     setExportError(false);
     setExportStatus("Подготовка файлов...");
-
-    // Сброс прогресса
     setArchiveProgress({
       phase: "idle",
       percent: 0,
@@ -241,7 +235,6 @@ export const StatisticCard = ({ cardStyle }) => {
           setArchiveProgress((prev) => ({
             ...prev,
             ...payload,
-            // Явно подхватываем владельца или файл, если они пришли
             currentOwner: payload.message,
             currentFile: payload.currentFile ?? prev.currentFile,
             processedFiles: payload.processedFiles ?? prev.processedFiles,
@@ -251,20 +244,18 @@ export const StatisticCard = ({ cardStyle }) => {
         onStatus: setExportStatus,
       });
 
-      // ЕСЛИ ПОЛЬЗОВАТЕЛЬ ОТМЕНИЛ ВЫБОР ФАЙЛА
       if (!archivePath) {
         setIsSaving(false);
-        setExportStatus("Отменено пользователем");
         addNotification({
           timestamp: new Date().toISOString(),
           title: "Бэкап",
           message: `Отменено пользователем`,
           type: "warning",
+          category: "dataManagement",
         });
-        return; // Прерываем выполнение, чтобы не сработал setSaveDone(true)
+        return;
       }
 
-      // ЕСЛИ ВСЕ ОК
       setExportPath(archivePath);
       setSaveDone(true);
       setArchiveProgress((prev) => ({ ...prev, phase: "done", percent: 100 }));
@@ -274,6 +265,7 @@ export const StatisticCard = ({ cardStyle }) => {
         title: "Бэкап",
         message: `✅ Полный архив сохранён`,
         type: "success",
+        category: "dataManagement",
       });
       fetchTotalSize();
     } catch (e) {
@@ -284,11 +276,14 @@ export const StatisticCard = ({ cardStyle }) => {
         title: "Бэкап",
         message: "Ошибка: " + e.message,
         type: "error",
+        category: "dataManagement",
       });
     }
   };
+
   const handleImportAll = async () => {
     try {
+      setImportError(false);
       setIsImporting(true);
       setIsImportingOpen(true);
       setImportStatus("📥 Выберите ZIP для восстановления...");
@@ -298,59 +293,51 @@ export const StatisticCard = ({ cardStyle }) => {
         return;
       }
       await window.importAPI.importZip(zipPath);
-      // После импорта обновляем список людей
-      loadAll();
+      if (loadAll) loadAll(); // Проверяем наличие функции перед вызовом
+
       addNotification({
         timestamp: new Date().toISOString(),
         title: "Импорт",
         message: "Импорт из ZIP архива выполнен успешно",
         type: "success",
+        category: "dataManagement",
       });
     } catch (err) {
+      setImportError(true);
       setImportStatus(`❌ Ошибка: ${err.message}`);
       addNotification({
         timestamp: new Date().toISOString(),
         title: "Импорт",
         message: `❌ Ошибка: ${err.message}`,
         type: "error",
+        category: "dataManagement",
       });
     } finally {
       setIsImporting(false);
     }
   };
+
   function fetchTotalSize() {
     window.appAPI.getFolderSize().then(setTotalSize);
   }
 
   const percentValue = (() => {
     if (saveDone || archiveProgress.phase === "done") return 100;
-
-    // При записи ZIP ориентируемся строго на проценты от упаковщика
     if (archiveProgress.phase && archiveProgress.phase.startsWith("writing")) {
       return Math.round(archiveProgress.percent || 0);
     }
-
-    // При подготовке файлов рассчитываем на основе кол-ва
     if (archiveProgress.totalFiles > 0) {
       return Math.round(
         ((archiveProgress.processedFiles || 0) / archiveProgress.totalFiles) *
           100,
       );
     }
-
     return Math.round(archiveProgress.percent || 0);
   })();
 
   function StatRow({ icon, label, value }) {
     return (
       <ListItem disableGutters>
-        <ImportDecisionModal
-          open={importConfirmOpen}
-          summary={`Найдено конфликтов: ${confirmConflicts.length}`}
-          toAdd={modalToAdd}
-          toUpdate={confirmConflicts.map((id) => ({ id }))}
-          onSelect={handleImportDecision}
-        />
         <Box
           sx={{
             display: "flex",
@@ -391,44 +378,64 @@ export const StatisticCard = ({ cardStyle }) => {
       </ListItem>
     );
   }
+
+  // Флаги для определения того, какой контент рендерить внутри карточки
+  const showExportProcess = isSaving || saveDone || exportError;
+  const showImportDecision = importConfirmOpen; // НОВОЕ СОСТОЯНИЕ
+  const showImportProcess = isImportingOpen && !importConfirmOpen;
+
+  // Дефолтный контент показывается только если нет ни одного активного процесса
+  const showDefaultContent =
+    !showExportProcess && !showImportProcess && !showImportDecision;
+  const progressValue = Math.round(
+    (importProgress.current / Math.max(1, importProgress.total)) * 100,
+  );
+  const exportPercent = percentValue || 0;
   return (
-    <>
-      <Card
-        variant="outlined"
+    <Card variant="outlined" sx={{ ...cardStyle }}>
+      {/* ШАПКА всегда видна */}
+      <Box
         sx={{
-          ...cardStyle,
+          p: 2,
+          bgcolor: "action.hover",
+          borderBottom: "1px solid",
+          borderColor: "divider",
+          display: "flex",
+          gap: 1.5,
         }}
       >
-        {/* ШАПКА */}
-        <Box
+        <PieChartIcon color="primary" sx={{ fontSize: 20 }} />
+        <Typography
+          variant="subtitle2"
           sx={{
-            p: 2,
-            bgcolor: "action.hover",
-            borderBottom: "1px solid",
-            borderColor: "divider",
-            display: "flex",
-            // alignItems: "center",
-            gap: 1.5,
+            fontWeight: 800,
+            textTransform: "uppercase",
+            fontSize: "0.7rem",
+            letterSpacing: 1,
           }}
         >
-          <PieChartIcon color="primary" sx={{ fontSize: 20 }} />
-          <Typography
-            variant="subtitle2"
-            sx={{
-              fontWeight: 800,
-              textTransform: "uppercase",
-              fontSize: "0.7rem",
-              letterSpacing: 1,
-            }}
-          >
-            Статистика хранилища
-          </Typography>
-        </Box>
+          {showExportProcess
+            ? "Экспорт данных"
+            : showImportDecision
+              ? "Подтверждение импорта" // Добавили заголовок
+              : showImportProcess
+                ? "Импорт данных"
+                : "Статистика хранилища"}
+        </Typography>
+      </Box>
 
-        <Box sx={{ p: 2.5 }}>
-          <Stack spacing={3}>
-            {/* 1. ВИЗУАЛИЗАЦИЯ ДИСКА */}
-            {/* 1. ВИЗУАЛИЗАЦИЯ ДИСКА */}
+      <Box
+        sx={{
+          p: 2.5,
+          minHeight: 380,
+          height: 470,
+          display: "flex",
+          flexDirection: "column",
+        }}
+      >
+        {/* --- СТАНДАРТНЫЙ ВИД (Статистика) --- */}
+        {showDefaultContent && (
+          <Stack spacing={3} sx={{ flexGrow: 1 }}>
             <Box>
               <Stack
                 direction="row"
@@ -438,11 +445,7 @@ export const StatisticCard = ({ cardStyle }) => {
               >
                 <Stack direction="row" spacing={1} alignItems="center">
                   <StorageIcon
-                    sx={{
-                      fontSize: 20,
-                      color: "text.secondary",
-                      opacity: 0.8,
-                    }}
+                    sx={{ fontSize: 20, color: "text.secondary", opacity: 0.8 }}
                   />
                   <Box>
                     <Typography
@@ -465,7 +468,6 @@ export const StatisticCard = ({ cardStyle }) => {
                     </Typography>
                   </Box>
                 </Stack>
-
                 <Box sx={{ textAlign: "right" }}>
                   <Typography
                     variant="caption"
@@ -483,12 +485,10 @@ export const StatisticCard = ({ cardStyle }) => {
                 </Box>
               </Stack>
 
-              {/* Полоска прогресса (Трёхцветная) */}
               <Box
                 sx={{
                   height: 14,
                   width: "100%",
-                  // alignItems: "center",
                   bgcolor: alpha(theme.palette.divider, 0.2),
                   borderRadius: 7,
                   overflow: "hidden",
@@ -497,7 +497,6 @@ export const StatisticCard = ({ cardStyle }) => {
                   mb: 3,
                 }}
               >
-                {/* Библиотека */}
                 <Box
                   sx={{
                     width: `${libPct}%`,
@@ -505,7 +504,6 @@ export const StatisticCard = ({ cardStyle }) => {
                     transition: "width 1s",
                   }}
                 />
-                {/* Другие файлы */}
                 <Box
                   sx={{
                     width: `${otherPct}%`,
@@ -513,17 +511,13 @@ export const StatisticCard = ({ cardStyle }) => {
                     borderLeft: "1px solid rgba(255,255,255,0.2)",
                   }}
                 />
-                {/* Доступно (остаток полоски — автоматически прозрачный/фон) */}
               </Box>
 
-              {/* ЛЕГЕНДА С ДВУХСТРОЧНОЙ ПОДПИСЬЮ */}
               <Grid container spacing={2}>
-                {/* Библиотека */}
                 <Grid item xs={4}>
                   <Stack direction="row" spacing={1}>
                     <Box
                       sx={{
-                        // alignItems: "center",
                         width: 10,
                         height: 10,
                         borderRadius: "2px",
@@ -546,13 +540,10 @@ export const StatisticCard = ({ cardStyle }) => {
                       </Typography>
                       <Typography variant="body2" sx={{ fontWeight: 800 }}>
                         {formatStorage(library)}
-                        {console.log(library)}
                       </Typography>
                     </Box>
                   </Stack>
                 </Grid>
-
-                {/* Другое */}
                 <Grid item xs={4}>
                   <Stack direction="row" spacing={1}>
                     <Box
@@ -583,8 +574,6 @@ export const StatisticCard = ({ cardStyle }) => {
                     </Box>
                   </Stack>
                 </Grid>
-
-                {/* Доступно */}
                 <Grid item xs={4}>
                   <Stack direction="row" spacing={1}>
                     <Box
@@ -627,17 +616,11 @@ export const StatisticCard = ({ cardStyle }) => {
 
             <Divider sx={{ borderStyle: "dashed" }} />
 
-            {/* 2. ПОДРОБНАЯ СТАТИСТИКА (ИЗ МОДАЛКИ) */}
-            <Grid container spacing={9} justifyContent={"center"}>
-              {/* Секция МЕДИА */}
+            <Grid container spacing={2}>
               <Grid item xs={12} sm={6}>
                 <Typography
                   variant="overline"
-                  sx={{
-                    fontWeight: 900,
-                    color: "primary.main",
-                    ml: 1,
-                  }}
+                  sx={{ fontWeight: 900, color: "primary.main", ml: 1 }}
                 >
                   Медиа файлы
                 </Typography>
@@ -674,16 +657,10 @@ export const StatisticCard = ({ cardStyle }) => {
                   />
                 </List>
               </Grid>
-
-              {/* Секция ДАННЫЕ */}
               <Grid item xs={12} sm={6}>
                 <Typography
                   variant="overline"
-                  sx={{
-                    fontWeight: 900,
-                    color: "secondary.main",
-                    ml: 1,
-                  }}
+                  sx={{ fontWeight: 900, color: "secondary.main", ml: 1 }}
                 >
                   Инфо и БД
                 </Typography>
@@ -727,15 +704,16 @@ export const StatisticCard = ({ cardStyle }) => {
 
             <Divider />
 
-            {/* 3. КНОПКИ ДЕЙСТВИЙ */}
-            <Stack direction="row" spacing={2}>
+            <Stack direction="row" spacing={2} justifyContent={"space-evenly"}>
               <Button
-                fullWidth
+                // fullWidth
                 variant="contained"
                 startIcon={<SaveIcon />}
                 onClick={handleExportAll}
                 sx={{
-                  borderRadius: 2,
+                  height: 24,
+                  borderRadius: "6px",
+                  px: 3,
                   py: 1,
                   boxShadow: "none",
                   fontWeight: "bold",
@@ -744,145 +722,553 @@ export const StatisticCard = ({ cardStyle }) => {
                 Бэкап
               </Button>
               <Button
-                fullWidth
+                // fullWidth
                 variant="outlined"
                 startIcon={<RestoreIcon />}
                 onClick={handleImportAll}
-                sx={{ borderRadius: 2, py: 1, fontWeight: "bold" }}
+                sx={{
+                  height: 24,
+                  borderRadius: "6px",
+                  px: 3,
+                  py: 1,
+                  fontWeight: "bold",
+                }}
               >
                 Импорт
               </Button>
             </Stack>
           </Stack>
-        </Box>
-      </Card>
+        )}
 
-      {/* //------------   Backdrop  -------------- */}
-      <Backdrop
-        open={isSaving}
-        sx={{ zIndex: 3000, color: "#fff", flexDirection: "column", p: 3 }}
-      >
-        {exportError ? (
-          <Box sx={{ textAlign: "center" }}>
-            <ErrorIcon sx={{ fontSize: 60, color: "red", mb: 2 }} />
-            <Typography variant="h6">{exportStatus}</Typography>
-            <Button
-              variant="contained"
-              sx={{ mt: 3 }}
-              onClick={() => setIsSaving(false)}
-            >
-              Закрыть
-            </Button>
-          </Box>
-        ) : saveDone ? (
-          <Box sx={{ textAlign: "center" }}>
-            <CheckCircleIcon sx={{ fontSize: 60, color: "limegreen", mb: 2 }} />
-            <Typography variant="h6">Успешно выполнено!</Typography>
-            <Typography variant="body2" sx={{ opacity: 0.8, mt: 1 }}>
-              {exportPath}
-            </Typography>
-            <Button
-              variant="contained"
-              sx={{ mt: 3 }}
-              onClick={() => setIsSaving(false)}
-            >
-              Закрыть
-            </Button>
-          </Box>
-        ) : (
-          <Box sx={{ width: "100%", maxWidth: 450, textAlign: "center" }}>
-            <CircularProgress color="inherit" sx={{ mb: 2 }} />
-            <Typography variant="h6" gutterBottom>
-              {exportStatus}
-            </Typography>
-
-            <LinearProgress
-              variant="determinate"
-              value={percentValue}
-              sx={{ height: 10, borderRadius: 5 }}
-            />
-
-            <Stack
-              direction="row"
-              justifyContent="space-between"
-              sx={{ mt: 1 }}
-            >
-              <Typography variant="caption">
-                {archiveProgress.phase.startsWith("writing")
-                  ? `Сжатие и упаковка: ${archiveProgress.processedFiles || 0} из ${archiveProgress.totalFiles || 0}`
-                  : `${archiveProgress.currentOwner} `}
-              </Typography>
-
-              <Typography variant="caption" sx={{ fontWeight: "bold" }}>
-                {percentValue}%
-              </Typography>
-            </Stack>
-
-            {archiveProgress.currentFile && (
-              <Typography
-                variant="caption"
+        {/* --- ВИД: ПРОЦЕСС ЭКСПОРТА --- */}
+        {showExportProcess && (
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: "column",
+              flexGrow: 1,
+              justifyContent: "center",
+              py: 2,
+              px: 1,
+            }}
+          >
+            {exportError ? (
+              /* --- СОСТОЯНИЕ: ОШИБКА (Красный градиент) --- */
+              <Box
                 sx={{
-                  display: "block",
-                  mt: 1,
-                  opacity: 0.6,
-                  whiteSpace: "nowrap",
+                  p: 3,
+                  borderRadius: 4,
+                  background: `linear-gradient(135deg, ${theme.palette.error.main} 0%, ${theme.palette.error.dark} 100%)`,
+                  color: "error.contrastText",
+                  boxShadow: `0 12px 32px ${alpha(theme.palette.error.main, 0.3)}`,
+                  textAlign: "center",
+                  position: "relative",
                   overflow: "hidden",
-                  textOverflow: "ellipsis",
                 }}
               >
-                {archiveProgress.currentFile}
-              </Typography>
+                <ErrorIcon sx={{ fontSize: 64, mb: 2, opacity: 0.9 }} />
+                <Typography variant="h6" fontWeight={900} gutterBottom>
+                  Ошибка экспорта
+                </Typography>
+                <Typography
+                  variant="body2"
+                  sx={{ mb: 3, opacity: 0.8, fontWeight: 500 }}
+                >
+                  {exportStatus}
+                </Typography>
+                <Button
+                  variant="contained"
+                  onClick={() => {
+                    setIsSaving(false);
+                    setExportError(false);
+                  }}
+                  sx={{
+                    bgcolor: "common.white",
+                    color: "error.main",
+                    fontWeight: 700,
+                    "&:hover": {
+                      bgcolor: alpha(theme.palette.common.white, 0.9),
+                    },
+                  }}
+                >
+                  Вернуться
+                </Button>
+              </Box>
+            ) : saveDone ? (
+              /* --- СОСТОЯНИЕ: УСПЕХ (Зеленый градиент) --- */
+              <Box
+                sx={{
+                  p: 3,
+                  borderRadius: 4,
+                  background: `linear-gradient(135deg, ${theme.palette.success.main} 0%, ${theme.palette.success.dark} 100%)`,
+                  color: "success.contrastText",
+                  boxShadow: `0 12px 32px ${alpha(theme.palette.success.main, 0.3)}`,
+                  textAlign: "center",
+                  position: "relative",
+                  overflow: "hidden",
+                }}
+              >
+                <CheckCircleIcon sx={{ fontSize: 64, mb: 2, opacity: 0.9 }} />
+                <Typography variant="h6" fontWeight={900} gutterBottom>
+                  Бэкап готов
+                </Typography>
+                <Typography
+                  variant="caption"
+                  sx={{
+                    display: "block",
+                    mb: 3,
+                    opacity: 0.8,
+                    wordBreak: "break-all",
+                    fontFamily: "Monospace",
+                    bgcolor: alpha(theme.palette.common.black, 0.1),
+                    p: 1,
+                    borderRadius: 1,
+                  }}
+                >
+                  {exportPath}
+                </Typography>
+                <Button
+                  variant="contained"
+                  fullWidth
+                  onClick={() => {
+                    setIsSaving(false);
+                    setSaveDone(false);
+                  }}
+                  sx={{
+                    bgcolor: "common.white",
+                    color: "success.dark",
+                    fontWeight: 700,
+                    py: 1.2,
+                    "&:hover": {
+                      bgcolor: alpha(theme.palette.common.white, 0.9),
+                    },
+                  }}
+                >
+                  Готово
+                </Button>
+              </Box>
+            ) : (
+              /* --- СОСТОЯНИЕ: ПРОЦЕСС (Твой новый синий стиль) --- */
+              <Box sx={{ width: "100%" }}>
+                {/* Заголовок процесса */}
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 2,
+                    mb: 3,
+                    px: 1,
+                  }}
+                >
+                  <Box sx={{ position: "relative", display: "flex" }}>
+                    <CircularProgress
+                      size={42}
+                      thickness={3}
+                      sx={{
+                        color: "primary.main",
+                        position: "absolute",
+                        zIndex: 1,
+                      }}
+                    />
+                    <Box
+                      sx={{
+                        width: 42,
+                        height: 42,
+                        borderRadius: "12px",
+                        bgcolor: alpha(theme.palette.primary.main, 0.1),
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <SaveIcon color="primary" fontSize="small" />
+                    </Box>
+                  </Box>
+                  <Box>
+                    <Typography
+                      variant="subtitle1"
+                      fontWeight={900}
+                      lineHeight={1.1}
+                    >
+                      Экспорт данных
+                    </Typography>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      fontWeight={600}
+                    >
+                      {exportStatus}
+                    </Typography>
+                  </Box>
+                </Box>
+                {/* Основная карточка прогресса */}
+                <Box
+                  sx={{
+                    p: 3,
+                    borderRadius: 4,
+                    background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
+                    color: "primary.contrastText",
+                    boxShadow: `0 12px 32px ${alpha(theme.palette.primary.main, 0.35)}`,
+                    position: "relative",
+                    overflow: "hidden",
+                    border: `1px solid ${alpha(theme.palette.common.white, 0.1)}`,
+                  }}
+                >
+                  {/* Анимация блика */}
+                  <Box
+                    sx={{
+                      position: "absolute",
+                      top: 0,
+                      left: 0,
+                      width: "50%",
+                      height: "100%",
+                      background: `linear-gradient(to right, transparent, ${alpha(theme.palette.common.white, 0.15)}, transparent)`,
+                      animation: `${shimmer} 3s infinite ease-in-out`,
+                      zIndex: 0,
+                    }}
+                  />
+
+                  <Stack
+                    direction="row"
+                    justifyContent="space-between"
+                    alignItems="flex-end"
+                    sx={{ mb: 2, position: "relative", zIndex: 1 }}
+                  >
+                    <Box>
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          opacity: 0.7,
+                          fontWeight: 800,
+                          textTransform: "uppercase",
+                          letterSpacing: 1.5,
+                          fontSize: "0.65rem",
+                        }}
+                      >
+                        {archiveProgress.phase.startsWith("writing")
+                          ? "Сжатие и упаковка"
+                          : "Подготовка файлов"}
+                      </Typography>
+
+                      <Box
+                        sx={{
+                          display: "flex",
+                          alignItems: "baseline",
+                          mt: 0.5,
+                        }}
+                      >
+                        <Typography
+                          variant="h4"
+                          sx={{ fontWeight: 900, lineHeight: 1 }}
+                        >
+                          {(
+                            archiveProgress.processedFiles || 0
+                          ).toLocaleString()}
+                        </Typography>
+                        <Typography
+                          sx={{
+                            fontWeight: 700,
+                            fontSize: "1rem",
+                            opacity: 0.5,
+                            ml: 1,
+                          }}
+                        >
+                          / {(archiveProgress.totalFiles || 0).toLocaleString()}
+                        </Typography>
+                      </Box>
+                    </Box>
+
+                    <Typography
+                      variant="h2"
+                      sx={{
+                        fontWeight: 900,
+                        lineHeight: 0.8,
+                        letterSpacing: -2,
+                        color: "common.white",
+                        textShadow: `0 4px 12px ${alpha(theme.palette.common.black, 0.2)}`,
+                      }}
+                    >
+                      {exportPercent}
+                      <span style={{ fontSize: "1.5rem", opacity: 0.8 }}>
+                        %
+                      </span>
+                    </Typography>
+                  </Stack>
+
+                  <Box sx={{ position: "relative", zIndex: 1, mb: 2 }}>
+                    <LinearProgress
+                      variant="determinate"
+                      value={exportPercent}
+                      sx={{
+                        height: 10,
+                        borderRadius: 5,
+                        bgcolor: alpha(theme.palette.common.black, 0.2),
+                        "& .MuiLinearProgress-bar": {
+                          borderRadius: 5,
+                          bgcolor: "common.white",
+                          boxShadow: `0 0 10px ${alpha(theme.palette.common.white, 0.5)}`,
+                        },
+                      }}
+                    />
+                  </Box>
+
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      display: "block",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                      fontWeight: 600,
+                      opacity: 0.7,
+                      position: "relative",
+                      zIndex: 1,
+                    }}
+                  >
+                    {archiveProgress.currentFile ||
+                      archiveProgress.currentOwner ||
+                      "Инициализация..."}
+                  </Typography>
+                </Box>
+              </Box>
             )}
           </Box>
         )}
-      </Backdrop>
 
-      <Backdrop
-        // ОТКРЫВАЕМ только если идет импорт И НЕ открыто окно подтверждения конфликтов
-        open={isImportingOpen && !importConfirmOpen}
-        sx={{
-          color: "#fff",
-          zIndex: (theme) => theme.zIndex.drawer + 1,
-          flexDirection: "column",
-          p: 3,
-          backdropFilter: "blur(4px)",
-        }}
-      >
-        {isImporting ? (
-          <>
-            <CircularProgress color="inherit" sx={{ mb: 2 }} />
-            <Typography variant="h6">{importStatus}</Typography>
-            <Box sx={{ width: "100%", maxWidth: 400, mt: 2 }}>
-              <LinearProgress
-                variant="determinate"
-                value={Math.round(
-                  (importProgress.current / Math.max(1, importProgress.total)) *
-                    100,
-                )}
-              />
-              <Typography
-                variant="caption"
-                sx={{ mt: 1, display: "block", textAlign: "center" }}
-              >
-                Обработано: {importProgress.current} из {importProgress.total}
-              </Typography>
-            </Box>
-          </>
-        ) : (
-          // Это состояние покажется, когда импорт полностью завершен (isImporting: false)
-          <Box sx={{ textAlign: "center" }}>
-            <CheckCircleIcon sx={{ fontSize: 60, color: "limegreen", mb: 2 }} />
-            <Typography variant="h6">Архив успешно восстановлен!</Typography>
-            <Button
-              variant="contained"
-              sx={{ mt: 3 }}
-              onClick={() => setIsImportingOpen(false)}
-            >
-              Закрыть
-            </Button>
+        {/* --- ВИД: ПРОЦЕСС ИМПОРТА --- */}
+        {showImportProcess && (
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: "column",
+              flexGrow: 1,
+              justifyContent: "center",
+              py: 2,
+              px: 1,
+            }}
+          >
+            {importError ? (
+              <Box sx={{ textAlign: "center" }}>
+                <ErrorIcon sx={{ fontSize: 48, color: "error.main", mb: 2 }} />
+                <Typography variant="subtitle1" fontWeight={700} gutterBottom>
+                  Ошибка импорта
+                </Typography>
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ mb: 3 }}
+                >
+                  {importStatus}
+                </Typography>
+                <Button
+                  variant="outlined"
+                  onClick={() => {
+                    setIsImportingOpen(false);
+                    setImportError(false);
+                  }}
+                >
+                  Вернуться
+                </Button>
+              </Box>
+            ) : isImporting ? (
+              <Box sx={{ width: "100%" }}>
+                {/* Иконка и текущий статус */}
+                <Box
+                  sx={{ display: "flex", alignItems: "center", gap: 2, mb: 4 }}
+                >
+                  <Box sx={{ position: "relative", display: "flex" }}>
+                    <CircularProgress
+                      size={48}
+                      thickness={2}
+                      sx={{
+                        color: "success.main",
+                        position: "absolute",
+                        zIndex: 1,
+                      }}
+                    />
+                    <Box
+                      sx={{
+                        width: 48,
+                        height: 48,
+                        borderRadius: 3,
+                        bgcolor: alpha(theme.palette.success.main, 0.1),
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <RestoreIcon color="success" />
+                    </Box>
+                  </Box>
+                  <Box>
+                    <Typography
+                      variant="subtitle1"
+                      fontWeight={800}
+                      lineHeight={1.2}
+                    >
+                      Восстановление данных
+                    </Typography>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{ fontWeight: 600 }}
+                    >
+                      {importStatus || "Чтение архива..."}
+                    </Typography>
+                  </Box>
+                </Box>
+                <Box
+                  sx={{
+                    p: 3,
+                    borderRadius: 4, // Чуть больше скругление для мягкости
+                    background: `linear-gradient(135deg, ${theme.palette.success.main} 0%, ${theme.palette.success.dark} 100%)`,
+                    color: "primary.contrastText",
+                    boxShadow: `0 12px 32px ${alpha(theme.palette.success.main, 0.35)}`,
+                    position: "relative",
+                    overflow: "hidden",
+                    border: `1px solid ${alpha(theme.palette.common.white, 0.1)}`, // Тонкая граница для эффекта стекла
+                  }}
+                >
+                  {/* Улучшенный декоративный блеск */}
+                  <Box
+                    sx={{
+                      position: "absolute",
+                      top: 0,
+                      left: 0,
+                      width: "50%",
+                      height: "100%",
+                      background: `linear-gradient(to right, transparent, ${alpha(theme.palette.common.white, 0.15)}, transparent)`,
+                      animation: `${shimmer} 4s infinite ease-in-out`,
+                      zIndex: 0,
+                    }}
+                  />
+
+                  <Stack
+                    direction="row"
+                    justifyContent="space-between"
+                    alignItems="flex-end"
+                    sx={{ mb: 2, position: "relative", zIndex: 1 }}
+                  >
+                    <Box>
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          opacity: 0.7,
+                          fontWeight: 800,
+                          textTransform: "uppercase",
+                          letterSpacing: 1.5,
+                          fontSize: "0.65rem",
+                          display: "block",
+                          mb: 0.5,
+                        }}
+                      >
+                        Идет распаковка архива
+                      </Typography>
+
+                      <Box sx={{ display: "flex", alignItems: "baseline" }}>
+                        <Typography
+                          variant="h4"
+                          sx={{ fontWeight: 900, lineHeight: 1 }}
+                        >
+                          {importProgress.current.toLocaleString()}
+                        </Typography>
+                        <Typography
+                          sx={{
+                            fontWeight: 700,
+                            fontSize: "1rem",
+                            opacity: 0.5,
+                            ml: 1,
+                          }}
+                        >
+                          / {importProgress.total.toLocaleString()}
+                        </Typography>
+                      </Box>
+                    </Box>
+
+                    <Box sx={{ textAlign: "right" }}>
+                      <Typography
+                        variant="h2" // Еще крупнее для акцента
+                        sx={{
+                          fontWeight: 900,
+                          lineHeight: 0.8,
+                          letterSpacing: -2,
+                          // Вместо зеленого используем белый с небольшим свечением
+                          color: theme.palette.common.white,
+                          textShadow: `0 4px 12px ${alpha(theme.palette.common.black, 0.2)}`,
+                        }}
+                      >
+                        {progressValue}
+                        <span style={{ fontSize: "1.5rem", opacity: 0.8 }}>
+                          %
+                        </span>
+                      </Typography>
+                    </Box>
+                  </Stack>
+
+                  {/* Кастомный прогресс-бар с внутренним свечением */}
+                  <Box sx={{ position: "relative", zIndex: 1 }}>
+                    <LinearProgress
+                      variant="determinate"
+                      value={progressValue}
+                      sx={{
+                        height: 10,
+                        borderRadius: 5,
+                        bgcolor: alpha(theme.palette.common.black, 0.2), // Темная подложка
+                        "& .MuiLinearProgress-bar": {
+                          borderRadius: 5,
+                          bgcolor: theme.palette.common.white, // Белый бар на синем фоне — классика Apple/macOS
+                          boxShadow: `0 0 10px ${alpha(theme.palette.common.white, 0.5)}`, // Мягкое свечение самого бара
+                        },
+                      }}
+                    />
+                  </Box>
+
+                  {/* Фоновая иконка для контекста (опционально) */}
+                  <Box
+                    sx={{
+                      position: "absolute",
+                      right: -10,
+                      bottom: -10,
+                      opacity: 0.05,
+                      transform: "rotate(-15deg)",
+                      zIndex: 0,
+                    }}
+                  >
+                    <Box sx={{ fontSize: 120, fontWeight: 900 }}>ZIP</Box>
+                  </Box>
+                </Box>
+              </Box>
+            ) : (
+              <Box sx={{ textAlign: "center" }}>
+                <CheckCircleIcon
+                  sx={{ fontSize: 48, color: "success.main", mb: 2 }}
+                />
+                <Typography variant="subtitle1" fontWeight={700} gutterBottom>
+                  Архив успешно восстановлен!
+                </Typography>
+                <Button
+                  variant="contained"
+                  disableElevation
+                  sx={{ mt: 3 }}
+                  onClick={() => setIsImportingOpen(false)}
+                >
+                  Готово
+                </Button>
+              </Box>
+            )}
           </Box>
         )}
-      </Backdrop>
-    </>
+
+        {/* 4. ВИД: ПРИНЯТИЕ РЕШЕНИЯ ОБ ИМПОРТЕ (ВМЕСТО МОДАЛКИ) */}
+        {showImportDecision && (
+          <ImportDecisionInline
+            summary={`Найдено конфликтов: ${confirmConflicts.length}`}
+            toAdd={modalToAdd}
+            toUpdate={confirmConflicts.map((id) => ({ id }))}
+            onSelect={handleImportDecision}
+          />
+        )}
+      </Box>
+    </Card>
   );
 };

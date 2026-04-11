@@ -7,10 +7,6 @@ import {
   TextField,
   Autocomplete,
   Stack,
-  // Select,
-  // MenuItem,
-  // InputLabel,
-  // FormControl,
   FormControlLabel,
   Checkbox,
   Typography,
@@ -21,13 +17,14 @@ import {
 import { useNotificationStore } from "../../store/useNotificationStore";
 import { alpha, useTheme } from "@mui/material/styles";
 import CloseIcon from "@mui/icons-material/Close";
-import AddPhotoAlternateIcon from "@mui/icons-material/AddPhotoAlternate";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import EditIcon from "@mui/icons-material/Edit";
 import PersonIcon from "@mui/icons-material/Person";
 import heic2any from "heic2any";
 import CustomDatePickerDialog from "../../components/CustomDatePickerDialog";
 import HashtagInput from "../../components/HashtagInput";
+import PhotoBadgePlusIcon from "../svg/PhotoBadgePlusIcon";
+import ExifReader from "exifreader";
 
 export default function PhotoUploadDialog({
   open,
@@ -74,6 +71,9 @@ export default function PhotoUploadDialog({
   // Загрузка списка тегов
   const [uniqueTags, setUniqueTags] = useState([]);
 
+  const [lat, setLat] = useState(null);
+  const [lng, setLng] = useState(null);
+
   useEffect(() => {
     if (open) {
       window.photoAPI.getGlobalHashtags().then(setUniqueTags);
@@ -95,8 +95,52 @@ export default function PhotoUploadDialog({
       setAspectRatio("4/3");
       setConvertedArrayBuffer(null);
       setDragCounter(0);
+      setLat(null);
+      setLng(null);
     }
   }, [open, keepOpen]);
+
+  // Конвертация координат EXIF в десятичный формат (Decimal Degrees)
+  // const convertToDecimal = (ref, coords) => {
+  //   if (!coords) return null;
+  //   const degrees = coords[0].numerator / coords[0].denominator;
+  //   const minutes = coords[1].numerator / coords[1].denominator;
+  //   const seconds = coords[2].numerator / coords[2].denominator;
+
+  //   let decimal = degrees + minutes / 60 + seconds / 3600;
+  //   if (ref === "S" || ref === "W") decimal = -decimal;
+  //   return decimal;
+  // };
+
+  // Извлечение данных из файла
+  const extractExifData = async (input) => {
+    try {
+      let buffer;
+
+      // Проверяем: если это файл/blob — достаем буфер, если уже буфер — берем как есть
+      if (input instanceof Blob || input instanceof File) {
+        buffer = await input.arrayBuffer();
+      } else {
+        buffer = input;
+      }
+
+      const tags = ExifReader.load(buffer);
+      console.log("Все найденные теги:", tags);
+
+      if (tags["DateTimeOriginal"]) {
+        const dateStr = tags["DateTimeOriginal"].description;
+        const datePart = dateStr.split(" ")[0].replace(/:/g, "-");
+        setDatePhoto(datePart);
+      }
+
+      if (tags["GPSLatitude"] && tags["GPSLongitude"]) {
+        setLat(tags["GPSLatitude"].description);
+        setLng(tags["GPSLongitude"].description);
+      }
+    } catch (error) {
+      console.warn("Метаданные не найдены:", error.message);
+    }
+  };
 
   // === 1) Выбор через кнопку ===
   const handleFileSelect = async () => {
@@ -105,28 +149,28 @@ export default function PhotoUploadDialog({
 
     setConvertedArrayBuffer(null);
     const raw = result.path.replace(/^file:\/\//, "");
-    const ext = raw.split(".").pop().toLowerCase();
 
+    // 1. Сначала читаем EXIF из оригинального файла (неважно, HEIC это или JPG)
+    const response = await fetch(`file://${raw}`);
+    const blob = await response.blob();
+    await extractExifData(blob);
+
+    const ext = raw.split(".").pop().toLowerCase();
     let previewUrl = "";
 
     if (ext === "heic") {
       try {
-        const blobOrig = await fetch(`file://${raw}`).then((r) => r.blob());
-        const ab = await heic2any({
-          blob: blobOrig,
-          toType: "image/jpeg",
-          toArrayBuffer: true,
-        });
-        setConvertedArrayBuffer(ab);
+        // 2. Конвертируем на бэкенде
+        const ab = await window.photoAPI.convertHeic(raw);
+        setConvertedArrayBuffer(ab); // Это ArrayBuffer
 
-        const blob = new Blob([ab], { type: "image/jpeg" });
-        previewUrl = URL.createObjectURL(blob);
+        const previewBlob = new Blob([ab], { type: "image/jpeg" });
+        previewUrl = URL.createObjectURL(previewBlob);
 
         setFilename(result.filename.replace(/\.heic$/i, ".jpg"));
         setFilePath(null);
       } catch (err) {
-        console.error("HEIC→JPEG ошибка:", err);
-        alert("❌ Не удалось конвертировать .heic файл.");
+        console.error("Ошибка HEIC:", err);
         return;
       }
     } else {
@@ -136,15 +180,20 @@ export default function PhotoUploadDialog({
     }
 
     setPreview(previewUrl);
+    updateAspectRatio(previewUrl);
+  };
 
+  // Вспомогательная функция для Aspect Ratio (чтобы не дублировать код)
+  const updateAspectRatio = (url) => {
     const img = new Image();
     img.onload = () => {
       const r = img.width / img.height;
       setAspectRatio(r < 0.9 ? "3/4" : r > 1.3 ? "4/3" : "1/1");
     };
-    img.src = previewUrl;
+    img.src = url;
   };
 
+  // === 2) Drag & Drop ===
   // === 2) Drag & Drop ===
   const onDrop = async (e) => {
     e.preventDefault();
@@ -152,6 +201,8 @@ export default function PhotoUploadDialog({
 
     const file = e.dataTransfer.files?.[0];
     if (!file) return;
+
+    await extractExifData(file);
 
     const ext = file.name.split(".").pop().toLowerCase();
     const allowed = ["jpg", "jpeg", "png", "webp", "heic"];
@@ -167,37 +218,36 @@ export default function PhotoUploadDialog({
 
     if (ext === "heic") {
       try {
-        const ab = await heic2any({
-          blob: file,
-          toType: "image/jpeg",
-          toArrayBuffer: true,
-        });
-        setConvertedArrayBuffer(ab);
+        // Читаем файл в память прямо здесь (как делала heic2any)
+        const fileBuffer = await file.arrayBuffer();
 
-        const blob = new Blob([ab], { type: "image/jpeg" });
-        previewUrl = URL.createObjectURL(blob);
+        // Отправляем буфер на бэкенд вместо пути
+        const ab = await window.photoAPI.convertHeic(fileBuffer);
+
+        setConvertedArrayBuffer(ab);
+        const previewBlob = new Blob([ab], { type: "image/jpeg" });
+        previewUrl = URL.createObjectURL(previewBlob);
         name = file.name.replace(/\.heic$/i, ".jpg");
+        pathOnDisk = null;
       } catch (err) {
         console.error(err);
-        alert("❌ Не удалось конвертировать .heic файл.");
+        alert("❌ Ошибка конвертации HEIC.");
         return;
       }
     } else {
       previewUrl = URL.createObjectURL(file);
       name = file.name;
-      pathOnDisk = file.path;
+
+      // Вместо пути читаем сам файл в ArrayBuffer
+      const ab = await file.arrayBuffer();
+      setConvertedArrayBuffer(ab);
+      pathOnDisk = null; // Путь больше не нужен
     }
 
     setPreview(previewUrl);
     setFilename(name);
-    setFilePath(pathOnDisk);
-
-    const img = new Image();
-    img.onload = () => {
-      const r = img.width / img.height;
-      setAspectRatio(r < 0.9 ? "3/4" : r > 1.3 ? "4/3" : "1/1");
-    };
-    img.src = previewUrl;
+    setFilePath(pathOnDisk); // Для HEIC передаст null, для JPG - путь
+    updateAspectRatio(previewUrl);
   };
 
   // === 3) Сохранение ===
@@ -207,6 +257,7 @@ export default function PhotoUploadDialog({
         title: "Ошибка",
         message: "Сначала выберите файл.",
         type: "warning",
+        category: "photo",
       });
       return;
     }
@@ -218,6 +269,7 @@ export default function PhotoUploadDialog({
         title: "Ошибка",
         message: "Выберите владельца фото.",
         type: "warning",
+        category: "photo",
       });
       return;
     }
@@ -246,14 +298,21 @@ export default function PhotoUploadDialog({
         date: new Date().toISOString().split("T")[0],
         datePhoto: datePhoto,
         aspectRatio: aspectRatio,
+        lat: lat, // новое
+        lng: lng, // новое
       };
 
       let newPhoto = null;
 
       if (convertedArrayBuffer) {
+        // Оборачиваем готовый буфер в Blob, чтобы preload.js не ругался на отсутствие метода .arrayBuffer()
+        const blobForSaving = new Blob([convertedArrayBuffer], {
+          type: "image/jpeg",
+        });
+
         newPhoto = await window.photoAPI.saveBlobFile(
           meta,
-          convertedArrayBuffer,
+          blobForSaving,
           filename,
         );
       } else if (filePath) {
@@ -267,6 +326,7 @@ export default function PhotoUploadDialog({
           title: "Фото добавлено",
           message: `Файл "${filename}" успешно сохранен.`,
           type: "success",
+          category: "photo",
         });
 
         if (onPhotoAdded) onPhotoAdded(newPhoto);
@@ -282,6 +342,8 @@ export default function PhotoUploadDialog({
           setAspectRatio("4/3");
           setConvertedArrayBuffer(null);
           setDragCounter(0);
+          setLat(null);
+          setLng(null);
         } else {
           onClose();
         }
@@ -294,6 +356,7 @@ export default function PhotoUploadDialog({
         title: "Ошибка сохранения",
         message: err.message || "Не удалось сохранить фото",
         type: "error",
+        category: "photo",
       });
     } finally {
       setSaving(false);
@@ -348,7 +411,7 @@ export default function PhotoUploadDialog({
               display: "flex",
             }}
           >
-            <AddPhotoAlternateIcon />
+            <PhotoBadgePlusIcon />
           </Box>
           <Typography variant="h6" sx={{ fontWeight: 700 }}>
             Добавление фотографии
@@ -416,13 +479,15 @@ export default function PhotoUploadDialog({
               >
                 <Box
                   sx={{
-                    p: 2,
+                    px: 2,
+                    pt: 1.8,
+                    pb: 1.4,
                     borderRadius: "50%",
                     bgcolor: alpha(theme.palette.primary.main, 0.05),
                     mb: 2,
                   }}
                 >
-                  <AddPhotoAlternateIcon
+                  <PhotoBadgePlusIcon
                     sx={{ fontSize: 40, color: theme.palette.primary.main }}
                   />
                 </Box>
@@ -708,13 +773,27 @@ export default function PhotoUploadDialog({
         <Button
           onClick={onClose}
           sx={{
-            borderRadius: "12px",
-            px: 3,
+            height: 24,
+            borderRadius: "6px",
+            py: 1.2,
+            px: 2,
             textTransform: "none",
             fontWeight: 600,
+            fontSize: "0.95rem",
+            color: "text.primary",
+            bgcolor: (theme) =>
+              theme.palette.mode === "dark"
+                ? "rgba(255,255,255,0.05)"
+                : "rgba(0,0,0,0.05)",
+            "&:hover": {
+              bgcolor: (theme) =>
+                theme.palette.mode === "dark"
+                  ? "rgba(255,255,255,0.1)"
+                  : "rgba(0,0,0,0.1)",
+            },
           }}
         >
-          Отмена
+          Отменить
         </Button>
         <Button
           variant="contained"
@@ -722,8 +801,9 @@ export default function PhotoUploadDialog({
           disabled={isSaveDisabled}
           disableElevation
           sx={{
-            borderRadius: "12px",
-            px: 5,
+            height: 24,
+            borderRadius: "6px",
+            px: 2,
             py: 1.2,
             textTransform: "none",
             fontWeight: 700,
@@ -736,7 +816,7 @@ export default function PhotoUploadDialog({
           {saving ? (
             <CircularProgress size={22} color="inherit" />
           ) : (
-            "Сохранить фото"
+            "Сохранить"
           )}
         </Button>
       </DialogActions>

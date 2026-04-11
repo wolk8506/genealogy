@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef, useCallback } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import {
   Dialog,
   DialogContent,
@@ -11,10 +11,6 @@ import {
   CircularProgress,
   Typography,
   IconButton,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
   Divider,
 } from "@mui/material";
 import { alpha } from "@mui/material/styles";
@@ -52,6 +48,7 @@ export default function PhotoMetaUpdateDialog({
     people: [],
     filename: "",
     aspectRatio: "4/3",
+    locationName: null,
   });
 
   const [rename, setRename] = useState(false);
@@ -74,6 +71,7 @@ export default function PhotoMetaUpdateDialog({
         people: meta.people ? [...meta.people] : [],
         filename: meta.filename ?? "",
         aspectRatio: meta.aspectRatio ?? "4/3",
+        locationName: meta.locationName || "",
       };
       setLocal(data);
       setNewFilename(meta.filename ?? "");
@@ -151,11 +149,13 @@ export default function PhotoMetaUpdateDialog({
           finalFilename,
         );
       }
-
+      // Подготавливаем locationName: если строка пустая, сохраняем как null
+      const finalLocation = local.locationName?.trim() || null;
       // 2. Сборка объекта (сохраняем всё, что было в meta + новые поля)
       const updatedEntry = {
         ...meta,
         ...local,
+        locationName: finalLocation,
         filename: finalFilename,
         hashtags: extractedHashtags,
       };
@@ -193,6 +193,7 @@ export default function PhotoMetaUpdateDialog({
         title: "Фото",
         message: `Обновлено фото ID: ${updatedEntry.id ?? null}. \nВладелец ID: ${updatedEntry.owner ?? ""}. \nИмя файла: ${updatedEntry?.filename ?? ""} `,
         type: "success",
+        category: "photo",
       });
     } catch (e) {
       console.error("Save failed", e);
@@ -202,6 +203,7 @@ export default function PhotoMetaUpdateDialog({
         title: "Фото",
         message: "Ошибка: " + (e.message || e),
         type: "error",
+        category: "photo",
       });
     } finally {
       setSaving(false);
@@ -429,28 +431,18 @@ export default function PhotoMetaUpdateDialog({
                     ),
                   }}
                 />
-
-                {/* <FormControl
-                  size="small"
-                  variant="outlined"
-                  sx={{ minWidth: 140 }}
-                >
-                  <InputLabel>Формат</InputLabel>
-                  <Select
-                    value={local.aspectRatio}
-                    label="Формат"
-                    onChange={(e) =>
-                      setLocal((s) => ({ ...s, aspectRatio: e.target.value }))
-                    }
-                    sx={{ borderRadius: "12px" }}
-                  >
-                    <MenuItem value="4/3">4:3</MenuItem>
-                    <MenuItem value="1/1">1:1</MenuItem>
-                    <MenuItem value="3/4">3:4</MenuItem>
-                    <MenuItem value="16/9">16:9</MenuItem>
-                  </Select>
-                </FormControl> */}
               </Stack>
+
+              <TextField
+                label="Геометка"
+                fullWidth
+                variant="outlined"
+                value={local.locationName || ""}
+                onChange={(e) =>
+                  setLocal((s) => ({ ...s, locationName: e.target.value }))
+                }
+                InputProps={{ sx: { borderRadius: "12px" } }}
+              />
 
               {/* Секция: Системное (Имя файла) */}
               <Box
@@ -516,13 +508,27 @@ export default function PhotoMetaUpdateDialog({
         <Button
           onClick={onClose}
           sx={{
-            borderRadius: "12px",
+            height: 24,
+            borderRadius: "6px",
+            py: 1.2,
             px: 3,
-            fontWeight: 600,
             textTransform: "none",
+            fontWeight: 600,
+            fontSize: "0.95rem",
+            color: "text.primary",
+            bgcolor: (theme) =>
+              theme.palette.mode === "dark"
+                ? "rgba(255,255,255,0.05)"
+                : "rgba(0,0,0,0.05)",
+            "&:hover": {
+              bgcolor: (theme) =>
+                theme.palette.mode === "dark"
+                  ? "rgba(255,255,255,0.1)"
+                  : "rgba(0,0,0,0.1)",
+            },
           }}
         >
-          Отмена
+          Отменить
         </Button>
         <Button
           variant="contained"
@@ -530,8 +536,10 @@ export default function PhotoMetaUpdateDialog({
           disabled={saving}
           disableElevation
           sx={{
-            borderRadius: "12px",
-            px: 5,
+            height: 24,
+            borderRadius: "6px",
+            px: 3,
+            width: "126px",
             py: 1.2,
             fontWeight: 700,
             textTransform: "none",
@@ -541,7 +549,7 @@ export default function PhotoMetaUpdateDialog({
           {saving ? (
             <CircularProgress size={22} color="inherit" />
           ) : (
-            "Сохранить изменения"
+            "Сохранить"
           )}
         </Button>
       </DialogActions>

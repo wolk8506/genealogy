@@ -230,6 +230,7 @@ const PersonPage = forwardRef(
         message: `${isNew ? "Добавлен" : "Изменен"} факт: ${fact.type}: ${fact.value}. У ${person.firstName}`,
         type: "success",
         link: `/person/${person.id}`,
+        category: "fact",
       });
       await handleSave();
     };
@@ -251,6 +252,7 @@ const PersonPage = forwardRef(
         message: `Удален факт: "${factToDelete.type}: ${factToDelete.value}" у ${person.firstName}`,
         type: "info",
         link: `/person/${person.id}`,
+        category: "fact",
       });
 
       await handleSave();
@@ -307,6 +309,7 @@ const PersonPage = forwardRef(
         message: `${isNew ? "Создано" : "Обновлено"} событие: ${ev.type?.name || ev.type}. Персона: ${person.firstName}`,
         type: "success",
         link: `/person/${person.id}`,
+        category: "event",
       });
 
       await handleSave();
@@ -329,6 +332,7 @@ const PersonPage = forwardRef(
         message: `Удалено событие "${eventToDelete?.type}" у ${person.firstName}`,
         type: "info",
         link: `/person/${person.id}`,
+        category: "event",
       });
 
       await handleSave();
@@ -409,6 +413,7 @@ const PersonPage = forwardRef(
         message: `Событие "${cleanEvent.type?.name || "Событие"}" успешно передано ${target.firstName}`,
         type: "success",
         link: `/person/${target.id}`,
+        category: "event",
       });
 
       alert(`Событие успешно скопировано для ${target.firstName}`);

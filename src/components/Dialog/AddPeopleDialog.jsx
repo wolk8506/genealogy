@@ -18,19 +18,17 @@ import {
   Grid,
   CircularProgress,
 } from "@mui/material";
-import { styled, useTheme } from "@mui/material/styles";
+import { useTheme } from "@mui/material/styles";
 import CloseIcon from "@mui/icons-material/Close";
-import PersonAddIcon from "@mui/icons-material/PersonAdd";
 import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
 import AccountTreeIcon from "@mui/icons-material/AccountTree";
 import FemaleIcon from "@mui/icons-material/Female";
 import MaleIcon from "@mui/icons-material/Male";
 import CustomDatePickerDialog from "../../components/CustomDatePickerDialog";
-// import { AddBanner } from "./AddBanner";
 import NumberField from "../NumberField";
 import { useNotificationStore } from "../../store/useNotificationStore";
+import PersonFillBadgePlusIcon from "../svg/PersonFillBadgePlusIcon";
 
-// Теперь это не Page, а Modal
 export default function AddPersonModal({ open, onClose }) {
   const theme = useTheme();
   const isDark = theme.palette.mode === "dark";
@@ -56,9 +54,7 @@ export default function AddPersonModal({ open, onClose }) {
   const [saving, setSaving] = useState(false); // Состояние загрузки
 
   const [error, setError] = useState("");
-  // const [success, setSuccess] = useState(false);
   const idPrefixRef = useRef("");
-  // const [newPerson, setNewPerson] = useState(null);
 
   const addNotification = useNotificationStore(
     (state) => state.addNotification,
@@ -245,6 +241,7 @@ export default function AddPersonModal({ open, onClose }) {
         title: "Человек добавлен",
         message: `В дерево успешно добавлен: ${firstName.trim()} ${lastName.trim()}`,
         type: "success",
+        category: "people",
         // Если у вас есть роутинг, можно передать линк на карточку:
         link: `/person/${newId}`,
       });
@@ -275,6 +272,7 @@ export default function AddPersonModal({ open, onClose }) {
         timestamp: now,
         title: "Ошибка сохранения",
         message: "не удалось обновить базу данных",
+        category: "people",
         type: "error",
       });
       setSaving(false);
@@ -312,7 +310,7 @@ export default function AddPersonModal({ open, onClose }) {
           }}
         >
           <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-            <PersonAddIcon color="primary" />
+            <PersonFillBadgePlusIcon color="primary" />
             Добавить человека
           </Box>
           <IconButton
@@ -348,7 +346,7 @@ export default function AddPersonModal({ open, onClose }) {
                   mb: 2,
                 }}
               >
-                <PersonAddIcon sx={{ fontSize: 18 }} /> Личные данные
+                <PersonFillBadgePlusIcon sx={{ fontSize: 20 }} /> Личные данные
               </Typography>
               <Grid container spacing={2}>
                 <Grid item xs={12} sm={4}>
@@ -594,9 +592,28 @@ export default function AddPersonModal({ open, onClose }) {
         <DialogActions sx={{ p: 3, pt: 1 }}>
           <Button
             onClick={onClose}
-            sx={{ borderRadius: "10px", fontWeight: 600 }}
+            sx={{
+              height: 24,
+              borderRadius: "6px",
+              py: 1.2,
+              px: 3.6,
+              textTransform: "none",
+              fontWeight: 600,
+              fontSize: "0.95rem",
+              color: "text.primary",
+              bgcolor: (theme) =>
+                theme.palette.mode === "dark"
+                  ? "rgba(255,255,255,0.05)"
+                  : "rgba(0,0,0,0.05)",
+              "&:hover": {
+                bgcolor: (theme) =>
+                  theme.palette.mode === "dark"
+                    ? "rgba(255,255,255,0.1)"
+                    : "rgba(0,0,0,0.1)",
+              },
+            }}
           >
-            Отмена
+            Отменить
           </Button>
           {/* <Button
             onClick={handleSave}
@@ -617,8 +634,9 @@ export default function AddPersonModal({ open, onClose }) {
             disabled={saving}
             disableElevation
             sx={{
-              borderRadius: "12px",
-              px: 4,
+              height: 24,
+              borderRadius: "6px",
+              px: 3,
               // py: 1.2,
               textTransform: "none",
               fontWeight: 700,

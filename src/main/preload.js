@@ -96,15 +96,7 @@ contextBridge.exposeInMainWorld("photoAPI", {
   },
 
   getGlobalHashtags: () => ipcRenderer.invoke("hashtags:getGlobal"),
-  // onDownload: (callback) => {
-  //   // Очищаем предыдущие попытки, чтобы не было дублей
-  //   ipcRenderer.removeAllListeners("photo:download");
-  //   ipcRenderer.on("photo:download", (event, photo) => callback(photo));
-  // },
-  // // Добавь этот метод, если его нет
-  // removeDownloadListener: () => {
-  //   ipcRenderer.removeAllListeners("photo:download");
-  // },
+  convertHeic: (filePath) => ipcRenderer.invoke("photo:convert-heic", filePath),
 });
 
 contextBridge.exposeInMainWorld("tagsAPI", {

@@ -336,23 +336,6 @@ export default function PersonFilesTab({ personId }) {
         <Typography variant="h5" fontWeight="bold">
           Файлы
         </Typography>
-
-        {/* <Button
-          variant="contained"
-          component="label"
-          startIcon={<UploadFileIcon />}
-          disabled={loading}
-          sx={{ borderRadius: "12px", textTransform: "none" }}
-        >
-          Загрузить файл
-          <input
-            type="file"
-            multiple
-            hidden
-            accept=".jpg,.jpeg,.mp4,.mp3,.txt,.pdf"
-            onChange={handleFileUpload}
-          />
-        </Button> */}
       </Stack>
       {/* Секции файлов */}
       {files.image.length > 0 &&
@@ -611,26 +594,72 @@ export default function PersonFilesTab({ personId }) {
             ? { top: contextMenu.mouseY, left: contextMenu.mouseX }
             : undefined
         }
+        PaperProps={{
+          sx: {
+            // bgcolor: "background.paper",
+            // bgcolor: "rgba(0,0,0,0)",
+
+            bgcolor: "transparent",
+            backgroundImage: "none",
+            boxShadow: 24,
+            borderRadius: "12px",
+            minWidth: 200,
+            fontSize: "13px",
+            px: "6px",
+            border: "1px solid",
+            borderColor: "divider",
+            backdropFilter: "blur(6px)",
+          },
+        }}
       >
         <MenuItem
           onClick={() => {
             setPreviewFile(contextMenu.file);
             handleClose();
           }}
+          sx={{
+            px: 1,
+            borderRadius: "8px",
+          }}
         >
           <ListItemIcon>
-            <ViewIcon fontSize="small" />
+            <ViewIcon fontSize="small" sx={{ fontSize: "13px" }} />
           </ListItemIcon>
-          <ListItemText>Открыть</ListItemText>
+          <ListItemText
+            primaryTypographyProps={{
+              fontSize: "13px",
+              lineHeight: "1.2",
+            }}
+          >
+            Открыть
+          </ListItemText>
         </MenuItem>
 
         <Divider />
 
-        <MenuItem onClick={handleDeleteFile} sx={{ color: "error.main" }}>
+        <MenuItem
+          onClick={handleDeleteFile}
+          sx={{
+            color: "error.main",
+            px: 1,
+            borderRadius: "8px",
+          }}
+        >
           <ListItemIcon>
-            <DeleteIcon fontSize="small" color="error" />
+            <DeleteIcon
+              fontSize="small"
+              color="error"
+              sx={{ fontSize: "13px" }}
+            />
           </ListItemIcon>
-          <ListItemText>Удалить файл</ListItemText>
+          <ListItemText
+            primaryTypographyProps={{
+              fontSize: "13px",
+              lineHeight: "1.2",
+            }}
+          >
+            Удалить файл
+          </ListItemText>
         </MenuItem>
       </Menu>
     </Box>

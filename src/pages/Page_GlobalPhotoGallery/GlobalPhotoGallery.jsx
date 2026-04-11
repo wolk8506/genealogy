@@ -11,9 +11,9 @@ import {
   Typography,
   CircularProgress,
   Chip,
-  Fab,
-  Zoom,
-  Paper,
+  // Fab,
+  // Zoom,
+  // Paper,
 } from "@mui/material";
 import { useTheme, alpha } from "@mui/material/styles";
 import { GroupedVirtuoso } from "react-virtuoso";
@@ -21,12 +21,12 @@ import ManIcon from "@mui/icons-material/Man";
 import WomanIcon from "@mui/icons-material/Woman";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import PhotoLibraryIcon from "@mui/icons-material/PhotoLibrary";
-import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
+// import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
 import PhotoFullscreenViewer from "../../components/PhotoFullscreenViewer";
 import PhotoMetaUpdateDialog from "../../components/Dialog/PhotoMetaUpdateDialog";
 import PhotoCell from "../../components/PhotoCell";
-import onDownload from "../utils/onDownload";
-import PhotoMetaDialog from "../../components/PhotoMetaDialog";
+import onDownload from "../../utils/onDownload";
+import PhotoMetaDialog from "../../components/Dialog/PhotoMetaDialog";
 import { ButtonScrollTop } from "../../components/ButtonScrollTop";
 import PhotoUploadDialog from "../../components/Dialog/PhotoUploadDialog";
 import { useModalStore } from "../../store/useModalStore";
@@ -456,7 +456,7 @@ export default function GlobalPhotoGallery({
       <Box
         sx={{
           flexGrow: 1,
-          mr: groupBy === "datePhoto" || groupBy === "owner" ? 6.2 : 0,
+          mr: groupBy === "datePhoto" || groupBy === "owner" ? 8.5 : 0,
         }}
       >
         <GroupedVirtuoso
@@ -483,7 +483,7 @@ export default function GlobalPhotoGallery({
               <Box
                 sx={{
                   py: 1,
-                  px: 3,
+                  px: 2,
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "space-between",
@@ -510,7 +510,7 @@ export default function GlobalPhotoGallery({
             );
           }}
           itemContent={(idx) => (
-            <Stack direction="row" spacing={1} sx={{ px: 2, py: 0.5 }}>
+            <Stack direction="row" spacing={1} sx={{ px: 0, py: 0.5 }}>
               {flattenedRows[idx]?.map((item) => {
                 if (!photoPaths.thumbs[item.id]) fetchThumb(item);
                 return (
@@ -618,7 +618,7 @@ export default function GlobalPhotoGallery({
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "flex-end",
-                          pr: 2,
+                          pr: 1,
                         }}
                       >
                         <Typography
@@ -637,7 +637,7 @@ export default function GlobalPhotoGallery({
                           sx={{
                             flexGrow: 1,
                             overflowY: "auto",
-                            pr: 1,
+                            pr: 0.5,
                             pb: 1,
                             scrollbarWidth: "none",
                             "&::-webkit-scrollbar": { display: "none" },

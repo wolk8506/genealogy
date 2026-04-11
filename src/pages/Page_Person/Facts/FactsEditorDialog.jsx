@@ -351,7 +351,7 @@ export default function FactsEditorDialog({
   }, [open, initialFact]);
 
   const handleSave = () => {
-    const v = value.trim();
+    const v = value;
     if (!v) return;
 
     onSave?.({ type, value: v });
@@ -489,26 +489,64 @@ export default function FactsEditorDialog({
             variant="text"
             color="error"
             onClick={handleDelete}
-            sx={{ mr: "auto", borderRadius: "10px" }}
+            sx={{
+              height: 24,
+              borderRadius: "6px",
+              py: 1.2,
+              px: 2,
+              mr: "auto",
+              textTransform: "none",
+              fontWeight: 500,
+              fontSize: "0.95rem",
+              color: (theme) =>
+                theme.palette.mode === "dark" ? "#FF453A" : "#FF3B30", // macOS Red
+              bgcolor: (theme) => alpha(theme.palette.error.main, 0.08), // Легкий тинт вместо рамки
+              "&:hover": {
+                bgcolor: (theme) => alpha(theme.palette.error.main, 0.15),
+              },
+            }}
           >
             Удалить
           </Button>
         )}
-        <Button onClick={onClose} sx={{ borderRadius: "10px", px: 3 }}>
-          Отмена
+        <Button
+          onClick={onClose}
+          sx={{
+            height: 24,
+            borderRadius: "6px",
+            py: 1.2,
+            px: 2,
+            textTransform: "none",
+            fontWeight: 600,
+            fontSize: "0.95rem",
+            color: "text.primary",
+            bgcolor: (theme) =>
+              theme.palette.mode === "dark"
+                ? "rgba(255,255,255,0.05)"
+                : "rgba(0,0,0,0.05)",
+            "&:hover": {
+              bgcolor: (theme) =>
+                theme.palette.mode === "dark"
+                  ? "rgba(255,255,255,0.1)"
+                  : "rgba(0,0,0,0.1)",
+            },
+          }}
+        >
+          Отменить
         </Button>
         <Button
           onClick={handleSave}
           variant="contained"
           disableElevation
           sx={{
-            borderRadius: "10px",
-            px: 4,
+            height: 24,
+            borderRadius: "6px",
+            px: 2,
             fontWeight: 600,
             boxShadow: `0 4px 14px 0 ${alpha(theme.palette.primary.main, 0.39)}`,
           }}
         >
-          {initialFact ? "Обновить" : "Добавить"}
+          {initialFact ? "Обновить" : "Сохранить"}
         </Button>
       </DialogActions>
     </Dialog>

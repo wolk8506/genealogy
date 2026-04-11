@@ -8,7 +8,13 @@ export const useNotificationStore = create(
       hasNew: false, // Точка на самом колокольчике
 
       // Добавление уведомления
-      addNotification: ({ title, message, type = "info", link = null }) => {
+      addNotification: ({
+        title,
+        message,
+        type = "info",
+        link = null,
+        category = null,
+      }) => {
         const timestamp = new Date().toISOString();
         const newNote = {
           id: Date.now() + Math.random(),
@@ -17,6 +23,7 @@ export const useNotificationStore = create(
           type,
           link,
           timestamp,
+          category,
           isNew: true, // Желтая точка внутри списка
         };
 

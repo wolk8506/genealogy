@@ -100,14 +100,14 @@ const PhotoFullscreenViewer = ({
               position: "absolute",
               display: "flex",
               alignItems: "center",
-              top: 20,
-              left: 20,
+              top: 10,
+              left: 90,
               zIndex: 15,
               bgcolor: "rgba(0,0,0,0.5)",
               color: "#fff",
               px: 2,
               // py: 0.5,
-              height: 40,
+              height: 34,
               borderRadius: "20px",
               backdropFilter: "blur(4px)",
               border: "1px solid rgba(255,255,255,0.2)",
@@ -125,6 +125,7 @@ const PhotoFullscreenViewer = ({
           spacing={1}
           sx={{
             position: "absolute",
+            WebkitAppRegion: "no-drag",
             top: 10,
             right: 10,
             zIndex: 15,
@@ -145,17 +146,18 @@ const PhotoFullscreenViewer = ({
               border: "1px solid",
               borderColor: "divider",
               borderRadius: 7,
-              height: 40,
+              height: 34,
               color: "text.secondary",
+              fontSize: 20,
             }}
           >
             <Tooltip title="Скачать">
               <IconButton
                 onClick={() => onDownload?.(photo)}
                 size="small"
-                sx={{ color: "white", p: "8px" }}
+                sx={{ color: "white", p: 1 }}
               >
-                <DownloadIcon />
+                <DownloadIcon fontSize="inherit" />
               </IconButton>
             </Tooltip>
 
@@ -165,10 +167,10 @@ const PhotoFullscreenViewer = ({
                 size="small"
                 sx={{
                   color: showInfo ? "primary.main" : "#fff",
-                  p: "8px",
+                  p: 1,
                 }}
               >
-                <InfoIcon />
+                <InfoIcon fontSize="inherit" />
               </IconButton>
             </Tooltip>
             <Tooltip
@@ -181,10 +183,14 @@ const PhotoFullscreenViewer = ({
                 size="small"
                 sx={{
                   color: "#fff",
-                  p: "8px",
+                  p: 1,
                 }}
               >
-                {hideLabels ? <FullscreenExitIcon /> : <FullscreenIcon />}
+                {hideLabels ? (
+                  <FullscreenExitIcon fontSize="inherit" />
+                ) : (
+                  <FullscreenIcon fontSize="inherit" />
+                )}
               </IconButton>
             </Tooltip>
             <Divider orientation="vertical" variant="middle" flexItem />
@@ -194,10 +200,10 @@ const PhotoFullscreenViewer = ({
                 size="small"
                 sx={{
                   color: "#fff",
-                  p: "8px",
+                  p: 1,
                 }}
               >
-                <CloseIcon />
+                <CloseIcon fontSize="inherit" />
               </IconButton>
             </Tooltip>
           </Box>
@@ -311,6 +317,20 @@ const PhotoFullscreenViewer = ({
                 {currentPhotoInfo.datePhoto &&
                   `📅 ${currentPhotoInfo.datePhoto} | `}
                 🏷️ На фото: {currentPhotoInfo.peopleText || "—"}
+              </Typography>
+              <Typography
+                variant="caption"
+                sx={{
+                  display: "block",
+                  borderTop: "1px solid rgba(255,255,255,0.2)",
+                  pt: 1.5,
+                  fontSize: "0.75rem",
+                  letterSpacing: "0.03em",
+                  color: "rgba(255,255,255,0.7)",
+                }}
+              >
+                {currentPhotoInfo.locationName &&
+                  `📍 ${currentPhotoInfo.locationName}`}
               </Typography>
             </motion.div>
           )}

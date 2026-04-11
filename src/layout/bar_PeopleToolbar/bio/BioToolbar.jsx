@@ -1,5 +1,5 @@
 import React from "react";
-import { Stack, Box, IconButton, Tooltip } from "@mui/material";
+import { Stack, Box, IconButton, Tooltip, Divider } from "@mui/material";
 import UndoIcon from "@mui/icons-material/Undo";
 import RedoIcon from "@mui/icons-material/Redo";
 import TextFieldsIcon from "@mui/icons-material/TextFields";
@@ -10,6 +10,9 @@ import FormatQuoteIcon from "@mui/icons-material/FormatQuote";
 import AddPhotoAlternateIcon from "@mui/icons-material/AddPhotoAlternate";
 import EditIcon from "@mui/icons-material/Edit";
 import EditOffIcon from "@mui/icons-material/EditOff";
+import TableChartIcon from "@mui/icons-material/TableChart";
+import FormatListNumberedIcon from "@mui/icons-material/FormatListNumbered";
+import FormatStrikethroughIcon from "@mui/icons-material/FormatStrikethrough";
 
 // Вспомогательный компонент для группировки кнопок в рамку
 const ToolbarGroup = ({ children }) => (
@@ -128,9 +131,28 @@ export default function BioToolbar({ isEditing, requestToggleEdit, execRef }) {
                 <FormatItalicIcon fontSize="inherit" />
               </IconButton>
             </Tooltip>
+            <Tooltip title="Зачеркнутый">
+              <IconButton
+                size="small"
+                sx={{ color: "white", p: 1 }}
+                onClick={() => execRef.current?.exec("ToggleStrikeThrough")}
+              >
+                <FormatStrikethroughIcon fontSize="inherit" />
+              </IconButton>
+            </Tooltip>
           </ToolbarGroup>
 
           <ToolbarGroup>
+            <Tooltip title="Вставить таблицу">
+              <IconButton
+                size="small"
+                sx={{ color: "white", p: 1 }}
+                onClick={() => execRef.current?.insertTable()}
+              >
+                <TableChartIcon fontSize="inherit" />
+              </IconButton>
+            </Tooltip>
+
             <Tooltip title="Список">
               <IconButton
                 size="small"
@@ -138,6 +160,15 @@ export default function BioToolbar({ isEditing, requestToggleEdit, execRef }) {
                 onClick={() => execRef.current?.exec("WrapInBulletList")}
               >
                 <FormatListBulletedIcon fontSize="inherit" />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Нумерованный список">
+              <IconButton
+                size="small"
+                sx={{ color: "white", p: 1 }}
+                onClick={() => execRef.current?.exec("WrapInOrderedList")}
+              >
+                <FormatListNumberedIcon fontSize="inherit" />
               </IconButton>
             </Tooltip>
             <Tooltip title="Цитата">

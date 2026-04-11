@@ -21,6 +21,8 @@ import { usePeopleListStore } from "../../store/usePeopleListStore";
 
 import ExpandingTagsFilter from "./ExpandingTegsFilter";
 import ButtonConteiner from "../../components/ButtonConteiner";
+import TrashFillIcon from "../../components/svg/TrashFillIcon";
+import PersonFillBadgePlusIcon from "../../components/svg/PersonFillBadgePlusIcon";
 
 export default function PeopleListToolbar({
   people = [],
@@ -65,7 +67,8 @@ export default function PeopleListToolbar({
               variant="dot"
               color="warning"
             >
-              <DeleteIcon color={"inherit"} fontSize="inherit" />
+              <TrashFillIcon color={"inherit"} fontSize="inherit" />
+              {/* <DeleteIcon color={"inherit"} fontSize="inherit" /> */}
             </Badge>
           </IconButton>
         </Tooltip>
@@ -84,9 +87,12 @@ export default function PeopleListToolbar({
           <IconButton
             onClick={handleOpenAddModal}
             size="small"
-            sx={{ color: "white", p: 1 }}
+            sx={{ color: "white", p: 0.9 }}
           >
-            <PersonAddAlt1Icon color={"inherit"} fontSize="inherit" />
+            <PersonFillBadgePlusIcon
+              sx={{ fontSize: "20px", color: "white" }}
+            />
+            {/* <PersonAddAlt1Icon color={"inherit"} fontSize="inherit" /> */}
           </IconButton>
         </Tooltip>
       </ButtonConteiner>
