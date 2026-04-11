@@ -6,31 +6,25 @@ import {
   Divider,
   Chip,
   Tooltip,
-  Stack,
+  Grid,
 } from "@mui/material";
 import { version as muiVersion } from "@mui/material";
 
-// Иконки (основные)
 import electronIcon from "../../img/electron-logo.svg";
 import reactIcon from "../../img/react-icon.svg";
 import muiIcon from "../../img/material-ui-logo.svg";
 import viteIcon from "../../img/vitejs-logo.svg";
-
 import chromiumIcon from "../../img/chromium-logo.svg";
 import jsonIcon from "../../img/json-logo.svg";
 import node_jsIcon from "../../img/node.js-logo.svg";
-import sqLiteIcon from "../../img/sqlite-logo.svg";
 import reactRouterIcon from "../../img/react-router-logo.svg";
 import notistackIcon from "../../img/notistack-logo.webp";
 
-// Иконки MUI для категорий и заглушек
 import TerminalIcon from "@mui/icons-material/Terminal";
-import DnsIcon from "@mui/icons-material/Dns";
 import WebIcon from "@mui/icons-material/Web";
 import BuildIcon from "@mui/icons-material/Build";
 import CodeIcon from "@mui/icons-material/Code";
 
-// Пакеты
 import routerPkg from "react-router-dom/package.json";
 import vitePkg from "vite/package.json";
 import notistackPkg from "notistack/package.json";
@@ -43,17 +37,30 @@ export default function AppDiagnostic() {
   }, []);
 
   const renderTechItem = (icon, name, version) => (
-    <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 1.5 }}>
+    <Box
+      sx={{
+        display: "flex",
+        alignItems: "center",
+        gap: 2,
+        p: 1.5,
+        borderRadius: 4,
+        bgcolor: "background.paper",
+        border: "1px solid",
+        borderColor: "divider",
+        transition: "transform 0.2s, box-shadow 0.2s",
+        "&:hover": {
+          transform: "translateY(-2px)",
+          boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
+        },
+      }}
+    >
       <Box
         sx={{
-          width: 48,
-          height: 48,
-          borderRadius: 1.5,
-          // bgcolor: "action.hover",
+          width: 40,
+          height: 40,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          p: 0.5,
         }}
       >
         {icon ? (
@@ -63,20 +70,26 @@ export default function AppDiagnostic() {
             sx={{ width: "100%", height: "100%", objectFit: "contain" }}
           />
         ) : (
-          <CodeIcon sx={{ fontSize: 16, color: "text.disabled" }} />
+          <CodeIcon sx={{ fontSize: 24, color: "text.disabled" }} />
         )}
       </Box>
-      <Box>
+      <Box sx={{ overflow: "hidden" }}>
         <Typography
-          variant="caption"
-          sx={{ display: "block", fontWeight: 700, lineHeight: 1 }}
+          variant="body2"
+          sx={{
+            fontWeight: 700,
+            lineHeight: 1.2,
+            whiteSpace: "nowrap",
+            textOverflow: "ellipsis",
+            overflow: "hidden",
+          }}
         >
           {name}
         </Typography>
         <Typography
           variant="caption"
           color="text.disabled"
-          sx={{ fontSize: "0.65rem", fontFamily: "monospace" }}
+          sx={{ fontFamily: "monospace" }}
         >
           v{version || "?.?.?"}
         </Typography>
@@ -86,94 +99,111 @@ export default function AppDiagnostic() {
 
   const CategoryHeader = ({ icon: Icon, title }) => (
     <Typography
-      variant="caption"
+      variant="overline"
       sx={{
         display: "flex",
         alignItems: "center",
-        gap: 0.8,
+        gap: 1,
         fontWeight: 800,
         color: "primary.main",
         mb: 2,
         mt: 1,
-        textTransform: "uppercase",
         letterSpacing: 1,
       }}
     >
-      <Icon sx={{ fontSize: 14 }} /> {title}
+      <Icon sx={{ fontSize: 18 }} /> {title}
     </Typography>
   );
+
+  // Универсальные настройки для колонок:
+  // Телефон: 1 колонка. Планшет: 2. Десктоп: 3. Ультра-широкий: 4 колонки.
+  const gridResponsiveSizes = { xs: 12, sm: 6, lg: 4, xl: 3 };
 
   return (
     <Paper
       elevation={0}
       sx={{
-        p: 3,
-        borderRadius: 4,
+        p: { xs: 4, xl: 5 },
+        borderRadius: 6,
         border: "1px solid",
         borderColor: "divider",
         background: (theme) =>
-          theme.palette.mode === "dark" ? "rgba(255,255,255,0.02)" : "#fafafa",
+          theme.palette.mode === "dark" ? "rgba(255,255,255,0.02)" : "#f8f9fa",
+        flexGrow: 1,
       }}
     >
-      <Box sx={{ mb: 3 }}>
-        <Typography variant="h6" sx={{ fontWeight: 800, lineHeight: 1 }}>
-          Технологический стек
-        </Typography>
-        <Typography variant="caption" color="text.secondary">
-          Архитектура и зависимости приложения
-        </Typography>
-      </Box>
-
-      {/* Группа 1: Среда выполнения */}
-      <CategoryHeader icon={TerminalIcon} title="Runtime & Core" />
-      <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", mb: 2 }}>
-        {renderTechItem(electronIcon, "Electron", sys?.electron)}
-        {renderTechItem(node_jsIcon, "Node.js", sys?.node)}
-        {renderTechItem(chromiumIcon, "Chromium", sys?.chrome)}
-        {/* {renderTechItem(sqLiteIcon, "SQLite", sys?.sqlite || "3.x")} */}
-      </Box>
-
-      <Divider sx={{ my: 2, borderStyle: "dashed" }} />
-
-      {/* Группа 2: Frontend */}
-      <CategoryHeader icon={WebIcon} title="Frontend Frameworks" />
-      <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", mb: 2 }}>
-        {renderTechItem(reactIcon, "React", React.version)}
-        {renderTechItem(muiIcon, "Material UI", muiVersion)}
-        {renderTechItem(reactRouterIcon, "React Router", routerPkg.version)}
-        {renderTechItem(notistackIcon, "Notistack", notistackPkg.version)}
-      </Box>
-
-      <Divider sx={{ my: 2, borderStyle: "dashed" }} />
-
-      {/* Группа 3: Инструменты сборки */}
-      <CategoryHeader icon={BuildIcon} title="Development & Build" />
-      <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr" }}>
-        {renderTechItem(viteIcon, "Vite", vitePkg.version)}
-        {renderTechItem(jsonIcon, "JSON Engine", "Native")}
-      </Box>
-
-      {/* Нижняя плашка со статусом */}
       <Box
         sx={{
-          mt: 3,
-          pt: 2,
-          borderTop: "1px solid",
-          borderColor: "divider",
+          mb: 4,
           display: "flex",
-          gap: 1,
+          justifyContent: "space-between",
+          alignItems: "flex-start",
         }}
       >
+        <Box>
+          <Typography variant="h5" sx={{ fontWeight: 800, lineHeight: 1.2 }}>
+            Технологический стек
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+            Архитектура и зависимости приложения
+          </Typography>
+        </Box>
         <Tooltip title="Все системы работают в штатном режиме">
           <Chip
             label="Система стабильна"
             size="small"
             color="success"
             variant="soft"
-            sx={{ height: 20, fontSize: "0.6rem", fontWeight: 700 }}
+            sx={{ fontWeight: 700, borderRadius: 3 }}
           />
         </Tooltip>
       </Box>
+
+      {/* Группа 1: Среда выполнения */}
+      <CategoryHeader icon={TerminalIcon} title="Runtime & Core" />
+      <Grid container spacing={2} sx={{ mb: 4 }}>
+        <Grid item size={gridResponsiveSizes}>
+          {renderTechItem(electronIcon, "Electron", sys?.electron)}
+        </Grid>
+        <Grid item size={gridResponsiveSizes}>
+          {renderTechItem(node_jsIcon, "Node.js", sys?.node)}
+        </Grid>
+        <Grid item size={gridResponsiveSizes}>
+          {renderTechItem(chromiumIcon, "Chromium", sys?.chrome)}
+        </Grid>
+      </Grid>
+
+      <Divider sx={{ my: 4, borderStyle: "dashed" }} />
+
+      {/* Группа 2: Frontend */}
+      <CategoryHeader icon={WebIcon} title="Frontend Frameworks" />
+      <Grid container spacing={2} sx={{ mb: 4 }}>
+        <Grid item size={gridResponsiveSizes}>
+          {renderTechItem(reactIcon, "React", React.version)}
+        </Grid>
+        <Grid item size={gridResponsiveSizes}>
+          {renderTechItem(muiIcon, "Material UI", muiVersion)}
+        </Grid>
+        <Grid item size={gridResponsiveSizes}>
+          {renderTechItem(reactRouterIcon, "React Router", routerPkg.version)}
+        </Grid>
+        <Grid item size={gridResponsiveSizes}>
+          {renderTechItem(notistackIcon, "Notistack", notistackPkg.version)}
+        </Grid>
+      </Grid>
+
+      <Divider sx={{ my: 4, borderStyle: "dashed" }} />
+
+      {/* Группа 3: Инструменты сборки */}
+      <CategoryHeader icon={BuildIcon} title="Development & Build" />
+      <Grid container spacing={2}>
+        <Grid item size={gridResponsiveSizes}>
+          {renderTechItem(viteIcon, "Vite", vitePkg.version)}
+        </Grid>
+        <Grid item size={gridResponsiveSizes}>
+          {renderTechItem(jsonIcon, "JSON Engine", "Native")}
+        </Grid>
+      </Grid>
     </Paper>
   );
 }

@@ -199,19 +199,42 @@ const PhotoCell = React.memo(
                 >
                   {photo.description || ""}
                 </Typography>
-
-                <Typography
-                  variant="caption"
+                <Box
                   sx={{
-                    fontWeight: 600,
-                    fontSize: "0.65rem",
-                    opacity: 0.8,
-                    color: "lightgray",
+                    display: "flex",
+                    flexDirection: "column",
                     mb: tags.length === 0 ? "109px" : 0,
                   }}
                 >
-                  👤 {peopleText || "—"}
-                </Typography>
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      fontWeight: 600,
+                      fontSize: "0.65rem",
+                      opacity: 0.8,
+                      color: "lightgray",
+                      // mb: tags.length === 0 ? "109px" : 0,
+                    }}
+                  >
+                    👤 {peopleText || "—"}
+                  </Typography>
+
+                  {photo.locationName && (
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        fontWeight: 600,
+                        fontSize: "0.65rem",
+                        opacity: 0.8,
+                        color: "lightgray",
+                        mt: 1,
+                        // mb: tags.length === 0 ? "109px" : 0,
+                      }}
+                    >
+                      📍 {photo.locationName || "—"}
+                    </Typography>
+                  )}
+                </Box>
               </TextContent>
 
               {/* БЛОК 2: ТЕГИ (Прижаты к НИЗУ) */}

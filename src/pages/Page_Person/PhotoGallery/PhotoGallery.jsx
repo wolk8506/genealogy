@@ -16,12 +16,12 @@ import PhotoLibraryIcon from "@mui/icons-material/PhotoLibrary";
 import PersonPinCircleIcon from "@mui/icons-material/PersonPinCircle";
 
 // Компоненты и утилиты
-import onDownload from "../../utils/onDownload";
+import onDownload from "../../../utils/onDownload";
 import PhotoFullscreenViewer from "../../../components/PhotoFullscreenViewer";
 import PhotoCell from "../../../components/PhotoCell";
 import PhotoMetaUpdateDialog from "../../../components/Dialog/PhotoMetaUpdateDialog";
 import PhotoUploadDialog from "../../../components/Dialog/PhotoUploadDialog";
-import PhotoMetaDialog from "../../../components/PhotoMetaDialog";
+import PhotoMetaDialog from "../../../components/Dialog/PhotoMetaDialog";
 import { ButtonScrollTop } from "../../../components/ButtonScrollTop";
 
 const normalizePhotoDate = (dp) => {
@@ -350,6 +350,7 @@ export default function PhotoGallery({
           title: "Фото удалено",
           message: `Файл "${photo.filename}" успешно удален. Владелец ID: ${personId}`,
           type: "warning",
+          category: "photo",
         });
       } catch (e) {
         console.error(e);
@@ -357,6 +358,7 @@ export default function PhotoGallery({
           title: "Ошибка удаления",
           message: e || "Не удалось удалить фото",
           type: "error",
+          category: "photo",
         });
       }
     },

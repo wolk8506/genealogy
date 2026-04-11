@@ -5,8 +5,6 @@ import {
   TextField,
   IconButton,
   styled,
-  Typography,
-  Badge,
   Chip,
 } from "@mui/material";
 import { indigo } from "@mui/material/colors";
@@ -95,14 +93,7 @@ export default function ExpandingPeopleSelect({
       }}
     >
       <IconButton size="small" sx={{ color: "white", p: 1 }}>
-        {/* <Badge
-          badgeContent={
-            selectedPeople.length > 1 ? `+${selectedPeople.length - 1}` : 0
-          }
-          color="secondary"
-        > */}
         <GroupIcon fontSize="inherit" />
-        {/* </Badge> */}
       </IconButton>
 
       <Autocomplete
@@ -110,10 +101,6 @@ export default function ExpandingPeopleSelect({
         open={isMenuOpen}
         isOptionEqualToValue={(option, value) => option.id === value.id}
         onOpen={() => setIsMenuOpen(true)}
-        // onClose={(event, reason) => {
-        //   if (reason === "toggleInput") return;
-        //   setIsMenuOpen(false);
-        // }}
         onClose={(event, reason) => {
           // 1. Если кликнули внутри инпута, не закрываем меню
           if (reason === "toggleInput") return;

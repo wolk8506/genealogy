@@ -216,8 +216,30 @@ export default function EventCopyDialog({
       </DialogContent>
 
       <DialogActions sx={{ p: 3, pt: 1 }}>
-        <Button onClick={handleClose} sx={{ borderRadius: "10px", px: 3 }}>
-          Отмена
+        <Button
+          onClick={handleClose}
+          sx={{
+            height: 24,
+            borderRadius: "6px",
+            py: 1.2,
+            px: 3,
+            textTransform: "none",
+            fontWeight: 600,
+            fontSize: "0.95rem",
+            color: "text.primary",
+            bgcolor: (theme) =>
+              theme.palette.mode === "dark"
+                ? "rgba(255,255,255,0.05)"
+                : "rgba(0,0,0,0.05)",
+            "&:hover": {
+              bgcolor: (theme) =>
+                theme.palette.mode === "dark"
+                  ? "rgba(255,255,255,0.1)"
+                  : "rgba(0,0,0,0.1)",
+            },
+          }}
+        >
+          Отменить
         </Button>
         <Button
           variant="contained"
@@ -225,8 +247,9 @@ export default function EventCopyDialog({
           onClick={handleExecute}
           disableElevation
           sx={{
-            borderRadius: "10px",
-            px: 4,
+            height: 24,
+            borderRadius: "6px",
+            px: 2,
             fontWeight: 600,
             boxShadow: mode
               ? `0 4px 14px 0 ${alpha(mode === "replace" ? theme.palette.warning.main : theme.palette.primary.main, 0.35)}`

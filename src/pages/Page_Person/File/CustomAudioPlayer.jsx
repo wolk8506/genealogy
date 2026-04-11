@@ -71,28 +71,6 @@ export default function CustomAudioPlayer({ src, fileName }) {
     return `${minute}:${secondLeft < 10 ? `0${secondLeft}` : secondLeft}`;
   };
 
-  //   useEffect(() => {
-  //     const audio = audioRef.current;
-  //     if (!audio) return;
-
-  //     const updateTime = () => setCurrentTime(audio.currentTime);
-  //     const updateDuration = () => setDuration(audio.duration);
-  //     const onEnded = () => setIsPlaying(false);
-
-  //     audio.addEventListener("timeupdate", updateTime);
-  //     audio.addEventListener("loadedmetadata", updateDuration);
-  //     audio.addEventListener("ended", onEnded);
-
-  //     // Устанавливаем начальную громкость
-  //     audio.volume = volume / 100;
-
-  //     return () => {
-  //       audio.removeEventListener("timeupdate", updateTime);
-  //       audio.removeEventListener("loadedmetadata", updateDuration);
-  //       audio.removeEventListener("ended", onEnded);
-  //     };
-  //   }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;

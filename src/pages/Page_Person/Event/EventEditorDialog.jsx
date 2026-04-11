@@ -278,7 +278,22 @@ export default function EventEditorDialog({
             <Button
               color="error"
               onClick={handleDelete}
-              sx={{ mr: "auto", borderRadius: "10px" }}
+              sx={{
+                height: 24,
+                borderRadius: "6px",
+                py: 1.2,
+                px: 2,
+                mr: "auto",
+                textTransform: "none",
+                fontWeight: 500,
+                fontSize: "0.95rem",
+                color: (theme) =>
+                  theme.palette.mode === "dark" ? "#FF453A" : "#FF3B30", // macOS Red
+                bgcolor: (theme) => alpha(theme.palette.error.main, 0.08), // Легкий тинт вместо рамки
+                "&:hover": {
+                  bgcolor: (theme) => alpha(theme.palette.error.main, 0.15),
+                },
+              }}
             >
               Удалить
             </Button>
@@ -286,9 +301,28 @@ export default function EventEditorDialog({
 
           {initialEvent && (
             <Button
-              variant="outlined"
-              startIcon={<ContentCopyIcon />}
-              sx={{ borderRadius: "10px", mr: 1 }}
+              // variant="outlined"
+              startIcon={<ContentCopyIcon fontSize="12px" />}
+              sx={{
+                height: 24,
+                borderRadius: "6px",
+                py: 1.2,
+                px: 3.6,
+                textTransform: "none",
+                fontWeight: 600,
+                fontSize: "0.95rem",
+                color: "text.primary",
+                bgcolor: (theme) =>
+                  theme.palette.mode === "dark"
+                    ? "rgba(255,255,255,0.05)"
+                    : "rgba(0,0,0,0.05)",
+                "&:hover": {
+                  bgcolor: (theme) =>
+                    theme.palette.mode === "dark"
+                      ? "rgba(255,255,255,0.1)"
+                      : "rgba(0,0,0,0.1)",
+                },
+              }}
               onClick={() => {
                 const dataToCopy = {
                   type: type.name,
@@ -305,8 +339,30 @@ export default function EventEditorDialog({
             </Button>
           )}
 
-          <Button onClick={onClose} sx={{ borderRadius: "10px" }}>
-            Отмена
+          <Button
+            onClick={onClose}
+            sx={{
+              height: 24,
+              borderRadius: "6px",
+              py: 1.2,
+              px: 2,
+              textTransform: "none",
+              fontWeight: 600,
+              fontSize: "0.95rem",
+              color: "text.primary",
+              bgcolor: (theme) =>
+                theme.palette.mode === "dark"
+                  ? "rgba(255,255,255,0.05)"
+                  : "rgba(0,0,0,0.05)",
+              "&:hover": {
+                bgcolor: (theme) =>
+                  theme.palette.mode === "dark"
+                    ? "rgba(255,255,255,0.1)"
+                    : "rgba(0,0,0,0.1)",
+              },
+            }}
+          >
+            Отменить
           </Button>
 
           <Button
@@ -314,13 +370,14 @@ export default function EventEditorDialog({
             onClick={handleSave}
             disableElevation
             sx={{
-              borderRadius: "10px",
-              px: 4,
+              height: 24,
+              borderRadius: "6px",
+              px: 3,
               fontWeight: 600,
               boxShadow: `0 4px 14px 0 ${alpha(theme.palette.primary.main, 0.39)}`,
             }}
           >
-            {initialEvent ? "Обновить" : "Создать"}
+            {initialEvent ? "Обновить" : "Сохранить"}
           </Button>
         </DialogActions>
       </Dialog>

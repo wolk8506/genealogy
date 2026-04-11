@@ -16,7 +16,7 @@ import {
 } from "@mui/material";
 
 import SellIcon from "@mui/icons-material/Sell";
-import DeleteIcon from "@mui/icons-material/Delete";
+import TrashFillIcon from "../../components/svg/TrashFillIcon";
 import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
 import RestoreFromTrashIcon from "@mui/icons-material/RestoreFromTrash";
 import DescriptionIcon from "@mui/icons-material/Description";
@@ -26,6 +26,7 @@ import { useSettingsStore } from "../../store/useSettingsStore";
 // 1. Импортируем стор меток
 import { useTagsStore } from "../../store/useTagsStore";
 import TagManagementDialog from "./TagManagementDialog";
+import TrashSlashFillIcon from "../../components/svg/TrashSlashFillIcon";
 
 function PersonAvatar({ foto, initials }) {
   const [src, setSrc] = useState(null);
@@ -268,7 +269,7 @@ export const PersonCard = ({
                 e.stopPropagation();
                 onDelete(person.id);
               }}
-              startIcon={<DeleteIcon sx={{ fontSize: 18 }} />}
+              startIcon={<TrashFillIcon sx={{ fontSize: 18 }} />}
               sx={{
                 px: isSmall ? 1 : 2,
                 borderRadius: "10px",
@@ -293,7 +294,7 @@ export const PersonCard = ({
                   e.stopPropagation();
                   onRestore(person.id);
                 }}
-                startIcon={<RestoreFromTrashIcon sx={{ fontSize: 18 }} />}
+                startIcon={<TrashSlashFillIcon sx={{ fontSize: 18 }} />}
                 sx={{
                   borderRadius: "10px",
                   fontWeight: 700,
@@ -313,7 +314,7 @@ export const PersonCard = ({
                   e.stopPropagation();
                   onDeleteForever(person.id);
                 }}
-                startIcon={<DeleteForeverIcon sx={{ fontSize: 18 }} />}
+                startIcon={<TrashFillIcon sx={{ fontSize: 18 }} />}
                 sx={{
                   borderRadius: "10px",
                   fontWeight: 700,

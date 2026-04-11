@@ -24,6 +24,7 @@ import DisplaySettingsIcon from "@mui/icons-material/DisplaySettings";
 
 import { useSettingsStore } from "../../store/useSettingsStore";
 import { ThemeContext } from "../../theme/ThemeContext.cjs";
+import CustomSwitch from "../../components/CustomSwitch";
 
 export const GeneralSettingsCard = ({ cardStyle }) => {
   const theme = useTheme();
@@ -83,7 +84,12 @@ export const GeneralSettingsCard = ({ cardStyle }) => {
                   primary="Системная тема"
                   secondary="Использовать настройки вашей ОС"
                 />
-                <Switch
+                {/* <Switch
+                  edge="end"
+                  checked={auto}
+                  onChange={(e) => setAuto(e.target.checked)}
+                /> */}
+                <CustomSwitch
                   edge="end"
                   checked={auto}
                   onChange={(e) => setAuto(e.target.checked)}

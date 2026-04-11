@@ -58,6 +58,7 @@ export const DangerZoneCard = ({ cardStyle }) => {
           title: "⚠️ Опасная зона",
           message: `Данные (${label}) успешно удалены`,
           type: "success",
+          category: "dangerZone",
         });
       } else {
         enqueueSnackbar(`Не удалось удалить ${label}`, {
@@ -68,6 +69,7 @@ export const DangerZoneCard = ({ cardStyle }) => {
           title: "⚠️ Опасная зона",
           message: `Не удалось удалить ${label}`,
           type: "error",
+          category: "dangerZone",
         });
       }
     } catch (error) {
@@ -80,6 +82,7 @@ export const DangerZoneCard = ({ cardStyle }) => {
         title: "⚠️ Опасная зона",
         message: "Произошла системная ошибка при удалении",
         type: "error",
+        category: "dangerZone",
       });
     }
   };
@@ -105,6 +108,7 @@ export const DangerZoneCard = ({ cardStyle }) => {
           title: "⚠️ Опасная зона",
           message: `Все данные (база и фото) полностью удалены`,
           type: "success",
+          category: "dangerZone",
         });
         // loadAll(); // Обновляем список (станет пустым)
         // fetchTotalSize(); // Обновляем размер папки
@@ -118,6 +122,7 @@ export const DangerZoneCard = ({ cardStyle }) => {
         title: "⚠️ Опасная зона",
         message: "Ошибка при очистке: " + err.message,
         type: "error",
+        category: "dangerZone",
       });
     }
   };
@@ -162,7 +167,11 @@ export const DangerZoneCard = ({ cardStyle }) => {
         </Typography>
       </Box>
 
-      <Stack sx={{ p: 2.5 }} spacing={2.5}>
+      <Stack
+        sx={{ p: 2.5, height: 470 }}
+        justifyContent={"space-between"}
+        spacing={2.5}
+      >
         {/* Блок Оригиналы */}
         <Box
           sx={{
@@ -206,7 +215,9 @@ export const DangerZoneCard = ({ cardStyle }) => {
             variant="outlined"
             onClick={() => handleClearData("originals")}
             sx={{
-              borderRadius: "8px",
+              height: 24,
+              borderRadius: "6px",
+              px: 2,
               fontWeight: 700,
               textTransform: "none",
             }}
@@ -255,7 +266,9 @@ export const DangerZoneCard = ({ cardStyle }) => {
             variant="outlined"
             onClick={() => handleClearData("cache")}
             sx={{
-              borderRadius: "8px",
+              height: 24,
+              borderRadius: "6px",
+              px: 2,
               fontWeight: 700,
               textTransform: "none",
             }}
@@ -296,9 +309,12 @@ export const DangerZoneCard = ({ cardStyle }) => {
             startIcon={<DeleteForeverIcon />}
             onClick={() => setResetDialogOpen(true)}
             sx={{
+              height: 24,
+              // borderRadius: "6px",
+              px: 2,
               py: 1.5,
               borderRadius: 2,
-              fontWeight: 800,
+              fontWeight: 600,
               boxShadow: "none",
               "&:hover": {
                 bgcolor: "error.dark",
@@ -335,14 +351,49 @@ export const DangerZoneCard = ({ cardStyle }) => {
           />
         </DialogContent>
         <DialogActions sx={{ p: 2 }}>
-          <Button onClick={() => setResetDialogOpen(false)} color="inherit">
-            Отмена
+          <Button
+            sx={{
+              height: 24,
+              borderRadius: "6px",
+              py: 1.2,
+              px: 2,
+              textTransform: "none",
+              fontWeight: 600,
+              fontSize: "0.95rem",
+              color: "text.primary",
+              bgcolor: (theme) =>
+                theme.palette.mode === "dark"
+                  ? "rgba(255,255,255,0.05)"
+                  : "rgba(0,0,0,0.05)",
+              "&:hover": {
+                bgcolor: (theme) =>
+                  theme.palette.mode === "dark"
+                    ? "rgba(255,255,255,0.1)"
+                    : "rgba(0,0,0,0.1)",
+              },
+            }}
+            onClick={() => setResetDialogOpen(false)}
+            color="inherit"
+          >
+            Отменить
           </Button>
           <Button
             onClick={handleFullReset}
             color="error"
             variant="contained"
             disabled={resetConfirmText !== "УДАЛИТЬ"}
+            sx={{
+              height: 24,
+              borderRadius: "6px",
+              px: 2,
+              py: 1.2,
+              textTransform: "none",
+              fontWeight: 700,
+              boxShadow: `0 8px 20px -6px ${alpha(theme.palette.primary.main, 0.5)}`,
+              "&:hover": {
+                boxShadow: `0 12px 25px -6px ${alpha(theme.palette.primary.main, 0.6)}`,
+              },
+            }}
           >
             Удалить всё навсегда
           </Button>

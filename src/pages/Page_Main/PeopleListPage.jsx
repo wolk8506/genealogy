@@ -188,7 +188,8 @@ export default function PeopleListPage({ search, filters, sortOrder }) {
       title: "Человек перемещен в корзину",
       message: `Из дерева удален: ${name} `,
       type: "warning",
-      link: `/archive`,
+      category: "trash",
+      link: `/trash`,
     });
   };
 

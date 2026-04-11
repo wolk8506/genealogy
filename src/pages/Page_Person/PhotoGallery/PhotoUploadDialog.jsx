@@ -262,6 +262,7 @@ export default function PhotoUploadDialog({
           title: "Фото добавлено",
           message: `Файл "${filename}" успешно сохранен. Владелец: ${currentUserId}.`,
           type: "success",
+          category: "photo",
           // Можно добавить ссылку на галерею или само фото, если есть роут
         });
         // Уведомляем родительский компонент о добавлении
@@ -293,6 +294,7 @@ export default function PhotoUploadDialog({
         title: "Ошибка сохранения",
         message: err.message || "Не удалось сохранить фото",
         type: "error",
+        category: "photo",
       });
       alert(
         "Не удалось сохранить фото: " + (err.message || "Неизвестная ошибка"),

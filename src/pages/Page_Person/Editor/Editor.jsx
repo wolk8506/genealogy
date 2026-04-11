@@ -379,6 +379,7 @@ const Editor = forwardRef(
         title: "Человек создан",
         message: `${newPerson.firstName || ""} ${newPerson.lastName || ""} успешно добавлен и привязан.`,
         type: "success",
+        category: "people",
       });
     };
 
@@ -736,6 +737,7 @@ const Editor = forwardRef(
         message: `Обновлены данные: ${person.firstName} ${person.lastName}${details}`,
         type: "success",
         link: `/person/${person.id}`,
+        category: "people",
       });
     };
 
@@ -824,6 +826,7 @@ const Editor = forwardRef(
                   title: "Связь удалена",
                   message: "Не забудьте сохранить изменения",
                   type: "info",
+                  category: "people",
                 });
               }}
               onLink={(personId, role) => {

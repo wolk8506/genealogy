@@ -1,7 +1,6 @@
 import React from "react";
 import {
   Dialog,
-  DialogTitle,
   DialogContent,
   DialogActions,
   Typography,
@@ -113,7 +112,30 @@ export default function PhotoMetaDialog({ openDialog, meta, onClose }) {
       </DialogContent>
 
       <DialogActions sx={{ p: 2 }}>
-        <Button onClick={onClose} variant="outlined" color="inherit">
+        <Button
+          onClick={onClose}
+          variant="text"
+          sx={{
+            height: 24,
+            borderRadius: "6px",
+            py: 1.2,
+            px: 3.6,
+            textTransform: "none",
+            fontWeight: 600,
+            fontSize: "0.95rem",
+            color: "text.primary",
+            bgcolor: (theme) =>
+              theme.palette.mode === "dark"
+                ? "rgba(255,255,255,0.05)"
+                : "rgba(0,0,0,0.05)",
+            "&:hover": {
+              bgcolor: (theme) =>
+                theme.palette.mode === "dark"
+                  ? "rgba(255,255,255,0.1)"
+                  : "rgba(0,0,0,0.1)",
+            },
+          }}
+        >
           Закрыть
         </Button>
       </DialogActions>

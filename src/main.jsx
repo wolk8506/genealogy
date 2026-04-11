@@ -33,12 +33,11 @@ async function bootstrap() {
       <HashRouter>
         <SnackbarProvider maxSnack={3} autoHideDuration={3000}>
           <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="ru">
-            {" "}
             <App />
           </LocalizationProvider>
         </SnackbarProvider>
       </HashRouter>
-    </Provider>
+    </Provider>,
   );
 }
 

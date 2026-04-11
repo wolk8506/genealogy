@@ -344,25 +344,43 @@ export default function QuickAddRelativeModal({
         <Button
           onClick={onClose}
           sx={{
-            borderRadius: "10px",
-            px: 3,
+            height: 24,
+            borderRadius: "6px",
+            py: 1.2,
+            px: 2,
+            textTransform: "none",
             fontWeight: 600,
-            color: "text.secondary",
+            fontSize: "0.95rem",
+            color: "text.primary",
+            bgcolor: (theme) =>
+              theme.palette.mode === "dark"
+                ? "rgba(255,255,255,0.05)"
+                : "rgba(0,0,0,0.05)",
+            "&:hover": {
+              bgcolor: (theme) =>
+                theme.palette.mode === "dark"
+                  ? "rgba(255,255,255,0.1)"
+                  : "rgba(0,0,0,0.1)",
+            },
           }}
         >
-          Отмена
+          Отменить
         </Button>
         <Button
           onClick={handleSave}
           variant="contained"
           disableElevation
           sx={{
-            borderRadius: "10px",
-            px: 4,
-            fontWeight: 600,
-            boxShadow: `0 4px 14px 0 ${alpha(theme.palette.primary.main, 0.35)}`,
+            height: 24,
+            borderRadius: "6px", // Системный радиус macOS
+            py: 1.2,
             textTransform: "none",
+            fontWeight: 600,
             fontSize: "0.95rem",
+            bgcolor: "#007AFF", // Фирменный Blue
+            "&:hover": {
+              bgcolor: "#0062CC",
+            },
           }}
         >
           Создать

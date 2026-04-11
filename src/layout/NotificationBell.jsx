@@ -4,20 +4,39 @@ import {
   Popover,
   Box,
   Typography,
-  List,
-  ListItem,
   Button,
   alpha,
   Stack,
-  Divider,
+  useTheme,
+  lighten,
 } from "@mui/material";
 import NotificationsIcon from "@mui/icons-material/Notifications";
-import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline"; // Корзина
-import CircleIcon from "@mui/icons-material/Circle"; // Точка индикатора
+import CircleIcon from "@mui/icons-material/Circle";
 import DeleteSweepIcon from "@mui/icons-material/DeleteSweep";
 import { useNotificationStore } from "../store/useNotificationStore";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import CloseIcon from "@mui/icons-material/Close";
+import { formatNotificationDate } from "../utils/formatDate";
+import TrashFillIcon from "../components/svg/TrashFillIcon";
+import EventIcon from "@mui/icons-material/Event";
+import InfoIcon from "@mui/icons-material/Info";
+import PhotoLibraryIcon from "@mui/icons-material/PhotoLibrary";
+import WarningAmberIcon from "@mui/icons-material/WarningAmber";
+import AutoFixHighIcon from "@mui/icons-material/AutoFixHigh";
+import PieChartIcon from "@mui/icons-material/PieChart";
+import PermIdentityIcon from "@mui/icons-material/PermIdentity";
+
+const notificationIcon = {
+  trash: <TrashFillIcon />,
+  people: <PermIdentityIcon />,
+  photo: <PhotoLibraryIcon />,
+  fact: <InfoIcon />,
+  event: <EventIcon />,
+  dangerZone: <WarningAmberIcon />,
+  optimizationMaster: <AutoFixHighIcon />,
+  dataManagement: <PieChartIcon />,
+};
 
 const STATUS_CONFIG = {
   success: { color: "#4caf50" },
@@ -27,6 +46,7 @@ const STATUS_CONFIG = {
 };
 
 export const NotificationBell = () => {
+  const theme = useTheme();
   const {
     notifications,
     hasNew,
@@ -48,10 +68,11 @@ export const NotificationBell = () => {
     setAnchorEl(null);
     clearNewStatus();
   };
+
   const buttonName = (data) => {
-    if (data.includes("/person/")) return "Перейти к человеку →";
-    else if (data.includes("/archive")) return "Перейти в архив →";
-    else return "Смотреть детали →";
+    if (data.includes("/person/")) return "К человеку ▸";
+    else if (data.includes("/trash")) return "Корзина ▸";
+    else return "Детали ▸";
   };
 
   return (
@@ -63,25 +84,14 @@ export const NotificationBell = () => {
           display: "inline-flex",
           alignItems: "center",
           justifyContent: "center",
-          // gap: 1,
           border: "1px solid",
           borderColor: "divider",
           borderRadius: 7,
           height: 34,
           color: "text.secondary",
-          fontSize: 20,
         }}
       >
-        <IconButton
-          onClick={handleOpen}
-          sx={{
-            p: 1,
-            // bgcolor: alpha("#fff", 0.05),
-            //   border: "1px solid",
-            //   borderColor: "divider",
-            //   "&:hover": { bgcolor: alpha("#fff", 0.1) },
-          }}
-        >
+        <IconButton onClick={handleOpen} sx={{ p: 1 }}>
           <Badge variant="dot" invisible={!hasNew} color="warning">
             <NotificationsIcon sx={{ color: "white", fontSize: 18 }} />
           </Badge>
@@ -92,28 +102,63 @@ export const NotificationBell = () => {
         open={Boolean(anchorEl)}
         anchorEl={anchorEl}
         onClose={handleClose}
-        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-        transformOrigin={{ vertical: "top", horizontal: "right" }}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+        transformOrigin={{ vertical: "top", horizontal: "center" }}
+        elevation={0} // Убираем тень самого поповера
         PaperProps={{
           sx: {
             width: 380,
-            mt: 2,
-            borderRadius: "16px",
-            overflow: "hidden",
-            bgcolor: "background.paper",
-            boxShadow: "0 12px 40px rgba(0,0,0,0.5)",
-            border: "1px solid",
-            borderColor: "divider",
+            mt: 1.5,
+            bgcolor: "transparent", // Убираем общий фон
+            boxShadow: "none",
+            backgroundImage: "none",
+            border: "none",
+            overflow: "visible",
+
+            // ТРЕУГОЛЬНИК (Хвостик)
+            "&::before": {
+              content: '""',
+              display: "block",
+              position: "absolute",
+              top: -7,
+              left: "calc(50% - 7px)",
+              width: 14,
+              height: 14,
+              bgcolor: lighten(theme.palette.background.paper, 0.1),
+              borderLeft: "1px solid",
+              borderTop: "1px solid",
+              borderColor: "divider",
+              transform: "rotate(45deg)",
+              zIndex: 100,
+            },
           },
         }}
       >
+        {/* ШАПКА */}
         <Box
           sx={{
-            p: 2,
+            p: 1.5,
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
-            bgcolor: alpha("#fff", 0.02),
+            bgcolor: lighten(theme.palette.background.paper, 0.1),
+            borderRadius: "16px",
+            border: "1px solid",
+            borderColor: "divider",
+            position: "relative",
+            zIndex: notifications.length + 10,
+
+            // Небольшой хак: закрашиваем "вход" треугольника основным цветом
+            "&::before": {
+              content: '""',
+              position: "absolute",
+              top: 0,
+              left: "20%",
+              right: "20%",
+              height: "10px",
+              bgcolor: lighten(theme.palette.background.paper, 0.1),
+              zIndex: -1,
+            },
           }}
         >
           <Typography variant="subtitle1" sx={{ fontWeight: 800 }}>
@@ -127,159 +172,195 @@ export const NotificationBell = () => {
               sx={{
                 textTransform: "none",
                 color: "text.secondary",
-                borderRadius: "8px",
+                "&:hover": { color: "error.main" },
               }}
             >
-              Удалить все
+              Очистить
             </Button>
           )}
         </Box>
-        <Divider />
 
-        <List sx={{ p: 0, maxHeight: 480, overflowY: "auto" }}>
+        {/* СПИСОК КАРТОЧЕК */}
+        <Box
+          sx={{
+            maxHeight: 480,
+            overflowY: "auto",
+            display: "flex",
+            flexDirection: "column",
+            gap: 1.5,
+            px: 0.5,
+            pb: 3, // Запас для видимости стопки внизу
+            "&::-webkit-scrollbar": { display: "none" },
+            scrollbarWidth: "none",
+            mb: 2,
+          }}
+        >
           {notifications.length === 0 ? (
-            <Box sx={{ p: 4, textAlign: "center" }}>
+            <Box
+              sx={{
+                p: 4,
+                textAlign: "center",
+                // bgcolor: "background.paper",
+                borderRadius: 5,
+                border: "1px solid",
+                borderColor: "divider",
+              }}
+            >
               <Typography variant="body2" color="text.disabled">
-                Список пуст
+                Нет новых уведомлений
               </Typography>
             </Box>
           ) : (
-            notifications.map((note) => {
+            notifications.map((note, index) => {
               const status = STATUS_CONFIG[note.type] || STATUS_CONFIG.info;
 
               return (
-                <ListItem
+                <Box
                   key={note.id}
-                  disablePadding
                   sx={{
-                    flexDirection: "column",
-                    borderBottom: "1px solid",
-                    borderColor: "divider",
-                    transition: "background 0.3s ease",
-                    // Легкий слой цвета для непрочитанных
-                    bgcolor: note.isNew
-                      ? alpha("#ffc107", 0.06)
-                      : "transparent",
+                    position: "sticky",
+                    bottom: Math.min(index, 3) * 3,
+                    zIndex: notifications.length - index,
+                    // ДОБАВЛЕНО: Отступ только для первой карточки от шапки
+                    mt: index === 0 ? 1.5 : 0,
+                    p: 1.5,
+                    // pt: 1.5, // Немного увеличим верхний отступ, чтобы крестик не перекрывал текст
+                    borderRadius: 5,
+                    bgcolor: lighten(theme.palette.background.paper, 0.1),
+                    // backdropFilter: "blur(5px)",
+                    border: "1px solid",
+                    borderColor: note.isNew
+                      ? alpha(status.color, 0.5)
+                      : "divider",
+                    boxShadow: "none",
+                    transition: "all 0.2s ease",
+
+                    // ГЛАВНОЕ: Управляем видимостью кнопки через селектор родителя
                     "&:hover": {
-                      bgcolor: note.isNew
-                        ? alpha("#ffc107", 0.1)
-                        : alpha("#fff", 0.02),
+                      transform: "translateY(-2px)",
+                      bgcolor: lighten(theme.palette.background.paper, 0.08),
+                      "& .button": { opacity: 1 }, // Показываем кнопку при наведении
                     },
                   }}
                 >
-                  <Box sx={{ p: 2, width: "100%" }}>
-                    <Stack spacing={0.8}>
-                      {/* Верхняя строка: Индикатор + Тип + Время */}
+                  {/* КНОПКА УДАЛЕНИЯ (КРЕСТИК) */}
+                  <IconButton
+                    className="button" // Класс для связи с hover эффектом
+                    size="small"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      removeNotification(note.id);
+                    }}
+                    sx={{
+                      position: "absolute",
+                      top: -6,
+                      left: -6,
+                      opacity: 0, // По умолчанию скрыта
+                      transition: "opacity 0.2s ease",
+                      color: "text.disabled",
+                      p: 0.5,
+                      bgcolor: lighten(theme.palette.background.paper, 0.15),
+
+                      "&:hover": {
+                        bgcolor: lighten(theme.palette.background.paper, 0.15),
+                      },
+                    }}
+                  >
+                    <CloseIcon sx={{ fontSize: 16 }} />
+                  </IconButton>
+
+                  {note.link && (
+                    <Button
+                      className="button"
+                      size="small"
+                      onClick={() => {
+                        navigate(note.link);
+                        handleClose();
+                      }}
+                      sx={{
+                        color: status.color,
+                        opacity: 0, // По умолчанию скрыта
+                        py: 0,
+                        transition: "opacity 0.2s ease",
+                        textTransform: "none",
+                        fontWeight: 700,
+                        position: "absolute",
+                        bottom: 6,
+                        right: 12,
+                        bgcolor: lighten(theme.palette.background.paper, 0.15),
+                      }}
+                    >
+                      {buttonName(note.link)}
+                    </Button>
+                  )}
+
+                  <Box sx={{ display: "flex", alignItems: "center" }}>
+                    <Box
+                      sx={{
+                        width: 32,
+                        height: 32,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        mr: 1.5,
+                        borderRadius: 2,
+                        bgcolor: "divider",
+                      }}
+                    >
+                      {notificationIcon[note.category]}
+                    </Box>
+                    <Stack spacing={1}>
                       <Stack
                         direction="row"
                         justifyContent="space-between"
                         alignItems="center"
+                        sx={{ width: "304px" }} // Небольшой отступ слева для заголовка, чтобы не наезжал на крестик
                       >
                         <Stack direction="row" spacing={1} alignItems="center">
                           {note.isNew && (
                             <CircleIcon
-                              sx={{ fontSize: 8, color: "#ffc107" }}
+                              sx={{
+                                fontSize: 10,
+                                color: status.color,
+                                opacity: 0.8,
+                              }}
                             />
                           )}
                           <Typography
                             variant="caption"
                             sx={{
                               color: status.color,
-                              fontWeight: 900,
-                              textTransform: "uppercase",
-                              letterSpacing: 0.8,
+                              fontWeight: 700,
+                              fontSize: "13px",
                             }}
                           >
                             {note.title}
                           </Typography>
                         </Stack>
-                        <Typography variant="caption" color="text.disabled">
-                          {new Date(note.timestamp).toLocaleTimeString([], {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
+                        <Typography
+                          variant="caption"
+                          sx={{ color: "text.disabled", fontWeight: 600 }}
+                        >
+                          {formatNotificationDate(note.timestamp)}
                         </Typography>
                       </Stack>
 
-                      {/* Текст сообщения */}
                       <Typography
                         variant="body2"
                         sx={{
-                          color: "text.primary",
-                          whiteSpace: "pre-wrap",
-                          lineHeight: 1.5,
-                          fontSize: "0.85rem",
-                          maxHeight: "150px",
-                          overflowY: "auto",
-                          pr: 1,
-                          "&::-webkit-scrollbar": { width: "3px" },
-                          "&::-webkit-scrollbar-thumb": {
-                            bgcolor: alpha(status.color, 0.2),
-                            borderRadius: "3px",
-                          },
+                          fontWeight: 400,
+                          fontSize: "13px",
                         }}
                       >
                         {note.message}
                       </Typography>
-
-                      {/* Нижняя строка: Кнопка перехода + Корзина */}
-                      <Stack
-                        direction="row"
-                        justifyContent="space-between"
-                        alignItems="center"
-                        sx={{ mt: 0.5 }}
-                      >
-                        <Box>
-                          {note.link && (
-                            <Button
-                              variant="text"
-                              size="small"
-                              onClick={() => {
-                                navigate(note.link);
-                                handleClose();
-                              }}
-                              sx={{
-                                color: status.color,
-                                p: 0,
-                                fontSize: "0.75rem",
-                                textTransform: "none",
-                                fontWeight: 700,
-                                "&:hover": {
-                                  bgcolor: "transparent",
-                                  textDecoration: "underline",
-                                },
-                              }}
-                            >
-                              {buttonName(note.link)}
-                            </Button>
-                          )}
-                        </Box>
-
-                        <IconButton
-                          size="small"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            removeNotification(note.id);
-                          }}
-                          sx={{
-                            color: "text.disabled",
-                            "&:hover": {
-                              color: "error.main",
-                              bgcolor: alpha("#f44336", 0.1),
-                            },
-                            transition: "0.2s",
-                          }}
-                        >
-                          <DeleteOutlineIcon sx={{ fontSize: 18 }} />
-                        </IconButton>
-                      </Stack>
                     </Stack>
                   </Box>
-                </ListItem>
+                </Box>
               );
             })
           )}
-        </List>
+        </Box>
       </Popover>
     </>
   );

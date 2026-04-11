@@ -4,6 +4,7 @@ const fs = require("fs");
 const sharp = require("sharp");
 const archiver = require("archiver");
 const PDFDocument = require("pdfkit");
+const os = require("os");
 
 module.exports = (settingsStore) => {
   global.globalHashtags = new Set();
@@ -170,6 +171,71 @@ module.exports = (settingsStore) => {
   });
 
   // ✅ 2. Сохранение Blob (HEIC, Drag&Drop)
+  // ipcMain.handle(
+  //   "photo:saveBlobFile",
+  //   async (_, meta, arrayBuffer, filename) => {
+  //     const buffer = Buffer.from(arrayBuffer);
+  //     const paths = getUserPaths(meta.owner);
+
+  //     [paths.webp, paths.thumbs, paths.original].forEach((p) => {
+  //       if (!fs.existsSync(p)) fs.mkdirSync(p, { recursive: true });
+  //     });
+
+  //     const settings = settingsStore.get("importSettings") || {
+  //       keepOriginals: true,
+  //       quality: 80,
+  //     };
+
+  //     const ext = path.extname(filename);
+  //     const base = path.basename(filename, ext).replace(/\s+/g, "_");
+
+  //     let finalBase = base;
+  //     let counter = 1;
+  //     while (fs.existsSync(path.join(paths.original, `${finalBase}${ext}`))) {
+  //       finalBase = `${base}_${counter}`;
+  //       counter++;
+  //     }
+
+  //     const originalFilename = `${finalBase}${ext}`;
+  //     const webpFilename = `${finalBase}.webp`;
+
+  //     try {
+  //       await sharp(buffer)
+  //         .rotate()
+  //         .webp({ quality: settings.quality })
+  //         .toFile(path.join(paths.webp, webpFilename));
+
+  //       await sharp(buffer)
+  //         .rotate()
+  //         .resize(300, 300, { fit: "inside" })
+  //         .webp({ quality: 50 })
+  //         .toFile(path.join(paths.thumbs, webpFilename));
+
+  //       if (settings.keepOriginals) {
+  //         fs.writeFileSync(path.join(paths.original, originalFilename), buffer);
+  //       }
+
+  //       let photos = fs.existsSync(paths.meta)
+  //         ? JSON.parse(fs.readFileSync(paths.meta, "utf-8"))
+  //         : [];
+
+  //       const newPhoto = {
+  //         ...meta,
+  //         id: Date.now(),
+  //         filename: originalFilename, // ✅ Сохраняем оригинальный формат
+  //         date: meta.date || new Date().toISOString().split("T")[0],
+  //       };
+
+  //       photos.push(newPhoto);
+  //       fs.writeFileSync(paths.meta, JSON.stringify(photos, null, 2));
+
+  //       return newPhoto;
+  //     } catch (err) {
+  //       console.error("SaveBlob Error:", err);
+  //       return null;
+  //     }
+  //   },
+  // );
   ipcMain.handle(
     "photo:saveBlobFile",
     async (_, meta, arrayBuffer, filename) => {
@@ -199,6 +265,7 @@ module.exports = (settingsStore) => {
       const webpFilename = `${finalBase}.webp`;
 
       try {
+        // 1. Сначала выполняем тяжелые операции с изображениями (Sharp)
         await sharp(buffer)
           .rotate()
           .webp({ quality: settings.quality })
@@ -214,14 +281,23 @@ module.exports = (settingsStore) => {
           fs.writeFileSync(path.join(paths.original, originalFilename), buffer);
         }
 
+        // 2. ГЕОЛОКАЦИЯ: Добавляем название места, если есть координаты
+        let locationName = null;
+        if (meta.lat && meta.lng) {
+          // Вызываем функцию, которую мы написали выше
+          locationName = await getFriendlyLocation(meta.lat, meta.lng);
+        }
+
+        // 3. Читаем существующую базу
         let photos = fs.existsSync(paths.meta)
           ? JSON.parse(fs.readFileSync(paths.meta, "utf-8"))
           : [];
-
+        // 4. Формируем объект с учетом нового поля locationName
         const newPhoto = {
           ...meta,
           id: Date.now(),
           filename: originalFilename, // ✅ Сохраняем оригинальный формат
+          locationName: locationName, // Добавляем в объект для БД
           date: meta.date || new Date().toISOString().split("T")[0],
         };
 
@@ -288,6 +364,47 @@ module.exports = (settingsStore) => {
       ),
     );
     return true;
+  });
+
+  ipcMain.handle("photo:convert-heic", async (event, input) => {
+    const isMac = process.platform === "darwin";
+
+    // Если пришел ArrayBuffer (через Drag&Drop), превращаем его в Buffer Node.js
+    let inputBuffer = Buffer.isBuffer(input) ? input : Buffer.from(input);
+
+    // Если нам прислали строку (путь из диалога выбора), читаем файл
+    if (typeof input === "string") {
+      inputBuffer = fs.readFileSync(input.replace(/^file:\/\//, ""));
+    }
+
+    if (isMac) {
+      // Для sips все равно нужен временный файл, так как sips работает с диском
+      const tempIn = path.join(os.tmpdir(), `temp_${Date.now()}.heic`);
+      const tempOut = tempIn + ".jpg";
+
+      fs.writeFileSync(tempIn, inputBuffer);
+
+      const { exec } = require("child_process");
+      await require("util").promisify(exec)(
+        `sips -s format jpeg "${tempIn}" --out "${tempOut}"`,
+      );
+
+      const result = fs.readFileSync(tempOut);
+
+      // Чистим за собой
+      fs.unlinkSync(tempIn);
+      fs.unlinkSync(tempOut);
+
+      return result;
+    } else {
+      // Windows: heic-convert отлично работает с буфером напрямую
+      const heicConvert = require("heic-convert");
+      return await heicConvert({
+        buffer: inputBuffer,
+        format: "JPEG",
+        quality: 0.9,
+      });
+    }
   });
 
   // ✅ Остальные системные методы
@@ -483,4 +600,42 @@ module.exports = (settingsStore) => {
   ipcMain.handle("hashtags:getGlobal", () => {
     return Array.from(globalHashtags).sort();
   });
+
+  // ---   Получение с внешнего сервиса геопозицию
+  async function getFriendlyLocation(lat, lng) {
+    if (!lat || !lng) return null;
+
+    try {
+      // Динамический импорт прямо внутри функции, если fetch не глобальный
+      const { default: fetch } = await import("node-fetch");
+
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 3000);
+
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=ru`,
+        {
+          headers: { "User-Agent": "FamilyArchiveApp/1.0" },
+          signal: controller.signal,
+        },
+      );
+
+      clearTimeout(timeout);
+      const data = await response.json();
+      if (!data || !data.address) return null;
+
+      const a = data.address;
+      const city = a.city || a.town || a.village || a.hamlet || a.suburb;
+      const country = a.country;
+      const suburb = a.suburb ? `, ${a.suburb}` : "";
+      const road = a.road ? `, ${a.road}` : "";
+
+      return city && country
+        ? `${country}, ${city}${suburb}${road}`
+        : country || data.display_name;
+    } catch (err) {
+      console.error("Geo lookup failed:", err);
+      return null;
+    }
+  }
 };

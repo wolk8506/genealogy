@@ -14,6 +14,7 @@ import { useNotificationStore } from "../../store/useNotificationStore";
 import { useTheme, alpha } from "@mui/material/styles";
 import SettingsIcon from "@mui/icons-material/Settings";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
+import CustomSwitch from "../../components/CustomSwitch";
 
 export const NewPhotoProcessingOptionsCard = ({ cardStyle }) => {
   const theme = useTheme();
@@ -77,8 +78,24 @@ export const NewPhotoProcessingOptionsCard = ({ cardStyle }) => {
           Параметры обработки новых фото
         </Typography>
       </Box>
-      <Box sx={{ p: 3, flexGrow: 1 }}>
-        <Stack spacing={5}>
+      <Box
+        sx={{
+          // display: "flex",
+          p: 3,
+          height: 470,
+          // justifyContent: "space-between",
+        }}
+      >
+        <Stack
+          spacing={5}
+          sx={{
+            height: "100%",
+            // display: "flex",
+            // p: 3,
+            // height: 470,
+            justifyContent: "space-between",
+          }}
+        >
           {/* Секция: Оригиналы */}
           <Box>
             <FormControlLabel
@@ -90,7 +107,7 @@ export const NewPhotoProcessingOptionsCard = ({ cardStyle }) => {
                 flexDirection: "row-reverse",
               }}
               control={
-                <Switch
+                <CustomSwitch
                   checked={importSettings.keepOriginals}
                   onChange={(e) =>
                     handleSettingChange({

@@ -9,6 +9,7 @@ import {
 } from "@mui/material";
 import { useTheme, alpha } from "@mui/material/styles";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import TrashFillIcon from "../../components/svg/TrashFillIcon";
 import { PersonCard } from "./PersonCard"; // Укажи правильный путь
 import { useNotificationStore } from "../../store/useNotificationStore";
 import { usePeopleListStore } from "../../store/usePeopleListStore";
@@ -58,6 +59,7 @@ export default function DeletedPeoplePage() {
       title: "Восстановление",
       message: `${name} успешно восстановлен в основное древо`,
       type: "success",
+      category: "trash",
     });
   };
 
@@ -119,6 +121,7 @@ export default function DeletedPeoplePage() {
       title: "Полное удаление",
       message: `Запись полностью удалена из базы`,
       type: "error",
+      category: "trash",
     });
   };
 
@@ -159,7 +162,7 @@ export default function DeletedPeoplePage() {
             mb: 2,
           }}
         >
-          <DeleteOutlineIcon
+          <TrashFillIcon
             sx={{
               fontSize: 50,
               width: "100px",

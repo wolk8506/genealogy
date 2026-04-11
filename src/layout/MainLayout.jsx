@@ -1,5 +1,9 @@
 // MainLayout.jsx
-import { styled, useTheme } from "@mui/material/styles";
+import { Routes, Route, useNavigate } from "react-router-dom"; // BrowserRouter обычно оборачивает App
+import React, { useEffect, useState, useCallback, useRef } from "react";
+import { useLocation, matchPath, Link as RouterLink } from "react-router-dom"; // Link переименован в RouterLink
+
+import { useSnackbar } from "notistack";
 
 import {
   Box,
@@ -8,48 +12,38 @@ import {
   Typography,
   IconButton,
 } from "@mui/material";
-
+import { styled, useTheme } from "@mui/material/styles";
 import MuiAppBar from "@mui/material/AppBar";
-// import { alpha } from "@mui/material/styles";
+// icon
 import InfoIcon from "@mui/icons-material/Info";
-// import ArchiveIcon from "@mui/icons-material/Archive";
-import MenuIcon from "@mui/icons-material/Menu";
-
 import PersonIcon from "@mui/icons-material/Person";
-import TuneIcon from "@mui/icons-material/Tune";
-// import PersonAddAlt1Icon from "@mui/icons-material/PersonAddAlt1";
 import GroupIcon from "@mui/icons-material/Group";
-import MenuOpenIcon from "@mui/icons-material/MenuOpen";
 import CollectionsIcon from "@mui/icons-material/Collections";
-import DeleteIcon from "@mui/icons-material/Delete";
+import GearIcon from "../components/svg/GearIcon";
 
-import { useLocation, matchPath, Link as RouterLink } from "react-router-dom"; // Link переименован в RouterLink
-import { Routes, Route } from "react-router-dom"; // BrowserRouter обычно оборачивает App
-import React, { useEffect, useState, useCallback, useRef } from "react";
-import { useNavigate } from "react-router-dom";
 import AppDrawer, { DrawerHeader } from "./AppDrawer";
 
-// import AddPersonPage from "../pages/Page_AddPersonPage/AddPersonPage";
 import PersonPage from "../pages/Page_Person/PersonPage";
 import PeopleListPage from "../pages/Page_Main/PeopleListPage";
-// import PhotoUploader from "../pages/Page_PhotoUploader/PhotoUploader";
 import GlobalPhotoGallery from "../pages/Page_GlobalPhotoGallery/GlobalPhotoGallery";
 import AboutPage from "../pages/Page_About/AboutPage";
 import ArchivedPeoplePage from "../pages/Page_Settings/ArchivedPeoplePage";
 import { UpdateBanner } from "../pages/Page_Settings/UpdateBanner";
+import DeletedPeoplePage from "../pages/Page_Main/DeletedPeoplePage";
 
 import LicenseModal from "./LicenseModal";
-import { useSnackbar } from "notistack";
 import NavigationButtons from "./NavigationButtons";
 import ChangelogModal from "./ChangelogModal";
 import UserGuideModal from "./UserGuideModal";
+import { NotificationBell } from "./NotificationBell";
 
 import GalleryToolbar from "./bar_GlobalPhotoGallery/GalleryToolbar";
 import PeopleListToolbar from "./bar_PeopleListToolbar/PeopleListToolbar";
 import PersonToolbar from "./bar_PeopleToolbar/PersonToolbar";
-import { NotificationBell } from "./NotificationBell";
 
-import DeletedPeoplePage from "../pages/Page_Main/DeletedPeoplePage";
+import ButtonConteiner from "../components/ButtonConteiner";
+import SidebarLeftIcon from "../components/svg/SidebarLeftIcon";
+import TrashFillIcon from "../components/svg/TrashFillIcon";
 
 const drawerItems = [
   { text: "Люди", icon: <GroupIcon />, path: "/" },
@@ -58,14 +52,7 @@ const drawerItems = [
     icon: <CollectionsIcon />,
     path: "/globalPhotoGallery",
   },
-  // { text: "Добавить человека", icon: <PersonAddAlt1Icon />, path: "/add" },
-  // {
-  //   text: "Загрузить фото",
-  //   icon: <AddPhotoAlternateIcon />,
-  //   path: "/photoUploader",
-  // },
-  // { text: "Архив", icon: <ArchiveIcon />, path: "/archive" },
-  { text: "Настройки", icon: <TuneIcon />, path: "/settings" },
+  { text: "Настройки", icon: <GearIcon />, path: "/settings" },
   { text: "О приложении", icon: <InfoIcon />, path: "/about" },
 ];
 
@@ -399,7 +386,7 @@ export default function MainLayout() {
     pageTitle = (
       <Box sx={{ display: "flex", alignItems: "center" }}>
         <Box sx={{ display: "flex", alignItems: "center", mr: 2 }}>
-          <DeleteIcon color={isDark ? "primary" : "prymary"} />
+          <TrashFillIcon color={isDark ? "primary" : "prymary"} />
         </Box>
         <Typography variant="h6" noWrap>
           Корзина
@@ -459,21 +446,27 @@ export default function MainLayout() {
               alignItems: "center",
             }}
           >
-            <IconButton
-              color="inherit"
-              aria-label="open drawer"
-              onClick={handleDrawerOpen}
-              edge="start"
-              sx={[
-                {
-                  marginRight: 1,
-                  WebkitAppRegion: "no-drag",
-                },
-                // open && { display: "none" },
-              ]}
-            >
-              {!open ? <MenuIcon /> : <MenuOpenIcon />}
-            </IconButton>
+            <ButtonConteiner>
+              <IconButton
+                color="inherit"
+                // aria-label="open drawer"
+                onClick={handleDrawerOpen}
+                // edge="start"
+                sx={[
+                  {
+                    // marginRight: 1,
+                    WebkitAppRegion: "no-drag",
+                    p: "6px",
+                    px: "6px",
+                    m: 0,
+                  },
+                  // open && { display: "none" },
+                ]}
+              >
+                <SidebarLeftIcon sx={{ fontSize: "20px", color: "white" }} />
+              </IconButton>
+            </ButtonConteiner>
+            <Box width={"16px"} />
 
             <NavigationButtons />
             <NotificationBell />

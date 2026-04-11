@@ -288,6 +288,7 @@ export default function PersonEditDialog({
       message: `Обновлены данные: ${person.firstName.trim()} ${person.lastName.trim()}${details}`,
       type: "success",
       link: `/person/${person.id}`,
+      category: "people",
     });
   };
 
