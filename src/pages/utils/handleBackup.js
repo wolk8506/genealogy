@@ -4,8 +4,25 @@ import { saveAs } from "file-saver";
 const handleBackup = async () => {
   const zip = new JSZip();
 
+  // СОЗДАЕМ ПАСПОРТ АРХИВА
+  const manifest = {
+    app: "FamilyTreePro", // Уникальный ID вашего приложения
+    version: "1.0.0",
+    createdAt: new Date().toISOString(),
+    contents: {
+      hasPeople: true,
+      hasPhotos: false,
+      count: 0,
+    },
+  };
+
   // 1. Сохраняем людей
   const people = await window.peopleAPI.getAll();
+  manifest.contents.count = people.length;
+
+  // Сохраняем манифест первым файлом
+  zip.file("manifest.json", JSON.stringify(manifest, null, 2));
+
   zip.file("people.json", JSON.stringify(people, null, 2));
 
   // 2. Сохраняем аватары

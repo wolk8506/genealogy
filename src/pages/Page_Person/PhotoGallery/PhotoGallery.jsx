@@ -426,14 +426,15 @@ export default function PhotoGallery({
                 <Box
                   sx={{
                     py: 1,
-                    px: 3,
+                    px: 2,
+                    borderRadius: "12px",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "space-between",
                     bgcolor: isDark
                       ? alpha("#121212", 0.9)
                       : alpha("#fff", 0.9),
-                    backdropFilter: "blur(8px)",
+                    backdropFilter: "blur(6px)",
                     borderBottom: "1px solid divider",
                     zIndex: 1,
                   }}
@@ -459,7 +460,7 @@ export default function PhotoGallery({
               itemContent={(idx) => {
                 const rowItems = flattenedRows[idx];
                 return (
-                  <Stack direction="row" spacing={1} sx={{ px: 2, py: 0.5 }}>
+                  <Stack direction="row" spacing={1} sx={{ px: 0, py: 0.5 }}>
                     {rowItems.map((item) => {
                       if (!photoPaths.thumbs[item.id]) fetchThumb(item);
 

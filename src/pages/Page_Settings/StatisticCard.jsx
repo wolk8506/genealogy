@@ -73,6 +73,9 @@ export const StatisticCard = ({ cardStyle, loadAll }) => {
   const [importProgress, setImportProgress] = useState({
     current: 0,
     total: 0,
+    processedFiles: 0, // Добавить это
+    totalFiles: 0, // Добавить это
+    percent: 0, // Добавить это
   });
   const [importConfirmOpen, setImportConfirmOpen] = useState(false);
   const [confirmConflicts, setConfirmConflicts] = useState([]);
@@ -146,11 +149,16 @@ export const StatisticCard = ({ cardStyle, loadAll }) => {
     if (!window.importAPI?.onProgress) return;
     const removeListener = window.importAPI.onProgress((data) => {
       const now = Date.now();
-      if (now - lastUpdateRef.current > 100 || data.current === data.total) {
+      // Обновляем чаще или если это финальный файл
+      if (now - lastUpdateRef.current > 50 || data.current === data.total) {
         lastUpdateRef.current = now;
         setImportProgress((prev) => ({
           current: data.current ?? prev.current,
           total: data.total ?? prev.total,
+          // ДОБАВЛЯЕМ НОВЫЕ ПОЛЯ:
+          processedFiles: data.processedFiles ?? prev.processedFiles,
+          totalFiles: data.totalFiles ?? prev.totalFiles,
+          percent: data.percent ?? prev.percent,
         }));
         if (data.message) setImportStatus(data.message);
       }
@@ -256,9 +264,10 @@ export const StatisticCard = ({ cardStyle, loadAll }) => {
         return;
       }
 
+      setArchiveProgress((prev) => ({ ...prev, phase: "done", percent: 100 }));
       setExportPath(archivePath);
       setSaveDone(true);
-      setArchiveProgress((prev) => ({ ...prev, phase: "done", percent: 100 }));
+
       setExportStatus("✅ Полный архив сохранён");
       addNotification({
         timestamp: new Date().toISOString(),
@@ -387,9 +396,10 @@ export const StatisticCard = ({ cardStyle, loadAll }) => {
   // Дефолтный контент показывается только если нет ни одного активного процесса
   const showDefaultContent =
     !showExportProcess && !showImportProcess && !showImportDecision;
-  const progressValue = Math.round(
-    (importProgress.current / Math.max(1, importProgress.total)) * 100,
-  );
+  // const progressValue = Math.round(
+  //   (importProgress.current / Math.max(1, importProgress.total)) * 100,
+  // );
+  const progressValue = importProgress.percent || 0;
   const exportPercent = percentValue || 0;
   return (
     <Card variant="outlined" sx={{ ...cardStyle }}>
@@ -835,10 +845,12 @@ export const StatisticCard = ({ cardStyle, loadAll }) => {
                     setSaveDone(false);
                   }}
                   sx={{
+                    height: 24,
+                    borderRadius: "6px",
+                    py: 1.2,
                     bgcolor: "common.white",
                     color: "success.dark",
                     fontWeight: 700,
-                    py: 1.2,
                     "&:hover": {
                       bgcolor: alpha(theme.palette.common.white, 0.9),
                     },
@@ -1170,7 +1182,10 @@ export const StatisticCard = ({ cardStyle, loadAll }) => {
                           variant="h4"
                           sx={{ fontWeight: 900, lineHeight: 1 }}
                         >
-                          {importProgress.current.toLocaleString()}
+                          {/* {importProgress.current.toLocaleString()} */}
+                          {(
+                            importProgress.processedFiles || 0
+                          ).toLocaleString()}
                         </Typography>
                         <Typography
                           sx={{
@@ -1180,7 +1195,8 @@ export const StatisticCard = ({ cardStyle, loadAll }) => {
                             ml: 1,
                           }}
                         >
-                          / {importProgress.total.toLocaleString()}
+                          {/* / {importProgress.total.toLocaleString()} */}/{" "}
+                          {(importProgress.totalFiles || 0).toLocaleString()}
                         </Typography>
                       </Box>
                     </Box>
@@ -1239,17 +1255,36 @@ export const StatisticCard = ({ cardStyle, loadAll }) => {
                 </Box>
               </Box>
             ) : (
-              <Box sx={{ textAlign: "center" }}>
-                <CheckCircleIcon
-                  sx={{ fontSize: 48, color: "success.main", mb: 2 }}
-                />
-                <Typography variant="subtitle1" fontWeight={700} gutterBottom>
+              <Box
+                sx={{
+                  p: 3,
+                  borderRadius: 4,
+                  background: `linear-gradient(135deg, ${theme.palette.success.main} 0%, ${theme.palette.success.dark} 100%)`,
+                  color: "success.contrastText",
+                  boxShadow: `0 12px 32px ${alpha(theme.palette.success.main, 0.3)}`,
+                  textAlign: "center",
+                  position: "relative",
+                  overflow: "hidden",
+                }}
+              >
+                <CheckCircleIcon sx={{ fontSize: 64, mb: 2, opacity: 0.9 }} />
+                <Typography variant="h6" fontWeight={900} gutterBottom>
                   Архив успешно восстановлен!
                 </Typography>
                 <Button
                   variant="contained"
                   disableElevation
-                  sx={{ mt: 3 }}
+                  sx={{
+                    height: 24,
+                    borderRadius: "6px",
+                    py: 1.2,
+                    bgcolor: "common.white",
+                    color: "success.dark",
+                    fontWeight: 700,
+                    "&:hover": {
+                      bgcolor: alpha(theme.palette.common.white, 0.9),
+                    },
+                  }}
                   onClick={() => setIsImportingOpen(false)}
                 >
                   Готово
