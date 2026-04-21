@@ -22,6 +22,26 @@ import EditOffIcon from "@mui/icons-material/EditOff";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import HashtagInput from "../HashtagInput";
 import { useNotificationStore } from "../../store/useNotificationStore";
+import Draggable from "react-draggable";
+import { Paper } from "@mui/material";
+import DraggableDialog from "./DraggableDialog";
+
+// function PaperComponent(props) {
+//   // 1. Создаем ссылку на узел
+//   const nodeRef = useRef(null);
+
+//   return (
+//     // 2. Передаем nodeRef в Draggable
+//     <Draggable
+//       nodeRef={nodeRef}
+//       handle="#draggable-header"
+//       cancel={'[class*="MuiDialogContent-root"]'}
+//     >
+//       {/* 3. Обязательно передаем ту же ссылку в Paper через проп nodeRef или ref */}
+//       <Paper {...props} ref={nodeRef} />
+//     </Draggable>
+//   );
+// }
 
 export default function PhotoMetaUpdateDialog({
   open, // Открыт ли диалог (openDialogUpdate)
@@ -225,6 +245,9 @@ export default function PhotoMetaUpdateDialog({
       onClose={onClose}
       maxWidth="md"
       fullWidth
+      // ПОДКЛЮЧАЕМ КОМПОНЕНТ ПЕРЕТАСКИВАНИЯ
+
+      PaperComponent={DraggableDialog}
       PaperProps={{
         sx: {
           borderRadius: "24px",
@@ -234,11 +257,15 @@ export default function PhotoMetaUpdateDialog({
           border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
           boxShadow: theme.shadows[24],
           overflow: "hidden",
+          // minHeight: "90vh",
+          display: "flex",
+          flexDirection: "column",
         },
       }}
     >
       {/* Шапка диалога */}
       <Box
+        id="draggable-header"
         sx={{
           p: 2.5,
           display: "flex",
@@ -260,7 +287,7 @@ export default function PhotoMetaUpdateDialog({
           >
             <EditIcon />
           </Box>
-          <Typography variant="h6" sx={{ fontWeight: 700 }}>
+          <Typography variant="h6" sx={{ fontWeight: 700, cursor: "default" }}>
             Редактирование фотографии
           </Typography>
         </Stack>
@@ -280,17 +307,18 @@ export default function PhotoMetaUpdateDialog({
           {/* ЛЕВАЯ КОЛОНКА: Превью */}
           <Box
             sx={{
-              flex: 1,
+              flex: { md: "0 0 45%" },
               bgcolor: isDark ? alpha("#000", 0.2) : "#f8f9fa",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
               p: 4,
-              minHeight: 400,
+              height: 480,
               position: "relative",
               borderRight: {
                 md: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
               },
+              overflow: "hidden",
             }}
           >
             <Box
@@ -299,7 +327,7 @@ export default function PhotoMetaUpdateDialog({
               alt="Превью"
               sx={{
                 maxWidth: "100%",
-                maxHeight: 480,
+                maxHeight: "100%",
                 objectFit: "contain",
                 borderRadius: "16px",
                 boxShadow: "0 20px 40px rgba(0,0,0,0.25)",
@@ -331,7 +359,19 @@ export default function PhotoMetaUpdateDialog({
           </Box>
 
           {/* ПРАВАЯ КОЛОНКА: Форма редактирования */}
-          <Box sx={{ flex: 1.2, p: 4 }}>
+          <Box
+            sx={{
+              flex: 1,
+              p: 4,
+              overflowY: "auto", // 3. ВКЛЮЧАЕМ СКРОЛЛ ТОЛЬКО ЗДЕСЬ
+              height: 480,
+              "&::-webkit-scrollbar": { width: 4 },
+              "&::-webkit-scrollbar-thumb": {
+                bgcolor: "divider",
+                borderRadius: 2,
+              },
+            }}
+          >
             <Stack spacing={3}>
               {/* Секция: Метаданные */}
               <Stack spacing={2.5}>

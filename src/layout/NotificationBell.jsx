@@ -188,7 +188,7 @@ export const NotificationBell = () => {
             display: "flex",
             flexDirection: "column",
             gap: 1.5,
-            px: 0.5,
+            // px: 0.5,
             pb: 3, // Запас для видимости стопки внизу
             "&::-webkit-scrollbar": { display: "none" },
             scrollbarWidth: "none",
@@ -198,9 +198,10 @@ export const NotificationBell = () => {
           {notifications.length === 0 ? (
             <Box
               sx={{
-                p: 4,
+                p: 1.5,
+                mt: 1.5,
                 textAlign: "center",
-                // bgcolor: "background.paper",
+                bgcolor: lighten(theme.palette.background.paper, 0.1),
                 borderRadius: 5,
                 border: "1px solid",
                 borderColor: "divider",

@@ -101,6 +101,15 @@ export default function BioToolbar({ isEditing, requestToggleEdit, execRef }) {
                 <b style={{ fontSize: "16px" }}>H2</b>
               </IconButton>
             </Tooltip>
+            <Tooltip title="Заголовок 3">
+              <IconButton
+                size="small"
+                sx={{ color: "white", p: 1 }}
+                onClick={() => execRef.current?.exec("WrapInHeading", 3)}
+              >
+                <b style={{ fontSize: "16px" }}>H3</b>
+              </IconButton>
+            </Tooltip>
             <Tooltip title="Обычный текст">
               <IconButton
                 size="small"

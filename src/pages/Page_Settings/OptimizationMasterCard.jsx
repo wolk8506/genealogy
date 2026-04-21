@@ -9,7 +9,6 @@ import {
   Chip,
   Alert,
   LinearProgress,
-  CircularProgress,
 } from "@mui/material";
 import { alpha, useTheme } from "@mui/material/styles";
 import { keyframes } from "@mui/system";
@@ -17,16 +16,17 @@ import { useSnackbar } from "notistack";
 
 // Иконки
 import SdStorageIcon from "@mui/icons-material/SdStorage";
-import AccountTreeIcon from "@mui/icons-material/AccountTree";
-import CollectionsIcon from "@mui/icons-material/Collections";
 import SettingsSuggestIcon from "@mui/icons-material/SettingsSuggest";
 import AutoFixHighIcon from "@mui/icons-material/AutoFixHigh";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import StopIcon from "@mui/icons-material/Stop";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import BuildCircleIcon from "@mui/icons-material/BuildCircle";
+import CleaningServicesIcon from "@mui/icons-material/CleaningServices";
+import StorageIcon from "@mui/icons-material/Storage";
 
-// Твои импорты сторов и компонентов (раскомментируй их в реальном проекте)
+// Твои импорты сторов и компонентов
 import { useNotificationStore } from "../../store/useNotificationStore";
 import CustomSwitch from "../../components/CustomSwitch";
 
@@ -44,8 +44,10 @@ export const OptimizationMasterCard = ({ cardStyle }) => {
     (state) => state.addNotification,
   );
 
-  // Состояния карточки: 'info' -> 'settings' -> 'processing'
+  // Состояния карточки: 'info' -> 'settings' | 'maintenance' -> 'processing'
   const [view, setView] = useState("info");
+  const [isRunningTask, setIsRunningTask] = useState(false);
+  const [logs, setLogs] = useState([]);
 
   // Состояния настроек
   const [quality, setQuality] = useState(80);
@@ -59,7 +61,20 @@ export const OptimizationMasterCard = ({ cardStyle }) => {
     percent: 0,
   });
 
-  // Подписка на прогресс (работает только когда view === 'processing')
+  useEffect(() => {
+    // Подписываемся на логи обслуживания
+    const removeListener = window.appAPI?.onMaintenanceLog?.((message) => {
+      setLogs((prev) => {
+        const next = [...prev, message];
+        return next.slice(-1000);
+      });
+    });
+
+    return () => {
+      if (typeof removeListener === "function") removeListener();
+    };
+  }, []);
+
   useEffect(() => {
     if (view !== "processing") return;
 
@@ -68,7 +83,7 @@ export const OptimizationMasterCard = ({ cardStyle }) => {
     });
 
     return () => {
-      if (removeListener) removeListener();
+      if (typeof removeListener === "function") removeListener();
     };
   }, [view]);
 
@@ -78,7 +93,6 @@ export const OptimizationMasterCard = ({ cardStyle }) => {
     setProgress({ current: 0, total: 0, percent: 0 });
 
     try {
-      // Если appAPI нет (например, при разработке в браузере), можно добавить мок-задержку
       const result = await window.appAPI?.startConversion?.({
         quality,
         keepOriginal,
@@ -88,13 +102,6 @@ export const OptimizationMasterCard = ({ cardStyle }) => {
       if (result?.cancelled) {
         enqueueSnackbar("Конвертация прервана пользователем", {
           variant: "info",
-        });
-        addNotification({
-          timestamp: new Date().toISOString(),
-          title: "Мастер конвертации",
-          message: `Процесс конвертации фото прерван пользователем`,
-          type: "warning",
-          category: "optimizationMaster",
         });
         setView("info");
       } else if (result?.success) {
@@ -113,23 +120,36 @@ export const OptimizationMasterCard = ({ cardStyle }) => {
     } catch (err) {
       enqueueSnackbar("Ошибка при конвертации", { variant: "error" });
       console.error(err);
-      setView("settings"); // При ошибке возвращаем на экран настроек
-      addNotification({
-        timestamp: new Date().toISOString(),
-        title: "Мастер конвертации",
-        message: `Ошибка в процессе конвертации фото`,
-        type: "error",
-        category: "optimizationMaster",
-      });
+      setView("settings");
     }
   };
 
-  // Остановка
+  // Остановка конвертации
   const handleCancel = () => {
     if (
       window.confirm("Вы уверены, что хотите прервать процесс конвертации?")
     ) {
       window.appAPI?.cancelConversion?.();
+    }
+  };
+
+  // Запуск скриптов обслуживания
+  const handleRunMaintenanceTask = async (taskName, label) => {
+    setLogs([`Запуск: ${label}...`]);
+    setIsRunningTask(true);
+    try {
+      const result = await window.appAPI?.runMaintenanceTask?.(taskName);
+
+      if (result?.success) {
+        enqueueSnackbar(
+          `${label}: выполнено. Изменений: ${result.affectedCount}`,
+          { variant: "success" },
+        );
+      }
+    } catch (err) {
+      enqueueSnackbar(`Ошибка: ${label}`, { variant: "error" });
+    } finally {
+      setIsRunningTask(false);
     }
   };
 
@@ -144,27 +164,24 @@ export const OptimizationMasterCard = ({ cardStyle }) => {
         bgcolor: "background.paper",
       }}
     >
-      {/* ШАПКА */}
+      {/* ШАПКА - УБРАЛИ КНОПКУ, ТЕПЕРЬ ОНА ЧИСТАЯ И ЕДИНАЯ ДЛЯ ВСЕХ ЭКРАНОВ */}
       <Box
         sx={{
           p: 2,
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          bgcolor:
-            view === "processing"
-              ? alpha(theme.palette.primary.main, 0.05)
-              : "action.hover",
+          bgcolor: "action.hover",
           borderBottom: "1px solid",
           borderColor: "divider",
-          transition: "background-color 0.3s",
         }}
       >
         <Stack direction="row" alignItems="center" spacing={1.5}>
-          <AutoFixHighIcon
-            color={view === "processing" ? "primary" : "action"}
-            sx={{ fontSize: 20 }}
-          />
+          {view === "maintenance" ? (
+            <BuildCircleIcon color="primary" sx={{ fontSize: 20 }} />
+          ) : (
+            <AutoFixHighIcon color="action" sx={{ fontSize: 20 }} />
+          )}
           <Typography
             variant="subtitle2"
             sx={{
@@ -176,12 +193,10 @@ export const OptimizationMasterCard = ({ cardStyle }) => {
           >
             {view === "info" && "Интеллектуальный помощник"}
             {view === "settings" && "Настройки оптимизации"}
+            {view === "maintenance" && "Инструменты обслуживания"}
             {view === "processing" && "Оптимизация медиа"}
           </Typography>
         </Stack>
-        {view === "processing" && (
-          <CircularProgress size={16} thickness={6} sx={{ opacity: 0.7 }} />
-        )}
       </Box>
 
       {/* ТЕЛО КАРТОЧКИ */}
@@ -194,123 +209,316 @@ export const OptimizationMasterCard = ({ cardStyle }) => {
           overflowY: "auto",
         }}
       >
-        {/* --- СОСТОЯНИЕ 1: ИНФО --- */}
+        {/* --- СОСТОЯНИЕ 1: ИНФО (ОБНОВЛЕННЫЙ СТАРТОВЫЙ ЭКРАН) --- */}
         {view === "info" && (
-          <>
-            <Box sx={{ textAlign: "center", mb: 3 }}>
-              <Box sx={{ position: "relative", display: "inline-flex", mb: 2 }}>
-                <Box
-                  sx={{
-                    position: "absolute",
-                    width: "100%",
-                    height: "100%",
-                    bgcolor: "primary.main",
-                    filter: "blur(30px)",
-                    opacity: 0.15,
-                    zIndex: 0,
-                  }}
-                />
-                <AutoFixHighIcon
-                  sx={{
-                    fontSize: 64,
-                    color: "primary.main",
-                    position: "relative",
-                    zIndex: 1,
-                  }}
-                />
-              </Box>
-              <Typography
-                variant="h6"
-                sx={{ fontWeight: 900, mb: 1, lineHeight: 1.2 }}
-              >
-                Мастер оптимизации
+          <Box
+            sx={{ display: "flex", flexDirection: "column", height: "100%" }}
+          >
+            <Box sx={{ textAlign: "center", mb: 4, mt: 1 }}>
+              <AutoFixHighIcon
+                sx={{
+                  fontSize: 48,
+                  color: "primary.main",
+                  mb: 1,
+                  opacity: 0.9,
+                }}
+              />
+              <Typography variant="h6" sx={{ fontWeight: 800, mb: 0.5 }}>
+                Управление архивом
               </Typography>
               <Typography
                 variant="body2"
-                sx={{ color: "text.secondary", lineHeight: 1.4 }}
+                sx={{ color: "text.secondary", lineHeight: 1.4, px: 2 }}
               >
-                Автоматизированная система подготовки медиа-файлов для быстрой
-                работы архива.
+                Оптимизация медиафайлов и техническое обслуживание базы данных
+                генеалогического древа.
               </Typography>
             </Box>
 
-            <Stack spacing={1} sx={{ mb: "auto" }}>
-              {[
-                {
-                  title: "Конвертация в WebP",
-                  desc: "Уменьшение веса до 70%",
-                  icon: <SdStorageIcon />,
-                },
-                {
-                  title: "Генерация миниатюр",
-                  desc: "Мгновенная загрузка превью",
-                  icon: <CollectionsIcon />,
-                },
-                {
-                  title: "Умное хранение",
-                  desc: "Разделение оригиналов и копий",
-                  icon: <AccountTreeIcon />,
-                },
-              ].map((item, i) => (
+            <Stack spacing={2} sx={{ mt: "auto", mb: 2 }}>
+              {/* Кнопка 1: Оптимизация */}
+              <Box
+                onClick={() => setView("settings")}
+                sx={{
+                  display: "flex",
+                  alignItems: "flex-start",
+                  gap: 2,
+                  p: 2,
+                  borderRadius: 3,
+                  cursor: "pointer",
+                  border: "1px solid",
+                  borderColor: "divider",
+                  bgcolor: alpha(theme.palette.background.default, 0.5),
+                  transition: "all 0.2s ease-in-out",
+                  "&:hover": {
+                    bgcolor: alpha(theme.palette.primary.main, 0.05),
+                    borderColor: alpha(theme.palette.primary.main, 0.3),
+                    transform: "translateY(-2px)",
+                  },
+                }}
+              >
                 <Box
-                  key={i}
                   sx={{
-                    display: "flex",
-                    gap: 2,
-                    px: 1.5,
-                    py: 1,
+                    p: 1,
                     borderRadius: 2,
-                    bgcolor: alpha(theme.palette.action.hover, 0.4),
+                    bgcolor: alpha(theme.palette.primary.main, 0.1),
+                    color: "primary.main",
+                    display: "flex",
                   }}
                 >
-                  <Box
-                    sx={{ color: "primary.main", "& svg": { fontSize: 20 } }}
-                  >
-                    {item.icon}
-                  </Box>
-                  <Box>
-                    <Typography
-                      variant="caption"
-                      sx={{
-                        fontWeight: 800,
-                        display: "block",
-                        lineHeight: 1.2,
-                      }}
-                    >
-                      {item.title}
-                    </Typography>
-                    <Typography
-                      variant="caption"
-                      sx={{ fontSize: "0.65rem", color: "text.secondary" }}
-                    >
-                      {item.desc}
-                    </Typography>
-                  </Box>
+                  <SdStorageIcon fontSize="small" />
                 </Box>
-              ))}
-            </Stack>
+                <Box>
+                  <Typography variant="body2" sx={{ fontWeight: 700, mb: 0.5 }}>
+                    Сжатие и конвертация
+                  </Typography>
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      color: "text.secondary",
+                      lineHeight: 1.2,
+                      display: "block",
+                    }}
+                  >
+                    Уменьшение веса фотографий (WebP) и автоматическая генерация
+                    миниатюр.
+                  </Typography>
+                </Box>
+              </Box>
 
-            <Button
-              fullWidth
-              variant="contained"
-              startIcon={<SettingsSuggestIcon />}
-              onClick={() => setView("settings")}
-              sx={{
-                mt: 3,
-                height: 24,
-                borderRadius: "6px",
-                py: 1,
-                fontWeight: 600,
-                textTransform: "none",
-                boxShadow: `0 8px 20px ${alpha(theme.palette.primary.main, 0.25)}`,
-              }}
-            >
-              Настроить параметры
-            </Button>
-          </>
+              {/* Кнопка 2: Обслуживание */}
+              <Box
+                onClick={() => setView("maintenance")}
+                sx={{
+                  display: "flex",
+                  alignItems: "flex-start",
+                  gap: 2,
+                  p: 2,
+                  borderRadius: 3,
+                  cursor: "pointer",
+                  border: "1px solid",
+                  borderColor: "divider",
+                  bgcolor: alpha(theme.palette.background.default, 0.5),
+                  transition: "all 0.2s ease-in-out",
+                  "&:hover": {
+                    bgcolor: alpha(theme.palette.info.main, 0.05),
+                    borderColor: alpha(theme.palette.info.main, 0.3),
+                    transform: "translateY(-2px)",
+                  },
+                }}
+              >
+                <Box
+                  sx={{
+                    p: 1,
+                    borderRadius: 2,
+                    bgcolor: alpha(theme.palette.info.main, 0.1),
+                    color: "info.main",
+                    display: "flex",
+                  }}
+                >
+                  <StorageIcon fontSize="small" />
+                </Box>
+                <Box>
+                  <Typography variant="body2" sx={{ fontWeight: 700, mb: 0.5 }}>
+                    Обслуживание БД
+                  </Typography>
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      color: "text.secondary",
+                      lineHeight: 1.2,
+                      display: "block",
+                    }}
+                  >
+                    Специальные скрипты для исправления ошибок в базе данных и
+                    файловой структуре.
+                  </Typography>
+                </Box>
+              </Box>
+            </Stack>
+          </Box>
         )}
 
-        {/* --- СОСТОЯНИЕ 2: НАСТРОЙКИ --- */}
+        {/* --- СОСТОЯНИЕ MAINTENANCE --- */}
+        {view === "maintenance" && (
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: "column",
+              height: "100%",
+              overflow: "hidden",
+            }}
+          >
+            <Box sx={{ flexShrink: 0, mb: 1 }}>
+              {/* <Typography
+                variant="caption"
+                sx={{ mb: 1, color: "text.secondary", display: "block" }}
+              >
+                Специальные скрипты для исправления ошибок в базе данных и
+                файловой структуре.
+              </Typography> */}
+              <Box
+                sx={{
+                  p: 1.5,
+                  borderRadius: 2,
+                  bgcolor: "#1e1e1e",
+                  color: "#d4d4d4",
+                  fontFamily: "monospace",
+                  fontSize: "0.65rem",
+                  whiteSpace: "pre-wrap",
+                  wordBreak: "break-word",
+                  height: 120,
+                  overflowY: "auto",
+                  border: "1px solid #333",
+                  display: "flex",
+                  flexDirection: "column-reverse",
+                  "&::-webkit-scrollbar": { width: 4 },
+                  "&::-webkit-scrollbar-thumb": { bgcolor: "#444" },
+                }}
+              >
+                <Box>
+                  {logs.length === 0 ? (
+                    <div style={{ color: "#666" }}>
+                      Ожидание запуска задач...
+                    </div>
+                  ) : (
+                    logs.map((log, i) => (
+                      <div key={i} style={{ marginBottom: 2 }}>
+                        <span style={{ color: "#569cd6" }}>&gt;</span> {log}
+                      </div>
+                    ))
+                  )}
+                </Box>
+              </Box>
+            </Box>
+
+            <Box
+              sx={{
+                flexGrow: 1,
+                overflowY: "auto",
+                pr: 0.5,
+                "&::-webkit-scrollbar": { width: 4 },
+                "&::-webkit-scrollbar-thumb": {
+                  bgcolor: "divider",
+                  borderRadius: 2,
+                },
+              }}
+            >
+              <Stack spacing={1.5} sx={{ pb: 2 }}>
+                {[
+                  {
+                    id: "run-audit",
+                    label: "ℹ️ Аудит файлов",
+                    desc: "Подсчет всех фото, аватаров и био на диске",
+                  },
+                  {
+                    id: "debug-diff",
+                    label: "ℹ️ Поиск расхождений",
+                    desc: "Сравнение JSON и реальных файлов в папках",
+                  },
+                  {
+                    id: "deep-audit",
+                    label: "ℹ️ Глубокий аудит",
+                    desc: "Поиск дублей внутри JSON и проверка наличия аватаров",
+                  },
+                  {
+                    id: "fix-missing-files",
+                    label: "⚠️ Удалить битые ссылки",
+                    desc: "Убирает из JSON записи о файлах, которых нет на диске",
+                  },
+                  {
+                    id: "remove-duplicates",
+                    label: "⚠️ Очистить дубликаты",
+                    desc: "Удаляет повторяющиеся записи в photos.json",
+                  },
+                  {
+                    id: "geo-patcher",
+                    label: "⚠️ Гео-патчер (EXIF)",
+                    desc: "Достает координаты из фото и пишет адреса текстом",
+                  },
+                ].map((task) => (
+                  <Box
+                    key={task.id}
+                    sx={{
+                      p: 1.5,
+                      borderRadius: 2,
+                      border: "1px solid",
+                      borderColor: "divider",
+                      bgcolor: alpha(theme.palette.action.hover, 0.05),
+                    }}
+                  >
+                    <Stack
+                      direction="row"
+                      justifyContent="space-between"
+                      alignItems="center"
+                    >
+                      <Box>
+                        <Typography
+                          variant="body2"
+                          sx={{ fontWeight: 700, fontSize: "0.8rem" }}
+                        >
+                          {task.label}
+                        </Typography>
+                        <Typography
+                          variant="caption"
+                          sx={{ fontSize: "0.65rem", color: "text.secondary" }}
+                        >
+                          {task.desc}
+                        </Typography>
+                      </Box>
+                      <Button
+                        variant="outlined"
+                        size="small"
+                        disabled={isRunningTask}
+                        onClick={() =>
+                          handleRunMaintenanceTask(task.id, task.label)
+                        }
+                        sx={{
+                          minWidth: 80,
+                          height: 24,
+                          fontSize: "0.7rem",
+                          borderRadius: "6px",
+                        }}
+                      >
+                        Запуск
+                      </Button>
+                    </Stack>
+                  </Box>
+                ))}
+              </Stack>
+            </Box>
+
+            <Box
+              sx={{
+                flexShrink: 0,
+                pt: 1,
+                borderTop: "1px solid",
+                borderColor: "divider",
+              }}
+            >
+              <Button
+                variant="outlined"
+                onClick={() => setView("info")}
+                startIcon={<ArrowBackIcon />}
+                sx={{
+                  height: 24,
+                  borderRadius: "6px",
+                  py: 1.2,
+                  textTransform: "none",
+                  fontWeight: 600,
+                  fontSize: "0.8rem",
+                  color: "text.primary",
+                  borderColor: "transparent",
+                  "&:hover": { borderColor: "divider" },
+                }}
+              >
+                Вернуться назад
+              </Button>
+            </Box>
+          </Box>
+        )}
+
+        {/* --- СОСТОЯНИЕ НАСТРОЕК (БЕЗ ИЗМЕНЕНИЙ) --- */}
         {view === "settings" && (
           <Box
             sx={{ display: "flex", flexDirection: "column", height: "100%" }}
@@ -340,7 +548,6 @@ export const OptimizationMasterCard = ({ cardStyle }) => {
                 mb: "auto",
               }}
             >
-              {/* Слайдер качества */}
               <Box sx={{ mb: 3 }}>
                 <Stack
                   direction="row"
@@ -384,7 +591,6 @@ export const OptimizationMasterCard = ({ cardStyle }) => {
                 />
               </Box>
 
-              {/* Переключатели */}
               <Stack spacing={1}>
                 <Box
                   sx={{
@@ -405,12 +611,10 @@ export const OptimizationMasterCard = ({ cardStyle }) => {
                   >
                     Сохранять оригиналы
                   </Typography>
-
                   <CustomSwitch
                     size="small"
                     checked={keepOriginal}
                     onChange={(e) => setKeepOriginal(e.target.checked)}
-                    // disabled={processing}
                   />
                 </Box>
                 <Box
@@ -432,26 +636,21 @@ export const OptimizationMasterCard = ({ cardStyle }) => {
                   >
                     Перезаписывать файлы
                   </Typography>
-
                   <CustomSwitch
                     size="small"
                     checked={overwrite}
                     onChange={(e) => setOverwrite(e.target.checked)}
-                    // disabled={processing}
                   />
                 </Box>
               </Stack>
             </Box>
 
-            {/* Кнопки действий */}
             <Stack
               direction="row"
               justifyContent={"space-between"}
-              // spacing={1}
               sx={{ mt: 3 }}
             >
               <Button
-                // variant="outlined"
                 color="inherit"
                 onClick={() => setView("info")}
                 sx={{
@@ -476,24 +675,20 @@ export const OptimizationMasterCard = ({ cardStyle }) => {
                 }}
               >
                 Отменить
-                {/* <ArrowBackIcon fontSize="small" />  */}
               </Button>
               <Button
-                // fullWidth
                 variant="contained"
                 startIcon={<PlayArrowIcon />}
                 onClick={handleStart}
                 sx={{
                   height: 24,
-                  borderRadius: "6px", // Системный радиус macOS
+                  borderRadius: "6px",
                   py: 1.2,
                   textTransform: "none",
                   fontWeight: 600,
                   fontSize: "0.95rem",
-                  bgcolor: "#007AFF", // Фирменный Blue
-                  "&:hover": {
-                    bgcolor: "#0062CC",
-                  },
+                  bgcolor: "#007AFF",
+                  "&:hover": { bgcolor: "#0062CC" },
                 }}
               >
                 Запустить процесс
@@ -502,7 +697,7 @@ export const OptimizationMasterCard = ({ cardStyle }) => {
           </Box>
         )}
 
-        {/* --- СОСТОЯНИЕ 3: ПРОЦЕСС --- */}
+        {/* --- СОСТОЯНИЕ PROCESSING (БЕЗ ИЗМЕНЕНИЙ) --- */}
         {view === "processing" && (
           <Box
             sx={{
@@ -525,7 +720,6 @@ export const OptimizationMasterCard = ({ cardStyle }) => {
                 mb: 4,
               }}
             >
-              {/* Анимация бегущего блика */}
               <Box
                 sx={{
                   position: "absolute",
@@ -538,7 +732,6 @@ export const OptimizationMasterCard = ({ cardStyle }) => {
                   zIndex: 0,
                 }}
               />
-
               <Stack
                 direction="row"
                 justifyContent="space-between"
@@ -595,7 +788,6 @@ export const OptimizationMasterCard = ({ cardStyle }) => {
                   </Typography>
                 </Box>
               </Stack>
-
               <Box sx={{ position: "relative", zIndex: 1 }}>
                 <LinearProgress
                   variant="determinate"

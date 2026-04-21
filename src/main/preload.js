@@ -183,6 +183,16 @@ contextBridge.exposeInMainWorld("appAPI", {
   },
   deleteMedia: (type) => ipcRenderer.invoke("photo:deleteMedia", type),
   logHistory: (entry) => ipcRenderer.invoke("app:logHistory", entry),
+  // МЕТОД: запуск задач обслуживания
+  runMaintenanceTask: (taskName) =>
+    ipcRenderer.invoke("run-maintenance-task", taskName),
+
+  // Добавляем подписку на логи обслуживания
+  onMaintenanceLog: (callback) => {
+    const subscription = (event, message) => callback(message);
+    ipcRenderer.on("maintenance-log", subscription);
+    return () => ipcRenderer.removeListener("maintenance-log", subscription);
+  },
 });
 //  лог
 contextBridge.exposeInMainWorld("logAPI", {

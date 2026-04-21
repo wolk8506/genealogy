@@ -737,14 +737,32 @@ const MilkdownEditor = ({
           whiteSpace: "pre-wrap",
           wordBreak: "break-word",
         },
+        // Стилизация заголовков
+        "& .ProseMirror h1": {
+          textIndent: "2rem", // Можно в px (например, 25px) или rem
+          // textAlign: "center",
+        },
+        "& .ProseMirror h2": {
+          textIndent: "2rem", // Можно в px (например, 25px) или rem
+          // textAlign: "center",
+        },
+        "& .ProseMirror h3": {
+          textIndent: "2rem", // Можно в px (например, 25px) или rem
+          // textAlign: "center",
+        },
         // Стилизация параграфов (чтобы Enter создавал видимый отступ)
         "& .ProseMirror p": {
-          marginBottom: 0,
+          marginBottom: 0, //для отступа между абзацами можно добавить "0.25em"
           marginTop: 0,
           minHeight: "1.2em", // <--- добавочка для стабильности пустых строк
+          // ВЫРАВНИВАНИЕ ПО ШИРИНЕ
+          textAlign: "justify",
+          // ДОБАВЛЯЕМ ОТСТУП ПЕРВОЙ СТРОКИ
+          textIndent: "2rem", // Можно в px (например, 25px) или rem
         },
         // КРАСИВЫЕ И УМЕНЬШЕННЫЕ СТИЛИ ДЛЯ РИСУНКА
         "& .ProseMirror p:has(img)": {
+          textIndent: 0, // <--- ОБЯЗАТЕЛЬНО ОБНУЛЯЕМ ТУТ
           display: "flex",
           flexWrap: "wrap",
           gap: "12px",

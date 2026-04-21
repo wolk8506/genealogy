@@ -436,12 +436,12 @@ export default function GlobalPhotoGallery({
     return { ...photo, ownerText, peopleText };
   }, [index, displayList, allPeople]);
 
-  if (isLoading)
-    return (
-      <Box sx={{ display: "flex", justifyContent: "center", mt: 10 }}>
-        <CircularProgress />
-      </Box>
-    );
+  // if (isLoading)
+  //   return (
+  //     <Box sx={{ display: "flex", justifyContent: "center", mt: 10 }}>
+  //       <CircularProgress />
+  //     </Box>
+  //   );
 
   return (
     <Box
@@ -459,92 +459,116 @@ export default function GlobalPhotoGallery({
           mr: groupBy === "datePhoto" || groupBy === "owner" ? 8.5 : 0,
         }}
       >
-        <GroupedVirtuoso
-          ref={virtuosoRef}
-          onScroll={(e) => setScrollTop(e.target.scrollTop)}
-          style={{ height: "100%" }}
-          groupCounts={groupCounts}
-          rangeChanged={handleRangeChanged}
-          groupContent={(idx) => {
-            const label = headers[idx];
-            let Icon = <PhotoLibraryIcon />;
-            if (groupBy === "owner") {
-              const person = allPeople?.find(
-                (p) => getOwnerName(p.id) === label,
-              );
-              if (person?.gender === "male")
-                Icon = <ManIcon sx={{ color: "#1976d2" }} />;
-              else if (person?.gender === "female")
-                Icon = <WomanIcon sx={{ color: "#dc004e" }} />;
-            } else if (groupBy === "date" || groupBy === "datePhoto") {
-              Icon = <CalendarMonthIcon sx={{ color: "text.secondary" }} />;
-            }
-            return (
-              <Box
-                sx={{
-                  py: 1,
-                  px: 2,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  bgcolor: isDark
-                    ? alpha("#121212", 0.9)
-                    : alpha("#f5f5f5", 0.9),
-                  backdropFilter: "blur(8px)",
-                  borderBottom: "1px solid divider",
-                }}
-              >
-                <Stack direction="row" spacing={1} alignItems="center">
-                  {Icon}
-                  <Typography variant="subtitle2" fontWeight="bold">
-                    {label}
-                  </Typography>
-                </Stack>
-                <Chip
-                  label={photoCountsPerGroup[idx]}
-                  size="small"
-                  variant="outlined"
-                  sx={{ height: 20, mr: 5 }}
-                />
-              </Box>
-            );
-          }}
-          itemContent={(idx) => (
-            <Stack direction="row" spacing={1} sx={{ px: 0, py: 0.5 }}>
-              {flattenedRows[idx]?.map((item) => {
-                if (!photoPaths.thumbs[item.id]) fetchThumb(item);
-                return (
-                  <Box
-                    key={item.id}
-                    sx={{
-                      width: `${100 / columnsCount}%`,
-                      height: Math.floor((windowWidth * 0.9) / columnsCount),
-                    }}
-                  >
-                    <PhotoCell
-                      photo={item}
-                      path={photoPaths.thumbs[item.id]}
-                      onOpen={() => {
-                        setIndex(
-                          displayList.findIndex((p) => p.id === item.id),
-                        );
-                        setFullscreen(true);
-                      }}
-                      isDark={isDark}
-                      rowHeight={Math.floor((windowWidth * 0.9) / columnsCount)}
-                      allPeople={allPeople}
-                      onEdit={(p) => {
-                        setEditingPhoto(p);
-                        setOpenDialogUpdate(true);
-                      }}
-                      onDownload={onDownload}
-                    />
-                  </Box>
+        {isLoading ? (
+          <Box sx={{ display: "flex", justifyContent: "center", mt: 10 }}>
+            <CircularProgress />
+          </Box>
+        ) : displayList.length === 0 ? (
+          <Box
+            sx={{
+              height: "80vh",
+              display: "flex",
+              justifyContent: "center",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: 3,
+              color: "text.secondary",
+            }}
+          >
+            <PhotoLibraryIcon sx={{ fontSize: 60, opacity: 0.3 }} />
+            <Typography>Фотографии не найдены</Typography>
+          </Box>
+        ) : (
+          <GroupedVirtuoso
+            ref={virtuosoRef}
+            onScroll={(e) => setScrollTop(e.target.scrollTop)}
+            style={{ height: "100%" }}
+            groupCounts={groupCounts}
+            rangeChanged={handleRangeChanged}
+            groupContent={(idx) => {
+              const label = headers[idx];
+              let Icon = <PhotoLibraryIcon />;
+              if (groupBy === "owner") {
+                const person = allPeople?.find(
+                  (p) => getOwnerName(p.id) === label,
                 );
-              })}
-            </Stack>
-          )}
-        />
+                if (person?.gender === "male")
+                  Icon = <ManIcon sx={{ color: "#1976d2" }} />;
+                else if (person?.gender === "female")
+                  Icon = <WomanIcon sx={{ color: "#dc004e" }} />;
+              } else if (groupBy === "date" || groupBy === "datePhoto") {
+                Icon = <CalendarMonthIcon sx={{ color: "text.secondary" }} />;
+              }
+              return (
+                <Box
+                  sx={{
+                    py: 1,
+                    px: 2,
+                    borderRadius: "12px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    bgcolor: isDark
+                      ? alpha("#121212", 0.9)
+                      : alpha("#f5f5f5", 0.9),
+                    backdropFilter: "blur(4px)",
+                    borderBottom: "1px solid divider",
+                  }}
+                >
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    {Icon}
+                    <Typography variant="subtitle2" fontWeight="bold">
+                      {label}
+                    </Typography>
+                  </Stack>
+                  <Chip
+                    label={photoCountsPerGroup[idx]}
+                    size="small"
+                    variant="outlined"
+                    sx={{ height: 20, mr: 5 }}
+                  />
+                </Box>
+              );
+            }}
+            itemContent={(idx) => (
+              <Stack direction="row" spacing={1} sx={{ px: 0, py: 0.5 }}>
+                {flattenedRows[idx]?.map((item) => {
+                  if (!photoPaths.thumbs[item.id]) fetchThumb(item);
+                  return (
+                    <Box
+                      key={item.id}
+                      sx={{
+                        width: `${100 / columnsCount}%`,
+                        height: Math.floor((windowWidth * 0.9) / columnsCount),
+                      }}
+                    >
+                      <PhotoCell
+                        photo={item}
+                        path={photoPaths.thumbs[item.id]}
+                        onOpen={() => {
+                          setIndex(
+                            displayList.findIndex((p) => p.id === item.id),
+                          );
+                          setFullscreen(true);
+                        }}
+                        isDark={isDark}
+                        rowHeight={Math.floor(
+                          (windowWidth * 0.9) / columnsCount,
+                        )}
+                        allPeople={allPeople}
+                        onEdit={(p) => {
+                          setEditingPhoto(p);
+                          setOpenDialogUpdate(true);
+                        }}
+                        onDownload={onDownload}
+                      />
+                    </Box>
+                  );
+                })}
+              </Stack>
+            )}
+          />
+        )}
         <ButtonScrollTop targetRef={virtuosoRef} scrollOffset={scrollTop} />
       </Box>
 

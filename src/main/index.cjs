@@ -31,6 +31,7 @@ const path = require("path");
   require("./handlers/dialogs.cjs");
   require("./handlers/dataStore.cjs");
   require("./handlers/photoConversion.cjs"); // для конвертера фотографий нв странице архив
+  require("./handlers/serviceScript.cjs"); // для конвертера фотографий нв странице архив
 
   // чтобы не дергать whenReady() дважды — делаем один раз:
   app.whenReady().then(async () => {
