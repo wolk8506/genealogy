@@ -20,7 +20,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: 24
+          node-version: 22
           cache: "npm"
 
       - name: Install deps
@@ -41,13 +41,16 @@ jobs:
   # --- Сборка для Windows ---
   build-win:
     name: Build Windows installer
-    runs-on: windows-latest
+    runs-on: windows-2022
+    env:
+      GYP_MSVS_VERSION: 2022
+      npm_config_msvs_version: 2022
     steps:
       - uses: actions/checkout@v6
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: 24
+          node-version: 22
           cache: "npm"
 
       - name: Install deps
@@ -74,7 +77,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: 24
+          node-version: 22
           cache: "npm"
 
       - name: Install deps
