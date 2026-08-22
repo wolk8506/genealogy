@@ -19,6 +19,7 @@ function createWindow() {
     titleBarOverlay: {
       height: 50, // Увеличьте это число, чтобы "опустить" кнопки визуально ниже
     },
+    backgroundColor: "#05070d",
 
     webPreferences: {
       preload: path.join(__dirname, "./preload.js"),

@@ -25,6 +25,7 @@ import { Buffer } from "buffer";
 import { alpha, useTheme } from "@mui/material/styles";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import CropIcon from "@mui/icons-material/Crop";
+import useDialogSaveHotkey from "../../hooks/useDialogSaveHotkey";
 
 export default function AvatarEditorDialog({
   open,
@@ -196,6 +197,12 @@ export default function AvatarEditorDialog({
   const handleZoomIn = () => {
     setZoom((z) => Math.min(z + stepZoom, maxZoom));
   };
+
+  useDialogSaveHotkey({
+    open,
+    onSave: uploadCropped,
+    disabled: !imageSrc,
+  });
 
   return (
     <Dialog

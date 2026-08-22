@@ -54,6 +54,24 @@ contextBridge.exposeInMainWorld("peopleAPI", {
   upsert: (person) => ipcRenderer.invoke("people:upsert", person),
 });
 
+// 👥 Внешние персоны и питомцы
+contextBridge.exposeInMainWorld("externalAPI", {
+  getAll: () => ipcRenderer.invoke("external:getAll"),
+  getById: (id) => ipcRenderer.invoke("external:getById", id),
+  add: (entity) => ipcRenderer.invoke("external:add", entity),
+  update: (id, data) => ipcRenderer.invoke("external:update", id, data),
+  delete: (id) => ipcRenderer.invoke("external:delete", id),
+  addRelation: (entityId, relation) =>
+    ipcRenderer.invoke("external:addRelation", entityId, relation),
+  removeRelation: (entityId, relationId) =>
+    ipcRenderer.invoke("external:removeRelation", entityId, relationId),
+  avatar: {
+    getPath: (id) => ipcRenderer.invoke("external:avatar:getPath", id),
+    save: (id, buffer) => ipcRenderer.invoke("external:avatar:save", id, buffer),
+    delete: (id) => ipcRenderer.invoke("external:avatar:delete", id),
+  },
+});
+
 // 🖼️ Аватары ✅
 contextBridge.exposeInMainWorld("avatarAPI", {
   getPath: (personId) => ipcRenderer.invoke("avatar:getPath", personId),
@@ -73,6 +91,8 @@ contextBridge.exposeInMainWorld("photoAPI", {
   // Должно быть так:
   getPath: (personId, filename, version) =>
     ipcRenderer.invoke("photo:getPath", personId, filename, version),
+  getImageSize: (personId, filename) =>
+    ipcRenderer.invoke("photo:getImageSize", personId, filename),
   delete: (personId, id) => ipcRenderer.invoke("photo:delete", personId, id),
   selectFile: () => ipcRenderer.invoke("photo:selectFile"),
   getAllGlobal: () => ipcRenderer.invoke("photo:getAllGlobal"),
@@ -97,6 +117,19 @@ contextBridge.exposeInMainWorld("photoAPI", {
 
   getGlobalHashtags: () => ipcRenderer.invoke("hashtags:getGlobal"),
   convertHeic: (filePath) => ipcRenderer.invoke("photo:convert-heic", filePath),
+});
+
+contextBridge.exposeInMainWorld("faceAPI", {
+  loadIndex: () => ipcRenderer.invoke("face:loadIndex"),
+  saveIndex: (index) => ipcRenderer.invoke("face:saveIndex", index),
+  saveScanState: (scanState) =>
+    ipcRenderer.invoke("face:saveScanState", scanState),
+  getScanState: () => ipcRenderer.invoke("face:getScanState"),
+  mergePersonIds: (keepPersonId, removePersonIds) =>
+    ipcRenderer.invoke("face:mergePersonIds", {
+      keepPersonId,
+      removePersonIds,
+    }),
 });
 
 contextBridge.exposeInMainWorld("tagsAPI", {
@@ -160,6 +193,7 @@ contextBridge.exposeInMainWorld("appAPI", {
   getPlatform: () => ipcRenderer.invoke("app:getPlatform"),
   getSysVersions: () => ipcRenderer.invoke("app:getSysVersions"),
   openDataFolder: () => ipcRenderer.invoke("app:openDataFolder"),
+  revealPath: (targetPath) => ipcRenderer.invoke("app:revealPath", targetPath),
   resetSettings: () => ipcRenderer.invoke("app:resetSettings"),
   getBuildDate: () => ipcRenderer.invoke("app:getBuildDate"),
   getFolderSize: () => ipcRenderer.invoke("app:get-folder-size"),
@@ -279,7 +313,8 @@ contextBridge.exposeInMainWorld("dialogAPI", {
 });
 
 contextBridge.exposeInMainWorld("importAPI", {
-  importZip: (zipPath) => ipcRenderer.invoke("import:zip", zipPath),
+  importZip: (zipPath, options) => ipcRenderer.invoke("import:zip", zipPath, options),
+  inspect: (zipPath) => ipcRenderer.invoke("import:inspect", zipPath),
   onProgress: (handler) =>
     ipcRenderer.on("import:progress", (_, data) => handler(data)),
 });

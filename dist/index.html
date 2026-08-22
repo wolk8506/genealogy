@@ -4,9 +4,128 @@
     <meta charset="UTF-8" />
     <title>Genealogy</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <script type="module" crossorigin src="./assets/index-RcxrWo5k.js"></script>
+    <style>
+      html,
+      body,
+      #root {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+      }
+
+      body.booting {
+        overflow: hidden;
+        background: radial-gradient(1200px 600px at 20% 20%, rgba(49, 84, 255, 0.18), transparent 55%),
+          radial-gradient(900px 600px at 80% 70%, rgba(0, 219, 176, 0.13), transparent 60%),
+          linear-gradient(160deg, #05070d 0%, #0b1021 45%, #06080f 100%);
+        color: #f4f7ff;
+        font-family: "Segoe UI", "Helvetica Neue", sans-serif;
+      }
+
+      #boot-splash {
+        position: fixed;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        z-index: 9999;
+        transition: opacity 220ms ease;
+      }
+
+      #boot-splash.hide {
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      .boot-core {
+        width: 156px;
+        height: 156px;
+        border-radius: 50%;
+        border: 1px solid rgba(120, 170, 255, 0.22);
+        position: relative;
+        animation: boot-spin 7.5s linear infinite;
+      }
+
+      .boot-visual {
+        width: 156px;
+        height: 156px;
+        position: relative;
+        display: grid;
+        place-items: center;
+        margin: 0 auto;
+      }
+
+      .boot-core::before {
+        content: "";
+        position: absolute;
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        left: 50%;
+        top: 11px;
+        transform: translateX(-50%);
+        background: #7f9cff;
+        box-shadow: 0 0 16px rgba(127, 156, 255, 0.85);
+      }
+
+      .boot-inner {
+        position: absolute;
+        inset: 24px;
+        border-radius: 50%;
+        border: 1px dashed rgba(84, 222, 197, 0.35);
+        animation: boot-spin-rev 5.4s linear infinite;
+      }
+
+      .boot-logo {
+        position: absolute;
+        width: 74px;
+        height: 74px;
+        /* border-radius: 20px; */
+        object-fit: contain;
+        /* background: rgba(4, 8, 19, 0.85); */
+        /* border: 1px solid rgba(255, 255, 255, 0.12); */
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+      }
+
+      .boot-label {
+        margin-top: 18px;
+        text-align: center;
+        letter-spacing: 0.6px;
+        font-weight: 700;
+        font-size: 14px;
+      }
+
+      .boot-sub {
+        margin-top: 6px;
+        font-size: 12px;
+        color: rgba(215, 225, 255, 0.72);
+      }
+
+      @keyframes boot-spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+      }
+
+      @keyframes boot-spin-rev {
+        from { transform: rotate(360deg); }
+        to { transform: rotate(0deg); }
+      }
+
+    </style>
+    <script type="module" crossorigin src="./assets/index-DWywftpm.js"></script>
   </head>
-  <body>
+  <body class="booting">
+    <div id="boot-splash">
+      <div>
+        <div class="boot-visual">
+          <div class="boot-core">
+            <div class="boot-inner"></div>
+          </div>
+          <img class="boot-logo" src="./app-icon.png" alt="Genealogy" />
+        </div>
+        <div class="boot-label">GENEALOGY</div>
+        <div class="boot-sub">Инициализация приложения...</div>
+      </div>
+    </div>
     <div id="root"></div>
   </body>
 </html>

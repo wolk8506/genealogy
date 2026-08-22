@@ -80,6 +80,18 @@ function safeSend(win, payload) {
   } catch (e) {}
 }
 
+function getArchiveRoot(filePaths) {
+  const jsonFile = filePaths.find(
+    (p) => path.basename(p) === "genealogy-data.json",
+  );
+  return jsonFile ? path.dirname(jsonFile) : path.dirname(filePaths[0]);
+}
+
+function toArchiveEntryName(archiveRoot, src) {
+  const rel = path.relative(archiveRoot, src) || path.basename(src);
+  return rel.split(path.sep).join("/");
+}
+
 ipcMain.handle("archive:create", async (_, filePaths, archivePath) => {
   const win = BrowserWindow.getAllWindows()[0];
   if (!filePaths || filePaths.length === 0)
@@ -125,6 +137,7 @@ ipcMain.handle("archive:create", async (_, filePaths, archivePath) => {
   // build file entries with sizes to compute current file
   const fileEntries = [];
   let cumulative = 0;
+  const archiveRoot = getArchiveRoot(filePaths);
   for (const src of allFiles) {
     let size = 0;
     try {
@@ -132,8 +145,7 @@ ipcMain.handle("archive:create", async (_, filePaths, archivePath) => {
     } catch (e) {
       size = 0;
     }
-    const nameInArchive =
-      path.relative(path.dirname(filePaths[0]), src) || path.basename(src);
+    const nameInArchive = toArchiveEntryName(archiveRoot, src);
     fileEntries.push({
       path: src,
       name: nameInArchive,

@@ -10,17 +10,26 @@ const CustomSwitch = styled((props) => (
   display: "flex",
   "& .MuiSwitch-switchBase": {
     padding: 0,
-    margin: 2, // Отступ бегунка от края корпуса
+    margin: 2,
     transitionDuration: "250ms",
     "&.Mui-checked": {
-      // Смещение: ширина корпуса (54) - ширина бегунка (32) - отступы (2+2) = 18px
       transform: "translateX(18px)",
       color: "#fff",
       "& + .MuiSwitch-track": {
-        // backgroundColor: "#34C759",
-        backgroundColor: "rgb(57,122,245)", // синий как в mac OS
+        backgroundColor: "rgb(57,122,245)",
         opacity: 1,
         border: 0,
+      },
+      // Отключенный + включенный state
+      "&.Mui-disabled + .MuiSwitch-track": {
+        opacity: 0.5,
+      },
+    },
+    // Отключенный state (бегунок)
+    "&.Mui-disabled": {
+      color: theme.palette.mode === "light" ? "#f5f5f5" : "#666",
+      "& + .MuiSwitch-track": {
+        opacity: theme.palette.mode === "light" ? 0.5 : 0.3,
       },
     },
   },
@@ -28,11 +37,11 @@ const CustomSwitch = styled((props) => (
     boxSizing: "border-box",
     width: 32,
     height: 20,
-    borderRadius: 10, // Скругление для формы "таблетки"
+    borderRadius: 10,
     boxShadow: "0 2px 4px 0 rgba(0,0,0,0.2)",
   },
   "& .MuiSwitch-track": {
-    borderRadius: 12, // Половина высоты корпуса для идеального скругления
+    borderRadius: 12,
     backgroundColor: theme.palette.mode === "light" ? "#E9E9EA" : "#39393D",
     opacity: 1,
     transition: theme.transitions.create(["background-color"], {

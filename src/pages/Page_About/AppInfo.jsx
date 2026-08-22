@@ -19,6 +19,7 @@ import jsonIcon from "../../img/json-logo.svg";
 import node_jsIcon from "../../img/node.js-logo.svg";
 import reactRouterIcon from "../../img/react-router-logo.svg";
 import notistackIcon from "../../img/notistack-logo.webp";
+import sqliteIcon from "../../img/sqlite-logo.svg";
 
 import TerminalIcon from "@mui/icons-material/Terminal";
 import WebIcon from "@mui/icons-material/Web";
@@ -28,6 +29,7 @@ import CodeIcon from "@mui/icons-material/Code";
 import routerPkg from "react-router-dom/package.json";
 import vitePkg from "vite/package.json";
 import notistackPkg from "notistack/package.json";
+import sqlitePkg from "better-sqlite3/package.json";
 
 export default function AppDiagnostic() {
   const [sys, setSys] = useState(null);
@@ -194,11 +196,14 @@ export default function AppDiagnostic() {
 
       <Divider sx={{ my: 4, borderStyle: "dashed" }} />
 
-      {/* Группа 3: Инструменты сборки */}
-      <CategoryHeader icon={BuildIcon} title="Development & Build" />
+      {/* Группа 3: Инструменты сборки и слой данных */}
+      <CategoryHeader icon={BuildIcon} title="Development & Data" />
       <Grid container spacing={2}>
         <Grid item size={gridResponsiveSizes}>
           {renderTechItem(viteIcon, "Vite", vitePkg.version)}
+        </Grid>
+        <Grid item size={gridResponsiveSizes}>
+          {renderTechItem(sqliteIcon, "SQLite", sqlitePkg.version)}
         </Grid>
         <Grid item size={gridResponsiveSizes}>
           {renderTechItem(jsonIcon, "JSON Engine", "Native")}

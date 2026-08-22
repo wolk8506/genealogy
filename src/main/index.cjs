@@ -32,9 +32,18 @@ const path = require("path");
   require("./handlers/dataStore.cjs");
   require("./handlers/photoConversion.cjs"); // для конвертера фотографий нв странице архив
   require("./handlers/serviceScript.cjs"); // для конвертера фотографий нв странице архив
+  require("./handlers/face.cjs");
+  require("./handlers/external.cjs");
 
   // чтобы не дергать whenReady() дважды — делаем один раз:
   app.whenReady().then(async () => {
+    const { initializeFaceDb } = require("./db/faceDb.cjs");
+    try {
+      initializeFaceDb();
+    } catch (error) {
+      console.error("[sqlite] face DB initialization failed:", error.message);
+    }
+
     // Меню
     const { buildMenuTemplate } = require("./menu.cjs");
     Menu.setApplicationMenu(Menu.buildFromTemplate(buildMenuTemplate()));

@@ -12,7 +12,10 @@ const DATA_FILE = path.join(
 async function readPeople() {
   try {
     const txt = await fs.promises.readFile(DATA_FILE, "utf-8");
-    return JSON.parse(txt);
+    const parsed = JSON.parse(txt);
+    if (Array.isArray(parsed)) return parsed;
+    if (parsed && Array.isArray(parsed.people)) return parsed.people;
+    return [];
   } catch (e) {
     return [];
   }

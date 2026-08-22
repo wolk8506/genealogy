@@ -10,6 +10,7 @@ import FormatQuoteIcon from "@mui/icons-material/FormatQuote";
 import AddPhotoAlternateIcon from "@mui/icons-material/AddPhotoAlternate";
 import EditIcon from "@mui/icons-material/Edit";
 import EditOffIcon from "@mui/icons-material/EditOff";
+import TocIcon from "@mui/icons-material/Toc";
 import TableChartIcon from "@mui/icons-material/TableChart";
 import FormatListNumberedIcon from "@mui/icons-material/FormatListNumbered";
 import FormatStrikethroughIcon from "@mui/icons-material/FormatStrikethrough";
@@ -34,7 +35,13 @@ const ToolbarGroup = ({ children }) => (
   </Box>
 );
 
-export default function BioToolbar({ isEditing, requestToggleEdit, execRef }) {
+export default function BioToolbar({
+  isEditing,
+  requestToggleEdit,
+  execRef,
+  isNavVisible,
+  onToggleNav,
+}) {
   return (
     <Stack
       direction="row"
@@ -55,6 +62,17 @@ export default function BioToolbar({ isEditing, requestToggleEdit, execRef }) {
             ) : (
               <EditIcon size="inherit" fontSize="inherit" />
             )}
+          </IconButton>
+        </Tooltip>
+        <Tooltip
+          title={isNavVisible ? "Скрыть навигацию" : "Показать навигацию"}
+        >
+          <IconButton
+            size="small"
+            onClick={onToggleNav}
+            sx={{ color: "white", p: "8px" }}
+          >
+            <TocIcon fontSize="inherit" />
           </IconButton>
         </Tooltip>
       </ToolbarGroup>

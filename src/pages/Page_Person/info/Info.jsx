@@ -1,6 +1,13 @@
 import React, { useState, useEffect } from "react";
 // MUI
-import { Typography, Button, Stack, Divider, Box, Paper } from "@mui/material";
+import {
+  Typography,
+  Button,
+  Stack,
+  Divider,
+  Box,
+  Paper,
+} from "@mui/material";
 
 import PersonIcon from "@mui/icons-material/Person";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
@@ -8,6 +15,7 @@ import PeopleAltIcon from "@mui/icons-material/PeopleAlt";
 
 import FingerprintIcon from "@mui/icons-material/Fingerprint"; // Или Fingerprint, или Dna
 import PersonAvatar from "../../../components/PersonAvatar";
+import AvatarPreviewDialog from "../../../components/Dialog/AvatarPreviewDialog";
 import AvatarEditorDialog from "../AvatarEditorDialog";
 import PersonEditDialog from "../PersonEditDialog";
 // Info
@@ -56,12 +64,46 @@ export default function Info({
   setEditOpen,
 }) {
   const [refreshPhotos, setRefreshPhotos] = useState(0);
+  const [avatarOpen, setAvatarOpen] = useState(false);
   const [avatarEditorOpen, setAvatarEditorOpen] = useState(false);
+  const [avatarPreviewUrl, setAvatarPreviewUrl] = useState(null);
+  const [hasAvatarImage, setHasAvatarImage] = useState(false);
   const [isFlipped, setIsFlipped] = React.useState(false);
   const [copyDialogOpen, setCopyDialogOpen] = useState(false);
 
   // Сбрасываем переворот при смене персоны
   useEffect(() => setIsFlipped(false), [person.id]);
+
+  useEffect(() => {
+    if (!person?.id) {
+      setHasAvatarImage(false);
+      return;
+    }
+
+    let isMounted = true;
+    window.avatarAPI.getPath(person.id).then((path) => {
+      if (!isMounted) return;
+      setHasAvatarImage(Boolean(path));
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [person?.id, refreshPhotos]);
+
+  useEffect(() => {
+    if (!avatarOpen || !person?.id) return;
+
+    let isMounted = true;
+    window.avatarAPI.getPath(person.id).then((path) => {
+      if (!isMounted) return;
+      setAvatarPreviewUrl(path ? `${path}?t=${Date.now()}` : null);
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [avatarOpen, person?.id]);
 
   const findById = (id) => allPeople.find((p) => p.id === id);
 
@@ -226,12 +268,17 @@ export default function Info({
                 >
                   <Box sx={{ position: "relative" }}>
                     <Box
-                      onClick={() => setAvatarEditorOpen(true)}
+                      onClick={() => {
+                        if (!hasAvatarImage) return;
+                        setAvatarOpen(true);
+                      }}
                       sx={{
-                        cursor: "pointer",
+                        cursor: hasAvatarImage ? "pointer" : "default",
                         transition:
                           "transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
-                        "&:hover": { transform: "scale(1.05)" },
+                        "&:hover": {
+                          transform: hasAvatarImage ? "scale(1.05)" : "none",
+                        },
                       }}
                     >
                       <PersonAvatar
@@ -499,13 +546,26 @@ export default function Info({
         </Stack>
       </Stack>
 
-      {/* Диалоги остаются без изменений */}
+      <AvatarPreviewDialog
+        open={avatarOpen}
+        onClose={() => setAvatarOpen(false)}
+        imageUrl={avatarPreviewUrl}
+        alt={person.firstName || "Аватар"}
+        onEdit={() => {
+          setAvatarOpen(false);
+          setAvatarEditorOpen(true);
+        }}
+      />
+
       <AvatarEditorDialog
         open={avatarEditorOpen}
         onClose={() => setAvatarEditorOpen(false)}
         personId={person.id}
         currentAvatarPath={initials}
-        onSaved={() => setRefreshPhotos((r) => r + 1)}
+        onSaved={() => {
+          setAvatarEditorOpen(false);
+          setRefreshPhotos((r) => r + 1);
+        }}
       />
       {/* <PersonEditDialog
         open={editOpen}

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -13,6 +13,7 @@ import {
   Box,
   IconButton,
   CircularProgress,
+  Divider,
 } from "@mui/material";
 import { useNotificationStore } from "../../store/useNotificationStore";
 import { alpha, useTheme } from "@mui/material/styles";
@@ -20,16 +21,32 @@ import CloseIcon from "@mui/icons-material/Close";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import EditIcon from "@mui/icons-material/Edit";
 import PersonIcon from "@mui/icons-material/Person";
-import heic2any from "heic2any";
 import CustomDatePickerDialog from "../../components/CustomDatePickerDialog";
 import HashtagInput from "../../components/HashtagInput";
 import PhotoBadgePlusIcon from "../svg/PhotoBadgePlusIcon";
 import ExifReader from "exifreader";
+import { usePhotoFaceMarkup } from "../../hooks/usePhotoFaceMarkup";
+import {
+  PhotoFacePreviewBlock,
+  PhotoFaceFormSection,
+} from "../PhotoFaceMarkupBlocks";
+import {
+  enrichFacesWithDescriptors,
+  syncReferencesAfterPhotoSave,
+} from "../../utils/faceIndex";
+import {
+  syncPeopleFromFaces,
+  syncExternalPeopleFromFaces,
+  normalizeFaces,
+} from "../../utils/photoFaces";
+import { getExternalEntityLabel } from "../../utils/externalEntities";
+import DraggableDialog from "./DraggableDialog";
+import useDialogSaveHotkey from "../../hooks/useDialogSaveHotkey";
 
 export default function PhotoUploadDialog({
   open,
   onClose,
-  personId, // Если передан - значит персональная страница
+  personId,
   currentUserId,
   onPhotoAdded,
 }) {
@@ -46,10 +63,11 @@ export default function PhotoUploadDialog({
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [people, setPeople] = useState([]);
+  const [externalPeople, setExternalPeople] = useState([]);
   const [allPeople, setAllPeople] = useState([]);
+  const [allExternal, setAllExternal] = useState([]);
   const [datePhoto, setDatePhoto] = useState("");
 
-  // Состояние для владельца, если мы НЕ на персональной странице
   const [selectedOwner, setSelectedOwner] = useState(null);
 
   // Превью и файл
@@ -58,35 +76,94 @@ export default function PhotoUploadDialog({
   const [filePath, setFilePath] = useState(null);
   const [aspectRatio, setAspectRatio] = useState("4/3");
 
-  // Drag & drop
   const [dragCounter, setDragCounter] = useState(0);
   const isDragging = dragCounter > 0;
 
-  // Для HEIC → JPEG
   const [convertedArrayBuffer, setConvertedArrayBuffer] = useState(null);
-
-  // Чекбокс: оставлять модалку открытой
   const [keepOpen, setKeepOpen] = useState(false);
-
-  // Загрузка списка тегов
   const [uniqueTags, setUniqueTags] = useState([]);
+  const facesRef = useRef([]);
 
   const [lat, setLat] = useState(null);
   const [lng, setLng] = useState(null);
+
+  const faceMarkup = usePhotoFaceMarkup(addNotification);
+  const {
+    resetFaces,
+    previewFrameRef,
+    faces,
+    setFaces, // Достаем прямой сеттер из хука
+    imageSize,
+    selectedFaceId,
+    setSelectedFaceId,
+    drawMode,
+    setDrawMode,
+    detecting,
+    handlePreviewLoad,
+    handleFacesChange,
+    handleAddFace,
+    handleDeleteSelectedFace,
+    handleDetectFaces,
+  } = faceMarkup;
+
+  useEffect(() => {
+    facesRef.current = normalizeFaces(faces || []);
+  }, [faces]);
+
+  // Главная функция обновления лиц
+  const onFacesChange = (nextFaces) => {
+    const normalized = normalizeFaces(nextFaces);
+    facesRef.current = normalized;
+    
+    // Обновляем состояние внутри хука
+    if (typeof setFaces === "function") {
+      setFaces(normalized);
+    } else {
+      handleFacesChange(normalized, people.map((p) => p.id));
+    }
+
+    // Подтягиваем привязанных людей в селекторы
+    const facePeopleIds = normalized.map((f) => f.personId).filter(Boolean);
+    if (facePeopleIds.length) {
+      setPeople((prev) => {
+        const currentIds = prev.map((p) => p.id);
+        const combined = [...new Set([...currentIds, ...facePeopleIds])];
+        return allPeople.filter((p) => combined.includes(p.id));
+      });
+    }
+
+    const externalIds = syncExternalPeopleFromFaces(normalized, externalPeople);
+    setExternalPeople(externalIds);
+  };
+
+  // Автосинхронизация при любых изменениях в faces из хука
+  useEffect(() => {
+    if (faces && faces.length > 0 && allPeople.length > 0) {
+      const facePeopleIds = faces.map((f) => f.personId).filter(Boolean);
+      if (facePeopleIds.length > 0) {
+        setPeople((prev) => {
+          const currentIds = prev.map((p) => p.id);
+          const combined = [...new Set([...currentIds, ...facePeopleIds])];
+          return allPeople.filter((p) => combined.includes(p.id));
+        });
+      }
+    }
+  }, [faces, allPeople]);
 
   useEffect(() => {
     if (open) {
       window.photoAPI.getGlobalHashtags().then(setUniqueTags);
       window.peopleAPI.getAll().then(setAllPeople);
+      window.externalAPI?.getAll?.().then(setAllExternal);
     }
   }, [open, saving]);
 
-  // Сброс формы при открытии (если keepOpen=false)
   useEffect(() => {
     if (open && !keepOpen) {
       setTitle("");
       setDescription("");
       setPeople([]);
+      setExternalPeople([]);
       setSelectedOwner(null);
       setDatePhoto("");
       setPreview(null);
@@ -97,42 +174,46 @@ export default function PhotoUploadDialog({
       setDragCounter(0);
       setLat(null);
       setLng(null);
+      resetFaces();
+      facesRef.current = [];
     }
-  }, [open, keepOpen]);
+  }, [open, keepOpen, resetFaces]);
 
-  // Конвертация координат EXIF в десятичный формат (Decimal Degrees)
-  // const convertToDecimal = (ref, coords) => {
-  //   if (!coords) return null;
-  //   const degrees = coords[0].numerator / coords[0].denominator;
-  //   const minutes = coords[1].numerator / coords[1].denominator;
-  //   const seconds = coords[2].numerator / coords[2].denominator;
+  useEffect(() => {
+    if (!open || !selectedFaceId) return undefined;
 
-  //   let decimal = degrees + minutes / 60 + seconds / 3600;
-  //   if (ref === "S" || ref === "W") decimal = -decimal;
-  //   return decimal;
-  // };
+    const handleKeyDown = (event) => {
+      const target = event.target;
+      const tagName = target?.tagName;
+      const isFormField =
+        tagName === "INPUT" ||
+        tagName === "TEXTAREA" ||
+        tagName === "SELECT" ||
+        target?.isContentEditable;
 
-  // Извлечение данных из файла
+      if (isFormField) return undefined;
+      if (event.key === "Backspace" || event.key === "Delete") {
+        event.preventDefault();
+        const next = faces.filter((f) => f.id !== selectedFaceId);
+        onFacesChange(next);
+        setSelectedFaceId(null);
+      }
+      return undefined;
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [open, selectedFaceId, faces, onFacesChange, setSelectedFaceId]);
+
   const extractExifData = async (input) => {
     try {
-      let buffer;
-
-      // Проверяем: если это файл/blob — достаем буфер, если уже буфер — берем как есть
-      if (input instanceof Blob || input instanceof File) {
-        buffer = await input.arrayBuffer();
-      } else {
-        buffer = input;
-      }
-
+      let buffer = input instanceof Blob || input instanceof File ? await input.arrayBuffer() : input;
       const tags = ExifReader.load(buffer);
-      console.log("Все найденные теги:", tags);
-
       if (tags["DateTimeOriginal"]) {
         const dateStr = tags["DateTimeOriginal"].description;
         const datePart = dateStr.split(" ")[0].replace(/:/g, "-");
         setDatePhoto(datePart);
       }
-
       if (tags["GPSLatitude"] && tags["GPSLongitude"]) {
         setLat(tags["GPSLatitude"].description);
         setLng(tags["GPSLongitude"].description);
@@ -142,15 +223,15 @@ export default function PhotoUploadDialog({
     }
   };
 
-  // === 1) Выбор через кнопку ===
   const handleFileSelect = async () => {
     const result = await window.photoAPI.selectFile();
     if (!result?.path) return;
 
     setConvertedArrayBuffer(null);
+    resetFaces();
+    facesRef.current = [];
     const raw = result.path.replace(/^file:\/\//, "");
 
-    // 1. Сначала читаем EXIF из оригинального файла (неважно, HEIC это или JPG)
     const response = await fetch(`file://${raw}`);
     const blob = await response.blob();
     await extractExifData(blob);
@@ -160,13 +241,10 @@ export default function PhotoUploadDialog({
 
     if (ext === "heic") {
       try {
-        // 2. Конвертируем на бэкенде
         const ab = await window.photoAPI.convertHeic(raw);
-        setConvertedArrayBuffer(ab); // Это ArrayBuffer
-
+        setConvertedArrayBuffer(ab);
         const previewBlob = new Blob([ab], { type: "image/jpeg" });
         previewUrl = URL.createObjectURL(previewBlob);
-
         setFilename(result.filename.replace(/\.heic$/i, ".jpg"));
         setFilePath(null);
       } catch (err) {
@@ -183,7 +261,6 @@ export default function PhotoUploadDialog({
     updateAspectRatio(previewUrl);
   };
 
-  // Вспомогательная функция для Aspect Ratio (чтобы не дублировать код)
   const updateAspectRatio = (url) => {
     const img = new Image();
     img.onload = () => {
@@ -193,8 +270,6 @@ export default function PhotoUploadDialog({
     img.src = url;
   };
 
-  // === 2) Drag & Drop ===
-  // === 2) Drag & Drop ===
   const onDrop = async (e) => {
     e.preventDefault();
     setDragCounter(0);
@@ -212,23 +287,19 @@ export default function PhotoUploadDialog({
     }
 
     setConvertedArrayBuffer(null);
-    let previewUrl,
-      name,
-      pathOnDisk = null;
+    resetFaces();
+    facesRef.current = [];
+    let previewUrl, name, pathOnDisk = null;
 
     if (ext === "heic") {
       try {
-        // Читаем файл в память прямо здесь (как делала heic2any)
         const fileBuffer = await file.arrayBuffer();
-
-        // Отправляем буфер на бэкенд вместо пути
         const ab = await window.photoAPI.convertHeic(fileBuffer);
 
         setConvertedArrayBuffer(ab);
         const previewBlob = new Blob([ab], { type: "image/jpeg" });
         previewUrl = URL.createObjectURL(previewBlob);
         name = file.name.replace(/\.heic$/i, ".jpg");
-        pathOnDisk = null;
       } catch (err) {
         console.error(err);
         alert("❌ Ошибка конвертации HEIC.");
@@ -237,20 +308,16 @@ export default function PhotoUploadDialog({
     } else {
       previewUrl = URL.createObjectURL(file);
       name = file.name;
-
-      // Вместо пути читаем сам файл в ArrayBuffer
       const ab = await file.arrayBuffer();
       setConvertedArrayBuffer(ab);
-      pathOnDisk = null; // Путь больше не нужен
     }
 
     setPreview(previewUrl);
     setFilename(name);
-    setFilePath(pathOnDisk); // Для HEIC передаст null, для JPG - путь
+    setFilePath(pathOnDisk);
     updateAspectRatio(previewUrl);
   };
 
-  // === 3) Сохранение ===
   const handleSave = async () => {
     if (!filename) {
       addNotification({
@@ -262,7 +329,6 @@ export default function PhotoUploadDialog({
       return;
     }
 
-    // Если нет personId, значит мы на общей странице и нужно выбрать владельца
     const finalOwnerId = personId ? currentUserId : selectedOwner?.id;
     if (!finalOwnerId) {
       addNotification({
@@ -278,43 +344,49 @@ export default function PhotoUploadDialog({
 
     try {
       const extractedHashtags = description
-        ? (description.match(/#[\p{L}\d_]+/gu) || []).map((t) =>
-            t.toLowerCase(),
-          )
+        ? (description.match(/#[\p{L}\d_]+/gu) || []).map((t) => t.toLowerCase())
         : [];
 
-      // Формируем список людей на фото (добавляем personId, если загружаем с персональной страницы)
+      // БЕРЕМ ИСКЛЮЧИТЕЛЬНО АКТУАЛЬНОЕ СОСТОЯНИЕ ИЗ ХУКА
+      let facesToSave = normalizeFaces(facesRef.current.length ? facesRef.current : faces || []);
+
       const peopleIdsArray = people.map((p) => p.id);
-      const finalPeopleIds = personId
+      const basePeopleIds = personId
         ? [...new Set([...peopleIdsArray, personId])]
         : peopleIdsArray;
+
+      const finalPeopleIds = syncPeopleFromFaces(facesToSave, basePeopleIds);
+      const finalExternalIds = syncExternalPeopleFromFaces(facesToSave, externalPeople);
+
+      if (preview) {
+        facesToSave = await enrichFacesWithDescriptors(
+          preview,
+          facesToSave,
+          imageSize
+        );
+      }
 
       const meta = {
         title: title.trim(),
         description: description.trim(),
         hashtags: extractedHashtags,
         people: finalPeopleIds,
+        externalPeople: finalExternalIds,
         owner: finalOwnerId,
         date: new Date().toISOString().split("T")[0],
         datePhoto: datePhoto,
         aspectRatio: aspectRatio,
-        lat: lat, // новое
-        lng: lng, // новое
+        lat: lat,
+        lng: lng,
+        faces: facesToSave,
+        imageSize,
       };
 
       let newPhoto = null;
 
       if (convertedArrayBuffer) {
-        // Оборачиваем готовый буфер в Blob, чтобы preload.js не ругался на отсутствие метода .arrayBuffer()
-        const blobForSaving = new Blob([convertedArrayBuffer], {
-          type: "image/jpeg",
-        });
-
-        newPhoto = await window.photoAPI.saveBlobFile(
-          meta,
-          blobForSaving,
-          filename,
-        );
+        const blobForSaving = new Blob([convertedArrayBuffer], { type: "image/jpeg" });
+        newPhoto = await window.photoAPI.saveBlobFile(meta, blobForSaving, filename);
       } else if (filePath) {
         newPhoto = await window.photoAPI.saveWithFilename(meta, filePath);
       } else {
@@ -322,6 +394,11 @@ export default function PhotoUploadDialog({
       }
 
       if (newPhoto) {
+        await syncReferencesAfterPhotoSave(
+          { owner: finalOwnerId, id: newPhoto.id },
+          facesToSave
+        );
+
         addNotification({
           title: "Фото добавлено",
           message: `Файл "${filename}" успешно сохранен.`,
@@ -335,6 +412,7 @@ export default function PhotoUploadDialog({
           setTitle("");
           setDescription("");
           setPeople([]);
+          setExternalPeople([]);
           setSelectedOwner(null);
           setPreview(null);
           setFilename(null);
@@ -344,6 +422,7 @@ export default function PhotoUploadDialog({
           setDragCounter(0);
           setLat(null);
           setLng(null);
+          resetFaces();
         } else {
           onClose();
         }
@@ -364,10 +443,28 @@ export default function PhotoUploadDialog({
   };
 
   const getPersonLabel = (p) =>
-    `${p.id} :: ${[p.firstName, p.lastName || p.maidenName].filter(Boolean).join(" ") || "Без имени"}`.trim();
+    `${p.id} :: ${
+      [p.firstName, p.lastName || p.maidenName].filter(Boolean).join(" ") ||
+      "Без имени"
+    }`.trim();
 
-  // Отключаем кнопку, если файл не выбран ИЛИ (если нет personId и не выбран владелец)
   const isSaveDisabled = saving || !filename || (!personId && !selectedOwner);
+
+  useDialogSaveHotkey({
+    open,
+    onSave: handleSave,
+    disabled: isSaveDisabled,
+  });
+
+  const macButtonStyle = {
+    height: 24,
+    borderRadius: "8px",
+    px: 3,
+    py: 1,
+    textTransform: "none",
+    fontWeight: 600,
+    boxShadow: "none",
+  };
 
   return (
     <Dialog
@@ -376,8 +473,9 @@ export default function PhotoUploadDialog({
         onClose();
         setKeepOpen(false);
       }}
-      maxWidth="md"
+      maxWidth="lg"
       fullWidth
+      PaperComponent={DraggableDialog}
       PaperProps={{
         sx: {
           borderRadius: "24px",
@@ -387,189 +485,79 @@ export default function PhotoUploadDialog({
           border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
           boxShadow: theme.shadows[24],
           overflow: "hidden",
+          display: "flex",
+          flexDirection: "column",
         },
       }}
     >
-      {/* Шапка диалога */}
-      <Box
-        sx={{
-          p: 2.5,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          borderBottom: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
-          bgcolor: isDark ? alpha("#fff", 0.02) : alpha("#000", 0.01),
-        }}
-      >
-        <Stack direction="row" alignItems="center" spacing={1.5}>
-          <Box
-            sx={{
-              p: 1,
-              borderRadius: "12px",
-              bgcolor: alpha(theme.palette.primary.main, 0.1),
-              color: theme.palette.primary.main,
-              display: "flex",
-            }}
-          >
-            <PhotoBadgePlusIcon />
-          </Box>
-          <Typography variant="h6" sx={{ fontWeight: 700 }}>
-            Добавление фотографии
-          </Typography>
-        </Stack>
-        <IconButton
-          onClick={onClose}
-          size="small"
-          sx={{ borderRadius: "10px" }}
-        >
-          <CloseIcon />
-        </IconButton>
-      </Box>
-
       <DialogContent sx={{ p: 0 }}>
-        <Box
-          sx={{ display: "flex", flexDirection: { xs: "column", md: "row" } }}
-        >
-          {/* ЛЕВАЯ КОЛОНКА: Загрузка / Превью */}
+        <Stack direction="row" sx={{ height: 630 }}>
+          {/* ЛЕВАЯ КОЛОНКА */}
           <Box
             sx={{
-              flex: 1,
-              bgcolor: isDark ? alpha("#000", 0.2) : "#f8f9fa",
+              width: 400,
+              flexShrink: 0,
               display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              p: 4,
-              minHeight: 450,
-              position: "relative",
-              borderRight: {
-                md: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
-              },
+              flexDirection: "column",
+              borderRight: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+              bgcolor: isDark ? alpha("#000", 0.2) : alpha("#000", 0.015),
             }}
           >
-            {!preview ? (
-              <Box
-                onDragOver={(e) => e.preventDefault()}
-                onDragEnter={() => setDragCounter((c) => c + 1)}
-                onDragLeave={() => setDragCounter((c) => Math.max(c - 1, 0))}
-                onDrop={onDrop}
-                onClick={handleFileSelect}
-                sx={{
-                  width: "100%",
-                  height: "100%",
-                  minHeight: 320,
-                  border: "2px dashed",
-                  borderColor: isDragging
-                    ? "primary.main"
-                    : alpha(theme.palette.divider, 0.2),
-                  bgcolor: isDragging
-                    ? alpha(theme.palette.primary.main, 0.05)
-                    : "transparent",
-                  borderRadius: "20px",
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-                  cursor: "pointer",
-                  "&:hover": {
-                    bgcolor: alpha(theme.palette.primary.main, 0.02),
-                    borderColor: theme.palette.primary.main,
-                  },
-                }}
-              >
+            <Box
+              id="draggable-header"
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                px: 2.5,
+                py: 2,
+                borderBottom: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+                bgcolor: isDark ? alpha("#fff", 0.02) : alpha("#000", 0.01),
+                cursor: "move",
+              }}
+            >
+              <IconButton onClick={onClose} size="small" sx={{ borderRadius: "10px" }}>
+                <CloseIcon fontSize="small" />
+              </IconButton>
+              <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+                Добавление фотографии
+              </Typography>
+              <Stack direction="row" alignItems="center" spacing={1.5}>
                 <Box
                   sx={{
-                    px: 2,
-                    pt: 1.8,
-                    pb: 1.4,
-                    borderRadius: "50%",
-                    bgcolor: alpha(theme.palette.primary.main, 0.05),
-                    mb: 2,
-                  }}
-                >
-                  <PhotoBadgePlusIcon
-                    sx={{ fontSize: 40, color: theme.palette.primary.main }}
-                  />
-                </Box>
-                <Typography variant="body1" sx={{ fontWeight: 600, mb: 0.5 }}>
-                  Выберите файл
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  или перетащите его сюда
-                </Typography>
-              </Box>
-            ) : (
-              <Box
-                sx={{
-                  position: "relative",
-                  width: "100%",
-                  zIndex: 1,
-                  textAlign: "center",
-                }}
-              >
-                <Box
-                  component="img"
-                  src={preview}
-                  alt="Превью"
-                  sx={{
-                    maxWidth: "100%",
-                    maxHeight: 480,
-                    objectFit: "contain",
-                    borderRadius: "16px",
-                    boxShadow: "0 20px 40px rgba(0,0,0,0.25)",
-                    transition: "transform 0.3s ease",
-                    "&:hover": { transform: "scale(1.01)" },
-                  }}
-                />
-                <Button
-                  variant="contained"
-                  size="small"
-                  onClick={handleFileSelect}
-                  startIcon={<EditIcon sx={{ fontSize: 16 }} />}
-                  sx={{
-                    position: "absolute",
-                    top: 12,
-                    right: 12,
-                    bgcolor: alpha("#000", 0.6),
-                    backdropFilter: "blur(8px)",
-                    borderRadius: "12px",
-                    textTransform: "none",
-                    fontWeight: 600,
-                    "&:hover": { bgcolor: alpha("#000", 0.8) },
-                  }}
-                >
-                  Сменить
-                </Button>
-              </Box>
-            )}
-          </Box>
-
-          {/* ПРАВАЯ КОЛОНКА: Форма */}
-          <Box sx={{ flex: 1.2, p: 4 }}>
-            <Stack spacing={3.5}>
-              {/* Секция Основное */}
-              <Box>
-                <Typography
-                  variant="caption"
-                  sx={{
-                    textTransform: "uppercase",
-                    letterSpacing: "1px",
-                    fontWeight: 800,
+                    p: 0.8,
+                    borderRadius: "10px",
+                    bgcolor: alpha(theme.palette.primary.main, 0.1),
                     color: theme.palette.primary.main,
-                    display: "block",
-                    mb: 2,
+                    display: "flex",
                   }}
                 >
-                  Основные сведения
-                </Typography>
-                <Stack spacing={2}>
+                  <PhotoBadgePlusIcon sx={{ fontSize: 20 }} />
+                </Box>
+              </Stack>
+            </Box>
+
+            <Box
+              sx={{
+                p: 3,
+                flexGrow: 1,
+                overflowY: "auto",
+                "&::-webkit-scrollbar": { width: 4 },
+                "&::-webkit-scrollbar-thumb": {
+                  bgcolor: "divider",
+                  borderRadius: 2,
+                },
+              }}
+            >
+              <Stack spacing={3}>
+                <Stack spacing={2.5}>
                   <TextField
                     fullWidth
                     label="Заголовок"
                     variant="outlined"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    slotProps={{ input: { sx: { borderRadius: "12px" } } }}
+                    InputProps={{ sx: { borderRadius: "12px" } }}
                   />
 
                   <HashtagInput
@@ -579,25 +567,27 @@ export default function PhotoUploadDialog({
                     placeholder="Описание и #теги..."
                   />
                 </Stack>
-              </Box>
 
-              {/* Секция Детали */}
-              <Box>
-                <Typography
-                  variant="caption"
-                  sx={{
-                    textTransform: "uppercase",
-                    letterSpacing: "1px",
-                    fontWeight: 800,
-                    color: theme.palette.primary.main,
-                    display: "block",
-                    mb: 2,
+                <Divider sx={{ opacity: 0.5 }} />
+
+                <PhotoFaceFormSection
+                  theme={theme}
+                  faces={faces}
+                  allPeople={allPeople}
+                  allExternal={allExternal}
+                  selectedFaceId={selectedFaceId}
+                  onSelectFace={setSelectedFaceId}
+                  onFacesChange={onFacesChange}
+                  onAddFace={() => onFacesChange(handleAddFace())}
+                  onDeleteSelectedFace={() => {
+                    const next = handleDeleteSelectedFace();
+                    if (next) onFacesChange(next);
                   }}
-                >
-                  Детали и люди
-                </Typography>
-                <Stack spacing={2}>
-                  {/* Умный рендер выбора Владельца, если мы НЕ на персональной странице */}
+                />
+
+                <Divider sx={{ opacity: 0.5 }} />
+
+                <Stack spacing={2.5}>
                   {!personId && (
                     <Autocomplete
                       options={allPeople}
@@ -607,7 +597,7 @@ export default function PhotoUploadDialog({
                       renderInput={(params) => (
                         <TextField
                           {...params}
-                          label="Владелец (обязательно)"
+                          label="Владелец (папка)"
                           variant="outlined"
                           required
                           error={!selectedOwner}
@@ -616,11 +606,7 @@ export default function PhotoUploadDialog({
                             startAdornment: (
                               <>
                                 <PersonIcon
-                                  sx={{
-                                    color: "action.active",
-                                    ml: 1,
-                                    mr: 0.5,
-                                  }}
+                                  sx={{ color: "action.active", ml: 1, mr: 0.5 }}
                                 />
                                 {params.InputProps.startAdornment}
                               </>
@@ -628,12 +614,6 @@ export default function PhotoUploadDialog({
                           }}
                         />
                       )}
-                      slotProps={{
-                        paper: { sx: { borderRadius: "12px", mt: 1 } },
-                      }}
-                      sx={{
-                        "& .MuiOutlinedInput-root": { borderRadius: "12px" },
-                      }}
                     />
                   )}
 
@@ -644,182 +624,240 @@ export default function PhotoUploadDialog({
                     value={people}
                     onChange={(e, v) => setPeople(v)}
                     renderInput={(params) => (
+                      <TextField {...params} variant="outlined" label="Кто на фото" />
+                    )}
+                    ChipProps={{ sx: { borderRadius: "8px", fontWeight: 500 } }}
+                  />
+
+                  <Autocomplete
+                    multiple
+                    options={allExternal}
+                    getOptionLabel={(e) => `${e.id} :: ${getExternalEntityLabel(e)}`}
+                    value={allExternal.filter((e) => externalPeople.includes(e.id))}
+                    onChange={(_, v) => setExternalPeople(v.map((x) => x.id))}
+                    renderInput={(params) => (
                       <TextField
                         {...params}
                         variant="outlined"
-                        label="Кто на фото"
+                        label="Из справочника (внешние)"
                       />
                     )}
-                    slotProps={{
-                      paper: { sx: { borderRadius: "12px", mt: 1 } },
-                    }}
-                    ChipProps={{
-                      size: "small",
-                      sx: { borderRadius: "8px", fontWeight: 500 },
-                    }}
-                    sx={{
-                      "& .MuiOutlinedInput-root": { borderRadius: "12px" },
+                    ChipProps={{ sx: { borderRadius: "8px", fontWeight: 500 } }}
+                  />
+                </Stack>
+
+                <Stack spacing={2}>
+                  <TextField
+                    label="Дата снимка"
+                    value={datePhoto || ""}
+                    onClick={() => setDatePickerOpen(true)}
+                    variant="outlined"
+                    fullWidth
+                    InputProps={{
+                      readOnly: true,
+                      sx: { borderRadius: "12px" },
+                      startAdornment: (
+                        <CalendarMonthIcon
+                          sx={{ mr: 1, color: "action.active", fontSize: 20 }}
+                        />
+                      ),
                     }}
                   />
 
-                  <Stack
-                    direction="row"
-                    spacing={2}
-                    alignItems={"center"}
-                    justifyContent={"space-around"}
+                  <Box
+                    sx={{
+                      p: 1.5,
+                      borderRadius: "14px",
+                      bgcolor: keepOpen
+                        ? alpha(theme.palette.primary.main, 0.05)
+                        : "transparent",
+                      border: `1px solid ${
+                        keepOpen
+                          ? alpha(theme.palette.primary.main, 0.1)
+                          : "transparent"
+                      }`,
+                      transition: "0.3s",
+                    }}
                   >
-                    <TextField
-                      label="Дата снимка"
-                      value={datePhoto || ""}
-                      onClick={() => setDatePickerOpen(true)}
-                      variant="outlined"
-                      fullWidth
-                      sx={{ width: "190px" }}
-                      InputProps={{
-                        readOnly: true,
-                        sx: { borderRadius: "12px" },
-                        startAdornment: (
-                          <CalendarMonthIcon
-                            sx={{ mr: 1, color: "action.active", fontSize: 20 }}
-                          />
-                        ),
-                      }}
+                    <FormControlLabel
+                      control={
+                        <Checkbox
+                          checked={keepOpen}
+                          onChange={(e) => setKeepOpen(e.target.checked)}
+                          size="small"
+                          sx={{ borderRadius: "4px" }}
+                        />
+                      }
+                      label={
+                        <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                          Добавить еще одну
+                        </Typography>
+                      }
                     />
-
-                    {/* <FormControl variant="outlined" sx={{ minWidth: 140 }}>
-                      <InputLabel>Формат</InputLabel>
-                      <Select
-                        value={aspectRatio}
-                        label="Формат"
-                        onChange={(e) => setAspectRatio(e.target.value)}
-                        sx={{ borderRadius: "12px" }}
-                      >
-                        <MenuItem value="4/3">4:3</MenuItem>
-                        <MenuItem value="1/1">1:1</MenuItem>
-                        <MenuItem value="3/4">3:4</MenuItem>
-                      </Select>
-                    </FormControl> */}
-                    <Box
-                      sx={{
-                        p: 1.5,
-                        borderRadius: "14px",
-                        bgcolor: keepOpen
-                          ? alpha(theme.palette.primary.main, 0.05)
-                          : "transparent",
-                        border: `1px solid ${keepOpen ? alpha(theme.palette.primary.main, 0.1) : "transparent"}`,
-                        transition: "0.3s",
-                      }}
-                    >
-                      <FormControlLabel
-                        control={
-                          <Checkbox
-                            checked={keepOpen}
-                            onChange={(e) => setKeepOpen(e.target.checked)}
-                            size="small"
-                            sx={{ borderRadius: "4px" }}
-                          />
-                        }
-                        label={
-                          <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                            Добавить еще одну
-                          </Typography>
-                        }
-                      />
-                    </Box>
-                  </Stack>
+                  </Box>
                 </Stack>
-              </Box>
+              </Stack>
+            </Box>
 
-              {/* <Box
-                sx={{
-                  p: 1.5,
-                  borderRadius: "14px",
-                  bgcolor: keepOpen
-                    ? alpha(theme.palette.primary.main, 0.05)
-                    : "transparent",
-                  border: `1px solid ${keepOpen ? alpha(theme.palette.primary.main, 0.1) : "transparent"}`,
-                  transition: "0.3s",
-                }}
+            <DialogActions
+              sx={{
+                px: 3,
+                py: 2,
+                borderTop: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+                bgcolor: isDark ? alpha("#000", 0.2) : alpha("#000", 0.01),
+                justifyContent: "space-around",
+              }}
+            >
+              <Button
+                onClick={onClose}
+                size="small"
+                variant="outlined"
+                sx={{ ...macButtonStyle }}
               >
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={keepOpen}
-                      onChange={(e) => setKeepOpen(e.target.checked)}
-                      size="small"
-                      sx={{ borderRadius: "4px" }}
-                    />
-                  }
-                  label={
-                    <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                      Добавить еще одну
-                    </Typography>
-                  }
-                />
-              </Box> */}
-            </Stack>
+                Отменить
+              </Button>
+              <Button
+                variant="contained"
+                onClick={handleSave}
+                disabled={isSaveDisabled}
+                size="small"
+                sx={{ ...macButtonStyle }}
+              >
+                {saving ? (
+                  <CircularProgress size={16} color="inherit" />
+                ) : (
+                  "Сохранить"
+                )}
+              </Button>
+            </DialogActions>
           </Box>
-        </Box>
-      </DialogContent>
 
-      <DialogActions
-        sx={{
-          px: 4,
-          py: 3,
-          borderTop: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
-          gap: 1.5,
-        }}
-      >
-        <Button
-          onClick={onClose}
-          sx={{
-            height: 24,
-            borderRadius: "6px",
-            py: 1.2,
-            px: 2,
-            textTransform: "none",
-            fontWeight: 600,
-            fontSize: "0.95rem",
-            color: "text.primary",
-            bgcolor: (theme) =>
-              theme.palette.mode === "dark"
-                ? "rgba(255,255,255,0.05)"
-                : "rgba(0,0,0,0.05)",
-            "&:hover": {
-              bgcolor: (theme) =>
-                theme.palette.mode === "dark"
-                  ? "rgba(255,255,255,0.1)"
-                  : "rgba(0,0,0,0.1)",
-            },
-          }}
-        >
-          Отменить
-        </Button>
-        <Button
-          variant="contained"
-          onClick={handleSave}
-          disabled={isSaveDisabled}
-          disableElevation
-          sx={{
-            height: 24,
-            borderRadius: "6px",
-            px: 2,
-            py: 1.2,
-            textTransform: "none",
-            fontWeight: 700,
-            boxShadow: `0 8px 20px -6px ${alpha(theme.palette.primary.main, 0.5)}`,
-            "&:hover": {
-              boxShadow: `0 12px 25px -6px ${alpha(theme.palette.primary.main, 0.6)}`,
-            },
-          }}
-        >
-          {saving ? (
-            <CircularProgress size={22} color="inherit" />
-          ) : (
-            "Сохранить"
-          )}
-        </Button>
-      </DialogActions>
+          {/* ПРАВАЯ КОЛОНКА */}
+          <Stack flex={1} spacing={1.5} sx={{ p: 2, height: "100%" }}>
+            <Box
+              sx={{
+                position: "relative",
+                flexGrow: 1,
+                width: "100%",
+                bgcolor: isDark ? alpha("#000", 0.4) : alpha("#000", 0.03),
+                borderRadius: "16px",
+                overflow: "hidden",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+              }}
+            >
+              {!preview ? (
+                <Box
+                  onDragOver={(e) => e.preventDefault()}
+                  onDragEnter={() => setDragCounter((c) => c + 1)}
+                  onDragLeave={() => setDragCounter((c) => Math.max(c - 1, 0))}
+                  onDrop={onDrop}
+                  onClick={handleFileSelect}
+                  sx={{
+                    width: "100%",
+                    height: "100%",
+                    m: 2,
+                    border: "2px dashed",
+                    borderColor: isDragging
+                      ? "primary.main"
+                      : alpha(theme.palette.divider, 0.2),
+                    bgcolor: isDragging
+                      ? alpha(theme.palette.primary.main, 0.05)
+                      : "transparent",
+                    borderRadius: "16px",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                    cursor: "pointer",
+                    "&:hover": {
+                      bgcolor: alpha(theme.palette.primary.main, 0.02),
+                      borderColor: theme.palette.primary.main,
+                    },
+                  }}
+                >
+                  <Box
+                    sx={{
+                      px: 2,
+                      pt: 1.8,
+                      pb: 1.4,
+                      borderRadius: "50%",
+                      bgcolor: alpha(theme.palette.primary.main, 0.05),
+                      mb: 2,
+                    }}
+                  >
+                    <PhotoBadgePlusIcon
+                      sx={{ fontSize: 40, color: theme.palette.primary.main }}
+                    />
+                  </Box>
+                  <Typography variant="body1" sx={{ fontWeight: 600, mb: 0.5 }}>
+                    Выберите файл
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    или перетащите его сюда
+                  </Typography>
+                </Box>
+              ) : (
+                <>
+                  <PhotoFacePreviewBlock
+                    preview={preview}
+                    previewFrameRef={previewFrameRef}
+                    faces={faces}
+                    imageSize={imageSize}
+                    allPeople={allPeople}
+                    allExternal={allExternal}
+                    selectedFaceId={selectedFaceId}
+                    onSelectFace={setSelectedFaceId}
+                    onFacesChange={onFacesChange}
+                    drawMode={drawMode}
+                    setDrawMode={setDrawMode}
+                    detecting={detecting}
+                    onDetect={async () => {
+                      const detected = await handleDetectFaces(preview);
+                      if (detected) onFacesChange(detected);
+                    }}
+                    onPreviewLoad={handlePreviewLoad}
+                  />
+                  <Button
+                    variant="contained"
+                    size="small"
+                    onClick={handleFileSelect}
+                    startIcon={<EditIcon sx={{ fontSize: 16 }} />}
+                    sx={{
+                      position: "absolute",
+                      top: 16,
+                      right: 16,
+                      zIndex: 4,
+                      backdropFilter: "blur(8px)",
+                      height: 24,
+                      borderRadius: "8px",
+                      px: 3,
+                      py: 1,
+                      textTransform: "none",
+                      fontWeight: 600,
+                      boxShadow: "none",
+                    }}
+                  >
+                    Сменить
+                  </Button>
+                </>
+              )}
+            </Box>
+
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ textAlign: "center", fontWeight: 500 }}
+            >
+              {filename || "Файл не выбран"}
+              {faces?.length > 0 && ` · Лиц на снимке: ${faces.length}`}
+            </Typography>
+          </Stack>
+        </Stack>
+      </DialogContent>
 
       <CustomDatePickerDialog
         open={datePickerOpen}

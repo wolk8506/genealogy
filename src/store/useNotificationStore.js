@@ -1,6 +1,11 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
+const MAX_NOTIFICATIONS = 500;
+
+const trimNotifications = (notifications = []) =>
+  notifications.slice(0, MAX_NOTIFICATIONS);
+
 export const useNotificationStore = create(
   persist(
     (set) => ({
@@ -34,7 +39,7 @@ export const useNotificationStore = create(
         }
 
         set((state) => ({
-          notifications: [newNote, ...state.notifications],
+          notifications: trimNotifications([newNote, ...state.notifications]),
           hasNew: true,
         }));
       },
@@ -62,6 +67,11 @@ export const useNotificationStore = create(
     }),
     {
       name: "genealogy-notifications", // Ключ в localStorage
+      onRehydrateStorage: () => (state) => {
+        if (state?.notifications) {
+          state.notifications = trimNotifications(state.notifications);
+        }
+      },
     },
   ),
 );

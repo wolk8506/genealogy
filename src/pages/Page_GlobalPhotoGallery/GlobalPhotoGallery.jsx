@@ -29,6 +29,7 @@ import onDownload from "../../utils/onDownload";
 import PhotoMetaDialog from "../../components/Dialog/PhotoMetaDialog";
 import { ButtonScrollTop } from "../../components/ButtonScrollTop";
 import PhotoUploadDialog from "../../components/Dialog/PhotoUploadDialog";
+import { buildPhotoAttendeesText } from "../../utils/photoFaces";
 import { useModalStore } from "../../store/useModalStore";
 import { useLocation } from "react-router-dom";
 
@@ -78,6 +79,11 @@ export default function GlobalPhotoGallery({
   const [isScrolling, setIsScrolling] = useState(false);
 
   const [scrollTop, setScrollTop] = useState(0);
+  const [allExternal, setAllExternal] = useState([]);
+
+  useEffect(() => {
+    window.externalAPI?.getAll().then((data) => setAllExternal(data || []));
+  }, [photos]);
 
   const isOpen = useModalStore((state) => state.isGlobalPhotoUploadOpen);
   const closeUpload = useModalStore((state) => state.closeGlobalPhotoUpload);
@@ -427,14 +433,9 @@ export default function GlobalPhotoGallery({
     const ownerText = owner
       ? `👤 ${owner.gender === "male" ? "Добавил" : "Добавила"}: ${owner.firstName}`
       : "👤 Неизвестно";
-    const peopleText = (photo.people || [])
-      .map((id) => {
-        const p = allPeople.find((x) => x.id === id);
-        return p ? `${p.firstName} ${p.lastName || ""}`.trim() : id;
-      })
-      .join(", ");
+    const peopleText = buildPhotoAttendeesText(photo, allPeople, allExternal);
     return { ...photo, ownerText, peopleText };
-  }, [index, displayList, allPeople]);
+  }, [index, displayList, allPeople, allExternal]);
 
   // if (isLoading)
   //   return (
@@ -556,6 +557,7 @@ export default function GlobalPhotoGallery({
                           (windowWidth * 0.9) / columnsCount,
                         )}
                         allPeople={allPeople}
+                        allExternal={allExternal}
                         onEdit={(p) => {
                           setEditingPhoto(p);
                           setOpenDialogUpdate(true);
@@ -878,6 +880,8 @@ export default function GlobalPhotoGallery({
         onToggleMaximize={handleMaximizeWindow}
         currentPhotoInfo={currentPhotoInfo}
         onDownload={onDownload}
+        allPeople={allPeople}
+        allExternal={allExternal}
       />
 
       <PhotoMetaDialog

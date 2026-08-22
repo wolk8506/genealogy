@@ -1,252 +1,221 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import {
   Dialog,
   DialogActions,
-  DialogContent,
   DialogTitle,
   Button,
+  Box,
+  List,
+  ListItemButton,
+  ListItemText,
   Typography,
+  Divider,
 } from "@mui/material";
-import { styled } from "@mui/material/styles";
-import ArrowForwardIosSharpIcon from "@mui/icons-material/ArrowForwardIosSharp";
-import MuiAccordion from "@mui/material/Accordion";
-import MuiAccordionSummary, {
-  accordionSummaryClasses,
-} from "@mui/material/AccordionSummary";
-import MuiAccordionDetails from "@mui/material/AccordionDetails";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
+import MenuBookOutlinedIcon from "@mui/icons-material/MenuBookOutlined";
+import MarkdownViewer, {
+  parseMarkdownSections,
+} from "../components/MarkdownViewer";
 
-// Константа для дополнительного смещения скролла
-const SCROLL_OFFSET = 40;
-
-// Styled components
-const BaseAccordion = styled((props) => (
-  <MuiAccordion disableGutters elevation={0} square {...props} />
-))(({ theme }) => ({
-  border: `1px solid ${theme.palette.divider}`,
-  "&:not(:last-child)": { borderBottom: 0 },
-  "&::before": { display: "none" },
-}));
-
-const BaseAccordionSummary = styled((props) => (
-  <MuiAccordionSummary
-    expandIcon={<ArrowForwardIosSharpIcon sx={{ fontSize: "0.9rem" }} />}
-    {...props}
-  />
-))(({ theme }) => ({
-  backgroundColor:
-    theme.palette.mode === "dark" ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.03)",
-  flexDirection: "row-reverse",
-  [`& .${accordionSummaryClasses.expandIconWrapper}.${accordionSummaryClasses.expanded}`]:
-    {
-      transform: "rotate(90deg)",
-    },
-  [`& .${accordionSummaryClasses.content}`]: {
-    marginLeft: theme.spacing(1),
-  },
-}));
-
-const BaseAccordionDetails = styled(MuiAccordionDetails)(({ theme }) => ({
-  padding: theme.spacing(2),
-  borderTop: "1px solid rgba(0,0,0,.125)",
-}));
+const SIDEBAR_WIDTH = 280;
+const SCROLL_OFFSET = 16;
 
 export default function UserGuideModal() {
   const [open, setOpen] = useState(false);
   const [sections, setSections] = useState([]);
-  const [expanded, setExpanded] = useState("panel1");
+  const [activeIndex, setActiveIndex] = useState(0);
 
-  // Anchor refs for each section (DOM elements above each accordion)
-  const anchorRefs = useRef([]);
-
-  // Scroll container ref (DialogContent)
   const contentRef = useRef(null);
+  const sectionRefs = useRef([]);
 
   useEffect(() => {
-    // Инициализация загрузки данных и открытия модального окна
     window.userGuideAPI.onOpen(async () => {
       const content = await window.userGuideAPI.read();
-      const rawSections = content.split(/^## /m).map((part, idx) => {
-        if (idx === 0)
-          return { title: "🧬 Genealogy Desktop App.", body: part.trim() };
-        const lines = part.split("\n");
-        const title = lines.shift();
-        return { title, body: lines.join("\n").trim() };
-      });
-
-      const ready = rawSections.filter((s) => s.body && s.body.length > 0);
+      const ready = parseMarkdownSections(content);
       setSections(ready);
-      setExpanded("panel1");
+      setActiveIndex(0);
       setOpen(true);
     });
   }, []);
 
-  // Smooth scroll inside DialogContent to anchor with offset
-  const scrollToAnchor = (index) => {
+  const scrollToSection = useCallback((index) => {
     const container = contentRef.current;
-    const anchor = anchorRefs.current[index];
-    if (!container || !anchor) return;
+    const sectionEl = sectionRefs.current[index];
+    if (!container || !sectionEl) return;
 
     const containerRect = container.getBoundingClientRect();
-    const anchorRect = anchor.getBoundingClientRect();
-    const currentScrollTop = container.scrollTop;
+    const sectionRect = sectionEl.getBoundingClientRect();
+    const nextScrollTop =
+      container.scrollTop +
+      sectionRect.top -
+      containerRect.top -
+      SCROLL_OFFSET;
 
-    // 1. Рассчитываем базовое смещение (позиция якоря относительно начала контейнера)
-    const baseOffset = anchorRect.top - containerRect.top + currentScrollTop;
+    container.scrollTo({ top: nextScrollTop, behavior: "smooth" });
+    setActiveIndex(index);
+  }, []);
 
-    // 2. Вычитаем дополнительное смещение (40px)
-    const finalOffset = baseOffset - SCROLL_OFFSET;
+  useEffect(() => {
+    if (!open || sections.length === 0) return;
 
-    container.scrollTo({ top: finalOffset, behavior: "smooth" });
-  };
+    const container = contentRef.current;
+    if (!container) return;
 
-  const handleChange = (panelId, index) => (event, newExpanded) => {
-    setExpanded(newExpanded ? panelId : false);
+    const handleScroll = () => {
+      const scrollTop = container.scrollTop + SCROLL_OFFSET + 8;
+      let nextActive = 0;
 
-    if (newExpanded) {
-      // Задержка 400 мс для ожидания завершения анимации разворачивания аккордеона.
-      setTimeout(() => {
-        // Прокрутка после завершения анимации
-        scrollToAnchor(index);
+      sectionRefs.current.forEach((sectionEl, index) => {
+        if (sectionEl && sectionEl.offsetTop <= scrollTop) {
+          nextActive = index;
+        }
+      });
 
-        // Дополнительный вызов на следующем кадре для надежности
-        requestAnimationFrame(() => scrollToAnchor(index));
-      }, 400);
-    }
-  };
+      setActiveIndex(nextActive);
+    };
+
+    container.addEventListener("scroll", handleScroll, { passive: true });
+    return () => container.removeEventListener("scroll", handleScroll);
+  }, [open, sections]);
 
   return (
-    <Dialog open={open} onClose={() => setOpen(false)} fullScreen>
-      <DialogTitle>
-        🧬 Genealogy Desktop App. 📖 Инструкция пользователя
+    <Dialog
+      open={open}
+      onClose={() => setOpen(false)}
+      fullScreen
+      PaperProps={{
+        sx: {
+          borderRadius: 0,
+          display: "flex",
+          flexDirection: "column",
+        },
+      }}
+    >
+      <DialogTitle
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 1,
+          py: 1.5,
+          height: 50,
+        }}
+      >
+        <MenuBookOutlinedIcon color="primary" />
+        <Typography component="span" variant="h6" fontWeight={700}>
+          Инструкция пользователя
+        </Typography>
       </DialogTitle>
 
-      <DialogContent dividers ref={contentRef}>
-        {sections.map((sec, i) => {
-          const panelId = `panelId${i + 1}`;
-          return (
-            <div key={panelId}>
-              {/* Anchor just above the accordion */}
-              <div
-                ref={(el) => (anchorRefs.current[i] = el)}
-                // top: -8 для точного позиционирования якоря
-                style={{ position: "relative", top: -8 }}
-              />
-              <BaseAccordion
-                sx={{ borderRadius: "15px" }}
-                expanded={expanded === panelId}
-                onChange={handleChange(panelId, i)}
+      <Box
+        sx={{
+          display: "flex",
+          flex: 1,
+          minHeight: 0,
+          borderTop: 1,
+          borderColor: "divider",
+        }}
+      >
+        <Box
+          sx={{
+            width: SIDEBAR_WIDTH,
+            flexShrink: 0,
+            borderRight: 1,
+            borderColor: "divider",
+            bgcolor: "action.hover",
+            overflowY: "auto",
+          }}
+        >
+          <Typography
+            variant="overline"
+            sx={{
+              display: "block",
+              px: 2,
+              pt: 2,
+              pb: 1,
+              color: "text.secondary",
+            }}
+          >
+            Разделы
+          </Typography>
+          <List dense disablePadding sx={{ pb: 2 }}>
+            {sections.map((section, index) => (
+              <ListItemButton
+                key={section.title}
+                selected={activeIndex === index}
+                onClick={() => scrollToSection(index)}
+                sx={{
+                  mx: 1,
+                  mb: 0.5,
+                  borderRadius: "12px",
+                  "&.Mui-selected": {
+                    bgcolor: "primary.main",
+                    color: "primary.contrastText",
+                    "&:hover": { bgcolor: "primary.dark" },
+                  },
+                }}
               >
-                <BaseAccordionSummary
-                  sx={{
-                    borderRadius: "15px",
+                <ListItemText
+                  primary={section.title}
+                  primaryTypographyProps={{
+                    fontSize: "0.95rem",
+                    fontWeight: activeIndex === index ? 700 : 500,
                   }}
-                  aria-controls={`${panelId}-content`}
-                  id={`${panelId}-header`}
-                >
-                  <Typography variant="subtitle1" fontWeight="bold">
-                    {sec.title}
-                  </Typography>
-                </BaseAccordionSummary>
-                <BaseAccordionDetails>
-                  <ReactMarkdown
-                    children={sec.body}
-                    remarkPlugins={[remarkGfm]}
-                    components={{
-                      h1: (props) => (
-                        <Typography variant="h5" gutterBottom {...props} />
-                      ),
-                      h2: (props) => (
-                        <Typography variant="h6" gutterBottom {...props} />
-                      ),
-                      h3: (props) => (
-                        <Typography
-                          variant="subtitle1"
-                          gutterBottom
-                          {...props}
-                        />
-                      ),
-                      p: (props) => (
-                        <Typography variant="body1" paragraph {...props} />
-                      ),
-                      ul: (props) => (
-                        <ul
-                          style={{ marginTop: 8, marginBottom: 8 }}
-                          {...props}
-                        />
-                      ),
-                      ol: (props) => (
-                        <ol
-                          style={{ marginTop: 8, marginBottom: 8 }}
-                          {...props}
-                        />
-                      ),
-                      li: (props) => (
-                        <li style={{ marginBottom: 4 }} {...props} />
-                      ),
-                      code: ({ inline, ...props }) =>
-                        inline ? (
-                          <code
-                            style={{
-                              background: "rgba(0,0,0,0.06)",
-                              padding: "2px 4px",
-                              borderRadius: 4,
-                            }}
-                            {...props}
-                          />
-                        ) : (
-                          <pre
-                            style={{
-                              background: "rgba(0,0,0,0.06)",
-                              padding: 12,
-                              borderRadius: 8,
-                              overflowX: "auto",
-                            }}
-                          >
-                            <code {...props} />
-                          </pre>
-                        ),
-                      table: (props) => (
-                        <table
-                          style={{
-                            width: "100%",
-                            borderCollapse: "collapse",
-                            margin: "8px 0",
-                          }}
-                          {...props}
-                        />
-                      ),
-                      th: (props) => (
-                        <th
-                          style={{
-                            textAlign: "left",
-                            borderBottom: "1px solid rgba(0,0,0,0.12)",
-                            padding: "6px 8px",
-                          }}
-                          {...props}
-                        />
-                      ),
-                      td: (props) => (
-                        <td
-                          style={{
-                            borderBottom: "1px solid rgba(0,0,0,0.08)",
-                            padding: "6px 8px",
-                          }}
-                          {...props}
-                        />
-                      ),
-                    }}
-                  />
-                </BaseAccordionDetails>
-              </BaseAccordion>
-            </div>
-          );
-        })}
-      </DialogContent>
+                />
+              </ListItemButton>
+            ))}
+          </List>
+        </Box>
 
-      <DialogActions>
-        <Button onClick={() => setOpen(false)}>Закрыть</Button>
+        <Box
+          ref={contentRef}
+          sx={{
+            flex: 1,
+            overflowY: "auto",
+            px: { xs: 2, sm: 4 },
+            py: 3,
+          }}
+        >
+          {sections.map((section, index) => (
+            <Box
+              key={section.title}
+              ref={(el) => {
+                sectionRefs.current[index] = el;
+              }}
+              id={`user-guide-section-${index}`}
+              sx={{ mb: index < sections.length - 1 ? 6 : 2 }}
+            >
+              {index > 0 && <Divider sx={{ mb: 3 }} />}
+              <Typography
+                variant="h5"
+                fontWeight={700}
+                gutterBottom
+                sx={{ textIndent: 0, mb: 2 }}
+              >
+                {section.title}
+              </Typography>
+              <MarkdownViewer content={section.body} />
+            </Box>
+          ))}
+        </Box>
+      </Box>
+
+      <DialogActions
+        sx={{ borderTop: 1, borderColor: "divider", px: 3, py: 1.5 }}
+      >
+        <Button
+          onClick={() => setOpen(false)}
+          variant="outlined"
+          sx={{
+            height: 24,
+            borderRadius: "6px",
+            px: 3,
+            py: 1,
+            boxShadow: "none",
+            fontWeight: "bold",
+          }}
+        >
+          Закрыть
+        </Button>
       </DialogActions>
     </Dialog>
   );

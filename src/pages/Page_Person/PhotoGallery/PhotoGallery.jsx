@@ -23,6 +23,7 @@ import PhotoMetaUpdateDialog from "../../../components/Dialog/PhotoMetaUpdateDia
 import PhotoUploadDialog from "../../../components/Dialog/PhotoUploadDialog";
 import PhotoMetaDialog from "../../../components/Dialog/PhotoMetaDialog";
 import { ButtonScrollTop } from "../../../components/ButtonScrollTop";
+import { buildPhotoAttendeesText } from "../../../utils/photoFaces";
 
 const normalizePhotoDate = (dp) => {
   if (!dp) return null;
@@ -72,6 +73,11 @@ export default function PhotoGallery({
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
   const lastTriggerRef = useRef(uploadTrigger);
   const [scrollTop, setScrollTop] = useState(0);
+  const [allExternal, setAllExternal] = useState([]);
+
+  useEffect(() => {
+    window.externalAPI?.getAll().then((data) => setAllExternal(data || []));
+  }, [refreshTrigger]);
 
   useEffect(() => {
     // Проверяем: изменилось ли значение по сравнению с прошлым разом
@@ -372,14 +378,9 @@ export default function PhotoGallery({
     const ownerText = owner
       ? `👤 ${owner.gender === "male" ? "Добавил" : "Добавила"}: ${owner.firstName}`
       : "👤 Неизвестно";
-    const peopleText = (photo.people || [])
-      .map((id) => {
-        const p = allPeople.find((x) => x.id === id);
-        return p ? `${p.firstName} ${p.lastName || ""}`.trim() : id;
-      })
-      .join(", ");
+    const peopleText = buildPhotoAttendeesText(photo, allPeople, allExternal);
     return { ...photo, ownerText, peopleText };
-  }, [index, displayList, allPeople]);
+  }, [index, displayList, allPeople, allExternal]);
 
   const rowHeight = Math.floor((windowWidth * 0.9) / columnsCount);
 
@@ -491,6 +492,7 @@ export default function PhotoGallery({
                             rowHeight={rowHeight}
                             isDark={isDark}
                             allPeople={allPeople}
+                            allExternal={allExternal}
                             personId={personId}
                           />
                         </Box>
@@ -518,6 +520,8 @@ export default function PhotoGallery({
           onToggleMaximize={handleMaximizeWindow}
           currentPhotoInfo={currentPhotoInfo}
           onDownload={onDownload}
+          allPeople={allPeople}
+          allExternal={allExternal}
         />
 
         <PhotoMetaDialog
@@ -535,6 +539,7 @@ export default function PhotoGallery({
             if (refresh) refresh();
           }}
           allPeople={allPeople}
+          photoPaths={photoPaths}
           mode="personal"
         />
 

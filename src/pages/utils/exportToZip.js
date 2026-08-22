@@ -5,6 +5,9 @@ export const exportPeopleToZip = async ({
   onProgress = () => {},
   onStatus = () => {},
   onError = () => {},
+  archiveName = null,
+  selectedPhotoFolders = ["webp"],
+  runMaintenanceBeforeExport = false,
 }) => {
   const emitProgress = (payload) => {
     try {
@@ -23,6 +26,13 @@ export const exportPeopleToZip = async ({
   };
 
   try {
+    const photoFolders = Array.from(
+      new Set((selectedPhotoFolders || []).filter(Boolean)),
+    );
+    if (!photoFolders.includes("original") && !photoFolders.includes("webp")) {
+      throw new Error("Выберите original или webp для архивации фото");
+    }
+
     // 1. ПЕРВЫМ ДЕЛОМ открываем диалог (пока прогресс еще 0%)
     onStatus("Выбор места сохранения...");
     const savePath = await window.dialogAPI.chooseSavePath(defaultFilename);
@@ -31,6 +41,11 @@ export const exportPeopleToZip = async ({
     if (!savePath) {
       onStatus("Экспорт отменён");
       return null;
+    }
+
+    if (runMaintenanceBeforeExport && window.appAPI?.runMaintenanceTask) {
+      onStatus("Обслуживание базы данных...");
+      await window.appAPI.runMaintenanceTask("sqlite-vacuum-analyze");
     }
     // 1. ОПРЕДЕЛЕНИЕ basePath
     let basePath = "";
@@ -84,7 +99,13 @@ export const exportPeopleToZip = async ({
       .replace(/^file:\/\//, "")
       .replace(/%20/g, " ");
 
+    // basePath указывает на .../Genealogy/people, а база лежит в .../Genealogy
+    const genealogyRootPath = basePath.endsWith("/people")
+      ? basePath.slice(0, -"/people".length)
+      : basePath;
+
     console.log("[exportToZip] Clean basePath for Node.js:", basePath);
+    console.log("[exportToZip] Genealogy root path:", genealogyRootPath);
 
     onStatus("Подготовка архива...");
     const total = Array.isArray(people) ? people.length : 0;
@@ -92,19 +113,75 @@ export const exportPeopleToZip = async ({
     const tempDir = await window.pathAPI.getTempDir();
     await window.fileAPI.ensureDir(tempDir);
 
-    // Сохраняем главный JSON
+    const createdAt = new Date().toISOString();
+    const resolvedArchiveName = archiveName || defaultFilename.replace(/\.zip$/i, "");
+
+    // Сохраняем паспорт архива и главный JSON
+    const manifestPath = `${tempDir}/manifest.json`;
+    await window.fileAPI.writeText(
+      manifestPath,
+      JSON.stringify(
+        {
+          appIdentifier: "MY_GENEALOGY_APP",
+          archiveName: resolvedArchiveName,
+          createdAt,
+          selectedPhotoFolders: photoFolders,
+          photoFolders,
+          kind: "genealogy-archive",
+          version: 1,
+        },
+        null,
+        2,
+      ),
+    );
+    archiveFiles.push(manifestPath);
+
     const jsonPath = `${tempDir}/genealogy-data.json`;
     await window.fileAPI.writeText(
       jsonPath,
-      JSON.stringify({ people }, null, 2),
+      JSON.stringify(
+        {
+          appIdentifier: "MY_GENEALOGY_APP",
+          archiveName: resolvedArchiveName,
+          exportedAt: createdAt,
+          selectedPhotoFolders: photoFolders,
+          photoFolders,
+          people,
+        },
+        null,
+        2,
+      ),
     );
 
     archiveFiles.push(jsonPath);
 
+    const databaseFiles = [
+      "genealogy.sqlite",
+      "genealogy.sqlite-wal",
+      "genealogy.sqlite-shm",
+    ];
+    for (const fileName of databaseFiles) {
+      try {
+        const srcPath = `${genealogyRootPath}/${fileName}`
+          .replace(/\\/g, "/")
+          .replace(/\/+/g, "/");
+        const destPath = `${tempDir}/${fileName}`;
+        const res = await window.fileAPI.copyFile(srcPath, destPath);
+        if (res && res.success !== false) {
+          archiveFiles.push(destPath);
+        }
+      } catch (error) {
+        console.warn(
+          `[exportToZip] Не удалось добавить файл базы ${fileName}:`,
+          error,
+        );
+      }
+    }
+
     let processedFilesCount = 0;
 
     onStatus("Подсчет файлов...");
-    let totalFilesEstimated = 1; // 1 для genealogy-data.json
+    let totalFilesEstimated = 1 + databaseFiles.length; // genealogy-data.json + база
 
     // for (const p of people) {
     //   // 1. Проверяем аватар так же, как в цикле копирования
@@ -138,7 +215,18 @@ export const exportPeopleToZip = async ({
     let bio_img = 0;
     let photo_json = 0;
     let photo_img = 0;
+    let photo_thumbs = 0;
     let files_d = 0;
+    let external_json = 0;
+    let external_avatar = 0;
+
+    const allExternal = (await window.externalAPI?.getAll?.()) || [];
+
+    for (const entity of allExternal) {
+      external_json = 1;
+      const avatarPath = await window.externalAPI.avatar.getPath(entity.id);
+      if (avatarPath) external_avatar += 1;
+    }
 
     for (const p of people) {
       // 1. Проверяем аватар так же, как в цикле копирования
@@ -162,9 +250,16 @@ export const exportPeopleToZip = async ({
       const photos = await window.photosAPI.getByOwner(p.id);
       if (photos && photos.length > 0) {
         totalFilesEstimated += 1; // photos.json
-        totalFilesEstimated += photos.length; // сами файлы фото
         photo_json += 1;
-        photo_img += photos.length;
+        const selectedVariantsCount =
+          (photoFolders.includes("original") ? 1 : 0) +
+          (photoFolders.includes("webp") ? 1 : 0) +
+          (photoFolders.includes("thumbs") ? 1 : 0);
+        totalFilesEstimated += photos.length * selectedVariantsCount;
+        photo_img += photos.length * selectedVariantsCount;
+        if (photoFolders.includes("thumbs")) {
+          photo_thumbs += photos.length;
+        }
       }
 
       // 4. Дополнительные файлы
@@ -180,6 +275,11 @@ export const exportPeopleToZip = async ({
     console.log("photo_img", photo_img);
     console.log("photo_json", photo_json);
     console.log("files_d", files_d);
+    console.log("external_json", external_json);
+    console.log("external_avatar", external_avatar);
+    console.log("photo_thumbs", photo_thumbs);
+
+    totalFilesEstimated += external_json + external_avatar;
 
     // ОСНОВНОЙ ЦИКЛ ОБРАБОТКИ
     for (let i = 0; i < total; i++) {
@@ -318,67 +418,87 @@ export const exportPeopleToZip = async ({
 
             const personPhotosDir = `${basePath}/${personId}/photos`;
 
-            const pathsToTry = [
+            const variants = [
               {
-                src: `${personPhotosDir}/original/${origName}`,
+                enabled: photoFolders.includes("original"),
                 subDir: "original",
                 ext: null,
+                candidates: [
+                  `${personPhotosDir}/original/${origName}`,
+                  `${personPhotosDir}/${origName}`,
+                ],
               },
               {
-                src: `${personPhotosDir}/webp/${webpFromName}`,
+                enabled: photoFolders.includes("webp"),
                 subDir: "webp",
                 ext: "webp",
+                candidates: [
+                  `${personPhotosDir}/webp/${webpFromName}`,
+                  `${personPhotosDir}/webp/${photoId}.webp`,
+                ],
               },
               {
-                src: `${personPhotosDir}/webp/${photoId}.webp`,
-                subDir: "webp",
+                enabled: photoFolders.includes("thumbs"),
+                subDir: "thumbs",
                 ext: "webp",
+                candidates: [
+                  `${personPhotosDir}/thumbs/${webpFromName}`,
+                  `${personPhotosDir}/thumbs/${photoId}.webp`,
+                ],
               },
-              {
-                src: `${personPhotosDir}/${origName}`,
-                subDir: "original",
-                ext: null,
-              },
-            ].filter((item) => item.src && !item.src.includes("null"));
+            ];
 
-            let copySuccess = false;
+            let copiedAtLeastOne = false;
 
-            for (const item of pathsToTry) {
-              // Очищаем путь от возможных двойных слешей и декодируем
-              const srcPath = item.src.replace(/\\/g, "/").replace(/\/+/g, "/");
+            for (const variant of variants) {
+              if (!variant.enabled) continue;
 
-              const finalExt = item.ext || srcPath.split(".").pop();
-              const destFilename = origName
-                ? origName.replace(/\.[^.]+$/, `.${finalExt}`)
-                : `${photoId}.${finalExt}`;
+              let variantCopied = false;
+              const checkedCandidates = [];
 
-              const finalSubDir = `${photoDir}/${item.subDir}`;
-              await window.fileAPI.ensureDir(finalSubDir);
-              const destPath = `${finalSubDir}/${destFilename}`;
+              for (const candidate of variant.candidates) {
+                if (!candidate || candidate.includes("null")) continue;
 
-              const result = await window.fileAPI.copyFile(srcPath, destPath);
+                // Очищаем путь от возможных двойных слешей
+                const srcPath = candidate.replace(/\\/g, "/").replace(/\/+/g, "/");
+                checkedCandidates.push(srcPath);
 
-              if (result && result.success !== false) {
-                archiveFiles.push(destPath);
-                copySuccess = true;
-                processedFilesCount++;
-                emitProgress({
-                  phase: "preparation",
-                  processedFiles: processedFilesCount,
-                  totalFiles: totalFilesEstimated,
-                  currentFile: destFilename,
-                });
-                break;
+                const finalExt = variant.ext || srcPath.split(".").pop();
+                const destFilename = origName
+                  ? origName.replace(/\.[^.]+$/, `.${finalExt}`)
+                  : `${photoId}.${finalExt}`;
+
+                const finalSubDir = `${photoDir}/${variant.subDir}`;
+                await window.fileAPI.ensureDir(finalSubDir);
+                const destPath = `${finalSubDir}/${destFilename}`;
+
+                const result = await window.fileAPI.copyFile(srcPath, destPath);
+
+                if (result && result.success !== false) {
+                  archiveFiles.push(destPath);
+                  processedFilesCount++;
+                  copiedAtLeastOne = true;
+                  variantCopied = true;
+                  emitProgress({
+                    phase: "preparation",
+                    processedFiles: processedFilesCount,
+                    totalFiles: totalFilesEstimated,
+                    currentFile: destFilename,
+                  });
+                  break;
+                }
+              }
+
+              if (!variantCopied) {
+                console.warn(
+                  `[exportToZip] ${variant.subDir} для фото ${photoId} не найден. Проверяли:`,
+                  checkedCandidates,
+                );
               }
             }
 
-            if (!copySuccess) {
-              // Если не нашли, выведем в консоль список путей, которые мы проверяли
-              // Это поможет тебе увидеть, где "промах"
-              console.warn(
-                `[exportToZip] Фото ${photoId} не найдено. Проверяли пути:`,
-                pathsToTry.map((p) => p.src),
-              );
+            if (!copiedAtLeastOne) {
+              console.warn(`[exportToZip] Ни один вариант фото ${photoId} не был скопирован`);
             }
           }
         }
@@ -432,6 +552,60 @@ export const exportPeopleToZip = async ({
       }
 
       if ((i + 1) % 20 === 0) await new Promise((r) => setTimeout(r, 0));
+    }
+
+    // --- СПРАВОЧНИК (внешние люди и питомцы) ---
+    try {
+      if (allExternal.length > 0) {
+        onStatus("Экспорт справочника...");
+        const externalJsonPath = `${tempDir}/external-entities.json`;
+        await window.fileAPI.writeText(
+          externalJsonPath,
+          JSON.stringify(allExternal, null, 2),
+        );
+        archiveFiles.push(externalJsonPath);
+        processedFilesCount++;
+        emitProgress({
+          phase: "preparation",
+          processedFiles: processedFilesCount,
+          totalFiles: totalFilesEstimated,
+          currentFile: "external-entities.json",
+        });
+
+        for (const entity of allExternal) {
+          try {
+            const avatarPath = await window.externalAPI.avatar.getPath(entity.id);
+            if (!avatarPath) continue;
+
+            const entityDir = `${tempDir}/external/${entity.id}`;
+            await window.fileAPI.ensureDir(entityDir);
+
+            const cleanSrc = avatarPath
+              .replace(/^file:\/\//, "")
+              .replace(/%20/g, " ");
+            const dest = `${entityDir}/avatar.jpg`;
+            const res = await window.fileAPI.copyFile(cleanSrc, dest);
+
+            if (res && res.success !== false) {
+              archiveFiles.push(dest);
+              processedFilesCount++;
+              emitProgress({
+                phase: "preparation",
+                processedFiles: processedFilesCount,
+                totalFiles: totalFilesEstimated,
+                currentFile: `external/${entity.id}/avatar.jpg`,
+              });
+            }
+          } catch (entityErr) {
+            console.warn(
+              `[exportToZip] Ошибка экспорта ${entity.id}:`,
+              entityErr,
+            );
+          }
+        }
+      }
+    } catch (e) {
+      console.warn("[exportToZip] Ошибка экспорта справочника:", e);
     }
 
     // ЗАВЕРШЕНИЕ

@@ -17,6 +17,7 @@ import { useTheme, alpha } from "@mui/material/styles";
 import { useDispatch } from "react-redux";
 // import { setSearchQuery } from "../../../store/searchSlice";
 import { setSearchQuery } from "../store/searchSlice";
+import { buildPhotoAttendeesText } from "../utils/photoFaces";
 
 // 1. ОБНОВЛЕННЫЕ СТИЛИ ОВЕРЛЕЯ
 const StyledOverlay = styled(Box)(({ theme }) => ({
@@ -79,6 +80,7 @@ const PhotoCell = React.memo(
     isDark,
     personId,
     allPeople = [],
+    allExternal = [],
   }) => {
     const [hover, setHover] = useState(false);
     const theme = useTheme();
@@ -96,14 +98,7 @@ const PhotoCell = React.memo(
       return found ? [...new Set(found)] : []; // Убираем дубликаты, если они есть
     }, [photo.description]);
 
-    const peopleText = (photo.people || [])
-      .map((id) => {
-        const person = allPeople.find((p) => p.id === id);
-        return person
-          ? `${person.firstName || ""} ${person.lastName || ""}`.trim()
-          : `ID ${id}`;
-      })
-      .join(", ");
+    const peopleText = buildPhotoAttendeesText(photo, allPeople, allExternal);
 
     return (
       <Card

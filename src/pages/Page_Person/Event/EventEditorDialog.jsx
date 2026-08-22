@@ -19,6 +19,12 @@ import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import { alpha, useTheme } from "@mui/material/styles";
 import EventIcon from "@mui/icons-material/Event"; // Общая иконка для заголовка
 import PeopleAltIcon from "@mui/icons-material/PeopleAlt";
+import {
+  buildFaceTagOptions,
+  splitEventParticipantOptions,
+  eventParticipantOptionsFromEvent,
+} from "../../../utils/externalEntities";
+import useDialogSaveHotkey from "../../../hooks/useDialogSaveHotkey";
 
 export default function EventEditorDialog({
   open,
@@ -36,11 +42,13 @@ export default function EventEditorDialog({
   const [description, setDescription] = useState("");
   const [notes, setNotes] = useState("");
   const [place, setPlace] = useState("");
-  const [participants, setParticipants] = useState([]);
+  const [participantOptions, setParticipantOptions] = useState([]);
+  const [allExternal, setAllExternal] = useState([]);
   const [datePickerOpen, setDatePickerOpen] = useState(false);
 
   useEffect(() => {
     if (open) {
+      window.externalAPI?.getAll().then((data) => setAllExternal(data || []));
       setType(
         EVENT_TYPES.find((i) => i.name === initialEvent?.type) ??
           EVENT_TYPES[0],
@@ -49,11 +57,20 @@ export default function EventEditorDialog({
       setDescription(initialEvent?.description ?? "");
       setNotes(initialEvent?.notes ?? "");
       setPlace(initialEvent?.place ?? "");
-      setParticipants(initialEvent?.participants || []);
     }
   }, [open, initialEvent]);
 
+  useEffect(() => {
+    if (!open) return;
+    setParticipantOptions(
+      eventParticipantOptionsFromEvent(initialEvent, allPeople, allExternal),
+    );
+  }, [open, initialEvent, allPeople, allExternal]);
+
   const handleSave = () => {
+    const { participants, externalParticipants } =
+      splitEventParticipantOptions(participantOptions);
+
     onSave?.({
       type: type.name,
       date,
@@ -61,6 +78,7 @@ export default function EventEditorDialog({
       notes,
       place,
       participants,
+      externalParticipants,
     });
     onClose?.();
   };
@@ -70,12 +88,12 @@ export default function EventEditorDialog({
     onClose?.();
   };
 
-  const labelOf = (p) =>
-    [`${p.id} :: `, p.firstName, p.patronymic, p.lastName]
-      .filter(Boolean)
-      .join(" ");
+  const participantSelectOptions = buildFaceTagOptions(
+    allPeople.filter((p) => !p.archived),
+    allExternal,
+  );
 
-  const findById = (id) => allPeople.find((p) => p.id === id) || null;
+  useDialogSaveHotkey({ open, onSave: handleSave });
 
   return (
     <>
@@ -251,15 +269,26 @@ export default function EventEditorDialog({
               <Autocomplete
                 size="small"
                 multiple
-                options={allPeople}
-                getOptionLabel={labelOf}
-                value={participants.map(findById).filter(Boolean)}
-                onChange={(_, vs) => setParticipants(vs.map((p) => p.id))}
+                options={participantSelectOptions}
+                groupBy={(opt) =>
+                  opt.kind === "person" ? "Родственники" : "Справочник"
+                }
+                getOptionLabel={(opt) => opt.label}
+                isOptionEqualToValue={(a, b) =>
+                  a?.kind === b?.kind && a?.id === b?.id
+                }
+                value={participantOptions}
+                onChange={(_, vs) => setParticipantOptions(vs)}
+                slotProps={{
+                  popper: {
+                    sx: { zIndex: (t) => t.zIndex.modal + 2 },
+                  },
+                }}
                 renderInput={(params) => (
                   <TextField
                     {...params}
                     variant="standard"
-                    placeholder="Добавить людей..."
+                    placeholder="Родственники или справочник..."
                     fullWidth
                   />
                 )}
@@ -324,6 +353,8 @@ export default function EventEditorDialog({
                 },
               }}
               onClick={() => {
+                const { participants, externalParticipants } =
+                  splitEventParticipantOptions(participantOptions);
                 const dataToCopy = {
                   type: type.name,
                   date,
@@ -331,6 +362,7 @@ export default function EventEditorDialog({
                   notes,
                   place,
                   participants,
+                  externalParticipants,
                 };
                 onCopyRequest?.(dataToCopy);
               }}

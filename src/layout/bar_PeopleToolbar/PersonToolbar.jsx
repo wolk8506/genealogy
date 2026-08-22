@@ -116,6 +116,8 @@ export default function ToolbarGroup({
           isEditing={bioProps.isEditing}
           requestToggleEdit={bioProps.requestToggleEdit}
           execRef={bioProps.execRef}
+          isNavVisible={bioProps.isNavVisible}
+          onToggleNav={bioProps.onToggleNav}
         />
       )}
 

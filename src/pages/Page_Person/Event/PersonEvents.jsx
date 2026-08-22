@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   Typography,
   IconButton,
@@ -9,6 +9,7 @@ import {
 } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 import StarIcon from "@mui/icons-material/Star";
+import { Link } from "react-router-dom";
 
 import { alpha } from "@mui/material/styles";
 import AddIcon from "@mui/icons-material/Add";
@@ -17,6 +18,12 @@ import { EVENT_TYPES } from "./EventTypesList";
 
 import { ageAtEvent } from "../function/Function_ageAtEvent";
 import PersonAvatar from "../../../components/PersonAvatar";
+import ExternalEntityAvatar from "../../../components/ExternalEntityAvatar";
+import {
+  findPersonById,
+  findExternalById,
+  getExternalEntityLabel,
+} from "../../../utils/externalEntities";
 
 export default function PersonEvents({
   birthday,
@@ -25,7 +32,12 @@ export default function PersonEvents({
   onEdit,
   allPeople,
 }) {
-  const findById = (id) => allPeople?.find((p) => p.id === id) || null;
+  const [allExternal, setAllExternal] = useState([]);
+
+  useEffect(() => {
+    window.externalAPI?.getAll().then((data) => setAllExternal(data || []));
+  }, []);
+
   const labelOf = (p) =>
     [p.firstName, p.patronymic, p.lastName].filter(Boolean).join(" ") ||
     `ID ${p.id}`;
@@ -235,22 +247,28 @@ export default function PersonEvents({
                         </Typography>
                       )}
 
-                      {/* Участники */}
-                      {ev.participants?.length > 0 && (
-                        <Box sx={{ display: "flex", gap: 0.5, mt: 0.5 }}>
-                          {ev.participants.map((pid) => {
-                            const p = findById(pid);
+                      {(ev.participants?.length > 0 ||
+                        ev.externalParticipants?.length > 0) && (
+                        <Box
+                          sx={{
+                            display: "flex",
+                            flexWrap: "wrap",
+                            gap: 0.5,
+                            mt: 0.5,
+                          }}
+                        >
+                          {ev.participants?.map((pid) => {
+                            const p = findPersonById(allPeople, pid);
                             return p ? (
                               <Box
-                                key={pid}
+                                key={`p-${pid}`}
+                                component={Link}
+                                to={`/person/${p.id}`}
                                 title={labelOf(p)}
                                 display="flex"
                                 alignItems="center"
                                 sx={{
                                   mt: 0.25,
-                                  // bgcolor: "divider",
-                                  // }}
-                                  // sx={{
                                   bgcolor: (theme) =>
                                     theme.palette.mode === "dark"
                                       ? "rgba(255,255,255,0.08)"
@@ -262,12 +280,13 @@ export default function PersonEvents({
                                   color: "text.secondary",
                                   fontSize: "0.7rem",
                                   letterSpacing: "0.5px",
+                                  textDecoration: "none",
                                 }}
                               >
                                 <PersonAvatar personId={p.id} size={22} />
                                 <Typography
                                   component="span"
-                                  ml={2}
+                                  ml={1}
                                   variant="body2"
                                   color="text.secondary"
                                 >
@@ -275,6 +294,59 @@ export default function PersonEvents({
                                 </Typography>
                               </Box>
                             ) : null;
+                          })}
+                          {ev.externalParticipants?.map((eid) => {
+                            const entity = findExternalById(allExternal, eid);
+                            return entity ? (
+                              <Box
+                                key={`e-${eid}`}
+                                component={Link}
+                                to={`/external/${entity.id}`}
+                                title={getExternalEntityLabel(entity)}
+                                display="flex"
+                                alignItems="center"
+                                sx={{
+                                  mt: 0.25,
+                                  bgcolor: (theme) =>
+                                    alpha(theme.palette.secondary.main, 0.12),
+                                  px: 1,
+                                  py: 0.2,
+                                  borderRadius: "10px",
+                                  fontWeight: 700,
+                                  color: "text.secondary",
+                                  fontSize: "0.7rem",
+                                  letterSpacing: "0.5px",
+                                  textDecoration: "none",
+                                }}
+                              >
+                                <ExternalEntityAvatar
+                                  entityId={entity.id}
+                                  entity={entity}
+                                  size={22}
+                                />
+                                <Typography
+                                  component="span"
+                                  ml={1}
+                                  variant="body2"
+                                  color="text.secondary"
+                                >
+                                  {getExternalEntityLabel(entity)}
+                                </Typography>
+                              </Box>
+                            ) : (
+                              <Box
+                                key={`e-${eid}`}
+                                sx={{
+                                  px: 1,
+                                  py: 0.2,
+                                  borderRadius: "10px",
+                                  fontSize: "0.7rem",
+                                  color: "text.secondary",
+                                }}
+                              >
+                                {eid}
+                              </Box>
+                            );
                           })}
                         </Box>
                       )}

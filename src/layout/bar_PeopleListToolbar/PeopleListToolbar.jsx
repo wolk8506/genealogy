@@ -23,6 +23,7 @@ import ExpandingTagsFilter from "./ExpandingTegsFilter";
 import ButtonConteiner from "../../components/ButtonConteiner";
 import TrashFillIcon from "../../components/svg/TrashFillIcon";
 import PersonFillBadgePlusIcon from "../../components/svg/PersonFillBadgePlusIcon";
+import ContactsIcon from "@mui/icons-material/Contacts";
 
 export default function PeopleListToolbar({
   people = [],
@@ -54,6 +55,17 @@ export default function PeopleListToolbar({
       ml="auto"
       sx={{ WebkitAppRegion: "no-drag" }}
     >
+      <ButtonConteiner>
+        <Tooltip title="Справочник (внешние люди и питомцы)">
+          <IconButton
+            onClick={() => navigate("/external")}
+            size="small"
+            sx={{ color: "white", p: 1 }}
+          >
+            <ContactsIcon color="inherit" fontSize="inherit" />
+          </IconButton>
+        </Tooltip>
+      </ButtonConteiner>
       <ButtonConteiner>
         <Tooltip title="Корзина">
           <IconButton

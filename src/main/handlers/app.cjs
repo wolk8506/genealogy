@@ -125,6 +125,29 @@ ipcMain.handle("app:openDataFolder", async () => {
   await shell.openPath(dataPath);
 });
 
+ipcMain.handle("app:revealPath", async (_, targetPath) => {
+  try {
+    if (!targetPath || typeof targetPath !== "string") return false;
+    const normalizedPath = path.resolve(targetPath);
+
+    if (fs.existsSync(normalizedPath)) {
+      shell.showItemInFolder(normalizedPath);
+      return true;
+    }
+
+    const parent = path.dirname(normalizedPath);
+    if (fs.existsSync(parent)) {
+      await shell.openPath(parent);
+      return true;
+    }
+
+    return false;
+  } catch (error) {
+    console.warn("app:revealPath failed", error.message);
+    return false;
+  }
+});
+
 ipcMain.handle("app:get-folder-size", async () => {
   const folderPath = path.join(app.getPath("documents"), "Genealogy");
 
@@ -180,6 +203,9 @@ ipcMain.handle("get-detailed-storage-stats", async () => {
     thumbs: 0,
     db: 0,
     bio: 0,
+    externalJson: 0,
+    externalFolder: 0,
+    sqlite: 0,
     path: basePath,
   };
 
@@ -192,13 +218,39 @@ ipcMain.handle("get-detailed-storage-stats", async () => {
     }
   };
 
+  const getDirSize = (dirPath) => {
+    if (!fs.existsSync(dirPath)) return 0;
+
+    let total = 0;
+    for (const entry of fs.readdirSync(dirPath, { withFileTypes: true })) {
+      const fullPath = path.join(dirPath, entry.name);
+      if (entry.isDirectory()) {
+        total += getDirSize(fullPath);
+      } else {
+        total += getFileSize(fullPath);
+      }
+    }
+    return total;
+  };
+
   // 1. Считаем глобальную БД (файлы в корне)
   const rootFiles = fs.readdirSync(basePath);
   rootFiles.forEach((file) => {
+    const filePath = path.join(basePath, file);
     if (file.endsWith(".json")) {
-      stats.db += getFileSize(path.join(basePath, file));
+      stats.db += getFileSize(filePath);
+      if (file === "external-entities.json") {
+        stats.externalJson += getFileSize(filePath);
+      }
+    }
+
+    if (file === "genealogy.sqlite" || file === "genealogy.sqlite-wal" || file === "genealogy.sqlite-shm") {
+      stats.sqlite += getFileSize(filePath);
     }
   });
+
+  const externalDirPath = path.join(basePath, "external");
+  stats.externalFolder = getDirSize(externalDirPath);
 
   // 2. Считаем данные по каждому человеку
   if (fs.existsSync(peoplePath)) {

@@ -39,6 +39,17 @@ async function bootstrap() {
       </HashRouter>
     </Provider>,
   );
+
+  // Скрываем pre-React splash сразу после монтирования корня.
+  requestAnimationFrame(() => {
+    const splash = document.getElementById("boot-splash");
+    if (!splash) return;
+    splash.classList.add("hide");
+    setTimeout(() => {
+      splash.remove();
+      document.body.classList.remove("booting");
+    }, 260);
+  });
 }
 
 bootstrap();

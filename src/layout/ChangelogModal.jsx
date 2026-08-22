@@ -4,9 +4,9 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
-  Typography,
   Button,
 } from "@mui/material";
+import MarkdownViewer from "../components/MarkdownViewer";
 
 export default function ChangelogModal() {
   const [open, setOpen] = useState(false);
@@ -28,17 +28,24 @@ export default function ChangelogModal() {
       PaperProps={{ sx: { borderRadius: "15px" } }}
       fullWidth
     >
-      <DialogTitle>История версий</DialogTitle>
-      <DialogContent dividers>
-        <Typography
-          component="pre"
-          sx={{ whiteSpace: "pre-wrap", fontFamily: "monospace" }}
-        >
-          {text}
-        </Typography>
+      <DialogTitle sx={{ textAlign: "center" }}>История версий</DialogTitle>
+      <DialogContent dividers sx={{ maxHeight: "70vh", overflowY: "auto" }}>
+        <MarkdownViewer content={text} />
       </DialogContent>
       <DialogActions>
-        <Button onClick={() => setOpen(false)}>Закрыть</Button>
+        <Button
+          onClick={() => setOpen(false)}
+          sx={{
+            height: 24,
+            borderRadius: "6px",
+            px: 3,
+            py: 1,
+            boxShadow: "none",
+            fontWeight: "bold",
+          }}
+        >
+          Закрыть
+        </Button>
       </DialogActions>
     </Dialog>
   );
