@@ -4,13 +4,28 @@ import {
   createTheme,
   CssBaseline,
   Box,
-  CircularProgress,
   Typography,
 } from "@mui/material";
+import { keyframes } from "@mui/system";
 
 import MainLayout from "../layout/MainLayout";
 import { ThemeContext } from "../theme/ThemeContext.cjs";
 import { useSettingsStore } from "../store/useSettingsStore";
+
+const pulse = keyframes`
+  0%, 100% { transform: scale(0.96); opacity: 0.7; }
+  50% { transform: scale(1.04); opacity: 1; }
+`;
+
+const orbit = keyframes`
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+`;
+
+const shimmer = keyframes`
+  0% { background-position: -300px 0; }
+  100% { background-position: 300px 0; }
+`;
 
 export default function App() {
   const [mode, setMode] = useState("light"); // фактическая тема
@@ -55,6 +70,11 @@ export default function App() {
       setMode(userPref);
     }
   }, [auto, userPref]);
+
+  useEffect(() => {
+    if (!themeReady) return;
+    document.body.style.background = mode === "dark" ? "#121212" : "#f6f7fb";
+  }, [themeReady, mode]);
 
   const theme = useMemo(
     () =>
@@ -186,19 +206,110 @@ export default function App() {
     return (
       <Box
         sx={{
-          display: "flex",
-          flexDirection: "column",
+          position: "relative",
           height: "100vh",
-          alignItems: "center",
-          justifyContent: "center",
-          bgcolor: "background.default",
-          // bgcolor: "#121212",
+          width: "100%",
+          overflow: "hidden",
+          display: "grid",
+          placeItems: "center",
+          bgcolor: "#05070d",
+          background:
+            "radial-gradient(1200px 600px at 20% 20%, rgba(49,84,255,0.18), transparent 55%), radial-gradient(900px 600px at 80% 70%, rgba(0,219,176,0.13), transparent 60%), linear-gradient(160deg, #05070d 0%, #0b1021 45%, #06080f 100%)",
         }}
       >
-        <CircularProgress size={64} thickness={5} />
-        <Typography variant="h6" sx={{ mt: 2, color: "divider" }}>
-          Загрузка…
-        </Typography>
+        {[...Array(8)].map((_, i) => (
+          <Box
+            key={`particle-${i}`}
+            sx={{
+              position: "absolute",
+              width: 6,
+              height: 6,
+              borderRadius: "50%",
+              bgcolor: "rgba(121, 158, 255, 0.55)",
+              top: `${15 + (i * 9)}%`,
+              left: `${8 + ((i * 11) % 84)}%`,
+              filter: "blur(0.2px)",
+              animation: `${pulse} ${2.2 + i * 0.25}s ease-in-out infinite`,
+              animationDelay: `${i * 0.18}s`,
+            }}
+          />
+        ))}
+
+        <Box sx={{ position: "relative", display: "grid", placeItems: "center" }}>
+          <Box
+            sx={{
+              width: 220,
+              height: 220,
+              borderRadius: "50%",
+              border: "1px solid rgba(120, 170, 255, 0.22)",
+              animation: `${orbit} 7.5s linear infinite`,
+              position: "absolute",
+              "&::before": {
+                content: '""',
+                position: "absolute",
+                width: 10,
+                height: 10,
+                borderRadius: "50%",
+                top: 16,
+                left: "50%",
+                transform: "translateX(-50%)",
+                bgcolor: "#7f9cff",
+                boxShadow: "0 0 16px rgba(127,156,255,0.85)",
+              },
+            }}
+          />
+
+          <Box
+            sx={{
+              width: 150,
+              height: 150,
+              borderRadius: "50%",
+              border: "1px dashed rgba(84, 222, 197, 0.35)",
+              animation: `${orbit} 5.4s linear infinite reverse`,
+              position: "absolute",
+            }}
+          />
+
+          <Box
+            sx={{
+              px: 3,
+              py: 2,
+              borderRadius: "16px",
+              border: "1px solid rgba(255,255,255,0.08)",
+              bgcolor: "rgba(8, 12, 24, 0.64)",
+              backdropFilter: "blur(8px)",
+              textAlign: "center",
+            }}
+          >
+            <Typography
+              variant="h6"
+              sx={{
+                fontWeight: 800,
+                letterSpacing: 0.6,
+                color: "#f4f7ff",
+                mb: 0.5,
+              }}
+            >
+              GENEALOGY
+            </Typography>
+            <Typography
+              variant="caption"
+              sx={{
+                color: "rgba(215,225,255,0.72)",
+                display: "inline-block",
+                backgroundImage:
+                  "linear-gradient(90deg, rgba(220,230,255,0.55), rgba(220,230,255,1), rgba(220,230,255,0.55))",
+                backgroundSize: "300px 100%",
+                WebkitBackgroundClip: "text",
+                backgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                animation: `${shimmer} 2.2s linear infinite`,
+              }}
+            >
+              Инициализация приложения...
+            </Typography>
+          </Box>
+        </Box>
       </Box>
     );
   }

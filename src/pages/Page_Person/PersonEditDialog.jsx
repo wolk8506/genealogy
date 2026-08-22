@@ -25,6 +25,7 @@ import MaleIcon from "@mui/icons-material/Male";
 import { useNotificationStore } from "../../store/useNotificationStore";
 import CustomDatePickerDialog from "../../components/CustomDatePickerDialog";
 import NumberField from "../../components/NumberField";
+import useDialogSaveHotkey from "../../hooks/useDialogSaveHotkey";
 
 export default function PersonEditDialog({
   open,
@@ -291,6 +292,8 @@ export default function PersonEditDialog({
       category: "people",
     });
   };
+
+  useDialogSaveHotkey({ open, onSave: () => handleSubmit() });
 
   return (
     <>

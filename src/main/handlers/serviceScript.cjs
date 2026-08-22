@@ -2,6 +2,11 @@ const { ipcMain } = require("electron");
 const fs = require("fs");
 const path = require("path");
 const exifParser = require("exif-parser"); // Не забудь: npm install exif-parser
+const {
+  getFaceDbStats,
+  runFaceDbVacuumAnalyze,
+  runFaceDbIntegrityCheck,
+} = require("../db/faceDb.cjs");
 // Путь к данным
 const DATA_PATH = path.join(
   require("os").homedir(),
@@ -30,6 +35,10 @@ function formatAsTable(data) {
   });
 
   return [top, rows.join(`\n${separator}\n`), bottom].join("\n");
+}
+
+function toMegabytes(bytes) {
+  return `${(Number(bytes || 0) / (1024 * 1024)).toFixed(2)} MB`;
 }
 
 /**
@@ -453,6 +462,63 @@ const tasks = {
     await sendLog(`✅ Проверка завершена.`);
 
     return { success: true, affectedCount: duplicatesCount + missingAvatars };
+  },
+
+  // 7. SQLite: базовая статистика
+  "sqlite-db-stats": async (sendLog) => {
+    const stats = getFaceDbStats();
+
+    await sendLog("📊 SQLite database stats");
+    await sendLog(
+      "\n" +
+        formatAsTable({
+          "DB path": stats.dbPath,
+          "DB size": toMegabytes(stats.dbFileSizeBytes),
+          "Total face references": stats.totalReferences,
+          "Avatar references": stats.avatarReferences,
+          "Tagged references": stats.taggedReferences,
+          "Saved scan state": stats.scanStatePresent ? "yes" : "no",
+        }),
+    );
+
+    return { success: true, affectedCount: stats.totalReferences };
+  },
+
+  // 8. SQLite: VACUUM + ANALYZE
+  "sqlite-vacuum-analyze": async (sendLog) => {
+    const before = getFaceDbStats();
+    await sendLog(`🛠️ Running VACUUM + ANALYZE for ${before.dbPath}`);
+
+    runFaceDbVacuumAnalyze();
+
+    const after = getFaceDbStats();
+    await sendLog(`✅ VACUUM + ANALYZE completed`);
+    await sendLog(
+      `Size: ${toMegabytes(before.dbFileSizeBytes)} -> ${toMegabytes(after.dbFileSizeBytes)}`,
+    );
+
+    return { success: true, affectedCount: after.totalReferences };
+  },
+
+  // 9. SQLite: integrity check
+  "sqlite-integrity-check": async (sendLog) => {
+    await sendLog("🔍 Running PRAGMA integrity_check...");
+    const result = runFaceDbIntegrityCheck();
+
+    for (const message of result.messages) {
+      await sendLog(`• ${message}`);
+    }
+
+    if (!result.ok) {
+      return {
+        success: false,
+        error: "SQLite integrity_check failed",
+        affectedCount: 0,
+      };
+    }
+
+    await sendLog("✅ integrity_check: ok");
+    return { success: true, affectedCount: 1 };
   },
 };
 

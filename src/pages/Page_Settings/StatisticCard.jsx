@@ -7,10 +7,14 @@ import {
   List,
   ListItem,
   CircularProgress,
+  Tooltip,
   LinearProgress,
   Grid,
   Card,
   Divider,
+  TextField,
+  Alert,
+  Chip,
 } from "@mui/material";
 import { useNotificationStore } from "../../store/useNotificationStore";
 import {
@@ -31,6 +35,7 @@ import StorageIcon from "@mui/icons-material/Storage";
 import FolderOpenIcon from "@mui/icons-material/FolderOpen";
 import { alpha } from "@mui/material/styles";
 import { ImportDecisionInline } from "./ImportDecisionInline";
+import CustomSwitch from "../../components/CustomSwitch";
 
 import { keyframes } from "@mui/system";
 
@@ -48,6 +53,33 @@ export const StatisticCard = ({ cardStyle, loadAll }) => {
   const lastUpdateRef = useRef(0);
 
   const [storageStats, setStorageStats] = useState(null);
+
+  const getDefaultArchiveName = () => {
+    const now = new Date();
+    const stamp = now
+      .toLocaleString("sv-SE", { hour12: false })
+      .replace(/[\s:]/g, "-")
+      .replace(",", "_");
+    return `Genealogy_Backup_${stamp}`;
+  };
+
+  // --- Состояние подготовки бэкапа ---
+  const [backupSetupOpen, setBackupSetupOpen] = useState(false);
+  const [backupArchiveName, setBackupArchiveName] = useState(
+    getDefaultArchiveName(),
+  );
+  const [backupPhotoFolders, setBackupPhotoFolders] = useState({
+    original: false,
+    thumbs: false,
+    webp: true,
+  });
+  const [backupMaintenance, setBackupMaintenance] = useState(false);
+
+  // --- Состояние подготовки восстановления ---
+  const [importSetupOpen, setImportSetupOpen] = useState(false);
+  const [importZipPath, setImportZipPath] = useState("");
+  const [importArchiveMeta, setImportArchiveMeta] = useState(null);
+  const [importPhotoFolders, setImportPhotoFolders] = useState([]);
 
   // --- Состояния экспорта (Бэкапа) ---
   const [isSaving, setIsSaving] = useState(false);
@@ -219,7 +251,41 @@ export const StatisticCard = ({ cardStyle, loadAll }) => {
     }
   };
 
+  const handleOpenArchivePath = async () => {
+    if (!exportPath) return;
+    try {
+      await window.appAPI.revealPath?.(exportPath);
+    } catch (error) {
+      console.warn("Не удалось открыть путь архива", error);
+    }
+  };
+
+  const openBackupSetup = () => {
+    setBackupArchiveName(getDefaultArchiveName());
+    setBackupPhotoFolders({ original: true, thumbs: false, webp: false });
+    setBackupMaintenance(false);
+    setBackupSetupOpen(true);
+  };
+
+  const closeBackupSetup = () => setBackupSetupOpen(false);
+
   const handleExportAll = async () => {
+    const selectedPhotoFolders = Object.entries(backupPhotoFolders)
+      .filter(([, checked]) => Boolean(checked))
+      .map(([folder]) => folder);
+
+    if (!selectedPhotoFolders.includes("original") && !selectedPhotoFolders.includes("webp")) {
+      addNotification({
+        timestamp: new Date().toISOString(),
+        title: "Бэкап",
+        message: "Выберите original или webp для архивации фото",
+        type: "warning",
+        category: "dataManagement",
+      });
+      return;
+    }
+
+    setBackupSetupOpen(false);
     setIsSaving(true);
     setSaveDone(false);
     setExportError(false);
@@ -234,11 +300,15 @@ export const StatisticCard = ({ cardStyle, loadAll }) => {
     try {
       const basePath = (await window.appAPI.getDataPath?.()) || "";
       const allPeople = await window.peopleAPI.getAll();
+      const allExternal = (await window.externalAPI?.getAll?.()) || [];
 
       const archivePath = await exportPeopleToZip({
         people: allPeople,
         basePath: basePath,
-        defaultFilename: `Full_Backup_${Date.now()}.zip`,
+        defaultFilename: `${backupArchiveName}.zip`,
+        archiveName: backupArchiveName,
+        selectedPhotoFolders,
+        runMaintenanceBeforeExport: backupMaintenance,
         onProgress: (payload) => {
           setArchiveProgress((prev) => ({
             ...prev,
@@ -272,7 +342,10 @@ export const StatisticCard = ({ cardStyle, loadAll }) => {
       addNotification({
         timestamp: new Date().toISOString(),
         title: "Бэкап",
-        message: `✅ Полный архив сохранён`,
+        message:
+          allExternal.length > 0
+            ? `✅ Архив сохранён (родственники + справочник: ${allExternal.length})`
+            : `✅ Полный архив сохранён`,
         type: "success",
         category: "dataManagement",
       });
@@ -290,27 +363,109 @@ export const StatisticCard = ({ cardStyle, loadAll }) => {
     }
   };
 
+  const resetImportSetup = () => {
+    setImportSetupOpen(false);
+    setImportZipPath("");
+    setImportArchiveMeta(null);
+    setImportPhotoFolders([]);
+  };
+
   const handleImportAll = async () => {
     try {
       setImportError(false);
-      setIsImporting(true);
-      setIsImportingOpen(true);
-      setImportStatus("📥 Выберите ZIP для восстановления...");
       const zipPath = await window.dialogAPI.chooseOpenZip();
       if (!zipPath) {
-        setIsImportingOpen(false);
         return;
       }
-      await window.importAPI.importZip(zipPath);
-      if (loadAll) loadAll(); // Проверяем наличие функции перед вызовом
+      const archiveInfo = await window.importAPI.inspect(zipPath);
+      if (!archiveInfo?.isOurArchive) {
+        addNotification({
+          timestamp: new Date().toISOString(),
+          title: "Импорт",
+          message: "Архив не распознан как архив этого приложения",
+          type: "error",
+          category: "dataManagement",
+        });
+        return;
+      }
 
+      const availableFolders = Array.isArray(archiveInfo.availablePhotoFolders)
+        ? archiveInfo.availablePhotoFolders
+        : [];
+      const presetFolders = Array.isArray(archiveInfo.selectedPhotoFolders)
+        ? archiveInfo.selectedPhotoFolders
+        : [];
+      const defaultFolders =
+        presetFolders.length > 0
+          ? presetFolders
+          : availableFolders.length > 0
+            ? availableFolders
+            : ["original", "webp"];
+
+      setImportZipPath(zipPath);
+      setImportArchiveMeta(archiveInfo);
+      setImportPhotoFolders(defaultFolders);
+      setImportSetupOpen(true);
+    } catch (err) {
+      setImportError(true);
+      setImportStatus(`❌ Ошибка: ${err.message}`);
       addNotification({
         timestamp: new Date().toISOString(),
         title: "Импорт",
-        message: "Импорт из ZIP архива выполнен успешно",
-        type: "success",
+        message: `❌ Ошибка: ${err.message}`,
+        type: "error",
         category: "dataManagement",
       });
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
+  const handleRunImport = async () => {
+    if (!importZipPath) return;
+
+    const selectedFolders = importPhotoFolders.filter(Boolean);
+    setImportSetupOpen(false);
+    setIsImporting(true);
+    setIsImportingOpen(true);
+    setImportStatus("📥 Восстановление архива...");
+
+    try {
+      const importResult = await window.importAPI.importZip(importZipPath, {
+        photoFolders: selectedFolders,
+      });
+
+      if (importResult?.cancelled) {
+        setImportStatus("Импорт отменён");
+        addNotification({
+          timestamp: new Date().toISOString(),
+          title: "Импорт",
+          message: "Импорт отменён пользователем",
+          type: "warning",
+          category: "dataManagement",
+        });
+        return;
+      }
+
+      if (loadAll) loadAll();
+
+      const externalCount = importResult?.report?.externalImported || 0;
+      const externalFiles = importResult?.report?.externalFiles || 0;
+      const externalError = importResult?.report?.errors?.find(
+        (e) => e.scope === "external",
+      )?.error;
+      addNotification({
+        timestamp: new Date().toISOString(),
+        title: "Импорт",
+        message: externalError
+          ? `Импорт завершён с ошибкой справочника: ${externalError}`
+          : externalCount > 0
+            ? `Импорт выполнен. Справочник: ${externalCount} записей${externalFiles ? `, ${externalFiles} файлов` : ""}.`
+            : "Импорт из ZIP архива выполнен успешно",
+        type: externalError ? "warning" : "success",
+        category: "dataManagement",
+      });
+      resetImportSetup();
     } catch (err) {
       setImportError(true);
       setImportStatus(`❌ Ошибка: ${err.message}`);
@@ -338,14 +493,14 @@ export const StatisticCard = ({ cardStyle, loadAll }) => {
     if (archiveProgress.totalFiles > 0) {
       return Math.round(
         ((archiveProgress.processedFiles || 0) / archiveProgress.totalFiles) *
-          100,
+        100,
       );
     }
     return Math.round(archiveProgress.percent || 0);
   })();
 
-  function StatRow({ icon, label, value }) {
-    return (
+  function StatRow({ icon, label, value, detailList, hoverLabel }) {
+    const content = (
       <ListItem disableGutters>
         <Box
           sx={{
@@ -386,23 +541,83 @@ export const StatisticCard = ({ cardStyle, loadAll }) => {
         </Box>
       </ListItem>
     );
+
+    if (!detailList || !detailList.length) return content;
+
+    return (
+      <Tooltip
+        title={
+          <Box sx={{ p: 0.5, minWidth: 220 }}>
+            <Typography variant="caption" sx={{ opacity: 0.8, display: "block", mb: 1 }}>
+              {hoverLabel || label}
+            </Typography>
+            <List dense disablePadding sx={{ m: 0 }}>
+              {detailList.map((item) => (
+                <ListItem key={item.label} disableGutters sx={{ py: 0.25, px: 0 }}>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      width: "100%",
+                      gap: 1,
+                    }}
+                  >
+                    <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                      {item.label}
+                    </Typography>
+                    <Typography variant="caption" sx={{ fontWeight: 700 }}>
+                      {item.value}
+                    </Typography>
+                  </Box>
+                </ListItem>
+              ))}
+            </List>
+          </Box>
+        }
+        arrow
+        placement="top"
+        sx={{
+          "& .MuiTooltip-tooltip": {
+            bgcolor: "rgba(17, 24, 39, 0.96)",
+            border: "1px solid rgba(255,255,255,0.08)",
+            borderRadius: 2,
+            color: "#fff",
+          },
+        }}
+      >
+        <Box>{content}</Box>
+      </Tooltip>
+    );
   }
 
   // Флаги для определения того, какой контент рендерить внутри карточки
   const showExportProcess = isSaving || saveDone || exportError;
-  const showImportDecision = importConfirmOpen; // НОВОЕ СОСТОЯНИЕ
+  const showImportDecision = importConfirmOpen;
   const showImportProcess = isImportingOpen && !importConfirmOpen;
+  const showBackupSetup =
+    backupSetupOpen && !showExportProcess && !showImportProcess && !showImportDecision;
+  const showImportSetup =
+    importSetupOpen && !showExportProcess && !showImportProcess && !showImportDecision;
 
   // Дефолтный контент показывается только если нет ни одного активного процесса
   const showDefaultContent =
-    !showExportProcess && !showImportProcess && !showImportDecision;
+    !showExportProcess && !showImportProcess && !showImportDecision && !showBackupSetup && !showImportSetup;
   // const progressValue = Math.round(
   //   (importProgress.current / Math.max(1, importProgress.total)) * 100,
   // );
   const progressValue = importProgress.percent || 0;
   const exportPercent = percentValue || 0;
   return (
-    <Card variant="outlined" sx={{ ...cardStyle }}>
+    <Card
+      variant="outlined"
+      sx={{
+        ...cardStyle,
+        // height: 469,
+        display: "flex",
+        flexDirection: "column",
+        overflow: "hidden",
+      }}
+    >
       {/* ШАПКА всегда видна */}
       <Box
         sx={{
@@ -426,32 +641,285 @@ export const StatisticCard = ({ cardStyle, loadAll }) => {
         >
           {showExportProcess
             ? "Экспорт данных"
-            : showImportDecision
-              ? "Подтверждение импорта" // Добавили заголовок
-              : showImportProcess
-                ? "Импорт данных"
-                : "Статистика хранилища"}
+            : showBackupSetup
+              ? "Параметры архива"
+              : showImportSetup
+                ? "Восстановление архива"
+                : showImportDecision
+                  ? "Подтверждение импорта" // Добавили заголовок
+                  : showImportProcess
+                    ? "Импорт данных"
+                    : "Статистика хранилища"}
         </Typography>
       </Box>
 
       <Box
         sx={{
-          p: 2.5,
-          minHeight: 380,
-          height: 470,
+          p: 2,
+          minHeight: 0,
+          flex: 1,
           display: "flex",
           flexDirection: "column",
+          overflow: "auto",
         }}
       >
+        {/* --- ВИД: ПАРАМЕТРЫ БЭКАПА --- */}
+        {showBackupSetup && (
+          <Stack spacing={1.25} sx={{ flexGrow: 1, minHeight: 0 }}>
+            <Alert severity="info" sx={{ borderRadius: 2 }}>
+              Настройте имя архива, включаемые папки фото и, при необходимости,
+              обслуживание базы перед упаковкой.
+            </Alert>
+
+            <TextField
+              fullWidth
+              label="Имя архива"
+              value={backupArchiveName}
+              onChange={(e) => setBackupArchiveName(e.target.value)}
+              helperText={`Дата и время: ${new Date().toLocaleString("ru-RU")}`}
+            />
+
+            <Box
+              sx={{
+                p: 1.5,
+                borderRadius: 2,
+                border: "1px solid",
+                borderColor: "divider",
+              }}
+            >
+              <Stack spacing={1}>
+                <Typography variant="subtitle2" fontWeight={700}>
+                  Фото в архиве
+                </Typography>
+                {[
+                  ["original", "original"],
+                  ["thumbs", "thumbs"],
+                  ["webp", "webp"],
+                ].map(([value, label]) => (
+                  <Stack
+                    key={value}
+                    direction="row"
+                    alignItems="center"
+                    justifyContent="space-between"
+                  >
+                    <Typography variant="body2">{label}</Typography>
+                    <CustomSwitch
+                      checked={Boolean(backupPhotoFolders[value])}
+                      onChange={() =>
+                        setBackupPhotoFolders((prev) => ({
+                          ...prev,
+                          [value]: !prev[value],
+                        }))
+                      }
+                    />
+                  </Stack>
+                ))}
+
+                <Typography variant="caption" color="text.secondary">
+                  Выберите хотя бы один из вариантов: original или webp.
+                </Typography>
+              </Stack>
+            </Box>
+            <Box
+              sx={{
+                p: 1.5,
+                borderRadius: 2,
+                border: "1px solid",
+                borderColor: "divider",
+              }}
+            >
+              <Stack
+                direction="row"
+                alignItems="center"
+                justifyContent="space-between"
+                spacing={1}
+              >
+                <Box>
+                  <Typography variant="subtitle2" fontWeight={700}>
+                    Обслуживание базы
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    VACUUM + ANALYZE перед архивацией
+                  </Typography>
+                </Box>
+                <CustomSwitch
+                  checked={backupMaintenance}
+                  onChange={(e) => setBackupMaintenance(e.target.checked)}
+                />
+              </Stack>
+            </Box>
+
+            <Stack direction="row" spacing={1} justifyContent="flex-end">
+              <Button
+                variant="outlined"
+                onClick={closeBackupSetup}
+                sx={{
+                  height: 24,
+                  borderRadius: "8px",
+                  px: 3,
+                  py: 1,
+                  textTransform: "none",
+                  fontWeight: 600,
+                  boxShadow: "none",
+                }}
+              >
+                Отмена
+              </Button>
+              <Button
+                variant="contained"
+                onClick={handleExportAll}
+                disabled={
+                  !backupPhotoFolders.original && !backupPhotoFolders.webp
+                }
+                startIcon={<SaveIcon />}
+                sx={{
+                  height: 24,
+                  borderRadius: "8px",
+                  px: 3,
+                  py: 1,
+                  textTransform: "none",
+                  fontWeight: 600,
+                  boxShadow: "none",
+                }}
+              >
+                Создать архив
+              </Button>
+            </Stack>
+          </Stack>
+        )}
+
+        {/* --- ВИД: ПАРАМЕТРЫ ВОССТАНОВЛЕНИЯ --- */}
+        {showImportSetup && (
+          <Stack spacing={1.75} sx={{ flexGrow: 1, minHeight: 0 }}>
+            <Alert severity="info" sx={{ borderRadius: 2 }}>
+              Проверьте архив, выберите нужные папки фото для восстановления и
+              запустите импорт.
+            </Alert>
+
+            <Box
+              sx={{
+                p: 1.5,
+                borderRadius: 2,
+                border: "1px solid",
+                borderColor: "divider",
+              }}
+            >
+              <Stack spacing={1}>
+                <Typography variant="subtitle2" fontWeight={700}>
+                  Архив
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {importArchiveMeta?.archiveName || "Без имени"}
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {importArchiveMeta?.createdAt
+                    ? `Создан: ${new Date(importArchiveMeta.createdAt).toLocaleString("ru-RU")}`
+                    : "Дата создания неизвестна"}
+                </Typography>
+                <Stack direction="row" spacing={1} flexWrap="wrap">
+                  {(importArchiveMeta?.availablePhotoFolders || []).map(
+                    (folder) => (
+                      <Chip key={folder} label={folder} size="small" />
+                    ),
+                  )}
+                </Stack>
+              </Stack>
+            </Box>
+
+            <Box
+              sx={{
+                p: 1.5,
+                borderRadius: 2,
+                border: "1px solid",
+                borderColor: "divider",
+              }}
+            >
+              <Stack spacing={1}>
+                <Typography variant="subtitle2" fontWeight={700}>
+                  Восстанавливать папки фото
+                </Typography>
+                {[
+                  ["original", "original"],
+                  ["thumbs", "thumbs"],
+                  ["webp", "webp"],
+                ].map(([value, label]) => (
+                  <Stack
+                    key={value}
+                    direction="row"
+                    alignItems="center"
+                    justifyContent="space-between"
+                  >
+                    <Typography variant="body2">{label}</Typography>
+                    <CustomSwitch
+                      disabled={!importArchiveMeta?.availablePhotoFolders?.includes(
+                        value,
+                      )}
+                      checked={importPhotoFolders.includes(value)}
+                      onChange={() =>
+                        setImportPhotoFolders((prev) =>
+                          prev.includes(value)
+                            ? prev.filter((item) => item !== value)
+                            : [...prev, value],
+                        )
+                      }
+                    />
+                  </Stack>
+                ))}
+                <Typography variant="caption" color="text.secondary">
+                  Если какой-то папки нет в архиве, она просто будет пропущена.
+                </Typography>
+              </Stack>
+            </Box>
+
+            <Stack direction="row" spacing={1} justifyContent="flex-end">
+              <Button
+                variant="outlined"
+                onClick={resetImportSetup}
+                sx={{
+                  height: 24,
+                  borderRadius: "8px",
+                  px: 3,
+                  py: 1,
+                  textTransform: "none",
+                  fontWeight: 600,
+                  boxShadow: "none",
+                }}
+              >
+                Отмена
+              </Button>
+              <Button
+                variant="contained"
+                onClick={handleRunImport}
+                disabled={importPhotoFolders.length === 0}
+                startIcon={<RestoreIcon />}
+                sx={{
+                  height: 24,
+                  borderRadius: "8px",
+                  px: 3,
+                  py: 1,
+                  textTransform: "none",
+                  fontWeight: 600,
+                  boxShadow: "none",
+                }}
+              >
+                Восстановить
+              </Button>
+            </Stack>
+          </Stack>
+        )}
+
         {/* --- СТАНДАРТНЫЙ ВИД (Статистика) --- */}
         {showDefaultContent && (
-          <Stack spacing={3} sx={{ flexGrow: 1 }}>
+          <Stack
+            justifyContent="space-between"
+            sx={{ flexGrow: 1, minHeight: 0 }}
+          >
             <Box>
               <Stack
                 direction="row"
                 justifyContent="space-between"
                 alignItems="center"
-                sx={{ mb: 2 }}
+                sx={{ mb: 1.25 }}
               >
                 <Stack direction="row" spacing={1} alignItems="center">
                   <StorageIcon
@@ -497,7 +965,7 @@ export const StatisticCard = ({ cardStyle, loadAll }) => {
 
               <Box
                 sx={{
-                  height: 14,
+                  height: 12,
                   width: "100%",
                   bgcolor: alpha(theme.palette.divider, 0.2),
                   borderRadius: 7,
@@ -636,7 +1104,7 @@ export const StatisticCard = ({ cardStyle, loadAll }) => {
                 </Typography>
                 <List
                   data-density="compact"
-                  sx={{ "& .MuiListItem-root": { px: 1, py: 0.5 } }}
+                  sx={{ "& .MuiListItem-root": { px: 0.75, py: 0.35 } }}
                 >
                   <StatRow
                     icon={
@@ -676,7 +1144,7 @@ export const StatisticCard = ({ cardStyle, loadAll }) => {
                 </Typography>
                 <List
                   data-density="compact"
-                  sx={{ "& .MuiListItem-root": { px: 1, py: 0.5 } }}
+                  sx={{ "& .MuiListItem-root": { px: 0.75, py: 0.35 } }}
                 >
                   <StatRow
                     icon={
@@ -691,7 +1159,34 @@ export const StatisticCard = ({ cardStyle, loadAll }) => {
                   <StatRow
                     icon={<StorageIcon sx={{ fontSize: 18 }} color="success" />}
                     label="База данных"
-                    value={formatSize(storageStats?.db || 0)}
+                    value={formatSize(
+                      Math.max(
+                        0,
+                        (storageStats?.db || 0) +
+                          (storageStats?.sqlite || 0) -
+                          (storageStats?.externalJson || 0),
+                      ),
+                    )}
+                    hoverLabel="База данных"
+                    detailList={[
+                      {
+                        label: "База данных",
+                        value: formatSize(storageStats?.db || 0),
+                      },
+                      {
+                        label: "external-entities.json",
+                        value: formatSize(storageStats?.externalJson || 0),
+                      },
+                      {
+                        label: "SQLite (genealogy.sqlite)",
+                        value: formatSize(storageStats?.sqlite || 0),
+                      },
+                    ]}
+                  />
+                  <StatRow
+                    icon={<FolderOpenIcon sx={{ fontSize: 18 }} color="info" />}
+                    label="Папка external"
+                    value={formatSize(storageStats?.externalFolder || 0)}
                   />
                   <Button
                     fullWidth
@@ -701,7 +1196,7 @@ export const StatisticCard = ({ cardStyle, loadAll }) => {
                     onClick={() => window.appAPI.openDataFolder()}
                     sx={{
                       justifyContent: "flex-start",
-                      mt: 1,
+                      mt: 0.5,
                       fontSize: "0.65rem",
                       opacity: 0.7,
                     }}
@@ -713,40 +1208,56 @@ export const StatisticCard = ({ cardStyle, loadAll }) => {
             </Grid>
 
             <Divider />
-
-            <Stack direction="row" spacing={2} justifyContent={"space-evenly"}>
-              <Button
-                // fullWidth
-                variant="contained"
-                startIcon={<SaveIcon />}
-                onClick={handleExportAll}
-                sx={{
-                  height: 24,
-                  borderRadius: "6px",
-                  px: 3,
-                  py: 1,
-                  boxShadow: "none",
-                  fontWeight: "bold",
-                }}
-              >
-                Бэкап
-              </Button>
-              <Button
-                // fullWidth
-                variant="outlined"
-                startIcon={<RestoreIcon />}
-                onClick={handleImportAll}
-                sx={{
-                  height: 24,
-                  borderRadius: "6px",
-                  px: 3,
-                  py: 1,
-                  fontWeight: "bold",
-                }}
-              >
-                Импорт
-              </Button>
-            </Stack>
+            <Box
+              sx={{
+                p: 1.5,
+                borderRadius: 2,
+                border: "1px solid",
+                borderColor: "divider",
+              }}
+            >
+              <Stack direction="row" spacing={1.5} flexDirection={"column"}>
+                <Typography variant="subtitle2" fontWeight={700}>
+                  Импорт / экспорт данных
+                </Typography>
+                <Stack
+                  direction="row"
+                  spacing={1.5}
+                  justifyContent={"space-evenly"}
+                  pt={1}
+                >
+                  <Button
+                    fullWidth
+                    variant="contained"
+                    startIcon={<SaveIcon />}
+                    onClick={openBackupSetup}
+                    sx={{
+                      height: 24,
+                      borderRadius: "6px",
+                      px: 2.5,
+                      boxShadow: "none",
+                      fontWeight: "bold",
+                    }}
+                  >
+                    Экспорт
+                  </Button>
+                  <Button
+                    fullWidth
+                    variant="outlined"
+                    startIcon={<RestoreIcon />}
+                    onClick={handleImportAll}
+                    sx={{
+                      height: 24,
+                      borderRadius: "6px",
+                      px: 2.5,
+                      fontWeight: "bold",
+                    }}
+                  >
+                    Импорт
+                  </Button>
+                </Stack>
+              </Stack>
+            </Box>
           </Stack>
         )}
 
@@ -824,6 +1335,8 @@ export const StatisticCard = ({ cardStyle, loadAll }) => {
                 </Typography>
                 <Typography
                   variant="caption"
+                  component="button"
+                  onClick={handleOpenArchivePath}
                   sx={{
                     display: "block",
                     mb: 3,
@@ -833,6 +1346,12 @@ export const StatisticCard = ({ cardStyle, loadAll }) => {
                     bgcolor: alpha(theme.palette.common.black, 0.1),
                     p: 1,
                     borderRadius: 1,
+                    border: 0,
+                    width: "100%",
+                    textAlign: "left",
+                    color: "inherit",
+                    cursor: "pointer",
+                    textDecoration: "underline",
                   }}
                 >
                   {exportPath}

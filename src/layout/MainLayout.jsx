@@ -11,6 +11,12 @@ import {
   CssBaseline,
   Typography,
   IconButton,
+  Stack,
+  TextField,
+  InputAdornment,
+  ToggleButton,
+  ToggleButtonGroup,
+  Button,
 } from "@mui/material";
 import { styled, useTheme } from "@mui/material/styles";
 import MuiAppBar from "@mui/material/AppBar";
@@ -19,7 +25,12 @@ import InfoIcon from "@mui/icons-material/Info";
 import PersonIcon from "@mui/icons-material/Person";
 import GroupIcon from "@mui/icons-material/Group";
 import CollectionsIcon from "@mui/icons-material/Collections";
+import ContactsIcon from "@mui/icons-material/Contacts";
 import GearIcon from "../components/svg/GearIcon";
+import PersonAddAlt1Icon from "@mui/icons-material/PersonAddAlt1";
+import SearchIcon from "@mui/icons-material/Search";
+import PetsIcon from "@mui/icons-material/Pets";
+import PersonOutlineIcon from "@mui/icons-material/PersonOutline";
 
 import AppDrawer, { DrawerHeader } from "./AppDrawer";
 
@@ -30,16 +41,23 @@ import AboutPage from "../pages/Page_About/AboutPage";
 import ArchivedPeoplePage from "../pages/Page_Settings/ArchivedPeoplePage";
 import { UpdateBanner } from "../pages/Page_Settings/UpdateBanner";
 import DeletedPeoplePage from "../pages/Page_Main/DeletedPeoplePage";
+import ExternalPeoplePage from "../pages/Page_External/ExternalPeoplePage";
+import ExternalEntityPage from "../pages/Page_External/ExternalEntityPage";
 
 import LicenseModal from "./LicenseModal";
 import NavigationButtons from "./NavigationButtons";
 import ChangelogModal from "./ChangelogModal";
 import UserGuideModal from "./UserGuideModal";
+import FaceReviewQueueDialog from "../components/Dialog/FaceReviewQueueDialog";
+import FaceNoFacesQueueDialog from "../components/Dialog/FaceNoFacesQueueDialog";
 import { NotificationBell } from "./NotificationBell";
+import { countPendingReviewFaces, countNoFacePhotos } from "../utils/photoFaces";
+import { useFaceReviewStore } from "../store/useFaceReviewStore";
 
 import GalleryToolbar from "./bar_GlobalPhotoGallery/GalleryToolbar";
 import PeopleListToolbar from "./bar_PeopleListToolbar/PeopleListToolbar";
 import PersonToolbar from "./bar_PeopleToolbar/PersonToolbar";
+import ExternalToolbar from "./bar_External/ExternalToolbar";
 
 import ButtonConteiner from "../components/ButtonConteiner";
 import SidebarLeftIcon from "../components/svg/SidebarLeftIcon";
@@ -47,6 +65,7 @@ import TrashFillIcon from "../components/svg/TrashFillIcon";
 
 const drawerItems = [
   { text: "Люди", icon: <GroupIcon />, path: "/" },
+  { text: "Справочник", icon: <ContactsIcon />, path: "/external" },
   {
     text: "Фотогалерея",
     icon: <CollectionsIcon />,
@@ -105,6 +124,8 @@ export default function MainLayout() {
   // !!!  ▼▼▼   PeopleList  ▼▼▼
   // Внутри MainLayout
   const [peopleSearch, setPeopleSearch] = useState("");
+  const [externalSearch, setExternalSearch] = useState("");
+  const [externalTypeFilter, setExternalTypeFilter] = useState("all");
   const [filterOpen, setFilterOpen] = useState(false);
   const [statsOpen, setStatsOpen] = useState(false);
   const [filters, setFilters] = useState({
@@ -146,6 +167,7 @@ export default function MainLayout() {
   const [gallerySortDir, setGallerySortDir] = useState("desc");
   // bio
   const [isBioEditing, setIsBioEditing] = useState(false);
+  const [isBioNavVisible, setIsBioNavVisible] = useState(true);
   const bioExecRef = useRef(null); // Ссылка на команды Milkdown
   const bioRequestToggleRef = useRef(null); // Сюда BiographySection положит свою функцию проверки "грязности"
 
@@ -250,6 +272,8 @@ export default function MainLayout() {
       ]);
       setAllPeople(people || []);
       setPhotos(list || []);
+      useFaceReviewStore.getState().setPendingCount(countPendingReviewFaces(list || []));
+      useFaceReviewStore.getState().setNoFacesCount(countNoFacePhotos(list || []));
     } catch (e) {
       console.error("Ошибка синхронизации данных:", e);
     } finally {
@@ -393,6 +417,17 @@ export default function MainLayout() {
         </Typography>
       </Box>
     );
+  } else if (location.pathname.startsWith("/external")) {
+    pageTitle = (
+      <Box sx={{ display: "flex", alignItems: "center" }}>
+        <Box sx={{ display: "flex", alignItems: "center", mr: 2 }}>
+          <ContactsIcon color={isDark ? "primary" : "prymary"} />
+        </Box>
+        <Typography variant="h6" noWrap>
+          Справочник
+        </Typography>
+      </Box>
+    );
   }
 
   // ---  РАБОТА С ПЛАТФОРМОЙ И РАЗМЕРОМ ОКНА. -------------
@@ -501,6 +536,8 @@ export default function MainLayout() {
                   requestToggleEdit: () =>
                     bioRequestToggleRef.current?.toggle(),
                   execRef: bioExecRef,
+                  isNavVisible: isBioNavVisible,
+                  onToggleNav: () => setIsBioNavVisible((prev) => !prev),
                 }}
                 treeProps={{
                   treeMode: treeMode,
@@ -541,10 +578,10 @@ export default function MainLayout() {
 
             {location.pathname === "/" && (
               <PeopleListToolbar
-                people={allPeople} // Принимаем массив
-                search={peopleSearch} // Передаем стейт людей
-                setSearch={setPeopleSearch} // Передаем сеттер людей
-                isFilterActive={isFilterActive} // Не забудь прокинуть этот флаг
+                people={allPeople}
+                search={peopleSearch}
+                setSearch={setPeopleSearch}
+                isFilterActive={isFilterActive}
                 onOpenFilter={() => setFilterOpen(true)}
                 sortOrder={sortOrder}
                 onToggleSort={() =>
@@ -559,11 +596,21 @@ export default function MainLayout() {
               />
             )}
 
+            {location.pathname === "/external" && (
+              <ExternalToolbar
+                search={externalSearch}
+                setSearch={setExternalSearch}
+                typeFilter={externalTypeFilter}
+                setTypeFilter={setExternalTypeFilter}
+              />
+            )}
+
             {/* Заголовок для остальных страниц */}
             {!isGalleryPage &&
               !match &&
               location.pathname !== "/" &&
-              location.pathname !== "/archive" && (
+              location.pathname !== "/archive" &&
+              location.pathname !== "/external" && (
                 <Box
                   sx={{
                     display: "flex",
@@ -660,6 +707,7 @@ export default function MainLayout() {
                     setIsEditing: setIsBioEditing,
                     execRef: bioExecRef,
                     requestToggleRef: bioRequestToggleRef, // Передаем реф для регистрации функции
+                    isNavVisible: isBioNavVisible,
                   }}
                   treeProps={{
                     mode: treeMode,
@@ -673,6 +721,18 @@ export default function MainLayout() {
             {/* <Route path="/photoUploader" element={<PhotoUploader />} /> */}
             <Route path="/about" element={<AboutPage />} />
             <Route path="/trash" element={<DeletedPeoplePage />} />
+            <Route
+              path="/external"
+              element={
+                <ExternalPeoplePage
+                  externalSearch={externalSearch}
+                  setExternalSearch={setExternalSearch}
+                  externalTypeFilter={externalTypeFilter}
+                  setExternalTypeFilter={setExternalTypeFilter}
+                />
+              }
+            />
+            <Route path="/external/:id" element={<ExternalEntityPage />} />
           </Routes>
         </Box>
       </Box>
@@ -682,6 +742,8 @@ export default function MainLayout() {
       />
       <ChangelogModal />
       <UserGuideModal />
+      <FaceReviewQueueDialog allPeople={allPeople} />
+      <FaceNoFacesQueueDialog allPeople={allPeople} />
     </>
   );
 }

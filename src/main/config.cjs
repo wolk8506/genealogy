@@ -23,6 +23,14 @@ function photosMetaPath(personId) {
   return path.join(peopleDir(personId), "photos.json");
 }
 
+function externalDataPath() {
+  return path.join(baseDir, "external-entities.json");
+}
+
+function externalDir(entityId) {
+  return path.join(baseDir, "external", String(entityId));
+}
+
 module.exports = {
   baseDir,
   dataPath,
@@ -30,4 +38,6 @@ module.exports = {
   peopleDir,
   photosDir,
   photosMetaPath,
+  externalDataPath,
+  externalDir,
 };

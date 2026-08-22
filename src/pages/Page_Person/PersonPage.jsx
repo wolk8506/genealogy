@@ -363,7 +363,8 @@ const PersonPage = forwardRef(
           typeof eventToCopy.type === "object"
             ? { name: eventToCopy.type.name }
             : eventToCopy.type,
-        participants: updatedParticipants, // 👈 Обновленный список участников
+        participants: updatedParticipants,
+        externalParticipants: eventToCopy.externalParticipants || [],
       };
 
       const all = await window.peopleAPI.getAll();
@@ -500,6 +501,7 @@ const PersonPage = forwardRef(
               setIsEditing={bioProps.setIsEditing}
               execRef={bioProps.execRef}
               requestToggleRef={bioProps.requestToggleRef}
+              isNavVisible={bioProps.isNavVisible}
             />
           </Box>
         </Fade>

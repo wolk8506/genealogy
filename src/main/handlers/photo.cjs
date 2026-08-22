@@ -334,6 +334,30 @@ module.exports = (settingsStore) => {
     },
   );
 
+  ipcMain.handle("photo:getImageSize", async (_, personId, filename) => {
+    const paths = getUserPaths(personId);
+    if (!filename) return null;
+
+    const webpName = filename.replace(/\.[^.]+$/, ".webp");
+    const candidates = [
+      path.join(paths.webp, webpName),
+      path.join(paths.original, filename),
+      path.join(paths.photosDir, filename),
+    ];
+
+    const src = candidates.find((p) => fs.existsSync(p));
+    if (!src) return null;
+
+    try {
+      const meta = await sharp(src, { failOn: "none" }).rotate().metadata();
+      if (!meta.width || !meta.height) return null;
+      return { width: meta.width, height: meta.height };
+    } catch (err) {
+      console.error("photo:getImageSize error:", err);
+      return null;
+    }
+  });
+
   // ✅ 4. Удаление (всех копий)
   ipcMain.handle("photo:delete", (event, personId, id) => {
     const paths = getUserPaths(personId);

@@ -31,6 +31,7 @@ import FaceIcon from "@mui/icons-material/Face";
 
 import nationalities from "./nationalities.json";
 import NumberField from "../../../components/NumberField";
+import useDialogSaveHotkey from "../../../hooks/useDialogSaveHotkey";
 
 const FACT_TYPES = [
   "Рост",
@@ -357,6 +358,8 @@ export default function FactsEditorDialog({
     onSave?.({ type, value: v });
     onClose?.();
   };
+
+  useDialogSaveHotkey({ open, onSave: handleSave });
 
   const handleDelete = () => {
     onDelete?.();

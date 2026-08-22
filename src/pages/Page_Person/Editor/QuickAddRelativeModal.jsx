@@ -19,6 +19,7 @@ import CloseIcon from "@mui/icons-material/Close";
 import PersonAddIcon from "@mui/icons-material/PersonAdd";
 import FemaleIcon from "@mui/icons-material/Female";
 import MaleIcon from "@mui/icons-material/Male";
+import useDialogSaveHotkey from "../../../hooks/useDialogSaveHotkey";
 
 export default function QuickAddRelativeModal({
   open,
@@ -140,6 +141,8 @@ export default function QuickAddRelativeModal({
     onAdded(newPersonObj);
     onClose();
   };
+
+  useDialogSaveHotkey({ open, onSave: handleSave });
 
   // Вычисляем видимость полей на основе role
   const isGenderHidden = ["father", "mother", "spouse"].includes(role);

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   Dialog,
   Box,
@@ -9,6 +9,8 @@ import {
   Typography,
   alpha,
   Divider,
+  Tooltip,
+  Paper
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import EditIcon from "@mui/icons-material/Edit";
@@ -817,6 +819,7 @@ export default function BiographySection({
   setIsEditing,
   execRef,
   requestToggleRef,
+  isNavVisible,
   setActiveElement, // <--- ВАЖНО: прокиньте этот сеттер из PersonPage/MainLayout
 }) {
   const [isDirty, setIsDirty] = useState(false);
@@ -826,9 +829,74 @@ export default function BiographySection({
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [pendingAction, setPendingAction] = useState(null);
   const [sessionImages, setSessionImages] = useState([]);
+  const [headings, setHeadings] = useState([]);
+  const [activeHeadingId, setActiveHeadingId] = useState("");
 
   const saveRef = useRef(null);
+  const contentScrollRef = useRef(null);
+  const articleRef = useRef(null);
   const [contextMenu, setContextMenu] = React.useState(null);
+
+  const collectHeadings = useCallback(() => {
+    const root = articleRef.current;
+    if (!root) {
+      setHeadings([]);
+      return;
+    }
+
+    const nodes = Array.from(
+      root.querySelectorAll(".ProseMirror h1, .ProseMirror h2"),
+    );
+    const items = nodes
+      .map((node, index) => {
+        const text = node.textContent?.trim();
+        if (!text) return null;
+
+        const id = `bio-heading-${index}`;
+
+        return {
+          id,
+          text,
+          level: node.tagName === "H1" ? 1 : 2,
+          sourceIndex: index,
+        };
+      })
+      .filter(Boolean);
+
+    setHeadings(items);
+  }, []);
+
+  const handleScrollToHeading = useCallback((sourceIndex) => {
+    const root = articleRef.current;
+    const scroller = contentScrollRef.current;
+    if (!root) return;
+
+    const nodes = Array.from(root.querySelectorAll(".ProseMirror h1, .ProseMirror h2"));
+    const target = nodes[sourceIndex];
+    if (!target) return;
+
+    const hasInnerScroll =
+      Boolean(scroller) && scroller.scrollHeight > scroller.clientHeight + 1;
+
+    if (hasInnerScroll) {
+      const scrollerRect = scroller.getBoundingClientRect();
+      const targetRect = target.getBoundingClientRect();
+      const targetTop =
+        scroller.scrollTop + (targetRect.top - scrollerRect.top) - 24;
+
+      scroller.scrollTo({
+        top: Math.max(0, targetTop),
+        behavior: "smooth",
+      });
+      return;
+    }
+
+    const targetTop = target.getBoundingClientRect().top + window.scrollY - 120;
+    window.scrollTo({
+      top: Math.max(0, targetTop),
+      behavior: "smooth",
+    });
+  }, []);
 
   const handleContextMenu = (event) => {
     // Находим, кликнули ли мы по таблице
@@ -887,6 +955,82 @@ export default function BiographySection({
     };
   }, [personId, activeElement, setIsEditing]);
 
+  useEffect(() => {
+    if (activeElement !== "bio") return;
+    const root = articleRef.current;
+    if (!root) return;
+
+    const update = () => collectHeadings();
+    const timerId = window.setTimeout(update, 0);
+    const observer = new MutationObserver(() => {
+      window.requestAnimationFrame(update);
+    });
+
+    observer.observe(root, {
+      childList: true,
+      subtree: true,
+      characterData: true,
+    });
+
+    return () => {
+      window.clearTimeout(timerId);
+      observer.disconnect();
+    };
+  }, [activeElement, bio, isEditing, collectHeadings]);
+
+  useEffect(() => {
+    const scroller = contentScrollRef.current;
+    if (!scroller || headings.length === 0) {
+      setActiveHeadingId("");
+      return;
+    }
+
+    const hasInnerScroll = scroller.scrollHeight > scroller.clientHeight + 1;
+
+    const syncActiveHeading = () => {
+      const root = articleRef.current;
+      if (!root) return;
+      const marker = hasInnerScroll ? scroller.scrollTop + 80 : window.scrollY + 120;
+      let currentId = headings[0]?.id || "";
+      const nodes = Array.from(
+        root.querySelectorAll(".ProseMirror h1, .ProseMirror h2"),
+      );
+
+      for (const heading of headings) {
+        const node = nodes[heading.sourceIndex];
+        if (!node) continue;
+        const relativeTop = hasInnerScroll
+          ? scroller.scrollTop +
+            (node.getBoundingClientRect().top -
+              scroller.getBoundingClientRect().top)
+          : node.getBoundingClientRect().top + window.scrollY;
+
+        if (relativeTop <= marker) {
+          currentId = heading.id;
+        } else {
+          break;
+        }
+      }
+
+      setActiveHeadingId(currentId);
+    };
+
+    syncActiveHeading();
+    if (hasInnerScroll) {
+      scroller.addEventListener("scroll", syncActiveHeading, { passive: true });
+    } else {
+      window.addEventListener("scroll", syncActiveHeading, { passive: true });
+    }
+
+    return () => {
+      if (hasInnerScroll) {
+        scroller.removeEventListener("scroll", syncActiveHeading);
+      } else {
+        window.removeEventListener("scroll", syncActiveHeading);
+      }
+    };
+  }, [headings]);
+
   const handleSaveAndExecute = async () => {
     const markdown = saveRef.current?.();
     if (typeof markdown === "string") {
@@ -943,12 +1087,113 @@ export default function BiographySection({
     <>
       <GlobalStyles styles={(theme) => ({})} />
       <Box
-        sx={{ display: "flex", height: "100%", bgcolor: "background.default" }}
+        sx={{
+          display: "flex",
+          bgcolor: "background.default",
+          gap: { xs: 0, lg: 2 },
+          alignItems: "flex-start",
+        }}
       >
         <Box
           sx={{
+            width: { xs: 0, lg: isNavVisible ? 280 : 0 },
+            opacity: { xs: 0, lg: isNavVisible ? 1 : 0 },
+            transform: { xs: "translateX(-16px)", lg: isNavVisible ? "translateX(0)" : "translateX(-16px)" },
+            transition:
+              "width 260ms ease, opacity 220ms ease, transform 260ms ease",
+            overflow: "visible",
+            flexShrink: 0,
+            height: "auto",
+            display: { xs: "none", lg: "block" },
+            mt: 4,
+            ml: 1,
+            position: "sticky",
+            top: "82px",
+            alignSelf: "flex-start",
+            
+          }}
+        >
+          <Box
+            sx={{
+              maxHeight: "calc(100dvh - 120px)",
+              overflowY: "auto",
+              border: "1px solid",
+              // borderColor: "divider",
+              // borderRadius: "16px",
+              borderRadius: "24px",
+              // bgcolor: "background.paper",
+              bgcolor: (theme) =>
+                theme.palette.mode === "dark"
+                  ? "#1a1a1a" // Глубокий темный (чуть темнее прошлого, для благородства)
+                  : "#ffffff",
+              p: 1,
+              borderColor: (theme) =>
+                theme.palette.mode === "dark"
+                  ? "rgba(255, 255, 255, 0.05)" // Почти невидимая в темноте
+                  : "rgba(0, 0, 0, 0.08)",
+            }}
+          >
+              <Typography
+                variant="overline"
+                sx={{
+                  fontWeight: 800,
+                  px: 1,
+                  color: "text.secondary",
+                  letterSpacing: 0.8,
+                }}
+              >
+                Навигация по заголовкам
+              </Typography>
+
+              <Stack spacing={0.5} sx={{ mt: 0.5 }}>
+                {headings.length === 0 && (
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ px: 1, py: 0.5 }}
+                  >
+                    Добавьте заголовки H1/H2 в биографии
+                  </Typography>
+                )}
+
+                {headings.map((heading) => (
+                  <Button
+                    key={heading.id}
+                    variant={
+                      activeHeadingId === heading.id ? "contained" : "text"
+                    }
+                    color={
+                      activeHeadingId === heading.id ? "primary" : "inherit"
+                    }
+                    onClick={() => handleScrollToHeading(heading.sourceIndex)}
+                    sx={{
+                      justifyContent: "flex-start",
+                      textTransform: "none",
+                      borderRadius: "10px",
+                      px: 1.2,
+                      py: 0.75,
+                      fontWeight: heading.level === 1 ? 700 : 500,
+                      pl: heading.level === 1 ? 1.2 : 2.8,
+                      color:
+                        activeHeadingId === heading.id
+                          ? "primary.contrastText"
+                          : "text.primary",
+                    }}
+                  >
+                    {heading.text}
+                  </Button>
+                ))}
+              </Stack>
+          </Box>
+        </Box>
+
+        <Box
+          ref={contentScrollRef}
+          sx={{
             flex: 1,
-            overflowY: "auto",
+            overflowY: "visible",
+            transform: { lg: isNavVisible ? "translateX(0)" : "translateX(-8px)" },
+            transition: "transform 260ms ease",
             // Используем стандартный фон темы для подложки
             bgcolor: "background.default",
             py: { xs: 2, md: 4 },
@@ -956,6 +1201,7 @@ export default function BiographySection({
           }}
         >
           <Box
+            ref={articleRef}
             sx={{
               maxWidth: "900px",
               mx: "auto",
@@ -1476,7 +1722,6 @@ export default function BiographySection({
         open={Boolean(previewImg)}
         onClose={() => setPreviewImg(null)}
         maxWidth="xl"
-        // Делаем сам фон Backdrop (затемнение вокруг) очень плотным
         slotProps={{
           backdrop: {
             sx: {
@@ -1489,10 +1734,59 @@ export default function BiographySection({
           sx: {
             bgcolor: "transparent",
             boxShadow: "none",
-            overflow: "hidden", // Убираем скроллы у самой бумаги
+            overflow: "hidden",
           },
         }}
       >
+        {/* --- ВЕРХНЕЕ УПРАВЛЕНИЕ (В СТИЛЕ PHOTOVIEWER) --- */}
+        <Stack
+          direction="row"
+          spacing={1}
+          sx={{
+            position: "fixed",
+            WebkitAppRegion: "no-drag", // Гарантирует обработку кликов во frameless-окне
+            top: 10,
+            right: 10,
+            zIndex: 1400,
+            opacity: 0.3,
+            transition: "opacity 0.3s ease-in-out",
+            "&:hover": {
+              opacity: 1,
+            },
+          }}
+        >
+          <Box
+            sx={{
+              backdropFilter: "blur(4px)",
+              display: "inline-flex",
+              alignItems: "center",
+              bgcolor: "rgba(0, 0, 0, 0.4)",
+              border: "1px solid rgba(255, 255, 255, 0.2)",
+              borderRadius: 7,
+              height: 34,
+              px: 0.5,
+              color: "text.secondary",
+              fontSize: 20,
+            }}
+          >
+            <Tooltip title="Закрыть">
+              <IconButton
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setPreviewImg(null);
+                }}
+                size="small"
+                sx={{
+                  color: "#fff",
+                  p: 1,
+                }}
+              >
+                <CloseIcon fontSize="inherit" />
+              </IconButton>
+            </Tooltip>
+          </Box>
+        </Stack>
+
         <Box
           onClick={() => setPreviewImg(null)}
           sx={{
@@ -1500,35 +1794,10 @@ export default function BiographySection({
             display: "flex",
             justifyContent: "center",
             alignItems: "center",
-            cursor: "zoom-out", // Показывает, что клик уменьшит/закроет
-            p: { xs: 1, md: 2 },
+            cursor: "zoom-out",
+            p: { xs: 1, md: 0 },
           }}
         >
-          {/* Кнопка закрытия — более современная и заметная */}
-          <IconButton
-            onClick={(e) => {
-              e.stopPropagation();
-              setPreviewImg(null);
-            }}
-            sx={{
-              position: "fixed", // Фиксируем относительно экрана, чтобы не прыгала
-              top: 20,
-              right: 20,
-              color: "white",
-              bgcolor: "rgba(255, 255, 255, 0.1)",
-              backdropFilter: "blur(4px)",
-              border: "1px solid rgba(255, 255, 255, 0.2)",
-              zIndex: 10,
-              "&:hover": {
-                bgcolor: "rgba(255, 255, 255, 0.2)",
-                transform: "rotate(90deg)", // Легкая анимация для красоты
-              },
-              transition: "all 0.3s ease",
-            }}
-          >
-            <CloseIcon />
-          </IconButton>
-
           <Box
             component="img"
             src={previewImg}
@@ -1537,9 +1806,8 @@ export default function BiographySection({
               maxWidth: "95vw",
               maxHeight: "95vh",
               objectFit: "contain",
-              borderRadius: "12px", // Мягкие углы у самого фото
-              boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.5)", // Тень под фото для объема
-              // Плавное появление картинки
+              borderRadius: "12px",
+              boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.5)",
               animation: "fadeIn 0.3s ease-out",
               "@keyframes fadeIn": {
                 from: { opacity: 0, transform: "scale(0.95)" },

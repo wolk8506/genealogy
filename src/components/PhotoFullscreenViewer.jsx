@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Dialog,
   Box,
@@ -16,6 +16,9 @@ import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
 import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
 import InfoIcon from "@mui/icons-material/Info";
 import DownloadIcon from "@mui/icons-material/Download";
+import FaceIcon from "@mui/icons-material/Face";
+import PhotoFaceOverlay from "./PhotoFaceOverlay";
+import { normalizeFaces } from "../utils/photoFaces";
 
 const PhotoFullscreenViewer = ({
   open,
@@ -31,12 +34,25 @@ const PhotoFullscreenViewer = ({
   onToggleMaximize,
   currentPhotoInfo,
   onDownload,
+  allPeople = [],
+  allExternal = [],
 }) => {
   const [showInfo, setShowInfo] = useState(true);
+  const [showFaces, setShowFaces] = useState(false);
+  const [displayImageSize, setDisplayImageSize] = useState(null);
+  const imageFrameRef = useRef(null);
+
+  useEffect(() => {
+    setShowFaces(false);
+    setDisplayImageSize(null);
+  }, [index]);
 
   const photo = photos[index];
   const displaySrc = photoPaths[photo?.id] || thumbPaths[photo?.id];
   const isHighRes = !!photoPaths[photo?.id];
+  const photoFaces = normalizeFaces(photo?.faces);
+  const hasFaces = photoFaces.length > 0;
+  const overlayImageSize = displayImageSize || photo?.imageSize;
 
   // Функция для парсинга текста и оборачивания тегов в стилизованные span
   const renderTextWithTags = (text) => {
@@ -175,6 +191,30 @@ const PhotoFullscreenViewer = ({
             </Tooltip>
             <Tooltip
               title={
+                !hasFaces
+                  ? "На фото нет размеченных лиц"
+                  : showFaces
+                    ? "Скрыть лица"
+                    : "Показать лица"
+              }
+            >
+              <span>
+                <IconButton
+                  onClick={() => setShowFaces((v) => !v)}
+                  disabled={!hasFaces}
+                  size="small"
+                  sx={{
+                    color: showFaces ? "primary.main" : "#fff",
+                    p: 1,
+                    opacity: hasFaces ? 1 : 0.45,
+                  }}
+                >
+                  <FaceIcon fontSize="inherit" />
+                </IconButton>
+              </span>
+            </Tooltip>
+            <Tooltip
+              title={
                 hideLabels ? "Выйти из полноэкранного режима" : "На весь экран"
               }
             >
@@ -211,13 +251,12 @@ const PhotoFullscreenViewer = ({
 
         {/* --- ИЗОБРАЖЕНИЕ (СЛАЙДЕР) --- */}
         <AnimatePresence initial={false} custom={direction}>
-          <motion.img
+          <motion.div
             key={index}
-            src={displaySrc}
             custom={direction}
             variants={{
-              enter: (direction) => ({
-                x: direction > 0 ? "100%" : "-100%",
+              enter: (dir) => ({
+                x: dir > 0 ? "100%" : "-100%",
                 opacity: 0,
                 scale: 0.95,
               }),
@@ -227,8 +266,8 @@ const PhotoFullscreenViewer = ({
                 scale: 1,
                 zIndex: 1,
               },
-              exit: (direction) => ({
-                x: direction < 0 ? "100%" : "-100%",
+              exit: (dir) => ({
+                x: dir < 0 ? "100%" : "-100%",
                 opacity: 0,
                 scale: 0.95,
                 zIndex: 0,
@@ -242,23 +281,65 @@ const PhotoFullscreenViewer = ({
               opacity: { duration: 0.25 },
               scale: { duration: 0.4 },
             }}
-            drag="x"
-            dragConstraints={{ left: 0, right: 0 }}
-            dragElastic={0.6}
-            onDragEnd={(e, { offset, velocity }) => {
-              if (offset.x < -100 || velocity.x < -500) onNext();
-              else if (offset.x > 100 || velocity.x > 500) onPrev();
-            }}
             style={{
-              maxWidth: "100%",
-              maxHeight: "100%",
-              objectFit: "contain",
               position: "absolute",
-              willChange: "transform, opacity",
-              filter: isHighRes ? "none" : "blur(10px)",
-              transition: "filter 0.5s ease-out",
+              width: "100%",
+              height: "100%",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
             }}
-          />
+          >
+            <Box
+              ref={imageFrameRef}
+              sx={{
+                position: "relative",
+                maxWidth: "100%",
+                maxHeight: "100%",
+                lineHeight: 0,
+              }}
+            >
+              <motion.img
+                src={displaySrc}
+                alt=""
+                drag="x"
+                dragConstraints={{ left: 0, right: 0 }}
+                dragElastic={0.6}
+                onLoad={(e) => {
+                  const { naturalWidth, naturalHeight } = e.currentTarget;
+                  if (naturalWidth && naturalHeight) {
+                    setDisplayImageSize({
+                      width: naturalWidth,
+                      height: naturalHeight,
+                    });
+                  }
+                }}
+                onDragEnd={(e, { offset, velocity }) => {
+                  if (offset.x < -100 || velocity.x < -500) onNext();
+                  else if (offset.x > 100 || velocity.x > 500) onPrev();
+                }}
+                style={{
+                  maxWidth: "100vw",
+                  maxHeight: "100vh",
+                  objectFit: "contain",
+                  willChange: "transform, opacity",
+                  filter: isHighRes ? "none" : "blur(10px)",
+                  transition: "filter 0.5s ease-out",
+                  display: "block",
+                }}
+              />
+              {showFaces && overlayImageSize?.width > 0 && (
+                <PhotoFaceOverlay
+                  faces={photoFaces}
+                  imageSize={overlayImageSize}
+                  imageFrameRef={imageFrameRef}
+                  allPeople={allPeople}
+                  allExternal={allExternal}
+                  editable={false}
+                />
+              )}
+            </Box>
+          </motion.div>
         </AnimatePresence>
 
         {/* --- ИНФОРМАЦИОННАЯ ПАНЕЛЬ --- */}

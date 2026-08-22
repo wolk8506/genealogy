@@ -28,6 +28,7 @@ import CustomDatePickerDialog from "../../components/CustomDatePickerDialog";
 import NumberField from "../NumberField";
 import { useNotificationStore } from "../../store/useNotificationStore";
 import PersonFillBadgePlusIcon from "../svg/PersonFillBadgePlusIcon";
+import useDialogSaveHotkey from "../../hooks/useDialogSaveHotkey";
 
 export default function AddPersonModal({ open, onClose }) {
   const theme = useTheme();
@@ -278,6 +279,8 @@ export default function AddPersonModal({ open, onClose }) {
       setSaving(false);
     }
   };
+
+  useDialogSaveHotkey({ open, onSave: handleSave, disabled: saving });
 
   return (
     <>

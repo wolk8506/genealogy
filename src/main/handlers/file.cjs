@@ -107,9 +107,14 @@ async function readJsonSafe(filePath) {
 async function writeJsonAtomic(filePath, obj) {
   const dir = path.dirname(filePath);
   await fs.promises.mkdir(dir, { recursive: true });
-  const tmp = filePath + ".tmp";
+  const tmp = `${filePath}.tmp.${process.pid}.${Date.now()}`;
   await fs.promises.writeFile(tmp, JSON.stringify(obj, null, 2), "utf-8");
-  await fs.promises.rename(tmp, filePath);
+  try {
+    await fs.promises.rename(tmp, filePath);
+  } catch (err) {
+    await fs.promises.unlink(tmp).catch(() => {});
+    throw err;
+  }
 }
 
 // -- file:renameFile - переименовать файл в папке owner

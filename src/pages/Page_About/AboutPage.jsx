@@ -18,6 +18,7 @@ import InfoIcon from "@mui/icons-material/Info";
 import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
 import ComputerIcon from "@mui/icons-material/Computer";
 import VerifiedUserIcon from "@mui/icons-material/VerifiedUser";
+import LaunchIcon from "@mui/icons-material/Launch";
 
 import AppDiagnostic from "./AppInfo";
 
@@ -119,7 +120,7 @@ export default function AboutPage() {
 
                 <Divider sx={{ borderStyle: "dashed" }} />
 
-                <Box sx={{ width: "100%", maxWidth: 375 }}>
+                <Box sx={{ width: "100%" }}>
                   <Grid container spacing={1.5}>
                     {/* Верхний ряд: Две маленькие карточки */}
                     <Grid item size={{ xs: 6 }}>
@@ -316,6 +317,7 @@ export default function AboutPage() {
                 <Box sx={{ pt: 2 }}>
                   <Button
                     startIcon={<GitHubIcon />}
+                    endIcon={<LaunchIcon />}
                     href="https://github.com/wolk8506/genealogy"
                     target="_blank"
                     // variant="contained"

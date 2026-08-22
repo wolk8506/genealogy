@@ -5,6 +5,7 @@ import {
   Typography,
   Button,
   Card,
+  Dialog,
   Slider,
   Chip,
   Alert,
@@ -36,6 +37,54 @@ const shimmer = keyframes`
   100% { transform: translateX(150%) skewX(-20deg); }
 `;
 
+const maintenanceTasks = [
+  {
+    id: "run-audit",
+    label: "Аудит файлов",
+    desc: "Подсчет всех фото, аватаров и био на диске",
+  },
+  {
+    id: "debug-diff",
+    label: "Поиск расхождений",
+    desc: "Сравнение JSON и реальных файлов в папках",
+  },
+  {
+    id: "deep-audit",
+    label: "Глубокий аудит",
+    desc: "Поиск дублей внутри JSON и проверка наличия аватаров",
+  },
+  {
+    id: "fix-missing-files",
+    label: "Удалить битые ссылки",
+    desc: "Убирает из JSON записи о файлах, которых нет на диске",
+  },
+  {
+    id: "remove-duplicates",
+    label: "Очистить дубликаты",
+    desc: "Удаляет повторяющиеся записи в photos.json",
+  },
+  {
+    id: "geo-patcher",
+    label: "Гео-патчер (EXIF)",
+    desc: "Достает координаты из фото и пишет адреса текстом",
+  },
+  {
+    id: "sqlite-db-stats",
+    label: "SQLite: статистика",
+    desc: "Размер базы, число шаблонов лиц и статус scan state",
+  },
+  {
+    id: "sqlite-vacuum-analyze",
+    label: "SQLite: VACUUM + ANALYZE",
+    desc: "Оптимизирует файл базы и обновляет статистику запросов",
+  },
+  {
+    id: "sqlite-integrity-check",
+    label: "SQLite: integrity check",
+    desc: "Проверка целостности SQLite через PRAGMA integrity_check",
+  },
+];
+
 export const OptimizationMasterCard = ({ cardStyle }) => {
   const theme = useTheme();
   const { enqueueSnackbar } = useSnackbar();
@@ -44,10 +93,12 @@ export const OptimizationMasterCard = ({ cardStyle }) => {
     (state) => state.addNotification,
   );
 
-  // Состояния карточки: 'info' -> 'settings' | 'maintenance' -> 'processing'
+  // Состояния карточки: 'info' -> 'settings' -> 'processing'
   const [view, setView] = useState("info");
+  const [maintenanceConsoleOpen, setMaintenanceConsoleOpen] = useState(false);
   const [isRunningTask, setIsRunningTask] = useState(false);
   const [logs, setLogs] = useState([]);
+  const [lastMaintenanceReport, setLastMaintenanceReport] = useState(null);
 
   // Состояния настроек
   const [quality, setQuality] = useState(80);
@@ -60,6 +111,8 @@ export const OptimizationMasterCard = ({ cardStyle }) => {
     total: 0,
     percent: 0,
   });
+
+  const [activeMaintenanceTask, setActiveMaintenanceTask] = useState("");
 
   useEffect(() => {
     // Подписываемся на логи обслуживания
@@ -135,35 +188,58 @@ export const OptimizationMasterCard = ({ cardStyle }) => {
 
   // Запуск скриптов обслуживания
   const handleRunMaintenanceTask = async (taskName, label) => {
-    setLogs([`Запуск: ${label}...`]);
+    setLogs((prev) => [...prev, `[${new Date().toLocaleTimeString()}] > ${label}: запуск...`]);
+    setActiveMaintenanceTask(label);
     setIsRunningTask(true);
     try {
       const result = await window.appAPI?.runMaintenanceTask?.(taskName);
 
       if (result?.success) {
+        setLogs((prev) => [
+          ...prev,
+          `[${new Date().toLocaleTimeString()}] ✓ ${label}: выполнено. Изменений: ${result.affectedCount}`,
+        ]);
+        setLastMaintenanceReport({
+          ok: true,
+          label,
+          affectedCount: result.affectedCount,
+          at: new Date().toISOString(),
+        });
         enqueueSnackbar(
           `${label}: выполнено. Изменений: ${result.affectedCount}`,
           { variant: "success" },
         );
       }
     } catch (err) {
+      setLogs((prev) => [
+        ...prev,
+        `[${new Date().toLocaleTimeString()}] ✗ ${label}: ошибка выполнения`,
+      ]);
+      setLastMaintenanceReport({
+        ok: false,
+        label,
+        affectedCount: 0,
+        at: new Date().toISOString(),
+      });
       enqueueSnackbar(`Ошибка: ${label}`, { variant: "error" });
     } finally {
       setIsRunningTask(false);
+      setActiveMaintenanceTask("");
     }
   };
 
   return (
-    <Card
-      variant="outlined"
-      sx={{
-        ...cardStyle,
-        display: "flex",
-        flexDirection: "column",
-        overflow: "hidden",
-        bgcolor: "background.paper",
-      }}
-    >
+    <>
+      <Card
+        variant="outlined"
+        sx={{
+          ...cardStyle,
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden",
+          bgcolor: "background.paper",
+        }}
+      >
       {/* ШАПКА - УБРАЛИ КНОПКУ, ТЕПЕРЬ ОНА ЧИСТАЯ И ЕДИНАЯ ДЛЯ ВСЕХ ЭКРАНОВ */}
       <Box
         sx={{
@@ -193,7 +269,6 @@ export const OptimizationMasterCard = ({ cardStyle }) => {
           >
             {view === "info" && "Интеллектуальный помощник"}
             {view === "settings" && "Настройки оптимизации"}
-            {view === "maintenance" && "Инструменты обслуживания"}
             {view === "processing" && "Оптимизация медиа"}
           </Typography>
         </Stack>
@@ -233,6 +308,45 @@ export const OptimizationMasterCard = ({ cardStyle }) => {
                 Оптимизация медиафайлов и техническое обслуживание базы данных
                 генеалогического древа.
               </Typography>
+            </Box>
+
+            <Box
+              sx={{
+                mb: 2,
+                p: 1.5,
+                borderRadius: 2,
+                border: "1px solid",
+                borderColor: "divider",
+                bgcolor: alpha(theme.palette.action.hover, 0.08),
+              }}
+            >
+              <Typography
+                variant="caption"
+                sx={{ display: "block", color: "text.secondary", mb: 0.5 }}
+              >
+                Последний отчет обслуживания БД
+              </Typography>
+              {lastMaintenanceReport ? (
+                <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
+                  <Chip
+                    size="small"
+                    color={lastMaintenanceReport.ok ? "success" : "error"}
+                    label={lastMaintenanceReport.ok ? "Успешно" : "Ошибка"}
+                  />
+                  <Typography variant="caption" sx={{ color: "text.primary" }}>
+                    {lastMaintenanceReport.label}
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                    {lastMaintenanceReport.ok
+                      ? `Изменений: ${lastMaintenanceReport.affectedCount}`
+                      : "Требуется проверка логов"}
+                  </Typography>
+                </Stack>
+              ) : (
+                <Typography variant="caption" sx={{ color: "text.disabled" }}>
+                  Пока нет запусков обслуживания
+                </Typography>
+              )}
             </Box>
 
             <Stack spacing={2} sx={{ mt: "auto", mb: 2 }}>
@@ -288,7 +402,7 @@ export const OptimizationMasterCard = ({ cardStyle }) => {
 
               {/* Кнопка 2: Обслуживание */}
               <Box
-                onClick={() => setView("maintenance")}
+                onClick={() => setMaintenanceConsoleOpen(true)}
                 sx={{
                   display: "flex",
                   alignItems: "flex-start",
@@ -330,191 +444,12 @@ export const OptimizationMasterCard = ({ cardStyle }) => {
                       display: "block",
                     }}
                   >
-                    Специальные скрипты для исправления ошибок в базе данных и
-                    файловой структуре.
+                    Запуск скриптов обслуживания в отдельной консоли с полным
+                    отчетом и журналом.
                   </Typography>
                 </Box>
               </Box>
             </Stack>
-          </Box>
-        )}
-
-        {/* --- СОСТОЯНИЕ MAINTENANCE --- */}
-        {view === "maintenance" && (
-          <Box
-            sx={{
-              display: "flex",
-              flexDirection: "column",
-              height: "100%",
-              overflow: "hidden",
-            }}
-          >
-            <Box sx={{ flexShrink: 0, mb: 1 }}>
-              {/* <Typography
-                variant="caption"
-                sx={{ mb: 1, color: "text.secondary", display: "block" }}
-              >
-                Специальные скрипты для исправления ошибок в базе данных и
-                файловой структуре.
-              </Typography> */}
-              <Box
-                sx={{
-                  p: 1.5,
-                  borderRadius: 2,
-                  bgcolor: "#1e1e1e",
-                  color: "#d4d4d4",
-                  fontFamily: "monospace",
-                  fontSize: "0.65rem",
-                  whiteSpace: "pre-wrap",
-                  wordBreak: "break-word",
-                  height: 120,
-                  overflowY: "auto",
-                  border: "1px solid #333",
-                  display: "flex",
-                  flexDirection: "column-reverse",
-                  "&::-webkit-scrollbar": { width: 4 },
-                  "&::-webkit-scrollbar-thumb": { bgcolor: "#444" },
-                }}
-              >
-                <Box>
-                  {logs.length === 0 ? (
-                    <div style={{ color: "#666" }}>
-                      Ожидание запуска задач...
-                    </div>
-                  ) : (
-                    logs.map((log, i) => (
-                      <div key={i} style={{ marginBottom: 2 }}>
-                        <span style={{ color: "#569cd6" }}>&gt;</span> {log}
-                      </div>
-                    ))
-                  )}
-                </Box>
-              </Box>
-            </Box>
-
-            <Box
-              sx={{
-                flexGrow: 1,
-                overflowY: "auto",
-                pr: 0.5,
-                "&::-webkit-scrollbar": { width: 4 },
-                "&::-webkit-scrollbar-thumb": {
-                  bgcolor: "divider",
-                  borderRadius: 2,
-                },
-              }}
-            >
-              <Stack spacing={1.5} sx={{ pb: 2 }}>
-                {[
-                  {
-                    id: "run-audit",
-                    label: "ℹ️ Аудит файлов",
-                    desc: "Подсчет всех фото, аватаров и био на диске",
-                  },
-                  {
-                    id: "debug-diff",
-                    label: "ℹ️ Поиск расхождений",
-                    desc: "Сравнение JSON и реальных файлов в папках",
-                  },
-                  {
-                    id: "deep-audit",
-                    label: "ℹ️ Глубокий аудит",
-                    desc: "Поиск дублей внутри JSON и проверка наличия аватаров",
-                  },
-                  {
-                    id: "fix-missing-files",
-                    label: "⚠️ Удалить битые ссылки",
-                    desc: "Убирает из JSON записи о файлах, которых нет на диске",
-                  },
-                  {
-                    id: "remove-duplicates",
-                    label: "⚠️ Очистить дубликаты",
-                    desc: "Удаляет повторяющиеся записи в photos.json",
-                  },
-                  {
-                    id: "geo-patcher",
-                    label: "⚠️ Гео-патчер (EXIF)",
-                    desc: "Достает координаты из фото и пишет адреса текстом",
-                  },
-                ].map((task) => (
-                  <Box
-                    key={task.id}
-                    sx={{
-                      p: 1.5,
-                      borderRadius: 2,
-                      border: "1px solid",
-                      borderColor: "divider",
-                      bgcolor: alpha(theme.palette.action.hover, 0.05),
-                    }}
-                  >
-                    <Stack
-                      direction="row"
-                      justifyContent="space-between"
-                      alignItems="center"
-                    >
-                      <Box>
-                        <Typography
-                          variant="body2"
-                          sx={{ fontWeight: 700, fontSize: "0.8rem" }}
-                        >
-                          {task.label}
-                        </Typography>
-                        <Typography
-                          variant="caption"
-                          sx={{ fontSize: "0.65rem", color: "text.secondary" }}
-                        >
-                          {task.desc}
-                        </Typography>
-                      </Box>
-                      <Button
-                        variant="outlined"
-                        size="small"
-                        disabled={isRunningTask}
-                        onClick={() =>
-                          handleRunMaintenanceTask(task.id, task.label)
-                        }
-                        sx={{
-                          minWidth: 80,
-                          height: 24,
-                          fontSize: "0.7rem",
-                          borderRadius: "6px",
-                        }}
-                      >
-                        Запуск
-                      </Button>
-                    </Stack>
-                  </Box>
-                ))}
-              </Stack>
-            </Box>
-
-            <Box
-              sx={{
-                flexShrink: 0,
-                pt: 1,
-                borderTop: "1px solid",
-                borderColor: "divider",
-              }}
-            >
-              <Button
-                variant="outlined"
-                onClick={() => setView("info")}
-                startIcon={<ArrowBackIcon />}
-                sx={{
-                  height: 24,
-                  borderRadius: "6px",
-                  py: 1.2,
-                  textTransform: "none",
-                  fontWeight: 600,
-                  fontSize: "0.8rem",
-                  color: "text.primary",
-                  borderColor: "transparent",
-                  "&:hover": { borderColor: "divider" },
-                }}
-              >
-                Вернуться назад
-              </Button>
-            </Box>
           </Box>
         )}
 
@@ -825,6 +760,180 @@ export const OptimizationMasterCard = ({ cardStyle }) => {
           </Box>
         )}
       </Box>
-    </Card>
+      </Card>
+
+      <Dialog
+        open={maintenanceConsoleOpen}
+        onClose={() => !isRunningTask && setMaintenanceConsoleOpen(false)}
+        maxWidth="lg"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            height: "min(90vh, 820px)",
+          },
+        }}
+      >
+        <Box
+          sx={{
+            p: 2,
+            borderBottom: "1px solid",
+            borderColor: "divider",
+            bgcolor: "action.hover",
+          }}
+        >
+          <Stack
+            direction="row"
+            alignItems="center"
+            justifyContent="space-between"
+            spacing={2}
+            flexWrap="wrap"
+          >
+            <Stack direction="row" spacing={1.5} alignItems="center">
+              <StorageIcon color="primary" sx={{ fontSize: 20 }} />
+              <Typography variant="subtitle2" sx={{ fontWeight: 800, textTransform: "uppercase", fontSize: "0.72rem", letterSpacing: 1 }}>
+                Консоль обслуживания БД
+              </Typography>
+            </Stack>
+
+            <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
+              {activeMaintenanceTask && (
+                <Chip size="small" color="warning" label={`Выполняется: ${activeMaintenanceTask}`} />
+              )}
+              {lastMaintenanceReport && (
+                <Chip
+                  size="small"
+                  color={lastMaintenanceReport.ok ? "success" : "error"}
+                  label={`${lastMaintenanceReport.ok ? "OK" : "ERR"}: ${lastMaintenanceReport.label}`}
+                />
+              )}
+            </Stack>
+          </Stack>
+        </Box>
+
+        <Box sx={{ p: 2, flex: 1, minHeight: 0, display: "flex", gap: 2 }}>
+          <Box
+            sx={{
+              flex: 1,
+              minWidth: 0,
+              borderRadius: 2,
+              bgcolor: "#1e1e1e",
+              color: "#d4d4d4",
+              fontFamily: "monospace",
+              fontSize: "0.76rem",
+              border: "1px solid #333",
+              p: 1.5,
+              overflow: "auto",
+              whiteSpace: "pre",
+              "&::-webkit-scrollbar": { width: 8, height: 8 },
+              "&::-webkit-scrollbar-thumb": { bgcolor: "#444", borderRadius: 2 },
+            }}
+          >
+            {logs.length === 0 ? (
+              <Box sx={{ color: "#808080" }}>[ожидание] Запустите команду справа...</Box>
+            ) : (
+              logs.map((log, i) => (
+                <Box key={`${i}-${log}`} sx={{ mb: 0.4 }}>
+                  {log}
+                </Box>
+              ))
+            )}
+          </Box>
+
+          <Box
+            sx={{
+              width: 360,
+              maxWidth: "42%",
+              minWidth: 300,
+              borderRadius: 2,
+              border: "1px solid",
+              borderColor: "divider",
+              bgcolor: alpha(theme.palette.action.hover, 0.05),
+              p: 1.2,
+              overflowY: "auto",
+              "&::-webkit-scrollbar": { width: 6 },
+              "&::-webkit-scrollbar-thumb": { bgcolor: "divider", borderRadius: 2 },
+            }}
+          >
+            <Stack spacing={1}>
+              {maintenanceTasks.map((task) => (
+                <Box
+                  key={task.id}
+                  sx={{
+                    p: 1.2,
+                    borderRadius: 1.5,
+                    border: "1px solid",
+                    borderColor: "divider",
+                    bgcolor: "background.paper",
+                  }}
+                >
+                  <Typography variant="body2" sx={{ fontWeight: 700, fontSize: "0.78rem", mb: 0.2 }}>
+                    {task.label}
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: "text.secondary", display: "block", mb: 1 }}>
+                    {task.desc}
+                  </Typography>
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    disabled={isRunningTask}
+                    onClick={() => handleRunMaintenanceTask(task.id, task.label)}
+                    sx={{
+                      height: 24,
+                      borderRadius: "6px",
+                      fontWeight: 700,
+                      fontSize: "0.72rem",
+                    }}
+                  >
+                    Запуск
+                  </Button>
+                </Box>
+              ))}
+            </Stack>
+          </Box>
+        </Box>
+
+        <Box
+          sx={{
+            p: 2,
+            borderTop: "1px solid",
+            borderColor: "divider",
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 1,
+          }}
+        >
+          <Button
+            variant="outlined"
+            onClick={() => setLogs([])}
+            disabled={isRunningTask || logs.length === 0}
+            startIcon={<CleaningServicesIcon />}
+            sx={{
+              height: 24,
+              borderRadius: "6px",
+              textTransform: "none",
+              fontWeight: 700,
+            }}
+          >
+            Очистить лог
+          </Button>
+
+          <Button
+            variant="outlined"
+            onClick={() => setMaintenanceConsoleOpen(false)}
+            disabled={isRunningTask}
+            startIcon={<ArrowBackIcon />}
+            sx={{
+              height: 24,
+              borderRadius: "6px",
+              textTransform: "none",
+              fontWeight: 700,
+            }}
+          >
+            Закрыть
+          </Button>
+        </Box>
+      </Dialog>
+    </>
   );
 };
