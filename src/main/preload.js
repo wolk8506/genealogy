@@ -316,14 +316,8 @@ contextBridge.exposeInMainWorld("archiveAPI", {
 contextBridge.exposeInMainWorld("dialogAPI", {
   chooseSavePath: (defaultName) =>
     ipcRenderer.invoke("dialog:chooseSavePath", defaultName),
-  chooseSavePathPhoto: (defaultName) =>
-    ipcRenderer.invoke("dialog:chooseSavePathPhoto", defaultName),
 
   chooseOpenZip: () => ipcRenderer.invoke("dialog:chooseOpenZip"),
-  chooseSavePath: (defaultName) =>
-    ipcRenderer.invoke("dialog:chooseSavePath", defaultName),
-  chooseSavePathPhoto: (defaultName) =>
-    ipcRenderer.invoke("dialog:chooseSavePathPhoto", defaultName),
 });
 
 contextBridge.exposeInMainWorld("importAPI", {

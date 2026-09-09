@@ -1,22 +1,23 @@
 const { ipcMain, app } = require("electron");
 const path = require("path");
 const fs = require("fs");
-const { getBaseDir, getDataPath } = require("../config.cjs");
+const { getBaseDir } = require("../config.cjs");
+const {
+  readPeople,
+  writePeople,
+  upsertPerson,
+  addPerson,
+  getPersonById,
+  updatePerson,
+  deletePerson,
+} = require("./dataStore.cjs");
+
+// Тонкие обёртки над dataStore.cjs — вся работа с genealogy-data.json
+// (атомарная запись + очередь) живёт там.
 
 ipcMain.handle("people:saveAll", async (event, people) => {
   try {
-    const dirPath = getBaseDir();
-    const filePath = path.join(dirPath, "genealogy-data.json");
-
-    // 1. Создаем папку, если её нет.
-    // { recursive: true } — магия, которая создаст всю цепочку папок и не упадет, если папка уже есть.
-    if (!fs.existsSync(dirPath)) {
-      fs.mkdirSync(dirPath, { recursive: true });
-    }
-
-    // 2. Теперь спокойно пишем файл
-    fs.writeFileSync(filePath, JSON.stringify(people, null, 2), "utf-8");
-
+    await writePeople(people);
     return { success: true };
   } catch (error) {
     console.error("Ошибка при сохранении файла:", error);
@@ -26,25 +27,15 @@ ipcMain.handle("people:saveAll", async (event, people) => {
 
 ipcMain.handle("people:delete", async (event, id) => {
   // Блок изменен для возможности удаления из архива человека, если еще что-то не будет работать нужно пересмотреть архитектуру
-  const baseDir = getBaseDir();
-  const peoplePath = path.join(baseDir, "genealogy-data.json");
-  const personDir = path.join(baseDir, "people", String(id)); // ← теперь путь корректный!
+  const personDir = path.join(getBaseDir(), "people", String(id)); // ← теперь путь корректный!
 
   try {
     await fs.promises.rm(personDir, { recursive: true, force: true });
 
-    const content = await fs.promises.readFile(peoplePath, "utf-8");
-    const people = JSON.parse(content);
-    const updated = people.filter((p) => p.id !== id);
-
-    await fs.promises.writeFile(
-      peoplePath,
-      JSON.stringify(updated, null, 2),
-      "utf-8",
-    );
+    const removed = await deletePerson(id);
 
     console.log(`🗑️ Удалён человек ${id} из genealogy-data.json и файлов`);
-    return true;
+    return removed > 0;
   } catch (err) {
     console.error(`❌ Ошибка при удалении ${id}`, err);
     return false;
@@ -52,84 +43,40 @@ ipcMain.handle("people:delete", async (event, id) => {
 });
 
 ipcMain.handle("people:upsert", async (event, person) => {
-  const file = getDataPath();
-  let people = [];
-  try {
-    const content = await fs.promises.readFile(file, "utf-8");
-    people = JSON.parse(content);
-  } catch {}
-
-  const index = people.findIndex((p) => p.id === person.id);
-  if (index >= 0) {
-    people[index] = person;
-  } else {
-    people.push(person);
-  }
-
-  await fs.promises.writeFile(file, JSON.stringify(people, null, 2), "utf-8");
+  return upsertPerson(person);
 });
 
 // IPC: добавление человека
-ipcMain.handle("people:add", (event, person) => {
-  let data = [];
-  const dataFile = getDataPath();
-  if (fs.existsSync(dataFile)) {
-    try {
-      data = JSON.parse(fs.readFileSync(dataFile, "utf-8"));
-    } catch (err) {
-      console.error("❌ Ошибка чтения JSON:", err);
-    }
-  }
-
-  data.push(person);
-
+ipcMain.handle("people:add", async (event, person) => {
   try {
-    fs.writeFileSync(dataFile, JSON.stringify(data, null, 2));
-    console.log("✅ Человек сохранён в:", dataFile);
+    await addPerson(person);
+    console.log("✅ Человек сохранён в:", getBaseDir());
   } catch (err) {
     console.error("❌ Ошибка записи файла:", err);
   }
 });
 
-ipcMain.handle("people:getAll", () => {
-  const dataFile = getDataPath();
-  if (fs.existsSync(dataFile)) {
-    try {
-      const data = JSON.parse(fs.readFileSync(dataFile, "utf-8"));
-      return data;
-    } catch (err) {
-      console.error("❌ Ошибка чтения JSON:", err);
-      return [];
-    }
+ipcMain.handle("people:getAll", async () => {
+  try {
+    return await readPeople();
+  } catch (err) {
+    console.error("❌ Ошибка чтения JSON:", err);
+    return [];
   }
-  return [];
 });
 
-ipcMain.handle("people:getById", (event, id) => {
-  const dataFile = getDataPath();
-  if (fs.existsSync(dataFile)) {
-    try {
-      const data = JSON.parse(fs.readFileSync(dataFile, "utf-8"));
-      return data.find((person) => person.id === id) || null;
-    } catch (err) {
-      console.error("❌ Ошибка чтения JSON:", err);
-    }
+ipcMain.handle("people:getById", async (event, id) => {
+  try {
+    return await getPersonById(id);
+  } catch (err) {
+    console.error("❌ Ошибка чтения JSON:", err);
   }
   return null;
 });
 
 ipcMain.handle("people:update", async (event, id, updatedData) => {
   try {
-    const filePath = getDataPath();
-    const people = JSON.parse(fs.readFileSync(filePath, "utf-8"));
-    const index = people.findIndex((p) => p.id === id);
-    if (index !== -1) {
-      people[index] = { ...people[index], ...updatedData };
-      fs.writeFileSync(filePath, JSON.stringify(people, null, 2), "utf-8");
-      return true;
-    } else {
-      throw new Error(`Человек с id=${id} не найден`);
-    }
+    return await updatePerson(id, updatedData);
   } catch (err) {
     console.error("Ошибка при обновлении человека:", err);
     throw err;

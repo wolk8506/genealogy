@@ -239,7 +239,7 @@ export default function PersonFilesTab({ personId }) {
           Файлы не загружены
         </Typography>
       ) : (
-        <Grid container spacing={0} flexDirection={"column"}>
+        <Grid container spacing={0} direction={"column"}>
           {items.map((file, idx) => (
             <Box
               key={idx}

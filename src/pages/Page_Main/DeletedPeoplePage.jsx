@@ -204,9 +204,9 @@ export default function DeletedPeoplePage() {
         Корзина ({archivedPeople.length})
       </Typography>
 
-      <Grid container spacing={2} flexDirection={"column"}>
+      <Grid container spacing={2} direction={"column"}>
         {archivedPeople.map((person) => (
-          <Grid key={person.id} item xs={12}>
+          <Grid key={person.id} size={{ xs: 12 }}>
             <PersonCard
               person={person}
               isArchived={true} // Включаем режим корзины!

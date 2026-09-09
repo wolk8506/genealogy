@@ -351,7 +351,7 @@ export default function PersonEditDialog({
                 <PersonIcon sx={{ fontSize: 18 }} /> Личные данные
               </Typography>
               <Grid container spacing={2}>
-                <Grid item xs={12} sm={4}>
+                <Grid size={{ xs: 12, sm: 4 }}>
                   <TextField
                     label="Фамилия"
                     size="small"
@@ -360,7 +360,7 @@ export default function PersonEditDialog({
                     onChange={handleChange("lastName")}
                   />
                 </Grid>
-                <Grid item xs={12} sm={4}>
+                <Grid size={{ xs: 12, sm: 4 }}>
                   <TextField
                     label="Имя"
                     size="small"
@@ -369,7 +369,7 @@ export default function PersonEditDialog({
                     onChange={handleChange("firstName")}
                   />
                 </Grid>
-                <Grid item xs={12} sm={4}>
+                <Grid size={{ xs: 12, sm: 4 }}>
                   <TextField
                     label="Отчество"
                     size="small"
@@ -378,7 +378,7 @@ export default function PersonEditDialog({
                     onChange={handleChange("patronymic")}
                   />
                 </Grid>
-                <Grid item xs={12} sm={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <TextField
                     label="Пол"
                     size="small"
@@ -408,7 +408,7 @@ export default function PersonEditDialog({
                     <MenuItem value="female">Женский</MenuItem>
                   </TextField>
                 </Grid>
-                <Grid item xs={12} sm={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <TextField
                     label="Девичья фамилия"
                     size="small"

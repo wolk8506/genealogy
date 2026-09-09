@@ -1,4 +1,4 @@
-const { ipcMain, nativeTheme } = require("electron");
+const { ipcMain, nativeTheme, BrowserWindow } = require("electron");
 
 module.exports = (store) => {
   const { ipcMain } = require("electron");

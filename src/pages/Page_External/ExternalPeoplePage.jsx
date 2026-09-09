@@ -133,7 +133,7 @@ export default function ExternalPeoplePage({
       ) : (
         <Grid container spacing={2} sx={{ width: "100%" }}>
           {filtered.map((entity) => (
-            <Grid item xs={12} key={entity.id} sx={{ width: "100%" }}>
+            <Grid size={{ xs: 12 }} key={entity.id} sx={{ width: "100%" }}>
               <ExternalEntityCard
                 entity={entity}
                 allPeople={allPeople}

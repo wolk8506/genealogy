@@ -23,6 +23,7 @@ import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import PhotoLibraryIcon from "@mui/icons-material/PhotoLibrary";
 // import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
 import PhotoFullscreenViewer from "../../components/PhotoFullscreenViewer";
+import TimelineScrubber from "../../components/TimelineScrubber";
 import PhotoMetaUpdateDialog from "../../components/Dialog/PhotoMetaUpdateDialog";
 import PhotoCell from "../../components/PhotoCell";
 import onDownload from "../../utils/onDownload";
@@ -73,8 +74,6 @@ export default function GlobalPhotoGallery({
   const [openInfo, setOpenInfo] = useState(false);
   const [metaInfo, setMetaInfo] = useState(null);
 
-  const [showNav, setShowNav] = useState(false);
-  const [hoveredDecade, setHoveredDecade] = useState(null);
   const [activeHeader, setActiveHeader] = useState("");
   const [isScrolling, setIsScrolling] = useState(false);
 
@@ -263,27 +262,6 @@ export default function GlobalPhotoGallery({
     windowWidth,
   ]);
 
-  // 2. Дерево навигации
-  const navigationTree = useMemo(() => {
-    const tree = { decades: {}, noDate: [] };
-    if (groupBy !== "datePhoto" && groupBy !== "owner") return tree;
-
-    headers.forEach((h, idx) => {
-      const s = String(h);
-      const yearMatch = s.match(/^\d{4}/);
-      if (groupBy === "datePhoto" && yearMatch) {
-        const year = yearMatch[0];
-        const decade = year.substring(0, 3) + "0";
-        if (!tree.decades[decade]) tree.decades[decade] = {};
-        if (!tree.decades[decade][year]) tree.decades[decade][year] = [];
-        tree.decades[decade][year].push({ label: s, index: idx });
-      } else {
-        tree.noDate.push({ label: s, index: idx });
-      }
-    });
-    return tree;
-  }, [headers, groupBy]);
-
   const handleRangeChanged = useCallback(
     (range) => {
       setIsScrolling(true);
@@ -457,7 +435,7 @@ export default function GlobalPhotoGallery({
       <Box
         sx={{
           flexGrow: 1,
-          mr: groupBy === "datePhoto" || groupBy === "owner" ? 8.5 : 0,
+          mr: 4.5,
         }}
       >
         {isLoading ? (
@@ -574,296 +552,14 @@ export default function GlobalPhotoGallery({
         <ButtonScrollTop targetRef={virtuosoRef} scrollOffset={scrollTop} />
       </Box>
 
-      {/* МАШИНА ВРЕМЕНИ (НАВИГАЦИЯ) */}
-      {(groupBy === "datePhoto" || groupBy === "owner") && (
-        <Box
-          onMouseEnter={() => setShowNav(true)}
-          onMouseLeave={() => {
-            setShowNav(false);
-            setHoveredDecade(null);
-          }}
-          sx={{
-            position: "fixed",
-            right: 0,
-            top: 100,
-            bottom: 60,
-            width: showNav ? (groupBy === "owner" ? "180px" : "90px") : "75px",
-            zIndex: 200,
-            display: "flex",
-            flexDirection: "column",
-            transition: "all 0.3s ease",
-            bgcolor: showNav
-              ? alpha(theme.palette.background.paper, 0.9)
-              : "transparent",
-            // backdropFilter: showNav ? "blur(12px)" : "none",
-            backdropFilter: "blur(10px)",
-            borderLeft: showNav ? "1px solid" : "none",
-            borderColor: "divider",
-            borderTopLeftRadius: "15px",
-            borderBottomLeftRadius: "15px",
-          }}
-        >
-          <Box
-            sx={{
-              height: "100%",
-              display: "flex",
-              flexDirection: "column",
-              py: 1,
-              overflow: "hidden",
-            }}
-          >
-            {/* Рендер десятилетий */}
-            {Object.keys(navigationTree.decades).length > 0 &&
-              Object.keys(navigationTree.decades)
-                .sort((a, b) => b - a)
-                .map((decade) => {
-                  const isCurrentDecade = activeHeader.startsWith(
-                    decade.substring(0, 3),
-                  );
-                  const isHovered = hoveredDecade === decade;
-                  const isOpen =
-                    isHovered || (isCurrentDecade && !hoveredDecade);
-                  return (
-                    <Box
-                      key={decade}
-                      onMouseEnter={() => setHoveredDecade(decade)}
-                      sx={{
-                        flex: isOpen ? "4 1 auto" : "1 1 auto",
-                        display: "flex",
-                        flexDirection: "column",
-                        overflow: "hidden",
-                        transition: "all 0.4s ease",
-                        borderBottom: "1px solid",
-                        borderColor: alpha(theme.palette.divider, 0.05),
-                        minHeight: "35px",
-                      }}
-                    >
-                      <Box
-                        sx={{
-                          minHeight: "35px",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "flex-end",
-                          pr: 1,
-                        }}
-                      >
-                        <Typography
-                          noWrap
-                          sx={{
-                            fontSize: "12px",
-                            fontWeight: "bold",
-                            color: isOpen ? "primary.main" : "text.secondary",
-                          }}
-                        >
-                          {decade}-е
-                        </Typography>
-                      </Box>
-                      {isOpen && (
-                        <Box
-                          sx={{
-                            flexGrow: 1,
-                            overflowY: "auto",
-                            pr: 0.5,
-                            pb: 1,
-                            scrollbarWidth: "none",
-                            "&::-webkit-scrollbar": { display: "none" },
-                          }}
-                        >
-                          <Stack
-                            spacing={0.5}
-                            sx={{ alignItems: "flex-end", pr: 1 }}
-                          >
-                            {Object.keys(navigationTree.decades[decade])
-                              .sort((a, b) => b - a)
-                              .map((year) => {
-                                const isYearActive =
-                                  activeHeader.startsWith(year);
-                                return (
-                                  <Box
-                                    key={year}
-                                    sx={{ width: "100%", textAlign: "right" }}
-                                  >
-                                    <Typography
-                                      onClick={() =>
-                                        virtuosoRef.current.scrollToIndex({
-                                          index:
-                                            groupOffsets[
-                                              navigationTree.decades[decade][
-                                                year
-                                              ][0].index
-                                            ],
-                                          align: "start",
-                                          behavior: "smooth",
-                                        })
-                                      }
-                                      sx={{
-                                        fontSize: isYearActive
-                                          ? "13px"
-                                          : "11px",
-                                        cursor: "pointer",
-                                        color: isYearActive
-                                          ? "primary.main"
-                                          : "text.primary",
-                                        fontWeight: isYearActive
-                                          ? "bold"
-                                          : "500",
-                                      }}
-                                    >
-                                      {year}
-                                    </Typography>
-                                    {isYearActive && (
-                                      <Stack
-                                        spacing={0.3}
-                                        sx={{
-                                          mt: 0.5,
-                                          mb: 1,
-                                          borderRight: "2px solid",
-                                          borderColor: "primary.main",
-                                          pr: 1,
-                                        }}
-                                      >
-                                        {navigationTree.decades[decade][
-                                          year
-                                        ].map((item) => {
-                                          const formatLabel = (label) => {
-                                            const s = String(label);
-                                            if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
-                                              const d = new Date(s);
-                                              const m = d
-                                                .toLocaleString("ru-RU", {
-                                                  month: "short",
-                                                })
-                                                .replace(".", "");
-                                              return `${m.charAt(0).toUpperCase() + m.slice(1)}•${d.getDate()}`;
-                                            }
-                                            return s;
-                                          };
-                                          return (
-                                            <Typography
-                                              key={item.index}
-                                              onClick={(e) => {
-                                                e.stopPropagation();
-                                                virtuosoRef.current.scrollToIndex(
-                                                  {
-                                                    index:
-                                                      groupOffsets[item.index],
-                                                    align: "start",
-                                                    behavior: "smooth",
-                                                  },
-                                                );
-                                              }}
-                                              sx={{
-                                                fontSize: "10px",
-                                                color:
-                                                  activeHeader === item.label
-                                                    ? "primary.main"
-                                                    : "text.secondary",
-                                                cursor: "pointer",
-                                                whiteSpace: "nowrap",
-                                                fontFamily: "monospace",
-                                              }}
-                                            >
-                                              {formatLabel(item.label)}
-                                            </Typography>
-                                          );
-                                        })}
-                                      </Stack>
-                                    )}
-                                  </Box>
-                                );
-                              })}
-                          </Stack>
-                        </Box>
-                      )}
-                    </Box>
-                  );
-                })}
-
-            {/* БЛОК "БЕЗ ДАТЫ" или "ЛЮДИ" */}
-            {navigationTree.noDate.length > 0 && (
-              <Box
-                onMouseEnter={() => setHoveredDecade("noDate")}
-                sx={{
-                  flex:
-                    hoveredDecade === "noDate" || groupBy === "owner"
-                      ? "4 1 auto"
-                      : "0 1 auto",
-                  display: "flex",
-                  flexDirection: "column",
-                  overflow: "hidden",
-                  transition: "all 0.4s ease",
-                  mt: "auto",
-                  borderTop: "1px dashed",
-                  borderColor: "divider",
-                  minHeight: "35px",
-                }}
-              >
-                <Box
-                  sx={{
-                    minHeight: "35px",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "flex-end",
-                    pr: 2,
-                  }}
-                >
-                  <Typography
-                    sx={{
-                      fontSize: "12px",
-                      fontWeight: "bold",
-                      color:
-                        activeHeader === "Без даты" ||
-                        hoveredDecade === "noDate"
-                          ? "primary.main"
-                          : "text.secondary",
-                    }}
-                  >
-                    {groupBy === "owner" ? "Люди" : "Без даты"}
-                  </Typography>
-                </Box>
-                {(hoveredDecade === "noDate" || groupBy === "owner") && (
-                  <Box
-                    sx={{
-                      flexGrow: 1,
-                      overflowY: "auto",
-                      pr: 2,
-                      pb: 1,
-                      scrollbarWidth: "none",
-                      "&::-webkit-scrollbar": { display: "none" },
-                    }}
-                  >
-                    <Stack spacing={0.5} sx={{ alignItems: "flex-end" }}>
-                      {navigationTree.noDate.map((item) => (
-                        <Typography
-                          key={item.index}
-                          onClick={() =>
-                            virtuosoRef.current.scrollToIndex({
-                              index: groupOffsets[item.index],
-                              align: "start",
-                              behavior: "smooth",
-                            })
-                          }
-                          sx={{
-                            fontSize: "10px",
-                            color:
-                              activeHeader === item.label
-                                ? "primary.main"
-                                : "text.secondary",
-                            cursor: "pointer",
-                            textAlign: "right",
-                          }}
-                        >
-                          {item.label}
-                        </Typography>
-                      ))}
-                    </Stack>
-                  </Box>
-                )}
-              </Box>
-            )}
-          </Box>
-        </Box>
-      )}
+      {/* ТАЙМЛАЙН-СКРАББЕР в стиле Google Photos */}
+      <TimelineScrubber
+        headers={headers}
+        groupOffsets={groupOffsets}
+        activeHeader={activeHeader}
+        virtuosoRef={virtuosoRef}
+        forceVisible={isScrolling}
+      />
 
       {/* ОСТАЛЬНЫЕ КОМПОНЕНТЫ */}
       <PhotoFullscreenViewer

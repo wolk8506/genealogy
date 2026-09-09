@@ -223,7 +223,7 @@ export default function QuickAddRelativeModal({
           >
             <Grid container spacing={2.5}>
               {/* ФАМИЛИЯ */}
-              <Grid item xs={12} sm={6}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField
                   label="Фамилия"
                   fullWidth
@@ -237,7 +237,7 @@ export default function QuickAddRelativeModal({
               </Grid>
 
               {/* ИМЯ */}
-              <Grid item xs={12} sm={6}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField
                   label="Имя"
                   fullWidth
@@ -251,7 +251,7 @@ export default function QuickAddRelativeModal({
               </Grid>
 
               {/* ОТЧЕСТВО */}
-              <Grid item xs={12} sm={6}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField
                   label="Отчество"
                   fullWidth
@@ -265,7 +265,7 @@ export default function QuickAddRelativeModal({
 
               {/* ДЕВИЧЬЯ ФАМИЛИЯ (если не скрыта) */}
               {!isMaidenNameHidden && (
-                <Grid item xs={12} sm={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <TextField
                     label="Девичья фамилия"
                     fullWidth
@@ -281,7 +281,7 @@ export default function QuickAddRelativeModal({
 
               {/* ПОЛ (если не скрыт) */}
               {!isGenderHidden && (
-                <Grid item xs={12}>
+                <Grid size={{ xs: 12 }}>
                   <TextField
                     select
                     label="Пол"
