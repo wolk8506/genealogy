@@ -1,5 +1,8 @@
-/.DS_Store
+.DS_Store
+/dist
 /dist_electron
+*.sqlite-wal
+*.sqlite-shm
 /package copy.json
 /preload copy.js
 /service
