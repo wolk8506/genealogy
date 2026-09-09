@@ -3,6 +3,7 @@ const path = require("path");
 const fs = require("fs");
 const sizeOfModule = require("image-size");
 const sizeOf = sizeOfModule.default || sizeOfModule;
+const { getPeopleRoot } = require("../config.cjs");
 
 function buildPhotoMenu(photo, wc, options = {}) {
   const {
@@ -31,9 +32,7 @@ function buildPhotoMenu(photo, wc, options = {}) {
 
         // 1. Базовый путь к папке с фото конкретного человека
         const baseDir = path.join(
-          app.getPath("documents"),
-          "Genealogy",
-          "people",
+          getPeopleRoot(),
           String(photo.owner),
           "photos",
         );
@@ -94,9 +93,7 @@ function buildPhotoMenu(photo, wc, options = {}) {
       label: "ℹ️ Информация",
       click: async () => {
         const baseDir = path.join(
-          app.getPath("documents"),
-          "Genealogy",
-          "people",
+          getPeopleRoot(),
           String(photo.owner),
           "photos",
         );

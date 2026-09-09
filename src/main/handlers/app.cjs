@@ -5,6 +5,13 @@ const path = require("path");
 const fs = require("fs");
 const os = require("os");
 const { exec } = require("child_process");
+const {
+  getBaseDir,
+  getTempDir,
+  getTagsPath,
+  getHistoryPath,
+  peopleDir,
+} = require("../config.cjs");
 // const checkDiskSpace = require("check-disk-space").default;
 
 function getUserPaths(personId) {
@@ -118,7 +125,7 @@ ipcMain.handle("app:getBuildDate", () => {
 });
 
 ipcMain.handle("app:openDataFolder", async () => {
-  const dataPath = path.join(app.getPath("documents"), "Genealogy");
+  const dataPath = getBaseDir();
   if (!fs.existsSync(dataPath)) {
     fs.mkdirSync(dataPath, { recursive: true });
   }
@@ -149,7 +156,7 @@ ipcMain.handle("app:revealPath", async (_, targetPath) => {
 });
 
 ipcMain.handle("app:get-folder-size", async () => {
-  const folderPath = path.join(app.getPath("documents"), "Genealogy");
+  const folderPath = getBaseDir();
 
   function getSize(dir) {
     let total = 0;
@@ -186,7 +193,7 @@ ipcMain.handle("window:isFullscreen", () => {
 });
 
 ipcMain.handle("path:getTempDir", () => {
-  return path.join(app.getPath("documents"), "Genealogy", "temp");
+  return getTempDir();
 });
 
 ipcMain.on("app:quit", () => {
@@ -194,7 +201,7 @@ ipcMain.on("app:quit", () => {
 });
 
 ipcMain.handle("get-detailed-storage-stats", async () => {
-  const basePath = path.join(app.getPath("documents"), "Genealogy");
+  const basePath = getBaseDir();
   const peoplePath = path.join(basePath, "people");
 
   const stats = {
@@ -305,12 +312,7 @@ ipcMain.handle("get-detailed-storage-stats", async () => {
 
 ipcMain.handle("app:getPersonFolderSize", async (event, personId) => {
   const cleanId = String(personId).trim();
-  const rootPath = path.join(
-    app.getPath("documents"),
-    "Genealogy",
-    "people",
-    cleanId,
-  );
+  const rootPath = peopleDir(cleanId);
   const jsonPath = path.join(rootPath, "photos.json");
   const bioPath = path.join(rootPath, `bio.md`); // Путь к файлу биографии
 
@@ -362,10 +364,10 @@ ipcMain.handle("app:getPersonFolderSize", async (event, personId) => {
   }
 });
 
-// *  Очистка папки `Genealogy` от данных
+// *  Очистка папки данных от данных
 ipcMain.handle("app:full-reset", async () => {
-  // Путь к вашей папке данных (обычно в Documents/Genealogy)
-  const userDataPath = path.join(app.getPath("documents"), "Genealogy");
+  // Путь к активной папке данных (см. config.cjs)
+  const userDataPath = getBaseDir();
 
   try {
     if (fs.existsSync(userDataPath)) {
@@ -387,8 +389,8 @@ ipcMain.handle("app:full-reset", async () => {
 
 ipcMain.handle("app:logHistory", async (event, entry) => {
   try {
-    const dirPath = path.join(app.getPath("documents"), "Genealogy");
-    const logPath = path.join(dirPath, "history.jsonl");
+    const dirPath = getBaseDir();
+    const logPath = getHistoryPath();
 
     // 1. Проверяем/создаем папку (на случай если это самое первое действие в приложении)
     if (!fs.existsSync(dirPath)) {
@@ -416,14 +418,13 @@ ipcMain.handle("app:logHistory", async (event, entry) => {
 });
 
 // * T A G
-// Путь к файлу в папке данных пользователя
-const TAGS_FILE = path.join(app.getPath("documents"), "Genealogy", "tags.json");
+// Путь к файлу в папке данных пользователя (активный корень, см. config.cjs)
 
 // Метод сохранения
 ipcMain.handle("save-tags", async (event, data) => {
   try {
     const jsonString = JSON.stringify(data, null, 2);
-    fs.writeFileSync(TAGS_FILE, jsonString, "utf8");
+    fs.writeFileSync(getTagsPath(), jsonString, "utf8");
     return { success: true };
   } catch (error) {
     console.error("Failed to save tags:", error);
@@ -434,8 +435,9 @@ ipcMain.handle("save-tags", async (event, data) => {
 // Метод загрузки
 ipcMain.handle("load-tags", async () => {
   try {
-    if (fs.existsSync(TAGS_FILE)) {
-      const data = fs.readFileSync(TAGS_FILE, "utf8");
+    const tagsFile = getTagsPath();
+    if (fs.existsSync(tagsFile)) {
+      const data = fs.readFileSync(tagsFile, "utf8");
       return JSON.parse(data);
     }
     return null; // Если файла нет, стор использует INITIAL_TAGS

@@ -5,6 +5,7 @@ const sharp = require("sharp");
 const archiver = require("archiver");
 const PDFDocument = require("pdfkit");
 const os = require("os");
+const { getPeopleRoot, peopleDir } = require("../config.cjs");
 
 module.exports = (settingsStore) => {
   global.globalHashtags = new Set();
@@ -27,7 +28,7 @@ module.exports = (settingsStore) => {
 
   // Функция сканирования всех папок
   async function rebuildHashtagIndex() {
-    const baseDir = path.join(app.getPath("documents"), "Genealogy", "people");
+    const baseDir = getPeopleRoot();
     console.log("🔍 Начинаю поиск по адресу:", baseDir); // ЛОГ 1
 
     const newTags = new Set();
@@ -78,12 +79,7 @@ module.exports = (settingsStore) => {
 
   // Вспомогательная функция для получения путей
   const getUserPaths = (personId) => {
-    const baseDir = path.join(
-      app.getPath("documents"),
-      "Genealogy",
-      "people",
-      String(personId),
-    );
+    const baseDir = peopleDir(String(personId));
     const photosDir = path.join(baseDir, "photos");
     return {
       baseDir,
@@ -433,15 +429,11 @@ module.exports = (settingsStore) => {
 
   // ✅ Остальные системные методы
   ipcMain.handle("photo:getAll", async (_, personId) => {
-    const peopleDir = path.join(
-      app.getPath("documents"),
-      "Genealogy",
-      "people",
-    );
-    if (!fs.existsSync(peopleDir)) return [];
+    const peopleDirPath = getPeopleRoot();
+    if (!fs.existsSync(peopleDirPath)) return [];
     const result = [];
-    fs.readdirSync(peopleDir).forEach((id) => {
-      const mPath = path.join(peopleDir, id, "photos.json");
+    fs.readdirSync(peopleDirPath).forEach((id) => {
+      const mPath = path.join(peopleDirPath, id, "photos.json");
       if (fs.existsSync(mPath)) {
         const photos = JSON.parse(fs.readFileSync(mPath, "utf-8"));
         photos.forEach((p) => {
@@ -512,21 +504,17 @@ module.exports = (settingsStore) => {
 
   // !!!  Global photo
   ipcMain.handle("photo:getAllGlobal", async () => {
-    const peopleDir = path.join(
-      app.getPath("documents"),
-      "Genealogy",
-      "people",
-    );
-    if (!fs.existsSync(peopleDir)) return [];
+    const peopleDirPath = getPeopleRoot();
+    if (!fs.existsSync(peopleDirPath)) return [];
 
     const people = fs
-      .readdirSync(peopleDir)
-      .filter((id) => fs.statSync(path.join(peopleDir, id)).isDirectory());
+      .readdirSync(peopleDirPath)
+      .filter((id) => fs.statSync(path.join(peopleDirPath, id)).isDirectory());
 
     const result = [];
 
     for (const id of people) {
-      const metaPath = path.join(peopleDir, id, "photos.json");
+      const metaPath = path.join(peopleDirPath, id, "photos.json");
       if (!fs.existsSync(metaPath)) continue;
 
       const photos = JSON.parse(fs.readFileSync(metaPath, "utf-8"));
@@ -556,9 +544,7 @@ module.exports = (settingsStore) => {
 
     for (const photo of photos) {
       const photoPath = path.join(
-        app.getPath("documents"),
-        "Genealogy",
-        "people",
+        getPeopleRoot(),
         String(photo.owner),
         "photos",
         photo.filename,
@@ -587,9 +573,7 @@ module.exports = (settingsStore) => {
 
     for (const photo of photos) {
       const photoPath = path.join(
-        app.getPath("documents"),
-        "Genealogy",
-        "people",
+        getPeopleRoot(),
         String(photo.owner),
         "photos",
         photo.filename,

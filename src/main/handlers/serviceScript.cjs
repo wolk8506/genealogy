@@ -7,14 +7,9 @@ const {
   runFaceDbVacuumAnalyze,
   runFaceDbIntegrityCheck,
 } = require("../db/faceDb.cjs");
-// Путь к данным
-const DATA_PATH = path.join(
-  require("os").homedir(),
-  "Documents",
-  "Genealogy",
-  "people",
-);
-const GENEALOGY_DATA_PATH = path.join(DATA_PATH, "..", "genealogy-data.json");
+const { getPeopleRoot, getDataPath } = require("../config.cjs");
+// Пути к данным — через активный корень (см. config.cjs):
+// Пути к данным — через активный корень (см. config.cjs)
 
 function formatAsTable(data) {
   const keys = Object.keys(data);
@@ -46,14 +41,14 @@ function toMegabytes(bytes) {
  */
 async function fixMissingPhotos(sendLog) {
   const personFolders = fs
-    .readdirSync(DATA_PATH)
-    .filter((f) => fs.statSync(path.join(DATA_PATH, f)).isDirectory());
+    .readdirSync(getPeopleRoot())
+    .filter((f) => fs.statSync(path.join(getPeopleRoot(), f)).isDirectory());
 
   sendLog(`Проверка ${personFolders.length} папок на битые ссылки...`);
   let globalDeletedCount = 0;
 
   personFolders.forEach((id) => {
-    const pPath = path.join(DATA_PATH, id);
+    const pPath = path.join(getPeopleRoot(), id);
     const jsonPath = path.join(pPath, "photos.json");
     const diskPath = path.join(pPath, "photos", "original");
 
@@ -96,14 +91,14 @@ async function fixMissingPhotos(sendLog) {
  */
 async function removePhotoDuplicates(sendLog) {
   const personFolders = fs
-    .readdirSync(DATA_PATH)
-    .filter((f) => fs.statSync(path.join(DATA_PATH, f)).isDirectory());
+    .readdirSync(getPeopleRoot())
+    .filter((f) => fs.statSync(path.join(getPeopleRoot(), f)).isDirectory());
 
   sendLog(`Проверка ${personFolders.length} папок на дубликаты...`);
   let totalFixed = 0;
 
   personFolders.forEach((id) => {
-    const jPath = path.join(DATA_PATH, id, "photos.json");
+    const jPath = path.join(getPeopleRoot(), id, "photos.json");
 
     if (fs.existsSync(jPath)) {
       try {
@@ -169,13 +164,13 @@ const tasks = {
   // 1. Общий аудит системы
   "run-audit": async (sendLog) => {
     const folders = fs
-      .readdirSync(DATA_PATH)
-      .filter((f) => fs.statSync(path.join(DATA_PATH, f)).isDirectory());
+      .readdirSync(getPeopleRoot())
+      .filter((f) => fs.statSync(path.join(getPeopleRoot(), f)).isDirectory());
 
     let s = { photos: 0, avatars: 0, bios: 0, extra: 0 };
 
     folders.forEach((id) => {
-      const p = path.join(DATA_PATH, id);
+      const p = path.join(getPeopleRoot(), id);
       if (fs.existsSync(path.join(p, "avatar.jpg"))) s.avatars++;
       if (fs.existsSync(path.join(p, "bio.md"))) s.bios++;
 
@@ -222,13 +217,13 @@ const tasks = {
   // 4. Глубокий поиск расхождений
   "debug-diff": async (sendLog) => {
     const folders = fs
-      .readdirSync(DATA_PATH)
-      .filter((f) => fs.statSync(path.join(DATA_PATH, f)).isDirectory());
+      .readdirSync(getPeopleRoot())
+      .filter((f) => fs.statSync(path.join(getPeopleRoot(), f)).isDirectory());
     let diffCount = 0;
 
     for (const id of folders) {
-      const jsonPath = path.join(DATA_PATH, id, "photos.json");
-      const diskPath = path.join(DATA_PATH, id, "photos", "original");
+      const jsonPath = path.join(getPeopleRoot(), id, "photos.json");
+      const diskPath = path.join(getPeopleRoot(), id, "photos", "original");
       if (fs.existsSync(jsonPath)) {
         const jsonFiles = JSON.parse(fs.readFileSync(jsonPath, "utf8")).map(
           (p) => p.filename,
@@ -255,7 +250,7 @@ const tasks = {
 
   // 5. Гео-патчер (Самый важный фикс тут)
   "geo-patcher": async (sendLog) => {
-    if (!fs.existsSync(GENEALOGY_DATA_PATH)) {
+    if (!fs.existsSync(getDataPath())) {
       await sendLog("❌ Ошибка: genealogy-data.json не найден!");
       return { success: false };
     }
@@ -298,7 +293,7 @@ const tasks = {
     };
 
     try {
-      const data = await fs.promises.readFile(GENEALOGY_DATA_PATH, "utf-8");
+      const data = await fs.promises.readFile(getDataPath(), "utf-8");
       const people = JSON.parse(data);
       await sendLog(
         `Начинаем массовую обработку для ${people.length} человек...`,
@@ -308,8 +303,8 @@ const tasks = {
 
       for (const person of people) {
         const personId = String(person.id);
-        const jsonPath = path.join(DATA_PATH, personId, "photos.json");
-        const origDir = path.join(DATA_PATH, personId, "photos", "original");
+        const jsonPath = path.join(getPeopleRoot(), personId, "photos.json");
+        const origDir = path.join(getPeopleRoot(), personId, "photos", "original");
 
         if (!fs.existsSync(jsonPath)) {
           // Чтобы видеть, что процесс идет, даже если папок нет
@@ -395,8 +390,8 @@ const tasks = {
    */
   "deep-audit": async (sendLog) => {
     const folders = fs
-      .readdirSync(DATA_PATH)
-      .filter((f) => fs.statSync(path.join(DATA_PATH, f)).isDirectory());
+      .readdirSync(getPeopleRoot())
+      .filter((f) => fs.statSync(path.join(getPeopleRoot(), f)).isDirectory());
 
     await sendLog(`🔍 Запуск глубокого аудита для ${folders.length} папок...`);
 
@@ -406,7 +401,7 @@ const tasks = {
 
     for (const id of folders) {
       processed++;
-      const pPath = path.join(DATA_PATH, id);
+      const pPath = path.join(getPeopleRoot(), id);
 
       // 1. Проверка дублей имён файлов в photos.json
       const jPath = path.join(pPath, "photos.json");

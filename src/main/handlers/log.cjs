@@ -1,13 +1,7 @@
-const { ipcMain, app } = require("electron");
-const path = require("path");
+const { ipcMain } = require("electron");
 const fs = require("fs");
-
-const logFile = path.join(
-  app.getPath("documents"),
-  "Genealogy",
-  "import-log.txt"
-);
+const { getLogPath } = require("../config.cjs");
 
 ipcMain.handle("log:append", async (event, text) => {
-  await fs.promises.appendFile(logFile, text + "\n");
+  await fs.promises.appendFile(getLogPath(), text + "\n");
 });

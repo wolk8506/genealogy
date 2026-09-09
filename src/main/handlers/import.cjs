@@ -7,7 +7,7 @@ const os = require("os");
 const { pipeline } = require("stream/promises");
 const { upsertPerson, readPeople } = require("./dataStore.cjs"); // убедитесь, что эти функции экспортируются
 const { closeFaceDb, initializeFaceDb } = require("../db/faceDb.cjs");
-const DATA_BASE = path.join(app.getPath("documents"), "Genealogy");
+const { getBaseDir } = require("../config.cjs");
 const APP_IDENTIFIER = "MY_GENEALOGY_APP";
 const PHOTO_FOLDERS = new Set(["original", "thumbs", "webp"]);
 const DB_FILES = ["genealogy.sqlite", "genealogy.sqlite-wal", "genealogy.sqlite-shm"];
@@ -219,7 +219,7 @@ ipcMain.handle("import:zip", async (event, zipPath, options = {}) => {
 
     // --- 2. ПОДГОТОВКА И КОНФЛИКТЫ ---
     await ensureDir(uniqueTmpDir);
-    await ensureDir(DATA_BASE);
+    await ensureDir(getBaseDir());
 
     const existingPeople = normalizePeopleList(await readPeople());
     const existingIds = new Set(existingPeople.map((p) => String(p.id)));
@@ -414,7 +414,7 @@ ipcMain.handle("import:zip", async (event, zipPath, options = {}) => {
         await upsertPerson(incomingPerson);
 
         // 2. Подготавливаем целевую папку
-        const targetDest = path.join(DATA_BASE, "people", String(personId));
+        const targetDest = path.join(getBaseDir(), "people", String(personId));
 
         // 3. ОЧИСТКА: Сносим всё старое, чтобы не было лишних файлов
         if (fs.existsSync(targetDest)) {
@@ -483,7 +483,7 @@ async function restoreFaceDatabaseFromTemp(tmpDir) {
   try {
     for (const sourcePath of sourceFiles) {
       const fileName = path.basename(sourcePath);
-      const targetPath = path.join(DATA_BASE, fileName);
+      const targetPath = path.join(getBaseDir(), fileName);
 
       if (fs.existsSync(targetPath)) {
         await fs.promises.rm(targetPath, { force: true });
@@ -517,7 +517,7 @@ async function importExternalEntities(zip, entries, names) {
       return { imported: 0, files: 0, error: "external-entities.json: ожидался массив" };
     }
 
-    const externalBase = path.join(DATA_BASE, "external");
+    const externalBase = path.join(getBaseDir(), "external");
     await ensureDir(externalBase);
 
     const externalFiles = names.filter((n) => {
@@ -540,7 +540,7 @@ async function importExternalEntities(zip, entries, names) {
       filesCopied++;
     }
 
-    const targetJson = path.join(DATA_BASE, "external-entities.json");
+    const targetJson = path.join(getBaseDir(), "external-entities.json");
     let existing = [];
     if (fs.existsSync(targetJson)) {
       try {

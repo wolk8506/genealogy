@@ -1,6 +1,7 @@
-const { ipcMain, app } = require("electron");
+const { ipcMain } = require("electron");
 const path = require("path");
 const fs = require("fs");
+const { peopleDir, photosMetaPath, getPeopleRoot } = require("../config.cjs");
 
 ipcMain.handle("photos:saveFile", async (event, id, filename, buffer) => {
   console.log("🧪 photos:saveFile args", {
@@ -11,10 +12,7 @@ ipcMain.handle("photos:saveFile", async (event, id, filename, buffer) => {
   });
 
   const file = path.join(
-    app.getPath("documents"),
-    "Genealogy",
-    "people",
-    String(id),
+    peopleDir(String(id)),
     "photos",
     filename,
   );
@@ -24,22 +22,15 @@ ipcMain.handle("photos:saveFile", async (event, id, filename, buffer) => {
 });
 
 ipcMain.handle("photos:write", async (event, personId, data) => {
-  const filePath = path.join(
-    app.getPath("documents"),
-    "Genealogy",
-    "people",
-    String(personId),
-    "photos.json",
-  );
+  const filePath = photosMetaPath(personId);
 
   await fs.promises.mkdir(path.dirname(filePath), { recursive: true });
   await fs.promises.writeFile(filePath, JSON.stringify(data, null, 2), "utf-8");
 });
 
 ipcMain.handle("photos:getByOwner", async (event, ownerId) => {
-  const baseDir = path.join(app.getPath("documents"), "Genealogy");
-  const personDir = path.join(baseDir, "people", String(ownerId));
-  const photosPath = path.join(personDir, "photos.json");
+  const personDir = peopleDir(String(ownerId));
+  const photosPath = photosMetaPath(ownerId);
 
   try {
     const content = await fs.promises.readFile(photosPath, "utf-8");
@@ -52,20 +43,19 @@ ipcMain.handle("photos:getByOwner", async (event, ownerId) => {
 });
 
 ipcMain.handle("photos:getPath", async (event, photoId) => {
-  const baseDir = path.join(app.getPath("documents"), "Genealogy");
-  const peopleDir = path.join(baseDir, "people");
+  const peopleDirPath = getPeopleRoot();
 
   // Найдём, в какой папке лежит нужное фото
-  const personFolders = await fs.promises.readdir(peopleDir);
+  const personFolders = await fs.promises.readdir(peopleDirPath);
   for (const folder of personFolders) {
-    const photosJsonPath = path.join(peopleDir, folder, "photos.json");
+    const photosJsonPath = path.join(peopleDirPath, folder, "photos.json");
     try {
       const content = await fs.promises.readFile(photosJsonPath, "utf-8");
       const photos = JSON.parse(content);
       const photo = photos.find((p) => p.id === photoId);
       if (photo) {
         const photoPath = path.join(
-          peopleDir,
+          peopleDirPath,
           folder,
           "photos",
           photo.filename,
@@ -82,13 +72,7 @@ ipcMain.handle("photos:getPath", async (event, photoId) => {
 });
 
 ipcMain.handle("photos:save", async (event, id, photos) => {
-  const file = path.join(
-    app.getPath("documents"),
-    "Genealogy",
-    "people",
-    String(id),
-    "photos.json",
-  );
+  const file = photosMetaPath(id);
   await fs.promises.writeFile(file, JSON.stringify(photos, null, 2), "utf-8");
 });
 
@@ -114,13 +98,7 @@ ipcMain.handle("photos:save", async (event, id, photos) => {
 // });
 
 ipcMain.handle("photos:read", async (event, personId) => {
-  const filePath = path.join(
-    app.getPath("documents"),
-    "Genealogy",
-    "people",
-    String(personId),
-    "photos.json",
-  );
+  const filePath = photosMetaPath(personId);
 
   try {
     const content = await fs.promises.readFile(filePath, "utf-8");
