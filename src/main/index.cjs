@@ -30,6 +30,7 @@ const path = require("path");
   require("./handlers/import.cjs");
   require("./handlers/dialogs.cjs");
   require("./handlers/dataStore.cjs");
+  const { resolveStartupRoot } = require("./handlers/storage.cjs");
   require("./handlers/photoConversion.cjs"); // для конвертера фотографий нв странице архив
   require("./handlers/serviceScript.cjs"); // для конвертера фотографий нв странице архив
   require("./handlers/face.cjs");
@@ -37,6 +38,12 @@ const path = require("path");
 
   // чтобы не дергать whenReady() дважды — делаем один раз:
   app.whenReady().then(async () => {
+    // Стартовый корень: стандартный создаём при отсутствии,
+    // недоступный внешний — через диалог действий (см. storage.cjs).
+    const startup = resolveStartupRoot();
+    if (!startup) return; // пользователь вышел или критическая ошибка
+    const storageFallback = startup.fellBack;
+
     const { initializeFaceDb } = require("./db/faceDb.cjs");
     try {
       initializeFaceDb();
@@ -54,6 +61,12 @@ const path = require("path");
     // 2) создаём окно
     const { createWindow } = require("./window.cjs");
     const win = createWindow();
+
+    if (storageFallback) {
+      win.webContents.once("did-finish-load", () => {
+        win.webContents.send("storage:fallback", storageFallback);
+      });
+    }
 
     // 3) подключаем ваш автоапдейтер-модуль
     const { setupAutoUpdater } = require("./autoUpdater.cjs");

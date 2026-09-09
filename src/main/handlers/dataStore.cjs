@@ -1,17 +1,13 @@
 // handlers/dataStore.cjs
 const fs = require("fs");
 const path = require("path");
-const { app } = require("electron");
+const { getDataPath } = require("../config.cjs");
 
-const DATA_FILE = path.join(
-  app.getPath("documents"),
-  "Genealogy",
-  "genealogy-data.json"
-);
+const DATA_FILE = getDataPath();
 
 async function readPeople() {
   try {
-    const txt = await fs.promises.readFile(DATA_FILE, "utf-8");
+    const txt = await fs.promises.readFile(getDataPath(), "utf-8");
     const parsed = JSON.parse(txt);
     if (Array.isArray(parsed)) return parsed;
     if (parsed && Array.isArray(parsed.people)) return parsed.people;
@@ -22,9 +18,9 @@ async function readPeople() {
 }
 
 async function writePeople(people) {
-  await fs.promises.mkdir(path.dirname(DATA_FILE), { recursive: true });
+  await fs.promises.mkdir(path.dirname(getDataPath()), { recursive: true });
   await fs.promises.writeFile(
-    DATA_FILE,
+    getDataPath(),
     JSON.stringify(people, null, 2),
     "utf-8"
   );
@@ -43,4 +39,11 @@ async function upsertPerson(person) {
   return true;
 }
 
-module.exports = { readPeople, writePeople, upsertPerson, DATA_FILE };
+module.exports = {
+  readPeople,
+  writePeople,
+  upsertPerson,
+  get DATA_FILE() {
+    return getDataPath();
+  },
+};

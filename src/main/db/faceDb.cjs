@@ -1,10 +1,12 @@
 const fs = require("fs");
 const path = require("path");
 
-const { baseDir, ensureBaseDir } = require("../config.cjs");
-
-const FACE_INDEX_JSON_PATH = path.join(baseDir, "face-index.json");
-const FACE_DB_PATH = path.join(baseDir, "genealogy.sqlite");
+const {
+  ensureBaseDir,
+  getBaseDir,
+  getFaceDbPath,
+  getFaceIndexJsonPath,
+} = require("../config.cjs");
 const MIGRATION_META_KEY = "face_index_migrated";
 const FACE_INDEX_VERSION_META_KEY = "face_index_version";
 
@@ -247,17 +249,18 @@ function replaceScanStateTx(db, scanState) {
 }
 
 function tryBackupLegacyJson() {
-  if (!fs.existsSync(FACE_INDEX_JSON_PATH)) return;
+  const legacyJsonPath = getFaceIndexJsonPath();
+  if (!fs.existsSync(legacyJsonPath)) return;
 
   const stamp = new Date().toISOString().replace(/[:.]/g, "-");
-  const backupPath = path.join(baseDir, `face-index.migrated-${stamp}.json.bak`);
+  const backupPath = path.join(getBaseDir(), `face-index.migrated-${stamp}.json.bak`);
 
   try {
-    fs.renameSync(FACE_INDEX_JSON_PATH, backupPath);
+    fs.renameSync(legacyJsonPath, backupPath);
   } catch {
     try {
-      fs.copyFileSync(FACE_INDEX_JSON_PATH, backupPath);
-      fs.unlinkSync(FACE_INDEX_JSON_PATH);
+      fs.copyFileSync(legacyJsonPath, backupPath);
+      fs.unlinkSync(legacyJsonPath);
     } catch (error) {
       console.warn("Failed to backup legacy face-index.json", error.message);
     }
@@ -269,9 +272,10 @@ function migrateLegacyJsonIfNeeded(db) {
   if (alreadyMigrated) return;
 
   let legacyIndex = createEmptyIndex();
+  const legacyJsonPath = getFaceIndexJsonPath();
 
-  if (fs.existsSync(FACE_INDEX_JSON_PATH)) {
-    const raw = fs.readFileSync(FACE_INDEX_JSON_PATH, "utf-8");
+  if (fs.existsSync(legacyJsonPath)) {
+    const raw = fs.readFileSync(legacyJsonPath, "utf-8");
     legacyIndex = normalizeFaceIndex(safeJsonParse(raw, createEmptyIndex()));
   }
 
@@ -303,7 +307,7 @@ function initializeFaceDb() {
   ensureBaseDir();
 
   const Database = ensureDriver();
-  const db = new Database(FACE_DB_PATH);
+  const db = new Database(getFaceDbPath());
 
   db.pragma("journal_mode = WAL");
   db.pragma("synchronous = NORMAL");
@@ -460,12 +464,12 @@ function getFaceDbStats() {
       )
       .get()?.count || 0;
 
-  const dbFileSizeBytes = fs.existsSync(FACE_DB_PATH)
-    ? fs.statSync(FACE_DB_PATH).size
+  const dbFileSizeBytes = fs.existsSync(getFaceDbPath())
+    ? fs.statSync(getFaceDbPath()).size
     : 0;
 
   return {
-    dbPath: FACE_DB_PATH,
+    dbPath: getFaceDbPath(),
     dbFileSizeBytes,
     totalReferences,
     avatarReferences,
@@ -494,7 +498,9 @@ function runFaceDbIntegrityCheck() {
 }
 
 module.exports = {
-  FACE_DB_PATH,
+  get FACE_DB_PATH() {
+    return getFaceDbPath();
+  },
   initializeFaceDb,
   closeFaceDb,
   loadFaceIndex,

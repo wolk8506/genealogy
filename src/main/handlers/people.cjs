@@ -1,11 +1,11 @@
 const { ipcMain, app } = require("electron");
 const path = require("path");
 const fs = require("fs");
-const { personDir, dataPath } = require("../config.cjs");
+const { getBaseDir, getDataPath } = require("../config.cjs");
 
 ipcMain.handle("people:saveAll", async (event, people) => {
   try {
-    const dirPath = path.join(app.getPath("documents"), "Genealogy");
+    const dirPath = getBaseDir();
     const filePath = path.join(dirPath, "genealogy-data.json");
 
     // 1. Создаем папку, если её нет.
@@ -26,7 +26,7 @@ ipcMain.handle("people:saveAll", async (event, people) => {
 
 ipcMain.handle("people:delete", async (event, id) => {
   // Блок изменен для возможности удаления из архива человека, если еще что-то не будет работать нужно пересмотреть архитектуру
-  const baseDir = path.join(app.getPath("documents"), "Genealogy");
+  const baseDir = getBaseDir();
   const peoplePath = path.join(baseDir, "genealogy-data.json");
   const personDir = path.join(baseDir, "people", String(id)); // ← теперь путь корректный!
 
@@ -52,11 +52,7 @@ ipcMain.handle("people:delete", async (event, id) => {
 });
 
 ipcMain.handle("people:upsert", async (event, person) => {
-  const file = path.join(
-    app.getPath("documents"),
-    "Genealogy",
-    "genealogy-data.json",
-  );
+  const file = getDataPath();
   let people = [];
   try {
     const content = await fs.promises.readFile(file, "utf-8");
@@ -76,9 +72,10 @@ ipcMain.handle("people:upsert", async (event, person) => {
 // IPC: добавление человека
 ipcMain.handle("people:add", (event, person) => {
   let data = [];
-  if (fs.existsSync(dataPath)) {
+  const dataFile = getDataPath();
+  if (fs.existsSync(dataFile)) {
     try {
-      data = JSON.parse(fs.readFileSync(dataPath, "utf-8"));
+      data = JSON.parse(fs.readFileSync(dataFile, "utf-8"));
     } catch (err) {
       console.error("❌ Ошибка чтения JSON:", err);
     }
@@ -87,17 +84,18 @@ ipcMain.handle("people:add", (event, person) => {
   data.push(person);
 
   try {
-    fs.writeFileSync(dataPath, JSON.stringify(data, null, 2));
-    console.log("✅ Человек сохранён в:", dataPath);
+    fs.writeFileSync(dataFile, JSON.stringify(data, null, 2));
+    console.log("✅ Человек сохранён в:", dataFile);
   } catch (err) {
     console.error("❌ Ошибка записи файла:", err);
   }
 });
 
 ipcMain.handle("people:getAll", () => {
-  if (fs.existsSync(dataPath)) {
+  const dataFile = getDataPath();
+  if (fs.existsSync(dataFile)) {
     try {
-      const data = JSON.parse(fs.readFileSync(dataPath, "utf-8"));
+      const data = JSON.parse(fs.readFileSync(dataFile, "utf-8"));
       return data;
     } catch (err) {
       console.error("❌ Ошибка чтения JSON:", err);
@@ -108,9 +106,10 @@ ipcMain.handle("people:getAll", () => {
 });
 
 ipcMain.handle("people:getById", (event, id) => {
-  if (fs.existsSync(dataPath)) {
+  const dataFile = getDataPath();
+  if (fs.existsSync(dataFile)) {
     try {
-      const data = JSON.parse(fs.readFileSync(dataPath, "utf-8"));
+      const data = JSON.parse(fs.readFileSync(dataFile, "utf-8"));
       return data.find((person) => person.id === id) || null;
     } catch (err) {
       console.error("❌ Ошибка чтения JSON:", err);
@@ -121,11 +120,7 @@ ipcMain.handle("people:getById", (event, id) => {
 
 ipcMain.handle("people:update", async (event, id, updatedData) => {
   try {
-    const filePath = path.join(
-      app.getPath("documents"),
-      "Genealogy",
-      "genealogy-data.json",
-    );
+    const filePath = getDataPath();
     const people = JSON.parse(fs.readFileSync(filePath, "utf-8"));
     const index = people.findIndex((p) => p.id === id);
     if (index !== -1) {

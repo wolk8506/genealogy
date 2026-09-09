@@ -4,6 +4,7 @@ import { alpha } from "@mui/material/styles";
 import { ButtonScrollTop } from "../../components/ButtonScrollTop";
 import { StatisticCard } from "./StatisticCard";
 import { GeneralSettingsCard } from "./GeneralSettingsCard";
+import { StorageCard } from "./StorageCard";
 import { UpdateSettingsCard } from "./UpdateSettingsCard";
 import { NewPhotoProcessingOptionsCard } from "./NewPhotoProcessingOptionsCard";
 import { OptimizationMasterCard } from "./OptimizationMasterCard";
@@ -44,6 +45,7 @@ export default function ArchivePage() {
           }}
         >
           <GeneralSettingsCard cardStyle={cardStyle} />
+          <StorageCard cardStyle={cardStyle} />
           <StatisticCard cardStyle={cardStyle} />
           <NewPhotoProcessingOptionsCard cardStyle={cardStyle} />
           <UpdateSettingsCard cardStyle={cardStyle} />

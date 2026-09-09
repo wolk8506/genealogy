@@ -187,6 +187,20 @@ contextBridge.exposeInMainWorld("photoExport", {
   exportPDF: (photos) => ipcRenderer.invoke("photo:exportPDF", photos),
 });
 
+// 📂 Место хранения данных (корень Genealogy)
+contextBridge.exposeInMainWorld("storageAPI", {
+  get: () => ipcRenderer.invoke("storage:get"),
+  choose: () => ipcRenderer.invoke("storage:choose"),
+  switch: (dirPath) => ipcRenderer.invoke("storage:switch", dirPath),
+  add: (dirPath) => ipcRenderer.invoke("storage:add", dirPath),
+  remove: (dirPath) => ipcRenderer.invoke("storage:remove", dirPath),
+  onFallback: (callback) => {
+    const subscription = (_, info) => callback(info);
+    ipcRenderer.on("storage:fallback", subscription);
+    return () => ipcRenderer.removeListener("storage:fallback", subscription);
+  },
+});
+
 // 🧩 Информация о приложении
 contextBridge.exposeInMainWorld("appAPI", {
   getVersion: () => ipcRenderer.invoke("app:getVersion"),

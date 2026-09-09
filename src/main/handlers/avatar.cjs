@@ -1,14 +1,10 @@
-const { ipcMain, app } = require("electron");
+const { ipcMain } = require("electron");
 const path = require("path");
 const fs = require("fs");
+const { peopleDir } = require("../config.cjs");
 
 ipcMain.handle("avatar:getPath", (event, personId) => {
-  const dir = path.join(
-    app.getPath("documents"),
-    "Genealogy",
-    "people",
-    String(personId)
-  );
+  const dir = peopleDir(personId);
   if (!fs.existsSync(dir)) return null;
 
   const files = fs.readdirSync(dir);
@@ -23,12 +19,7 @@ ipcMain.handle("avatar:getPath", (event, personId) => {
 });
 
 ipcMain.handle("avatar:save", async (event, personId, buffer) => {
-  const dir = path.join(
-    app.getPath("documents"),
-    "Genealogy",
-    "people",
-    String(personId)
-  );
+  const dir = peopleDir(personId);
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 
   const dest = path.join(dir, "avatar.jpg");
@@ -37,13 +28,7 @@ ipcMain.handle("avatar:save", async (event, personId, buffer) => {
 
 ipcMain.handle("avatar:delete", async (event, personId) => {
   try {
-    const avatarPath = path.join(
-      app.getPath("documents"),
-      "Genealogy",
-      "people",
-      String(personId),
-      "avatar.jpg"
-    );
+    const avatarPath = path.join(peopleDir(String(personId)), "avatar.jpg");
 
     if (fs.existsSync(avatarPath)) {
       fs.unlinkSync(avatarPath);

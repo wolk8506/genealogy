@@ -2,6 +2,7 @@
 const { app, ipcMain } = require("electron");
 const fs = require("fs");
 const path = require("path");
+const { getBaseDir } = require("../config.cjs");
 
 function updateGlobalHashtagsFromPhoto(photo) {
   // Из массива hashtags
@@ -71,27 +72,18 @@ ipcMain.handle("file:write-buffer", async (_, filePath, buffer) => {
 
 // --- Определяем PEOPLE_BASE кросс-платформенно ---
 // 1) сначала смотрим переменную окружения (удобно для CI / разных ПК)
-// 2) затем используем Documents/Genealogy/people (удобно для пользователя)
-// 3) как запасной вариант — app.getPath('userData')/people
-function resolvePeopleBase() {
+// 2) затем используем активный корень данных из config.cjs (переключаемый)
+function getPeopleBase() {
   // 1) env override
   if (process.env.GENEALOGY_PEOPLE_DIR) {
     return path.resolve(process.env.GENEALOGY_PEOPLE_DIR);
   }
 
-  // 2) Documents/Genealogy/people
-  try {
-    const docs = app.getPath("documents"); // кросс-платформенно
-    return path.join(docs, "Genealogy", "people");
-  } catch (err) {
-    // 3) fallback to userData
-    const ud = app.getPath("userData");
-    return path.join(ud, "Genealogy", "people");
-  }
+  // 2) активный корень данных
+  return path.join(getBaseDir(), "people");
 }
 
-const PEOPLE_BASE = resolvePeopleBase();
-console.log("[main] PEOPLE_BASE =", PEOPLE_BASE);
+console.log("[main] PEOPLE_BASE =", getPeopleBase());
 
 // --- Утилиты ---
 async function readJsonSafe(filePath) {
@@ -122,7 +114,7 @@ ipcMain.handle(
   "file:renameFile",
   async (_, ownerId, oldFilename, newFilename) => {
     try {
-      const baseDir = path.join(PEOPLE_BASE, String(ownerId), "photos");
+      const baseDir = path.join(getPeopleBase(), String(ownerId), "photos");
       const oldWebpName = oldFilename.replace(/\.[^.]+$/, ".webp");
       const newWebpName = newFilename.replace(/\.[^.]+$/, ".webp");
 
@@ -168,8 +160,8 @@ ipcMain.handle(
   "file:moveFile",
   async (_, oldOwnerId, newOwnerId, oldFilename, newFilename) => {
     try {
-      const oldBaseDir = path.join(PEOPLE_BASE, String(oldOwnerId), "photos");
-      const newBaseDir = path.join(PEOPLE_BASE, String(newOwnerId), "photos");
+      const oldBaseDir = path.join(getPeopleBase(), String(oldOwnerId), "photos");
+      const newBaseDir = path.join(getPeopleBase(), String(newOwnerId), "photos");
 
       const targetName = newFilename || oldFilename;
       const oldWebp = oldFilename.replace(/\.[^.]+$/, ".webp");
@@ -224,7 +216,7 @@ ipcMain.handle(
   "photo:removeFromOwnerJson",
   async (_, ownerId, { filename, id } = {}) => {
     try {
-      const jsonPath = path.join(PEOPLE_BASE, String(ownerId), "photos.json");
+      const jsonPath = path.join(getPeopleBase(), String(ownerId), "photos.json");
       const arr = (await readJsonSafe(jsonPath)) || [];
       const beforeLen = arr.length;
       const filtered = arr.filter((p) => {
@@ -250,7 +242,7 @@ ipcMain.handle("photo:addOrUpdateOwnerJson", async (_, ownerId, photoObj) => {
     if (!photoObj || (!photoObj.filename && !photoObj.id)) {
       throw new Error("photoObj must contain filename or id");
     }
-    const jsonPath = path.join(PEOPLE_BASE, String(ownerId), "photos.json");
+    const jsonPath = path.join(getPeopleBase(), String(ownerId), "photos.json");
     const arr = (await readJsonSafe(jsonPath)) || [];
 
     const idx = arr.findIndex((p) => {
@@ -284,14 +276,14 @@ ipcMain.handle("photo:addOrUpdateOwnerJson", async (_, ownerId, photoObj) => {
 
 // --- ДОБАВЛЕНИЕ ФАЙЛОВ И ПРОСМОТР НА СТРАНИЦУ ФАЙЛЫ
 // Укажите базовый путь, где хранятся данные вашей программы
-// const PEOPLE_BASE = path.join(__dirname, "your_data_folder"); // Измените на вашу директорию
+// const getPeopleBase = () => path.join(__dirname, "your_data_folder"); // Измените на вашу директорию
 
 ipcMain.handle(
   "upload-person-file",
   async (event, personId, fileName, fileBuffer, category) => {
     try {
       // Формируем путь: /your_data_folder/persons/{personId}/files
-      const personFilesDir = path.join(PEOPLE_BASE, String(personId), "files");
+      const personFilesDir = path.join(getPeopleBase(), String(personId), "files");
 
       // Создаем папку, если её нет
       if (!fs.existsSync(personFilesDir)) {
@@ -312,7 +304,7 @@ ipcMain.handle(
 
 ipcMain.handle("get-person-files", async (event, personId) => {
   try {
-    const personFilesDir = path.join(PEOPLE_BASE, String(personId), "files");
+    const personFilesDir = path.join(getPeopleBase(), String(personId), "files");
 
     if (!fs.existsSync(personFilesDir)) {
       return []; // Если папки нет, значит файлов нет
@@ -345,7 +337,7 @@ ipcMain.handle("get-person-files", async (event, personId) => {
 ipcMain.handle("delete-person-file", async (event, personId, fileName) => {
   try {
     const filePath = path.join(
-      PEOPLE_BASE,
+      getPeopleBase(),
       String(personId),
       "files",
       fileName,

@@ -1,6 +1,7 @@
-const { ipcMain, app } = require("electron");
+const { ipcMain } = require("electron");
 const path = require("path");
 const fs = require("fs");
+const { getPeopleRoot } = require("../config.cjs");
 const {
   loadFaceIndex,
   saveFaceIndex,
@@ -10,7 +11,7 @@ const {
 } = require("../db/faceDb.cjs");
 
 function getPeopleDir() {
-  return path.join(app.getPath("documents"), "Genealogy", "people");
+  return getPeopleRoot();
 }
 
 ipcMain.handle("face:loadIndex", async () => loadFaceIndex());

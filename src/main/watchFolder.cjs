@@ -1,11 +1,18 @@
-const { BrowserWindow, app } = require("electron");
+const { BrowserWindow } = require("electron");
 const fs = require("fs");
-const path = require("path");
+const { getBaseDir } = require("./config.cjs");
 
 let watcher = null;
 
+function stopWatching() {
+  if (watcher) {
+    watcher.close();
+    watcher = null;
+  }
+}
+
 function watchFolder() {
-  const folderPath = path.join(app.getPath("documents"), "Genealogy");
+  const folderPath = getBaseDir();
   if (!fs.existsSync(folderPath)) return;
 
   if (watcher) watcher.close();
@@ -15,4 +22,4 @@ function watchFolder() {
   });
 }
 
-module.exports = { watchFolder };
+module.exports = { watchFolder, stopWatching };

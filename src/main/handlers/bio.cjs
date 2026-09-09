@@ -2,9 +2,9 @@
 const { ipcMain, app, dialog } = require("electron");
 const path = require("path");
 const fs = require("fs");
+const { peopleDir } = require("../config.cjs");
 
-const getBioDir = (id) =>
-  path.join(app.getPath("documents"), "Genealogy", "people", String(id));
+const getBioDir = (id) => peopleDir(id);
 
 // Новая функция для получения пути к папке с изображениями биографии
 const getBioImagesDir = (id) => path.join(getBioDir(id), "bio_images");

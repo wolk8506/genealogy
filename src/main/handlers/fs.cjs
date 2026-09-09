@@ -2,15 +2,11 @@
 const { ipcMain, app } = require("electron");
 const fs = require("fs");
 const path = require("path");
+const { peopleDir, photosDir } = require("../config.cjs");
 
 ipcMain.handle("fs:ensurePersonFolder", async (_, id) => {
-  const base = path.join(
-    app.getPath("documents"),
-    "Genealogy",
-    "people",
-    String(id)
-  );
-  await fs.promises.mkdir(path.join(base, "photos"), { recursive: true });
+  const base = peopleDir(id);
+  await fs.promises.mkdir(photosDir(id), { recursive: true });
 });
 
 ipcMain.handle("fs:exists", async (_, relPath) => {

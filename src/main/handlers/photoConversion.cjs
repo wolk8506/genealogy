@@ -1,7 +1,8 @@
-const { ipcMain, app } = require("electron");
+const { ipcMain } = require("electron");
 const path = require("path");
 const fs = require("fs-extra"); // или просто require('fs'), если fs-extra не ставил
 const sharp = require("sharp");
+const { getPeopleRoot } = require("../config.cjs");
 
 let isCancelled = false;
 
@@ -12,7 +13,7 @@ ipcMain.handle("photo:cancelConversion", () => {
 ipcMain.handle("photo:startConversion", async (event, options) => {
   isCancelled = false;
   const { quality, keepOriginal, overwrite } = options;
-  const basePath = path.join(app.getPath("documents"), "Genealogy", "people");
+  const basePath = getPeopleRoot();
 
   if (!fs.existsSync(basePath))
     return { success: false, error: "Папка Genealogy не найдена" };
@@ -173,7 +174,7 @@ ipcMain.handle("photo:startConversion", async (event, options) => {
 
 // Удаление данных
 ipcMain.handle("photo:deleteMedia", async (event, type) => {
-  const basePath = path.join(app.getPath("documents"), "Genealogy", "people");
+  const basePath = getPeopleRoot();
 
   if (!fs.existsSync(basePath)) return false;
 
