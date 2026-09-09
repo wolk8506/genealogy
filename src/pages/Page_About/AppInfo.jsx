@@ -164,13 +164,13 @@ export default function AppDiagnostic() {
       {/* Группа 1: Среда выполнения */}
       <CategoryHeader icon={TerminalIcon} title="Runtime & Core" />
       <Grid container spacing={2} sx={{ mb: 4 }}>
-        <Grid item size={gridResponsiveSizes}>
+        <Grid size={gridResponsiveSizes}>
           {renderTechItem(electronIcon, "Electron", sys?.electron)}
         </Grid>
-        <Grid item size={gridResponsiveSizes}>
+        <Grid size={gridResponsiveSizes}>
           {renderTechItem(node_jsIcon, "Node.js", sys?.node)}
         </Grid>
-        <Grid item size={gridResponsiveSizes}>
+        <Grid size={gridResponsiveSizes}>
           {renderTechItem(chromiumIcon, "Chromium", sys?.chrome)}
         </Grid>
       </Grid>
@@ -180,16 +180,16 @@ export default function AppDiagnostic() {
       {/* Группа 2: Frontend */}
       <CategoryHeader icon={WebIcon} title="Frontend Frameworks" />
       <Grid container spacing={2} sx={{ mb: 4 }}>
-        <Grid item size={gridResponsiveSizes}>
+        <Grid size={gridResponsiveSizes}>
           {renderTechItem(reactIcon, "React", React.version)}
         </Grid>
-        <Grid item size={gridResponsiveSizes}>
+        <Grid size={gridResponsiveSizes}>
           {renderTechItem(muiIcon, "Material UI", muiVersion)}
         </Grid>
-        <Grid item size={gridResponsiveSizes}>
+        <Grid size={gridResponsiveSizes}>
           {renderTechItem(reactRouterIcon, "React Router", routerPkg.version)}
         </Grid>
-        <Grid item size={gridResponsiveSizes}>
+        <Grid size={gridResponsiveSizes}>
           {renderTechItem(notistackIcon, "Notistack", notistackPkg.version)}
         </Grid>
       </Grid>
@@ -199,13 +199,13 @@ export default function AppDiagnostic() {
       {/* Группа 3: Инструменты сборки и слой данных */}
       <CategoryHeader icon={BuildIcon} title="Development & Data" />
       <Grid container spacing={2}>
-        <Grid item size={gridResponsiveSizes}>
+        <Grid size={gridResponsiveSizes}>
           {renderTechItem(viteIcon, "Vite", vitePkg.version)}
         </Grid>
-        <Grid item size={gridResponsiveSizes}>
+        <Grid size={gridResponsiveSizes}>
           {renderTechItem(sqliteIcon, "SQLite", sqlitePkg.version)}
         </Grid>
-        <Grid item size={gridResponsiveSizes}>
+        <Grid size={gridResponsiveSizes}>
           {renderTechItem(jsonIcon, "JSON Engine", "Native")}
         </Grid>
       </Grid>

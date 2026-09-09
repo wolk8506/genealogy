@@ -992,7 +992,7 @@ export const StatisticCard = ({ cardStyle, loadAll }) => {
               </Box>
 
               <Grid container spacing={2}>
-                <Grid item xs={4}>
+                <Grid size={{ xs: 4 }}>
                   <Stack direction="row" spacing={1}>
                     <Box
                       sx={{
@@ -1022,7 +1022,7 @@ export const StatisticCard = ({ cardStyle, loadAll }) => {
                     </Box>
                   </Stack>
                 </Grid>
-                <Grid item xs={4}>
+                <Grid size={{ xs: 4 }}>
                   <Stack direction="row" spacing={1}>
                     <Box
                       sx={{
@@ -1052,7 +1052,7 @@ export const StatisticCard = ({ cardStyle, loadAll }) => {
                     </Box>
                   </Stack>
                 </Grid>
-                <Grid item xs={4}>
+                <Grid size={{ xs: 4 }}>
                   <Stack direction="row" spacing={1}>
                     <Box
                       sx={{
@@ -1095,7 +1095,7 @@ export const StatisticCard = ({ cardStyle, loadAll }) => {
             <Divider sx={{ borderStyle: "dashed" }} />
 
             <Grid container spacing={2}>
-              <Grid item xs={12} sm={6}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <Typography
                   variant="overline"
                   sx={{ fontWeight: 900, color: "primary.main", ml: 1 }}
@@ -1135,7 +1135,7 @@ export const StatisticCard = ({ cardStyle, loadAll }) => {
                   />
                 </List>
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <Typography
                   variant="overline"
                   sx={{ fontWeight: 900, color: "secondary.main", ml: 1 }}

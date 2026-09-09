@@ -68,7 +68,7 @@ export default function AboutPage() {
           <Grid container spacing={{ xs: 6, xl: 10 }}>
             {/* ЛЕВАЯ КОЛОНКА */}
             {/* На больших экранах делаем её у́же (3 или 4 доли из 12), чтобы текст не растягивался */}
-            <Grid item size={{ xs: 12, md: 5, lg: 4, xl: 3 }}>
+            <Grid size={{ xs: 12, md: 5, lg: 4, xl: 3 }}>
               <Stack spacing={4}>
                 <Stack direction="row" spacing={3} alignItems="center">
                   <Avatar
@@ -123,7 +123,7 @@ export default function AboutPage() {
                 <Box sx={{ width: "100%" }}>
                   <Grid container spacing={1.5}>
                     {/* Верхний ряд: Две маленькие карточки */}
-                    <Grid item size={{ xs: 6 }}>
+                    <Grid size={{ xs: 6 }}>
                       <Paper
                         elevation={0}
                         sx={{
@@ -156,7 +156,7 @@ export default function AboutPage() {
                       </Paper>
                     </Grid>
 
-                    <Grid item size={{ xs: 6 }}>
+                    <Grid size={{ xs: 6 }}>
                       <Paper
                         elevation={0}
                         sx={{
@@ -190,7 +190,7 @@ export default function AboutPage() {
                     </Grid>
 
                     {/* Средний ряд: Разработчик */}
-                    <Grid item size={{ xs: 12 }}>
+                    <Grid size={{ xs: 12 }}>
                       <Paper
                         elevation={0}
                         sx={{
@@ -270,7 +270,7 @@ export default function AboutPage() {
                       </Paper>
                     </Grid>
                     {/* Нижний ряд: Система (на всю ширину) */}
-                    <Grid item size={{ xs: 12 }}>
+                    <Grid size={{ xs: 12 }}>
                       <Paper
                         elevation={0}
                         sx={{
@@ -338,7 +338,7 @@ export default function AboutPage() {
             </Grid>
 
             {/* ПРАВАЯ КОЛОНКА (Остальное пространство) */}
-            <Grid item size={{ xs: 12, md: 7, lg: 8, xl: 9 }}>
+            <Grid size={{ xs: 12, md: 7, lg: 8, xl: 9 }}>
               <Box
                 sx={{
                   height: "100%",

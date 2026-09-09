@@ -405,10 +405,11 @@ export default function PeopleListPage({ search, filters, sortOrder }) {
                 },
               ].map((section) => (
                 <Grid
-                  item
-                  xs={12}
-                  sm={section.fullWidth ? 12 : 6}
-                  md={section.fullWidth ? 12 : 4}
+                  size={{
+                    xs: 12,
+                    sm: section.fullWidth ? 12 : 6,
+                    md: section.fullWidth ? 12 : 4,
+                  }}
                   key={section.title}
                 >
                   <Typography
@@ -491,9 +492,9 @@ export default function PeopleListPage({ search, filters, sortOrder }) {
                 </Typography>
               </Box>
 
-              <Grid container spacing={2} flexDirection={"column"}>
+              <Grid container spacing={2} direction={"column"}>
                 {grouped[g].map((person) => (
-                  <Grid key={person.id} item xs={12}>
+                  <Grid key={person.id} size={{ xs: 12 }}>
                     <PersonCard
                       person={person}
                       stats={personStats[person.id]}

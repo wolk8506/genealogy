@@ -352,7 +352,7 @@ export default function AddPersonModal({ open, onClose }) {
                 <PersonFillBadgePlusIcon sx={{ fontSize: 20 }} /> Личные данные
               </Typography>
               <Grid container spacing={2}>
-                <Grid item xs={12} sm={4}>
+                <Grid size={{ xs: 12, sm: 4 }}>
                   <TextField
                     label="Фамилия"
                     size="small"
@@ -361,7 +361,7 @@ export default function AddPersonModal({ open, onClose }) {
                     onChange={(e) => setLastName(e.target.value)}
                   />
                 </Grid>
-                <Grid item xs={12} sm={4}>
+                <Grid size={{ xs: 12, sm: 4 }}>
                   <TextField
                     label="Имя"
                     size="small"
@@ -370,7 +370,7 @@ export default function AddPersonModal({ open, onClose }) {
                     onChange={(e) => setFirstName(e.target.value)}
                   />
                 </Grid>
-                <Grid item xs={12} sm={4}>
+                <Grid size={{ xs: 12, sm: 4 }}>
                   <TextField
                     label="Отчество"
                     size="small"
@@ -379,7 +379,7 @@ export default function AddPersonModal({ open, onClose }) {
                     onChange={(e) => setPatronymic(e.target.value)}
                   />
                 </Grid>
-                <Grid item xs={12} sm={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <TextField
                     label="Пол"
                     select
@@ -410,7 +410,7 @@ export default function AddPersonModal({ open, onClose }) {
                     <MenuItem value="female">Женский</MenuItem>
                   </TextField>
                 </Grid>
-                <Grid item xs={12} sm={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <TextField
                     label="Девичья фамилия"
                     size="small"
@@ -447,7 +447,7 @@ export default function AddPersonModal({ open, onClose }) {
                 <CalendarTodayIcon sx={{ fontSize: 18 }} /> Даты и поколение
               </Typography>
               <Grid container spacing={2}>
-                <Grid item xs={12} sm={5}>
+                <Grid size={{ xs: 12, sm: 5 }}>
                   <TextField
                     label="Рождение"
                     size="small"
@@ -460,7 +460,7 @@ export default function AddPersonModal({ open, onClose }) {
                     }}
                   />
                 </Grid>
-                <Grid item xs={12} sm={5}>
+                <Grid size={{ xs: 12, sm: 5 }}>
                   <TextField
                     label="Смерть"
                     size="small"
@@ -473,7 +473,7 @@ export default function AddPersonModal({ open, onClose }) {
                     }}
                   />
                 </Grid>
-                <Grid item xs={12} sm={2}>
+                <Grid size={{ xs: 12, sm: 2 }}>
                   {/* <TextField
                     label="Поколение"
                     size="small"
@@ -517,7 +517,7 @@ export default function AddPersonModal({ open, onClose }) {
               </Typography>
               <Stack spacing={2}>
                 <Grid container spacing={2}>
-                  <Grid item xs={12} sm={6}>
+                  <Grid size={{ xs: 12, sm: 6 }}>
                     <Autocomplete
                       sx={{ width: "416px" }}
                       size="small"
@@ -532,7 +532,7 @@ export default function AddPersonModal({ open, onClose }) {
                       )}
                     />
                   </Grid>
-                  <Grid item xs={12} sm={6}>
+                  <Grid size={{ xs: 12, sm: 6 }}>
                     <Autocomplete
                       sx={{ width: "416px" }}
                       size="small"
