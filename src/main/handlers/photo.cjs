@@ -5,6 +5,7 @@ const sharp = require("sharp");
 const archiver = require("archiver");
 const PDFDocument = require("pdfkit");
 const os = require("os");
+const log = require("../logger.cjs").createLogger("photo");
 const { getPeopleRoot, peopleDir } = require("../config.cjs");
 
 module.exports = (settingsStore) => {
@@ -29,13 +30,13 @@ module.exports = (settingsStore) => {
   // Функция сканирования всех папок
   async function rebuildHashtagIndex() {
     const baseDir = getPeopleRoot();
-    console.log("🔍 Начинаю поиск по адресу:", baseDir); // ЛОГ 1
+    log.info("🔍 Начинаю поиск по адресу:", baseDir); // ЛОГ 1
 
     const newTags = new Set();
 
     try {
       const folders = await fs.promises.readdir(baseDir);
-      console.log("📂 Найдено папок людей:", folders.length); // ЛОГ 2
+      log.info("📂 Найдено папок людей:", folders.length); // ЛОГ 2
 
       for (const folder of folders) {
         const filePath = path.join(baseDir, folder, "photos.json");
@@ -61,16 +62,16 @@ module.exports = (settingsStore) => {
             }
           });
         } catch (e) {
-          // console.log(`⏩ Файл не найден или пуст в папке: ${folder}`);
+          // log.info(`⏩ Файл не найден или пуст в папке: ${folder}`);
         }
       }
 
       global.globalHashtags = newTags;
-      console.log(
+      log.info(
         `✅ Итоговый индекс: [${Array.from(globalHashtags).join(", ")}]`,
       ); // ЛОГ 3
     } catch (err) {
-      console.error("❌ Критическая ошибка сканера:", err);
+      log.error("❌ Критическая ошибка сканера:", err);
     }
   }
 
@@ -161,7 +162,7 @@ module.exports = (settingsStore) => {
 
       return newPhoto;
     } catch (err) {
-      console.error("SaveWithFilename Error:", err);
+      log.error("SaveWithFilename Error:", err);
       return null;
     }
   });
@@ -227,7 +228,7 @@ module.exports = (settingsStore) => {
 
   //       return newPhoto;
   //     } catch (err) {
-  //       console.error("SaveBlob Error:", err);
+  //       log.error("SaveBlob Error:", err);
   //       return null;
   //     }
   //   },
@@ -302,7 +303,7 @@ module.exports = (settingsStore) => {
 
         return newPhoto;
       } catch (err) {
-        console.error("SaveBlob Error:", err);
+        log.error("SaveBlob Error:", err);
         return null;
       }
     },
@@ -349,10 +350,64 @@ module.exports = (settingsStore) => {
       if (!meta.width || !meta.height) return null;
       return { width: meta.width, height: meta.height };
     } catch (err) {
-      console.error("photo:getImageSize error:", err);
+      log.error("photo:getImageSize error:", err);
       return null;
     }
   });
+
+  // ✅ 3.5. Источник для редактора превью: оригинал → webp → legacy.
+  // Байтами (без file:// — canvas в рендере не taint'ится).
+  ipcMain.handle(
+    "photo:getCropSource",
+    async (_, personId, filename, prefer) => {
+      const paths = getUserPaths(personId);
+      if (!filename) return null;
+      const webpName = filename.replace(/\.[^.]+$/, ".webp");
+      const candidates = [
+        { kind: "original", path: path.join(paths.original, filename) },
+        { kind: "webp", path: path.join(paths.webp, webpName) },
+        { kind: "legacy", path: path.join(paths.photosDir, filename) },
+      ];
+      const available = candidates
+        .filter((c) => {
+          try {
+            return fs.existsSync(c.path);
+          } catch {
+            return false;
+          }
+        })
+        .map((c) => c.kind);
+      if (available.length === 0) return null;
+
+      const kind =
+        prefer && available.includes(prefer)
+          ? prefer
+          : available.includes("original")
+            ? "original"
+            : available[0];
+      const chosen = candidates.find((c) => c.kind === kind);
+      const buffer = await fs.promises.readFile(chosen.path);
+      return { buffer, kind, available };
+    },
+  );
+
+  // ✅ 3.6. Сохранение превью (thumbs/<name>.webp) из выбранного фрагмента.
+  ipcMain.handle(
+    "photo:saveThumbs",
+    async (_, personId, filename, arrayBuffer) => {
+      const paths = getUserPaths(personId);
+      if (!filename || !arrayBuffer) {
+        throw new Error("Нет данных для превью");
+      }
+      await fs.promises.mkdir(paths.thumbs, { recursive: true });
+      const webpName = filename.replace(/\.[^.]+$/, ".webp");
+      await fs.promises.writeFile(
+        path.join(paths.thumbs, webpName),
+        Buffer.from(arrayBuffer),
+      );
+      return true;
+    },
+  );
 
   // ✅ 4. Удаление (всех копий)
   ipcMain.handle("photo:delete", (event, personId, id) => {
@@ -642,7 +697,7 @@ module.exports = (settingsStore) => {
         ? `${country}, ${city}${suburb}${road}`
         : country || data.display_name;
     } catch (err) {
-      console.error("Geo lookup failed:", err);
+      log.error("Geo lookup failed:", err);
       return null;
     }
   }

@@ -22,6 +22,17 @@ import EditOffIcon from "@mui/icons-material/EditOff";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import HashtagInput from "../HashtagInput";
 import PhotoFaceOverlay from "../PhotoFaceOverlay";
+import Cropper from "react-easy-crop";
+import ZoomInIcon from "@mui/icons-material/ZoomIn";
+import ZoomOutIcon from "@mui/icons-material/ZoomOut";
+import CropIcon from "@mui/icons-material/Crop";
+import MapIcon from "@mui/icons-material/Map";
+import LocationPickerDialog from "./LocationPickerDialog";
+import {
+  loadImage,
+  cropToThumbWebp,
+  CROP_SOURCE_LABEL,
+} from "../../utils/thumbCrop";
 import { useNotificationStore } from "../../store/useNotificationStore";
 import DraggableDialog from "./DraggableDialog";
 import FaceIcon from "@mui/icons-material/Face";
@@ -84,6 +95,8 @@ export default function PhotoMetaUpdateDialog({
     filename: "",
     aspectRatio: "4/3",
     locationName: null,
+    lat: null,
+    lng: null,
   });
 
   const [allExternal, setAllExternal] = useState([]);
@@ -99,6 +112,17 @@ export default function PhotoMetaUpdateDialog({
   const [saving, setSaving] = useState(false);
   const [previewUrl, setPreviewUrl] = useState(null);
   const [previewLoading, setPreviewLoading] = useState(false);
+  const [locationPickerOpen, setLocationPickerOpen] = useState(false);
+  // Встроенный режим правки превью: вместо фото — кроппер исходника.
+  const [thumbsEditing, setThumbsEditing] = useState(false);
+  const [thumbsSrc, setThumbsSrc] = useState(null); // objectURL исходника
+  const [thumbsKind, setThumbsKind] = useState(null);
+  const [thumbsAvailable, setThumbsAvailable] = useState([]);
+  const [thumbsCrop, setThumbsCrop] = useState({ x: 0, y: 0 });
+  const [thumbsZoom, setThumbsZoom] = useState(1);
+  const [thumbsPixels, setThumbsPixels] = useState(null);
+  const [thumbsBusy, setThumbsBusy] = useState(false);
+  const thumbsUrls = useRef([]);
   const previewFrameRef = useRef(null);
 
   const initialRef = useRef(null);
@@ -118,6 +142,8 @@ export default function PhotoMetaUpdateDialog({
         filename: meta.filename ?? "",
         aspectRatio: meta.aspectRatio ?? "4/3",
         locationName: meta.locationName || "",
+        lat: meta.lat ?? null,
+        lng: meta.lng ?? null,
       };
       setLocal(data);
       setNewFilename(meta.filename ?? "");
@@ -275,8 +301,7 @@ export default function PhotoMetaUpdateDialog({
         });
       }
 
-      onClose();
-      addNotification({
+      onClose();      addNotification({
         timestamp: new Date().toISOString(),
         title: "Фото",
         message: `Обновлено фото ID: ${updatedEntry.id ?? null}. \nВладелец ID: ${updatedEntry.owner ?? ""}. \nИмя файла: ${updatedEntry?.filename ?? ""} `,
@@ -443,6 +468,117 @@ export default function PhotoMetaUpdateDialog({
   };
 
   const selectedFace = local.faces.find((f) => f.id === selectedFaceId);
+
+  const trackThumbsUrl = (url) => {
+    thumbsUrls.current.push(url);
+    return url;
+  };
+
+  const exitThumbsEditing = () => {
+    thumbsUrls.current.forEach((u) => URL.revokeObjectURL(u));
+    thumbsUrls.current = [];
+    setThumbsSrc(null);
+    setThumbsKind(null);
+    setThumbsAvailable([]);
+    setThumbsCrop({ x: 0, y: 0 });
+    setThumbsZoom(1);
+    setThumbsPixels(null);
+    setThumbsBusy(false);
+    setThumbsEditing(false);
+  };
+
+  const loadThumbsSource = async (prefer) => {
+    if (!meta?.owner || !meta?.filename) return;
+    setThumbsBusy(true);
+    try {
+      const res = await window.photoAPI.getCropSource(
+        meta.owner,
+        meta.filename,
+        prefer,
+      );
+      if (!res?.buffer) throw new Error("Нет исходника для превью");
+      const url = trackThumbsUrl(URL.createObjectURL(new Blob([res.buffer])));
+      try {
+        await loadImage(url);
+      } catch {
+        // Исходник не декодируется (напр. HEIC) — пробуем следующий.
+        const fallback = (res.available || []).find((k) => k !== res.kind);
+        if (!fallback) throw new Error("Формат исходника не поддерживается");
+        const retry = await window.photoAPI.getCropSource(
+          meta.owner,
+          meta.filename,
+          fallback,
+        );
+        if (!retry?.buffer) throw new Error("Нет исходника для превью");
+        URL.revokeObjectURL(url);
+        const url2 = trackThumbsUrl(
+          URL.createObjectURL(new Blob([retry.buffer])),
+        );
+        await loadImage(url2);
+        setThumbsAvailable(retry.available || []);
+        setThumbsKind(retry.kind);
+        setThumbsSrc(url2);
+        setThumbsCrop({ x: 0, y: 0 });
+        setThumbsZoom(1);
+        return;
+      }
+      setThumbsAvailable(res.available || []);
+      setThumbsKind(res.kind);
+      setThumbsSrc(url);
+      setThumbsCrop({ x: 0, y: 0 });
+      setThumbsZoom(1);
+    } catch (e) {
+      alert("Превью: " + (e.message || e));
+      exitThumbsEditing();
+    } finally {
+      setThumbsBusy(false);
+    }
+  };
+
+  const enterThumbsEditing = () => {
+    setThumbsEditing(true);
+    loadThumbsSource("original");
+  };
+
+  const saveThumbsCrop = async () => {
+    if (!thumbsSrc || !thumbsPixels || thumbsBusy) return;
+    setThumbsBusy(true);
+    try {
+      const blob = await cropToThumbWebp(thumbsSrc, thumbsPixels);
+      await window.photoAPI.saveThumbs(
+        meta.owner,
+        meta.filename,
+        blob,
+      );
+      await handleThumbsSaved();
+      exitThumbsEditing();
+    } catch (e) {
+      alert("Превью: " + (e.message || e));
+    } finally {
+      setThumbsBusy(false);
+    }
+  };
+
+  // Превью сохранено в редакторе: сбрасываем кэш миниатюры с bust-параметром.
+  const handleThumbsSaved = async () => {
+    try {
+      if (!meta?.owner || !meta?.filename) return;
+      const thumbPath = await window.photoAPI.getPath(
+        meta.owner,
+        meta.filename,
+        "thumbs",
+      );
+      if (thumbPath && setPhotoPaths && meta?.id != null) {
+        const fresh = `${thumbPath}${thumbPath.includes("?") ? "&" : "?"}t=${Date.now()}`;
+        setPhotoPaths((prev) => ({
+          ...(prev || {}),
+          thumbs: { ...((prev && prev.thumbs) || {}), [meta.id]: fresh },
+        }));
+      }
+    } catch (e) {
+      console.warn("Thumbs cache refresh failed", e);
+    }
+  };
 
   // Стиль для кнопок из FaceReviewQueueDialog
   const macButtonStyle = {
@@ -934,6 +1070,31 @@ export default function PhotoMetaUpdateDialog({
                   }
                   InputProps={{ sx: { borderRadius: "12px" } }}
                 />
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    startIcon={<MapIcon />}
+                    onClick={() => setLocationPickerOpen(true)}
+                    sx={{ borderRadius: "10px", textTransform: "none" }}
+                  >
+                    {local.lat != null && local.lng != null
+                      ? `${Number(local.lat).toFixed(4)}, ${Number(local.lng).toFixed(4)} — на карте`
+                      : "Указать на карте"}
+                  </Button>
+                  {local.lat != null && local.lng != null && (
+                    <Button
+                      size="small"
+                      variant="text"
+                      onClick={() =>
+                        setLocal((s) => ({ ...s, lat: null, lng: null }))
+                      }
+                      sx={{ textTransform: "none" }}
+                    >
+                      Убрать координаты
+                    </Button>
+                  )}
+                </Stack>
 
                 {/* Секция: Системное (Имя файла) */}
                 <Box
@@ -1041,7 +1202,7 @@ export default function PhotoMetaUpdateDialog({
               {previewLoading && (
                 <CircularProgress sx={{ position: "absolute", zIndex: 1 }} />
               )}
-              {previewUrl && (
+              {!thumbsEditing && previewUrl && (
                 <Box
                   ref={previewFrameRef}
                   sx={{
@@ -1080,7 +1241,43 @@ export default function PhotoMetaUpdateDialog({
                 </Box>
               )}
 
-              {/* Кнопки управления разметкой */}
+              {/* Режим правки превью: кроппер исходника вместо фото */}
+              {thumbsEditing && (
+                <Box
+                  sx={{
+                    position: "relative",
+                    width: "100%",
+                    height: 540,
+                    maxHeight: "100%",
+                  }}
+                >
+                  {thumbsSrc ? (
+                    <Cropper
+                      image={thumbsSrc}
+                      crop={thumbsCrop}
+                      zoom={thumbsZoom}
+                      aspect={1}
+                      onCropChange={setThumbsCrop}
+                      onZoomChange={setThumbsZoom}
+                      onCropComplete={(_, pixels) => setThumbsPixels(pixels)}
+                      zoomWithScroll
+                    />
+                  ) : (
+                    <Box
+                      sx={{
+                        height: "100%",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <CircularProgress />
+                    </Box>
+                  )}
+                </Box>
+              )}
+
+              {/* Кнопки управления: разметка или правка превью */}
               <Stack
                 direction="row"
                 spacing={1}
@@ -1091,6 +1288,85 @@ export default function PhotoMetaUpdateDialog({
                   zIndex: 3,
                 }}
               >
+                {thumbsEditing ? (
+                  <>
+                    {thumbsAvailable.length > 1 &&
+                      thumbsAvailable.map((k) => (
+                        <Button
+                          key={k}
+                          size="small"
+                          variant={thumbsKind === k ? "contained" : "outlined"}
+                          onClick={() => loadThumbsSource(k)}
+                          sx={{
+                            bgcolor:
+                              thumbsKind === k
+                                ? "primary.main"
+                                : "rgba(0,0,0,0.55)",
+                            color: "#fff",
+                            borderColor: "rgba(255,255,255,0.3)",
+                          }}
+                        >
+                          {CROP_SOURCE_LABEL[k] || k}
+                        </Button>
+                      ))}
+                    <IconButton
+                      size="small"
+                      aria-label="Уменьшить"
+                      onClick={() =>
+                        setThumbsZoom((z) => Math.max(z - 0.2, 1))
+                      }
+                      disabled={thumbsZoom <= 1}
+                      sx={{
+                        bgcolor: "rgba(0,0,0,0.55)",
+                        color: "#fff",
+                        border: "1px solid rgba(255,255,255,0.3)",
+                        width: 34,
+                        height: 34,
+                      }}
+                    >
+                      <ZoomOutIcon fontSize="small" />
+                    </IconButton>
+                    <IconButton
+                      size="small"
+                      aria-label="Увеличить"
+                      onClick={() =>
+                        setThumbsZoom((z) => Math.min(z + 0.2, 5))
+                      }
+                      disabled={thumbsZoom >= 5}
+                      sx={{
+                        bgcolor: "rgba(0,0,0,0.55)",
+                        color: "#fff",
+                        border: "1px solid rgba(255,255,255,0.3)",
+                        width: 34,
+                        height: 34,
+                      }}
+                    >
+                      <ZoomInIcon fontSize="small" />
+                    </IconButton>
+                    <Button
+                      size="small"
+                      variant="contained"
+                      onClick={saveThumbsCrop}
+                      disabled={!thumbsPixels || thumbsBusy}
+                      sx={{ color: "#fff" }}
+                    >
+                      {thumbsBusy ? "Сохранение…" : "Сохранить"}
+                    </Button>
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      onClick={exitThumbsEditing}
+                      sx={{
+                        bgcolor: "rgba(0,0,0,0.55)",
+                        color: "#fff",
+                        borderColor: "rgba(255,255,255,0.3)",
+                      }}
+                    >
+                      Отмена
+                    </Button>
+                  </>
+                ) : (
+                  <>
                 <Button
                   size="small"
                   variant={drawMode ? "contained" : "outlined"}
@@ -1130,6 +1406,20 @@ export default function PhotoMetaUpdateDialog({
                 >
                   Найти
                 </Button>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  startIcon={<CropIcon />}
+                  disabled={!previewUrl || !meta?.filename || thumbsEditing}
+                  onClick={enterThumbsEditing}
+                  sx={{
+                    bgcolor: "rgba(0,0,0,0.55)",
+                    color: "#fff",
+                    borderColor: "rgba(255,255,255,0.3)",
+                  }}
+                >
+                  Превью
+                </Button>
                 <IconButton
                   size="small"
                   aria-label="Подсказка по разметке лиц"
@@ -1145,6 +1435,8 @@ export default function PhotoMetaUpdateDialog({
                 >
                   <InfoOutlinedIcon fontSize="small" />
                 </IconButton>
+                  </>
+                )}
               </Stack>
 
               <Popover
@@ -1238,6 +1530,24 @@ export default function PhotoMetaUpdateDialog({
           setLocal((s) => ({ ...s, datePhoto: d }));
           setDatePickerOpen(false);
         }}
+      />
+      <LocationPickerDialog
+        open={locationPickerOpen}
+        onClose={() => setLocationPickerOpen(false)}
+        initial={
+          local.lat != null && local.lng != null
+            ? { lat: local.lat, lng: local.lng }
+            : null
+        }
+        initialQuery={local.locationName || ""}
+        onSelect={({ lat, lng, name }) =>
+          setLocal((s) => ({
+            ...s,
+            lat,
+            lng,
+            locationName: s.locationName || name || s.locationName,
+          }))
+        }
       />
     </Dialog>
   );

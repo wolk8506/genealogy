@@ -13,9 +13,7 @@ export default function GalleryToolbar({
   photos,
   groupBy,
   setGroupBy,
-  sortBy,
   sortDir,
-  setSortBy,
   setSortDir,
   search,
   setSearch,
@@ -36,15 +34,12 @@ export default function GalleryToolbar({
       {/* ГРУППИРОВКА */}
       <ExpandingGroupSelect value={groupBy} onChange={setGroupBy} />
 
-      {/* СОРТИРОВКА */}
+      {/* СОРТИРОВКА: направление текущей группировки */}
       <ExpandingSelect
         label="Сортировка"
-        sortBy={sortBy}
+        groupBy={groupBy}
         sortDir={sortDir}
-        onSortChange={(newBy, newDir) => {
-          setSortBy(newBy);
-          setSortDir(newDir);
-        }}
+        onSortChange={setSortDir}
       />
 
       {/* ПОИСК */}

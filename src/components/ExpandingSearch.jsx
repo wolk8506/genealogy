@@ -44,7 +44,7 @@ export default function ExpandingSearch({
   onChange,
   enableHashtags = false,
   placeholder = "Поиск...",
-  tooltip = "Поиск...",
+  tooltip = "Поиск… (Ctrl/⌘+K)",
 }) {
   const theme = useTheme();
   const isDark = theme.palette.mode === "dark";
@@ -259,6 +259,7 @@ export default function ExpandingSearch({
 
               <InputBase
                 inputRef={inputRef}
+                inputProps={{ "data-app-search": "true" }}
                 placeholder={isExpanded ? placeholder : ""}
                 value={value}
                 onChange={(e) => handleValueChange(e.target.value)} // В Redux

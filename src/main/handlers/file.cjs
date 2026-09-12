@@ -3,6 +3,7 @@ const { app, ipcMain } = require("electron");
 const fs = require("fs");
 const path = require("path");
 const { getBaseDir } = require("../config.cjs");
+const log = require("../logger.cjs").createLogger("file");
 
 function updateGlobalHashtagsFromPhoto(photo) {
   // Из массива hashtags
@@ -65,7 +66,7 @@ ipcMain.handle("file:write-buffer", async (_, filePath, buffer) => {
   try {
     await fs.promises.writeFile(filePath, Buffer.from(buffer));
   } catch (err) {
-    console.error("💥 Ошибка записи:", err);
+    log.error("💥 Ошибка записи:", err);
     throw err;
   }
 });
@@ -83,7 +84,7 @@ function getPeopleBase() {
   return path.join(getBaseDir(), "people");
 }
 
-console.log("[main] PEOPLE_BASE =", getPeopleBase());
+log.info("[main] PEOPLE_BASE =", getPeopleBase());
 
 // --- Утилиты ---
 async function readJsonSafe(filePath) {
@@ -148,7 +149,7 @@ ipcMain.handle(
 
       return path.join(baseDir, "original", newFilename); // Возвращаем путь к оригиналу как основной
     } catch (err) {
-      console.error("[file:renameFile] failed:", err);
+      log.error("[file:renameFile] failed:", err);
       throw err;
     }
   },
@@ -205,7 +206,7 @@ ipcMain.handle(
 
       return finalPath;
     } catch (err) {
-      console.error("[file:moveFile] failed:", err);
+      log.error("[file:moveFile] failed:", err);
       throw err;
     }
   },
@@ -230,7 +231,7 @@ ipcMain.handle(
       await writeJsonAtomic(jsonPath, filtered);
       return { ok: true, removed: beforeLen - filtered.length };
     } catch (err) {
-      console.error("[photo:removeFromOwnerJson] failed:", err);
+      log.error("[photo:removeFromOwnerJson] failed:", err);
       throw err;
     }
   },
@@ -269,7 +270,7 @@ ipcMain.handle("photo:addOrUpdateOwnerJson", async (_, ownerId, photoObj) => {
 
     return { ok: true, count: arr.length };
   } catch (err) {
-    console.error("[photo:addOrUpdateOwnerJson] failed:", err);
+    log.error("[photo:addOrUpdateOwnerJson] failed:", err);
     throw err;
   }
 });
@@ -296,7 +297,7 @@ ipcMain.handle(
 
       return true;
     } catch (error) {
-      console.error("Ошибка сохранения файла:", error);
+      log.error("Ошибка сохранения файла:", error);
       throw error;
     }
   },
@@ -329,7 +330,7 @@ ipcMain.handle("get-person-files", async (event, personId) => {
       };
     });
   } catch (error) {
-    console.error("Ошибка чтения файлов:", error);
+    log.error("Ошибка чтения файлов:", error);
     throw error;
   }
 });
@@ -349,7 +350,7 @@ ipcMain.handle("delete-person-file", async (event, personId, fileName) => {
     }
     return { success: false, error: "Файл не найден" };
   } catch (error) {
-    console.error("Ошибка при удалении файла:", error);
+    log.error("Ошибка при удалении файла:", error);
     return { success: false, error: error.message };
   }
 });

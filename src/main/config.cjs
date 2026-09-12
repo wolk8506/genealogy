@@ -202,6 +202,63 @@ function getHistoryPath() {
   return path.join(getBaseDir(), "history.jsonl");
 }
 
+// Свободное место тома в байтах. Для несуществующего пути поднимаемся
+// к ближайшему существующему родителю (важно для нового корня на съёмном диске).
+function getVolumeFreeBytes(dirPath) {
+  let current = path.resolve(dirPath);
+  for (;;) {
+    try {
+      if (fs.existsSync(current)) {
+        const stats = fs.statfsSync(current);
+        return stats.bavail * stats.bsize;
+      }
+    } catch {
+      // statfs может не поддерживаться — считаем место неизвестным
+      return null;
+    }
+    const parent = path.dirname(current);
+    if (parent === current) return null;
+    current = parent;
+  }
+}
+
+function formatBytes(bytes) {
+  if (bytes == null) return "неизвестно";
+  if (bytes < 1024) return `${bytes} Б`;
+  const units = ["Б", "КБ", "МБ", "ГБ", "ТБ"];
+  let value = bytes;
+  let unit = 0;
+  while (value >= 1024 && unit < units.length - 1) {
+    value /= 1024;
+    unit += 1;
+  }
+  return `${value.toFixed(value >= 100 ? 0 : 1)} ${units[unit]}`;
+}
+
+// Папка похожа на библиотеку Genealogy: есть данные людей или их папка.
+function isLibraryDir(dirPath) {
+  try {
+    if (!fs.existsSync(dirPath)) return false;
+    if (fs.existsSync(path.join(dirPath, "genealogy-data.json"))) return true;
+    const peoplePath = path.join(dirPath, "people");
+    return (
+      fs.existsSync(peoplePath) && fs.statSync(peoplePath).isDirectory()
+    );
+  } catch {
+    return false;
+  }
+}
+
+function isEmptyDir(dirPath) {
+  try {
+    return (
+      fs.existsSync(dirPath) && fs.readdirSync(dirPath).length === 0
+    );
+  } catch {
+    return false;
+  }
+}
+
 module.exports = {
   getDefaultRoot,
   getActiveRoot,
@@ -225,6 +282,10 @@ module.exports = {
   getTempDir,
   getLogPath,
   getHistoryPath,
+  getVolumeFreeBytes,
+  formatBytes,
+  isLibraryDir,
+  isEmptyDir,
   // Legacy: значения на момент доступа; деструктуризация фиксирует значение,
   // для переключаемого корня используйте функции выше.
   get baseDir() {

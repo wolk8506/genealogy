@@ -6,6 +6,7 @@ const {
   externalDataPath,
   externalDir,
 } = require("../config.cjs");
+const log = require("../logger.cjs").createLogger("external");
 
 function normalizeRelations(relations) {
   if (!Array.isArray(relations)) return [];
@@ -62,7 +63,7 @@ function readEntities() {
   try {
     return JSON.parse(fs.readFileSync(filePath, "utf-8"));
   } catch (err) {
-    console.error("❌ Ошибка чтения external-entities.json:", err);
+    log.error("❌ Ошибка чтения external-entities.json:", err);
     return [];
   }
 }

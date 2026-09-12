@@ -41,7 +41,6 @@ export default function TimelineScrubber({
   groupOffsets = [],
   activeHeader = "",
   virtuosoRef,
-  forceVisible = false,
 }) {
   const trackRef = useRef(null);
   const [dragging, setDragging] = useState(false);
@@ -94,7 +93,9 @@ export default function TimelineScrubber({
     if (years.length === 0 || headers.length < 2) return [];
     // Пока высота не замерена — считаем по оценке, чтобы не схлопнуться в один год.
     const effH = trackH > 0 ? trackH : 600;
-    const maxLabels = Math.max(2, Math.floor(effH / 30));
+    // Жёсткий лимит числа подписей: при тысячах групп DOM не должен расти
+    // бесконечно, даже на очень высоком экране.
+    const maxLabels = Math.min(40, Math.max(2, Math.floor(effH / 30)));
     const picked =
       years.length <= maxLabels
         ? years
@@ -225,7 +226,7 @@ export default function TimelineScrubber({
         result[result.length - 1] = entry;
       }
     }
-    return result.slice(0, 150);
+    return result.slice(0, 200);
   }, [allMonths, years, shownYears, trackH, headers.length]);
   const previewIndex = hoverInfo?.index;
   const shownIndex = dragIndex ?? previewIndex ?? activeIndex;

@@ -2,6 +2,7 @@ const { ipcMain } = require("electron");
 const path = require("path");
 const fs = require("fs");
 const { peopleDir } = require("../config.cjs");
+const log = require("../logger.cjs").createLogger("avatar");
 
 ipcMain.handle("avatar:getPath", (event, personId) => {
   const dir = peopleDir(personId);
@@ -9,7 +10,7 @@ ipcMain.handle("avatar:getPath", (event, personId) => {
 
   const files = fs.readdirSync(dir);
   const avatarFile = files.find((f) => f.startsWith("avatar"));
-  console.log("🔍 avatar:getPath", personId, "→", avatarFile);
+  log.info("🔍 avatar:getPath", personId, "→", avatarFile);
 
   if (avatarFile) {
     return `file://${path.join(dir, avatarFile)}`;
@@ -37,7 +38,7 @@ ipcMain.handle("avatar:delete", async (event, personId) => {
       return { success: false, message: "Файл не найден" };
     }
   } catch (err) {
-    console.error(`❌ Ошибка при удалении аватара ${personId}:`, err);
+    log.error(`❌ Ошибка при удалении аватара ${personId}:`, err);
     return { success: false, message: err.message };
   }
 });

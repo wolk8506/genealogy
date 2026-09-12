@@ -3,6 +3,7 @@ const path = require("path");
 const fs = require("fs-extra"); // или просто require('fs'), если fs-extra не ставил
 const sharp = require("sharp");
 const { getPeopleRoot } = require("../config.cjs");
+const log = require("../logger.cjs").createLogger("photoConversion");
 
 let isCancelled = false;
 
@@ -165,7 +166,7 @@ ipcMain.handle("photo:startConversion", async (event, options) => {
         percent: Math.round((current / total) * 100),
       });
     } catch (err) {
-      console.error(`Ошибка файла ${fileName}:`, err);
+      log.error(`Ошибка файла ${fileName}:`, err);
     }
   }
 

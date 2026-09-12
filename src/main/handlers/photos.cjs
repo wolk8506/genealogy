@@ -2,9 +2,10 @@ const { ipcMain } = require("electron");
 const path = require("path");
 const fs = require("fs");
 const { peopleDir, photosMetaPath, getPeopleRoot } = require("../config.cjs");
+const log = require("../logger.cjs").createLogger("photos");
 
 ipcMain.handle("photos:saveFile", async (event, id, filename, buffer) => {
-  console.log("🧪 photos:saveFile args", {
+  log.info("🧪 photos:saveFile args", {
     id,
     filename,
     bufferType: buffer?.constructor?.name,
@@ -37,7 +38,7 @@ ipcMain.handle("photos:getByOwner", async (event, ownerId) => {
     const allPhotos = JSON.parse(content);
     return allPhotos.filter((p) => p.owner === ownerId);
   } catch (err) {
-    console.warn(`📭 Нет photos.json для ${ownerId}`, err);
+    log.warn(`📭 Нет photos.json для ${ownerId}`, err);
     return [];
   }
 });
@@ -67,7 +68,7 @@ ipcMain.handle("photos:getPath", async (event, photoId) => {
     }
   }
 
-  console.warn(`❌ Фото с id ${photoId} не найдено`);
+  log.warn(`❌ Фото с id ${photoId} не найдено`);
   return null;
 });
 

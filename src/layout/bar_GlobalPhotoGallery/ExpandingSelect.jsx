@@ -12,7 +12,6 @@ import {
 import SortIcon from "@mui/icons-material/Sort";
 import NorthIcon from "@mui/icons-material/North"; // Стрелка вверх
 import SouthIcon from "@mui/icons-material/South"; // Стрелка вниз
-import SortByAlphaIcon from "@mui/icons-material/SortByAlpha";
 
 const StyledContainer = styled(Box)(({ theme }) => ({
   WebkitAppRegion: "no-drag",
@@ -35,8 +34,61 @@ const StyledContainer = styled(Box)(({ theme }) => ({
   },
 }));
 
+// Направление сортировки внутри текущей группировки —
+// всего два варианта, без лишних комбинаций.
+const OPTIONS_BY_GROUP = {
+  datePhoto: [
+    {
+      label: "Сначала новые фото",
+      value: "desc",
+      icon: <SouthIcon fontSize="inherit" />,
+    },
+    {
+      label: "Старые фото",
+      value: "asc",
+      icon: <NorthIcon fontSize="inherit" />,
+    },
+  ],
+  date: [
+    {
+      label: "Новые загрузки",
+      value: "desc",
+      icon: <SouthIcon fontSize="inherit" />,
+    },
+    {
+      label: "Старые загрузки",
+      value: "asc",
+      icon: <NorthIcon fontSize="inherit" />,
+    },
+  ],
+  owner: [
+    {
+      label: "По именам (А–Я)",
+      value: "asc",
+      icon: <NorthIcon fontSize="inherit" />,
+    },
+    {
+      label: "По именам (Я–А)",
+      value: "desc",
+      icon: <SouthIcon fontSize="inherit" />,
+    },
+  ],
+  none: [
+    {
+      label: "Сначала новые",
+      value: "desc",
+      icon: <SouthIcon fontSize="inherit" />,
+    },
+    {
+      label: "Сначала старые",
+      value: "asc",
+      icon: <NorthIcon fontSize="inherit" />,
+    },
+  ],
+};
+
 export default function ExpandingSelect({
-  sortBy,
+  groupBy,
   sortDir,
   onSortChange,
   label,
@@ -44,37 +96,8 @@ export default function ExpandingSelect({
   const [anchorEl, setAnchorEl] = useState(null);
   const open = Boolean(anchorEl);
 
-  // Добавляем SortIcon в каждый пункт меню рядом со стрелкой
-  const options = [
-    {
-      label: "Новые загрузки",
-      value: "date:desc",
-      icon: <SouthIcon fontSize="inherit" />,
-    },
-    {
-      label: "Старые загрузки",
-      value: "date:asc",
-      icon: <NorthIcon fontSize="inherit" />,
-    },
-    {
-      label: "Свежие фото",
-      value: "datePhoto:desc",
-      icon: <SouthIcon fontSize="inherit" />,
-    },
-    {
-      label: "Старые фото",
-      value: "datePhoto:asc",
-      icon: <NorthIcon fontSize="inherit" />,
-    },
-    {
-      label: "По именам (А-Я)",
-      value: "name:asc",
-      icon: <SortByAlphaIcon fontSize="inherit" />,
-    },
-  ];
-
-  const currentValue = `${sortBy}:${sortDir}`;
-  const selectedOption = options.find((o) => o.value === currentValue);
+  const options = OPTIONS_BY_GROUP[groupBy] || OPTIONS_BY_GROUP.none;
+  const selectedOption = options.find((o) => o.value === sortDir);
 
   const handleOpen = (e) => setAnchorEl(e.currentTarget);
   const handleClose = () => setAnchorEl(null);
@@ -83,7 +106,6 @@ export default function ExpandingSelect({
     <StyledContainer onClick={handleOpen}>
       <IconButton size="small" sx={{ color: "white", p: 1 }}>
         {/* На главной кнопке показываем иконку текущего направления */}
-        {<SortIcon fontSize="inherit" />}
         {selectedOption ? selectedOption.icon : <SortIcon fontSize="inherit" />}
       </IconButton>
 
@@ -120,11 +142,10 @@ export default function ExpandingSelect({
         {options.map((opt) => (
           <MenuItem
             key={opt.value}
-            selected={opt.value === currentValue}
+            selected={opt.value === sortDir}
             onClick={(e) => {
               e.stopPropagation();
-              const [newBy, newDir] = opt.value.split(":");
-              onSortChange(newBy, newDir);
+              onSortChange(opt.value);
               handleClose();
             }}
             sx={{ gap: 1 }}

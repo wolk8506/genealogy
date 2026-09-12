@@ -12,6 +12,10 @@ const {
   addRoot,
   removeRoot,
   ensureBaseDir,
+  getVolumeFreeBytes,
+  formatBytes,
+  isLibraryDir,
+  isEmptyDir,
 } = require("../config.cjs");
 const { closeFaceDb, initializeFaceDb } = require("../db/faceDb.cjs");
 const { stopWatching, watchFolder } = require("../watchFolder.cjs");
@@ -19,6 +23,10 @@ const { stopWatching, watchFolder } = require("../watchFolder.cjs");
 function checkWritable(dir) {
   fs.accessSync(dir, fs.constants.R_OK | fs.constants.W_OK);
 }
+
+// Минимум свободного места на томе данных (фото и индекс растут быстро,
+// особенно на съёмных дисках).
+const MIN_STORAGE_FREE_BYTES = 500 * 1024 * 1024;
 
 function isUsableRoot(dir) {
   try {
@@ -120,6 +128,7 @@ function getStorageInfo() {
     isDefault: samePath(activeRoot, defaultRoot),
     exists,
     writable,
+    freeBytes: exists ? getVolumeFreeBytes(activeRoot) : null,
     roots: getRoots(),
   };
 }
@@ -157,6 +166,16 @@ ipcMain.handle("storage:switch", async (event, dirPath) => {
     throw new Error("Папка недоступна для записи: " + target);
   }
 
+  // На съёмном диске место может закончиться раньше, чем данные:
+  // требуем минимум свободного места до переключения.
+  const freeBytes = getVolumeFreeBytes(target);
+  if (freeBytes != null && freeBytes < MIN_STORAGE_FREE_BYTES) {
+    throw new Error(
+      `На диске свободно ${formatBytes(freeBytes)}, ` +
+        `а для работы нужно минимум ${formatBytes(MIN_STORAGE_FREE_BYTES)}: ${target}`,
+    );
+  }
+
   stopWatching();
   closeFaceDb();
 
@@ -188,8 +207,29 @@ ipcMain.handle("storage:switch", async (event, dirPath) => {
   return { success: true, activeRoot: target, restart: true };
 });
 
-ipcMain.handle("storage:add", async (event, dirPath) => {
-  const roots = addRoot(dirPath);
+ipcMain.handle("storage:add", async (event, dirPath, options = {}) => {
+  if (!dirPath || typeof dirPath !== "string" || !path.isAbsolute(dirPath)) {
+    throw new Error("Нужен абсолютный путь к папке");
+  }
+  const normalized = path.normalize(dirPath);
+  // Пустая или несуществующая папка — молча считаем новой библиотекой
+  // (несуществующую отклонит addRoot ниже). В папке есть файлы, но на
+  // библиотеку не похоже — просим подтвердить в UI.
+  if (
+    !options.force &&
+    fs.existsSync(normalized) &&
+    !isEmptyDir(normalized) &&
+    !isLibraryDir(normalized)
+  ) {
+    return {
+      success: false,
+      needsConfirm: true,
+      dirPath: normalized,
+      activeRoot: getActiveRoot(),
+      roots: getRoots(),
+    };
+  }
+  const roots = addRoot(normalized);
   return { success: true, roots, activeRoot: getActiveRoot() };
 });
 
