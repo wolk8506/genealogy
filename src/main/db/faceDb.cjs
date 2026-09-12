@@ -1,5 +1,6 @@
 const fs = require("fs");
 const path = require("path");
+const log = require("../logger.cjs").createLogger("faceDb");
 
 const {
   ensureBaseDir,
@@ -171,12 +172,27 @@ function ensureSchema(db) {
       scan_state_json TEXT,
       updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
     );
+
+    CREATE TABLE IF NOT EXISTS geocode_cache (
+      query TEXT PRIMARY KEY,
+      lat REAL,
+      lng REAL,
+      display_name TEXT,
+      miss INTEGER NOT NULL DEFAULT 0,
+      at TEXT NOT NULL
+    );
   `);
 
   db.prepare(
     `
       INSERT OR IGNORE INTO schema_migrations (version, description)
       VALUES (1, 'initial face sqlite schema');
+    `,
+  ).run();
+  db.prepare(
+    `
+      INSERT OR IGNORE INTO schema_migrations (version, description)
+      VALUES (2, 'geocode cache');
     `,
   ).run();
 }
@@ -217,10 +233,12 @@ function replaceReferencesTx(db, references) {
   removeAll.run();
 
   for (const reference of references) {
+    // Каноническое строковое хранение id ('5', 'E10001'), чтобы не плодить
+    // варианты вида 5 / '5' / '5.0' в TEXT-колонке.
     const entityId =
       reference.externalEntityId != null
         ? String(reference.externalEntityId)
-        : reference.personId;
+        : String(reference.personId);
 
     insertReference.run(
       buildReferenceKey(reference),
@@ -262,7 +280,7 @@ function tryBackupLegacyJson() {
       fs.copyFileSync(legacyJsonPath, backupPath);
       fs.unlinkSync(legacyJsonPath);
     } catch (error) {
-      console.warn("Failed to backup legacy face-index.json", error.message);
+      log.warn("Failed to backup legacy face-index.json", error.message);
     }
   }
 }
@@ -419,29 +437,29 @@ function getFaceScanState() {
 
 function reassignReferencesToPerson(keepPersonId, removePersonIds) {
   const keep = Number(keepPersonId);
-  const removeSet = new Set((removePersonIds || []).map((id) => Number(id)));
+  const removeIds = (removePersonIds || [])
+    .map((id) => Number(id))
+    .filter((id) => Number.isFinite(id) && id > 0 && id !== keep);
 
-  if (!Number.isFinite(keep) || keep <= 0 || removeSet.size === 0) {
+  if (!Number.isFinite(keep) || keep <= 0 || removeIds.length === 0) {
     return { updatedReferences: 0 };
   }
 
-  removeSet.delete(keep);
+  // Один UPDATE вместо load-all → rewrite-all (DELETE + INSERT всей таблицы).
+  // person_id хранится текстом и исторически бывает вида '2' или '2.0',
+  // поэтому сравниваем численно через CAST (нечисловые 'E...' дают 0
+  // и под фильтр с id > 0 не попадают). Пишем каноническое String(keep).
+  const db = getDb();
+  const placeholders = removeIds.map(() => "?").join(", ");
+  const info = db
+    .prepare(
+      `UPDATE face_references
+       SET person_id = ?, updated_at = CURRENT_TIMESTAMP
+       WHERE CAST(person_id AS REAL) IN (${placeholders})`,
+    )
+    .run(String(keep), ...removeIds);
 
-  const index = loadFaceIndex();
-  let updatedReferences = 0;
-
-  const rewritten = index.references.map((reference) => {
-    if (!removeSet.has(Number(reference.personId))) return reference;
-    updatedReferences += 1;
-    return { ...reference, personId: keep };
-  });
-
-  saveFaceIndex({
-    ...index,
-    references: rewritten,
-  });
-
-  return { updatedReferences };
+  return { updatedReferences: info.changes };
 }
 
 function getFaceDbStats() {
@@ -497,6 +515,43 @@ function runFaceDbIntegrityCheck() {
   };
 }
 
+function geocodeCacheGetAll() {
+  const db = getDb();
+  const rows = db
+    .prepare(
+      "SELECT query, lat, lng, display_name AS displayName, miss, at FROM geocode_cache",
+    )
+    .all();
+  const out = {};
+  for (const row of rows) {
+    out[row.query] = row.miss
+      ? { miss: true, at: row.at }
+      : { lat: row.lat, lng: row.lng, displayName: row.displayName, at: row.at };
+  }
+  return out;
+}
+
+function geocodeCacheSet(key, entry) {
+  const db = getDb();
+  db.prepare(
+    `INSERT INTO geocode_cache (query, lat, lng, display_name, miss, at)
+     VALUES (?, ?, ?, ?, ?, ?)
+     ON CONFLICT(query) DO UPDATE SET
+       lat = excluded.lat,
+       lng = excluded.lng,
+       display_name = excluded.display_name,
+       miss = excluded.miss,
+       at = excluded.at;`,
+  ).run(
+    key,
+    entry?.lat ?? null,
+    entry?.lng ?? null,
+    entry?.displayName ?? null,
+    entry?.miss ? 1 : 0,
+    entry?.at ?? new Date().toISOString(),
+  );
+}
+
 module.exports = {
   get FACE_DB_PATH() {
     return getFaceDbPath();
@@ -511,4 +566,6 @@ module.exports = {
   getFaceDbStats,
   runFaceDbVacuumAnalyze,
   runFaceDbIntegrityCheck,
+  geocodeCacheGetAll,
+  geocodeCacheSet,
 };

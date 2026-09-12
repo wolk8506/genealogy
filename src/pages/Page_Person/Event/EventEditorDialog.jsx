@@ -19,6 +19,8 @@ import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import { alpha, useTheme } from "@mui/material/styles";
 import EventIcon from "@mui/icons-material/Event"; // Общая иконка для заголовка
 import PeopleAltIcon from "@mui/icons-material/PeopleAlt";
+import MapIcon from "@mui/icons-material/Map";
+import LocationPickerDialog from "../../../components/Dialog/LocationPickerDialog";
 import {
   buildFaceTagOptions,
   splitEventParticipantOptions,
@@ -42,6 +44,9 @@ export default function EventEditorDialog({
   const [description, setDescription] = useState("");
   const [notes, setNotes] = useState("");
   const [place, setPlace] = useState("");
+  const [evLat, setEvLat] = useState(null);
+  const [evLng, setEvLng] = useState(null);
+  const [locationPickerOpen, setLocationPickerOpen] = useState(false);
   const [participantOptions, setParticipantOptions] = useState([]);
   const [allExternal, setAllExternal] = useState([]);
   const [datePickerOpen, setDatePickerOpen] = useState(false);
@@ -57,6 +62,8 @@ export default function EventEditorDialog({
       setDescription(initialEvent?.description ?? "");
       setNotes(initialEvent?.notes ?? "");
       setPlace(initialEvent?.place ?? "");
+      setEvLat(initialEvent?.lat ?? null);
+      setEvLng(initialEvent?.lng ?? null);
     }
   }, [open, initialEvent]);
 
@@ -77,6 +84,8 @@ export default function EventEditorDialog({
       description,
       notes,
       place,
+      lat: evLat,
+      lng: evLng,
       participants,
       externalParticipants,
     });
@@ -232,6 +241,32 @@ export default function EventEditorDialog({
                 size="small"
                 fullWidth
               />
+              <Stack direction="row" spacing={1} alignItems="center">
+                <Button
+                  size="small"
+                  variant="outlined"
+                  startIcon={<MapIcon />}
+                  onClick={() => setLocationPickerOpen(true)}
+                  sx={{ borderRadius: "10px", textTransform: "none" }}
+                >
+                  {evLat != null && evLng != null
+                    ? `${Number(evLat).toFixed(4)}, ${Number(evLng).toFixed(4)} — на карте`
+                    : "Указать на карте"}
+                </Button>
+                {evLat != null && evLng != null && (
+                  <Button
+                    size="small"
+                    variant="text"
+                    onClick={() => {
+                      setEvLat(null);
+                      setEvLng(null);
+                    }}
+                    sx={{ textTransform: "none" }}
+                  >
+                    Убрать
+                  </Button>
+                )}
+              </Stack>
 
               <Stack direction="row" spacing={2}>
                 <TextField
@@ -361,6 +396,8 @@ export default function EventEditorDialog({
                   description,
                   notes,
                   place,
+                  lat: evLat,
+                  lng: evLng,
                   participants,
                   externalParticipants,
                 };
@@ -424,6 +461,19 @@ export default function EventEditorDialog({
         onSave={(newDate) => {
           setDate(newDate);
           setDatePickerOpen(false);
+        }}
+      />
+      <LocationPickerDialog
+        open={locationPickerOpen}
+        onClose={() => setLocationPickerOpen(false)}
+        initial={
+          evLat != null && evLng != null ? { lat: evLat, lng: evLng } : null
+        }
+        initialQuery={place || ""}
+        onSelect={({ lat, lng, name }) => {
+          setEvLat(lat);
+          setEvLng(lng);
+          if (!place.trim() && name) setPlace(name);
         }}
       />
     </>

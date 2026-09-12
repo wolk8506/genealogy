@@ -1,4 +1,23 @@
-import * as faceapi from "@vladmandic/face-api";
+// face-api грузим лениво динамическим импортом: библиотека весит >1MB
+// и нужна только при сканировании/распознавании, а сервис импортируется
+// и в стартовый граф (очередь проверки лиц в MainLayout).
+let faceapiPromise = null;
+
+function loadFaceApi() {
+  if (!faceapiPromise) {
+    faceapiPromise = import("@vladmandic/face-api");
+  }
+  return faceapiPromise;
+}
+
+function euclidean(a, b) {
+  let sum = 0;
+  for (let i = 0; i < a.length; i++) {
+    const d = a[i] - b[i];
+    sum += d * d;
+  }
+  return Math.sqrt(sum);
+}
 
 let detectorModelLoaded = false;
 let recognitionModelsLoaded = false;
@@ -13,6 +32,8 @@ export async function ensureFaceModelsLoaded(includeRecognition = true) {
   if (detectorModelLoaded && (!needRecognition || recognitionModelsLoaded)) {
     return;
   }
+
+  const faceapi = await loadFaceApi();
 
   if (modelsLoading) {
     await modelsLoading;
@@ -55,7 +76,7 @@ export function euclideanDistance(a, b) {
   const da = a instanceof Float32Array ? a : arrayToDescriptor(a);
   const db = b instanceof Float32Array ? b : arrayToDescriptor(b);
   if (!da || !db) return Infinity;
-  return faceapi.euclideanDistance(da, db);
+  return euclidean(da, db);
 }
 
 export function distanceToConfidence(distance, threshold = DEFAULT_MATCH_THRESHOLD) {
@@ -129,6 +150,7 @@ function detectionToFace(d, refW, refH, index) {
 export async function detectFacesFromImageUrl(imageUrl, options = {}) {
   const { withDescriptors = true, applyNmsFilter = true } = options;
   await ensureFaceModelsLoaded(withDescriptors);
+  const faceapi = await loadFaceApi();
 
   const img = await faceapi.fetchImage(imageUrl);
   const refW = img.naturalWidth || img.width;
@@ -164,6 +186,7 @@ export async function detectFacesFromImageUrl(imageUrl, options = {}) {
 
 export async function computeDescriptorFromImageUrl(imageUrl, box, imageSize) {
   await ensureFaceModelsLoaded(true);
+  const faceapi = await loadFaceApi();
 
   const img = await faceapi.fetchImage(imageUrl);
   const refW = imageSize?.width || img.naturalWidth || img.width;
@@ -212,7 +235,7 @@ export function suggestPerson(descriptor, references, threshold = DEFAULT_MATCH_
         : arrayToDescriptor(ref.descriptor);
     if (!refDesc) continue;
 
-    const distance = faceapi.euclideanDistance(arr, refDesc);
+    const distance = euclidean(arr, refDesc);
     if (distance > threshold * 1.1) continue;
 
     const key =

@@ -4,7 +4,6 @@ import {
   Box,
   Stack,
   Typography,
-  Button,
   TextField,
   Card,
   Dialog,
@@ -17,6 +16,8 @@ import { useNotificationStore } from "../../store/useNotificationStore";
 import { DeleteForever as DeleteForeverIcon } from "@mui/icons-material";
 import { useTheme } from "@mui/material/styles";
 import WarningAmberIcon from "@mui/icons-material/WarningAmber";
+import ConfirmDialog from "../../components/Dialog/ConfirmDialog";
+import AppButton from "../../components/AppButton";
 
 import { alpha } from "@mui/material/styles";
 
@@ -31,20 +32,14 @@ export const DangerZoneCard = ({ cardStyle }) => {
 
   const [resetDialogOpen, setResetDialogOpen] = useState(false);
   const [resetConfirmText, setResetConfirmText] = useState("");
+  const [pendingClearType, setPendingClearType] = useState(null);
+  const [clearBusy, setClearBusy] = useState(false);
 
   const { enqueueSnackbar } = useSnackbar();
   const handleClearData = async (type) => {
     const label = type === "originals" ? "оригиналы" : "кэш (webp/thumbs)";
 
-    // Подтверждение действия
-    if (
-      !window.confirm(
-        `Вы уверены, что хотите удалить ${label}? Это действие необратимо.`,
-      )
-    ) {
-      return;
-    }
-
+    setClearBusy(true);
     try {
       // Вызов метода из preload.js / main.js
       const success = await window.appAPI.deleteMedia(type);
@@ -84,6 +79,9 @@ export const DangerZoneCard = ({ cardStyle }) => {
         type: "error",
         category: "dangerZone",
       });
+    } finally {
+      setClearBusy(false);
+      setPendingClearType(null);
     }
   };
 
@@ -208,22 +206,16 @@ export const DangerZoneCard = ({ cardStyle }) => {
             </Box>{" "}
             — вернуть качество после будет невозможно.
           </Typography>
-          <Button
+          <AppButton
+            preset="dangerOutlined"
             fullWidth
-            size="small"
-            color="error"
-            variant="outlined"
-            onClick={() => handleClearData("originals")}
-            sx={{
-              height: 24,
-              borderRadius: "6px",
-              px: 2,
-              fontWeight: 700,
-              textTransform: "none",
+            onClick={(e) => {
+              e.currentTarget.blur();
+              setPendingClearType("originals");
             }}
           >
             Удалить оригиналы
-          </Button>
+          </AppButton>
         </Box>
 
         {/* Блок Кэш */}
@@ -259,22 +251,16 @@ export const DangerZoneCard = ({ cardStyle }) => {
             удалить для очистки места, кэш пересоберется автоматически при
             просмотре.
           </Typography>
-          <Button
+          <AppButton
+            preset="dangerOutlined"
             fullWidth
-            size="small"
-            color="error"
-            variant="outlined"
-            onClick={() => handleClearData("cache")}
-            sx={{
-              height: 24,
-              borderRadius: "6px",
-              px: 2,
-              fontWeight: 700,
-              textTransform: "none",
+            onClick={(e) => {
+              e.currentTarget.blur();
+              setPendingClearType("cache");
             }}
           >
             Удалить кэш
-          </Button>
+          </AppButton>
         </Box>
 
         {/* Финальное предупреждение и Сброс */}
@@ -302,19 +288,16 @@ export const DangerZoneCard = ({ cardStyle }) => {
             </Typography>
           </Box>
 
-          <Button
+          <AppButton
+            preset="danger"
             fullWidth
-            color="error"
-            variant="contained"
             startIcon={<DeleteForeverIcon />}
-            onClick={() => setResetDialogOpen(true)}
+            onClick={(e) => {
+              e.currentTarget.blur();
+              setResetDialogOpen(true);
+            }}
             sx={{
-              height: 24,
-              // borderRadius: "6px",
-              px: 2,
               py: 1.5,
-              borderRadius: 2,
-              fontWeight: 600,
               boxShadow: "none",
               "&:hover": {
                 bgcolor: "error.dark",
@@ -323,9 +306,26 @@ export const DangerZoneCard = ({ cardStyle }) => {
             }}
           >
             Полный сброс базы данных
-          </Button>
+          </AppButton>
         </Stack>
       </Stack>
+      {/* Диалог подтверждения удаления оригиналов/кэша */}
+      <ConfirmDialog
+        open={pendingClearType != null}
+        title="Удаление данных"
+        message={
+          pendingClearType
+            ? `Вы уверены, что хотите удалить ${pendingClearType === "originals" ? "оригиналы" : "кэш (webp/thumbs)"}? Это действие необратимо.`
+            : ""
+        }
+        confirmLabel="Удалить"
+        confirmColor="error"
+        busy={clearBusy}
+        onClose={(ok) => {
+          if (ok && pendingClearType) handleClearData(pendingClearType);
+          else setPendingClearType(null);
+        }}
+      />
       {/* Диалог подтверждения полного удаления */}
       <Dialog
         open={resetDialogOpen}
@@ -351,44 +351,16 @@ export const DangerZoneCard = ({ cardStyle }) => {
           />
         </DialogContent>
         <DialogActions sx={{ p: 2 }}>
-          <Button
-            sx={{
-              height: 24,
-              borderRadius: "6px",
-              py: 1.2,
-              px: 2,
-              textTransform: "none",
-              fontWeight: 600,
-              fontSize: "0.95rem",
-              color: "text.primary",
-              bgcolor: (theme) =>
-                theme.palette.mode === "dark"
-                  ? "rgba(255,255,255,0.05)"
-                  : "rgba(0,0,0,0.05)",
-              "&:hover": {
-                bgcolor: (theme) =>
-                  theme.palette.mode === "dark"
-                    ? "rgba(255,255,255,0.1)"
-                    : "rgba(0,0,0,0.1)",
-              },
-            }}
-            onClick={() => setResetDialogOpen(false)}
-            color="inherit"
-          >
+          <AppButton preset="ghost" onClick={() => setResetDialogOpen(false)}>
             Отменить
-          </Button>
-          <Button
+          </AppButton>
+          <AppButton
+            preset="danger"
             onClick={handleFullReset}
-            color="error"
-            variant="contained"
             disabled={resetConfirmText !== "УДАЛИТЬ"}
             sx={{
-              height: 24,
-              borderRadius: "6px",
               px: 2,
               py: 1.2,
-              textTransform: "none",
-              fontWeight: 700,
               boxShadow: `0 8px 20px -6px ${alpha(theme.palette.primary.main, 0.5)}`,
               "&:hover": {
                 boxShadow: `0 12px 25px -6px ${alpha(theme.palette.primary.main, 0.6)}`,
@@ -396,7 +368,7 @@ export const DangerZoneCard = ({ cardStyle }) => {
             }}
           >
             Удалить всё навсегда
-          </Button>
+          </AppButton>
         </DialogActions>
       </Dialog>
     </Card>

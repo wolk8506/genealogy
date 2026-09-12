@@ -1,4 +1,5 @@
 const { ipcMain, app, shell, BrowserWindow } = require("electron");
+const log = require("./logger.cjs").createLogger("autoUpdater");
 
 const { autoUpdater } = require("electron-updater");
 const path = require("path");
@@ -13,7 +14,7 @@ autoUpdater.allowPrerelease = false;
 function safeUnlink(filePath) {
   fs.unlink(filePath, (err) => {
     if (err && err.code !== "ENOENT") {
-      console.warn(`⚠️ Не удалось удалить файл ${filePath}:`, err.message);
+      log.warn(`⚠️ Не удалось удалить файл ${filePath}:`, err.message);
     }
   });
 }
@@ -21,7 +22,7 @@ function safeUnlink(filePath) {
 // скачивает URL в outputPath, посылает прогресс в рендер, возвращает Promise
 function downloadFile(url, outputPath, win) {
   return new Promise((resolve, reject) => {
-    console.log("🔧 downloadFile вызван с URL:", url);
+    log.info("🔧 downloadFile вызван с URL:", url);
     const file = fs.createWriteStream(outputPath);
     let downloaded = 0;
     let total = 0;
@@ -45,14 +46,14 @@ function downloadFile(url, outputPath, win) {
       }
 
       total = parseInt(res.headers["content-length"], 10) || 0;
-      if (!total) console.warn("⚠️ Нет content-length — прогресс неточен");
+      if (!total) log.warn("⚠️ Нет content-length — прогресс неточен");
 
       res.on("data", (chunk) => {
         downloaded += chunk.length;
         if (total) {
           const pct = Math.floor((downloaded / total) * 100);
           win.webContents.send("update:progress", pct);
-          console.log(`📦 Загрузка: ${pct}%`);
+          log.info(`📦 Загрузка: ${pct}%`);
         }
       });
 
@@ -78,7 +79,7 @@ function downloadFile(url, outputPath, win) {
             safeUnlink(outputPath);
             return reject(new Error("Файл слишком мал или не найден"));
           }
-          console.log("✅ Файл загружен:", outputPath);
+          log.info("✅ Файл загружен:", outputPath);
           win.webContents.send("update:downloaded", outputPath);
           resolve();
         });
@@ -109,11 +110,11 @@ async function downloadWithRetry(url, outputPath, win, attempts = 3) {
       await downloadWithTimeout(url, outputPath, win);
       return;
     } catch (err) {
-      console.warn(`❗ Попытка ${i + 1} провалена: ${err.message}`);
+      log.warn(`❗ Попытка ${i + 1} провалена: ${err.message}`);
       safeUnlink(outputPath);
       if (i < attempts - 1) {
         const backoff = Math.pow(2, i) * 1000;
-        console.log(`⏱ Ждём ${backoff}ms перед новой попыткой`);
+        log.info(`⏱ Ждём ${backoff}ms перед новой попыткой`);
         await delay(backoff);
       } else {
         win.webContents.send("update:error", err.message);
@@ -124,22 +125,22 @@ async function downloadWithRetry(url, outputPath, win, attempts = 3) {
 }
 
 function setupAutoUpdater(win) {
-  console.log("🛠 setupAutoUpdater инициализирован");
+  log.info("🛠 setupAutoUpdater инициализирован");
   let updateInfo = null;
 
   // 1) Проверка обновлений (без автозагрузки)
   ipcMain.on("update:check", async () => {
     try {
-      console.log("📡 [MAIN] update:check received");
+      log.info("📡 [MAIN] update:check received");
       const result = await autoUpdater.checkForUpdates();
       updateInfo = result.updateInfo;
-      console.log("🔍 [MAIN] updateInfo:", updateInfo);
+      log.info("🔍 [MAIN] updateInfo:", updateInfo);
       win.webContents.send("update:available", {
         ...updateInfo,
         platform: process.platform,
       });
     } catch (err) {
-      console.error("❌ [MAIN] checkForUpdates error:", err.message);
+      log.error("❌ [MAIN] checkForUpdates error:", err.message);
       win.webContents.send("update:error", err.message);
     }
   });
@@ -158,7 +159,7 @@ function setupAutoUpdater(win) {
     if (!/^https?:\/\//.test(rawUrl)) {
       rawUrl = `https://github.com/wolk8506/genealogy/releases/download/${updateInfo.version}/${rawUrl}`;
     }
-    console.log("🔗 final download URL:", rawUrl);
+    log.info("🔗 final download URL:", rawUrl);
 
     const downloadDir = path.join(app.getPath("downloads"), "GenealogyUpdater");
     fs.mkdirSync(downloadDir, { recursive: true });
@@ -167,12 +168,12 @@ function setupAutoUpdater(win) {
       downloadDir,
       `Genealogy-${updateInfo.version}${targetExt}`
     );
-    console.log("📥 скачиваем в:", outputPath);
+    log.info("📥 скачиваем в:", outputPath);
 
     try {
       await downloadWithRetry(rawUrl, outputPath, win);
     } catch (err) {
-      console.error(
+      log.error(
         "❌ downloadWithRetry окончательно провалился:",
         err.message
       );
@@ -187,8 +188,8 @@ function setupAutoUpdater(win) {
   // 4) Очистка старых загрузок
   const tempDir = path.join(app.getPath("downloads"), "GenealogyUpdater");
   fs.rm(tempDir, { recursive: true, force: true }, (err) => {
-    if (err) console.warn("⚠️ не удалось очистить:", err.message);
-    else console.log("🧼 старые загрузки удалены");
+    if (err) log.warn("⚠️ не удалось очистить:", err.message);
+    else log.info("🧼 старые загрузки удалены");
   });
 }
 

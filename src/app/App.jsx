@@ -47,14 +47,14 @@ export default function App() {
     setAuto(autoEnabled);
     setUserPref(savedPref || "light");
 
-    if (autoEnabled) {
+    if (autoEnabled && window.themeAPI) {
       window.themeAPI.get().then((systemTheme) => {
         setMode(systemTheme);
         setThemeReady(true); // 🎯 тема загружена
       });
-      window.themeAPI.onChange(setMode);
+      window.themeAPI.onChange?.(setMode);
     } else {
-      setMode(savedPref || "light");
+      setMode(autoEnabled ? "light" : savedPref || "light");
       setThemeReady(true); // 🎯 можно рендерить
     }
   }, []);
@@ -64,9 +64,9 @@ export default function App() {
     localStorage.setItem("theme-auto", auto);
     localStorage.setItem("theme-user", userPref);
 
-    if (auto) {
+    if (auto && window.themeAPI) {
       window.themeAPI.get().then(setMode);
-    } else {
+    } else if (!auto) {
       setMode(userPref);
     }
   }, [auto, userPref]);

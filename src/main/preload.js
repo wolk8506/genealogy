@@ -1,5 +1,6 @@
 const { contextBridge, ipcRenderer } = require("electron");
 
+// В preload нельзя подключать файлы приложения (песочница) — только electron.
 console.log("✅ preload.js загружен");
 
 // ⚙️ Настройки
@@ -93,6 +94,15 @@ contextBridge.exposeInMainWorld("photoAPI", {
     ipcRenderer.invoke("photo:getPath", personId, filename, version),
   getImageSize: (personId, filename) =>
     ipcRenderer.invoke("photo:getImageSize", personId, filename),
+  getCropSource: (personId, filename, prefer) =>
+    ipcRenderer.invoke("photo:getCropSource", personId, filename, prefer),
+  saveThumbs: async (personId, filename, blob) =>
+    ipcRenderer.invoke(
+      "photo:saveThumbs",
+      personId,
+      filename,
+      await blob.arrayBuffer(),
+    ),
   delete: (personId, id) => ipcRenderer.invoke("photo:delete", personId, id),
   selectFile: () => ipcRenderer.invoke("photo:selectFile"),
   getAllGlobal: () => ipcRenderer.invoke("photo:getAllGlobal"),
@@ -192,13 +202,20 @@ contextBridge.exposeInMainWorld("storageAPI", {
   get: () => ipcRenderer.invoke("storage:get"),
   choose: () => ipcRenderer.invoke("storage:choose"),
   switch: (dirPath) => ipcRenderer.invoke("storage:switch", dirPath),
-  add: (dirPath) => ipcRenderer.invoke("storage:add", dirPath),
+  add: (dirPath, options) => ipcRenderer.invoke("storage:add", dirPath, options),
   remove: (dirPath) => ipcRenderer.invoke("storage:remove", dirPath),
   onFallback: (callback) => {
     const subscription = (_, info) => callback(info);
     ipcRenderer.on("storage:fallback", subscription);
     return () => ipcRenderer.removeListener("storage:fallback", subscription);
   },
+});
+
+// 🌍 Геокодирование (карта мест)
+contextBridge.exposeInMainWorld("geoAPI", {
+  forward: (query) => ipcRenderer.invoke("geo:forward", query),
+  getCache: () => ipcRenderer.invoke("geo:getCache"),
+  reverse: (lat, lng) => ipcRenderer.invoke("geo:reverse", lat, lng),
 });
 
 // 🧩 Информация о приложении

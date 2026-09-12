@@ -1,6 +1,7 @@
 const { app, Menu, Notification } = require("electron");
 const { autoUpdater } = require("electron-updater"); // ← импортим здесь
 const path = require("path");
+const log = require("./logger.cjs").createLogger("main");
 
 (async () => {
   const Store = (await import("electron-store")).default;
@@ -30,6 +31,7 @@ const path = require("path");
   require("./handlers/import.cjs");
   require("./handlers/dialogs.cjs");
   require("./handlers/dataStore.cjs");
+  require("./handlers/geocode.cjs");
   const { resolveStartupRoot } = require("./handlers/storage.cjs");
   require("./handlers/photoConversion.cjs"); // для конвертера фотографий нв странице архив
   require("./handlers/serviceScript.cjs"); // для конвертера фотографий нв странице архив
@@ -48,7 +50,7 @@ const path = require("path");
     try {
       initializeFaceDb();
     } catch (error) {
-      console.error("[sqlite] face DB initialization failed:", error.message);
+      log.error("[sqlite] face DB initialization failed:", error.message);
     }
 
     // Меню
@@ -86,7 +88,7 @@ const path = require("path");
         }).show();
       }
     } catch (e) {
-      console.warn("Не удалось проверить апдейт на старте:", e.message);
+      log.warn("Не удалось проверить апдейт на старте:", e.message);
     }
   });
 

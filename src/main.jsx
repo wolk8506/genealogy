@@ -15,6 +15,24 @@ import "dayjs/locale/ru";
 dayjs.locale("ru"); // активируем русскую локаль
 
 async function bootstrap() {
+  // Без preload-моста (страница открыта в обычном браузере, а не в Electron)
+  // дальше работать нечему: весь слой данных — это IPC. Показываем заглушку.
+  if (
+    typeof window === "undefined" ||
+    !window.themeAPI ||
+    !window.settings
+  ) {
+    document.getElementById("boot-splash")?.remove();
+    document.body.classList.remove("booting");
+    document.getElementById("root").innerHTML =
+      '<div style="display:flex;height:100vh;align-items:center;justify-content:center;' +
+      'background:#05070d;color:#f4f7ff;font-family:system-ui,sans-serif;text-align:center;padding:24px;">' +
+      "<div><div style='font-size:20px;font-weight:800;margin-bottom:8px;'>GENEALOGY</div>" +
+      "<div style='color:rgba(215,225,255,0.72);'>Откройте приложение через Electron " +
+      "(<code>npm run dev</code> или собранную версию), а не в браузере: хранение данных работает только там.</div></div></div>";
+    return;
+  }
+
   // Загружаем тему из настроек
   let theme = "light";
   try {

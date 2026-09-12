@@ -12,6 +12,7 @@ const {
   getHistoryPath,
   peopleDir,
 } = require("../config.cjs");
+const log = require("../logger.cjs").createLogger("app");
 // const checkDiskSpace = require("check-disk-space").default;
 
 function getUserPaths(personId) {
@@ -97,7 +98,7 @@ ipcMain.handle("get-disk-usage", async () => {
             free: Math.round(freeBytes / (1024 * 1024)),
           });
         } catch (e) {
-          console.error("Ошибка парсинга диска Windows:", e);
+          log.error("Ошибка парсинга диска Windows:", e);
           resolve({ total: 0, free: 0 });
         }
       });
@@ -119,7 +120,7 @@ ipcMain.handle("app:getBuildDate", () => {
     const stats = fs.statSync(exePath);
     return stats.mtime.toISOString().split("T")[0];
   } catch (error) {
-    console.error("Ошибка при получении даты сборки:", error);
+    log.error("Ошибка при получении даты сборки:", error);
     return "неизвестно";
   }
 });
@@ -150,7 +151,7 @@ ipcMain.handle("app:revealPath", async (_, targetPath) => {
 
     return false;
   } catch (error) {
-    console.warn("app:revealPath failed", error.message);
+    log.warn("app:revealPath failed", error.message);
     return false;
   }
 });
@@ -177,7 +178,7 @@ ipcMain.handle("app:get-folder-size", async () => {
     const size = getSize(folderPath);
     return (size / (1024 * 1024)).toFixed(2); // MB
   } catch (err) {
-    console.error("Ошибка при подсчёте размера папки:", err);
+    log.error("Ошибка при подсчёте размера папки:", err);
     return null;
   }
 });
@@ -337,7 +338,7 @@ ipcMain.handle("app:getPersonFolderSize", async (event, personId) => {
         const data = JSON.parse(content);
         photoCount = Array.isArray(data) ? data.length : 0;
       } catch (e) {
-        console.error(`Ошибка парсинга JSON для ID ${cleanId}:`, e);
+        log.error(`Ошибка парсинга JSON для ID ${cleanId}:`, e);
       }
     }
 
@@ -359,7 +360,7 @@ ipcMain.handle("app:getPersonFolderSize", async (event, personId) => {
       hasBio: hasBio, // Добавляем новый флаг
     };
   } catch (err) {
-    console.error(`Ошибка папки ID ${cleanId}:`, err);
+    log.error(`Ошибка папки ID ${cleanId}:`, err);
     return { size: "0.00", count: 0, hasBio: false };
   }
 });
@@ -381,7 +382,7 @@ ipcMain.handle("app:full-reset", async () => {
     }
     return true;
   } catch (error) {
-    console.error("Ошибка при полной очистке:", error);
+    log.error("Ошибка при полной очистке:", error);
     throw error;
   }
 });
@@ -411,7 +412,7 @@ ipcMain.handle("app:logHistory", async (event, entry) => {
 
     return { success: true };
   } catch (error) {
-    console.error("Не удалось записать лог в файл:", error);
+    log.error("Не удалось записать лог в файл:", error);
     // Не выкидываем ошибку (throw), чтобы не ломать основной UI из-за проблем с логами
     return { success: false, error: error.message };
   }
@@ -427,7 +428,7 @@ ipcMain.handle("save-tags", async (event, data) => {
     fs.writeFileSync(getTagsPath(), jsonString, "utf8");
     return { success: true };
   } catch (error) {
-    console.error("Failed to save tags:", error);
+    log.error("Failed to save tags:", error);
     throw error;
   }
 });
@@ -442,7 +443,7 @@ ipcMain.handle("load-tags", async () => {
     }
     return null; // Если файла нет, стор использует INITIAL_TAGS
   } catch (error) {
-    console.error("Failed to load tags:", error);
+    log.error("Failed to load tags:", error);
     return null;
   }
 });

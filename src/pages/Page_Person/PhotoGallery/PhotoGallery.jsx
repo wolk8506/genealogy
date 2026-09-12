@@ -540,6 +540,7 @@ export default function PhotoGallery({
           }}
           allPeople={allPeople}
           photoPaths={photoPaths}
+          setPhotoPaths={setPhotoPaths}
           mode="personal"
         />
 

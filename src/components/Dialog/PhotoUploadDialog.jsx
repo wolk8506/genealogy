@@ -19,6 +19,8 @@ import { useNotificationStore } from "../../store/useNotificationStore";
 import { alpha, useTheme } from "@mui/material/styles";
 import CloseIcon from "@mui/icons-material/Close";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
+import MapIcon from "@mui/icons-material/Map";
+import LocationPickerDialog from "./LocationPickerDialog";
 import EditIcon from "@mui/icons-material/Edit";
 import PersonIcon from "@mui/icons-material/Person";
 import CustomDatePickerDialog from "../../components/CustomDatePickerDialog";
@@ -86,6 +88,7 @@ export default function PhotoUploadDialog({
 
   const [lat, setLat] = useState(null);
   const [lng, setLng] = useState(null);
+  const [locationPickerOpen, setLocationPickerOpen] = useState(false);
 
   const faceMarkup = usePhotoFaceMarkup(addNotification);
   const {
@@ -664,6 +667,33 @@ export default function PhotoUploadDialog({
                     }}
                   />
 
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      startIcon={<MapIcon />}
+                      onClick={() => setLocationPickerOpen(true)}
+                      sx={{ borderRadius: "10px", textTransform: "none" }}
+                    >
+                      {lat != null && lng != null
+                        ? `${Number(lat).toFixed(4)}, ${Number(lng).toFixed(4)} — на карте`
+                        : "Место на карте"}
+                    </Button>
+                    {lat != null && lng != null && (
+                      <Button
+                        size="small"
+                        variant="text"
+                        onClick={() => {
+                          setLat(null);
+                          setLng(null);
+                        }}
+                        sx={{ textTransform: "none" }}
+                      >
+                        Убрать
+                      </Button>
+                    )}
+                  </Stack>
+
                   <Box
                     sx={{
                       p: 1.5,
@@ -868,6 +898,17 @@ export default function PhotoUploadDialog({
         onSave={(newDate) => {
           setDatePhoto(newDate);
           setDatePickerOpen(false);
+        }}
+      />
+      <LocationPickerDialog
+        open={locationPickerOpen}
+        onClose={() => setLocationPickerOpen(false)}
+        initial={
+          lat != null && lng != null ? { lat, lng } : null
+        }
+        onSelect={({ lat: la, lng: ln }) => {
+          setLat(la);
+          setLng(ln);
         }}
       />
     </Dialog>

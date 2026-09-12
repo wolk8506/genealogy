@@ -28,7 +28,7 @@ export default function ExternalToolbar({
       spacing={1.25}
       alignItems="center"
       ml="auto"
-      sx={{ WebkitAppRegion: "no-drag", width: "100%", justifyContent: "flex-end" }}
+      sx={{ WebkitAppRegion: "no-drag", justifyContent: "flex-end" }}
     >
       <ExpandingSearch
         value={search}

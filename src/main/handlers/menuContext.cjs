@@ -3,6 +3,7 @@ const path = require("path");
 const fs = require("fs");
 const sizeOfModule = require("image-size");
 const sizeOf = sizeOfModule.default || sizeOfModule;
+const log = require("../logger.cjs").createLogger("menuContext");
 const { getPeopleRoot } = require("../config.cjs");
 
 function buildPhotoMenu(photo, wc, options = {}) {
@@ -13,7 +14,7 @@ function buildPhotoMenu(photo, wc, options = {}) {
     includeDownload = true,
     personId = null,
   } = options;
-  console.log("options", options);
+  log.info("options", options);
   const tpl = [];
 
   const { dialog } = require("electron");
@@ -72,9 +73,9 @@ function buildPhotoMenu(photo, wc, options = {}) {
         if (savePath) {
           try {
             fs.copyFileSync(existingFilePath, savePath);
-            console.log("Успешно сохранено из:", existingFilePath);
+            log.info("Успешно сохранено из:", existingFilePath);
           } catch (err) {
-            console.error("Ошибка копирования:", err);
+            log.error("Ошибка копирования:", err);
           }
         }
       },
@@ -154,7 +155,7 @@ function buildPhotoMenu(photo, wc, options = {}) {
                 name: item.name,
               });
             } catch (err) {
-              console.error(
+              log.error(
                 `Ошибка метаданных для ${item.label}:`,
                 err.message,
               );

@@ -7,7 +7,8 @@ const os = require("os");
 const { pipeline } = require("stream/promises");
 const { upsertPerson, readPeople } = require("./dataStore.cjs"); // убедитесь, что эти функции экспортируются
 const { closeFaceDb, initializeFaceDb } = require("../db/faceDb.cjs");
-const { getBaseDir } = require("../config.cjs");
+const { getBaseDir, getVolumeFreeBytes, formatBytes } = require("../config.cjs");
+const log = require("../logger.cjs").createLogger("import");
 const APP_IDENTIFIER = "MY_GENEALOGY_APP";
 const PHOTO_FOLDERS = new Set(["original", "thumbs", "webp"]);
 const DB_FILES = ["genealogy.sqlite", "genealogy.sqlite-wal", "genealogy.sqlite-shm"];
@@ -284,7 +285,7 @@ ipcMain.handle("import:zip", async (event, zipPath, options = {}) => {
       report.externalImported = 0;
       report.externalFiles = 0;
       report.errors.push({ scope: "external", error: externalErr.message });
-      console.error("❌ Ошибка импорта справочника:", externalErr);
+      log.error("❌ Ошибка импорта справочника:", externalErr);
     }
 
     // --- 3. ПРОЦЕСС РАСПАКОВКИ ---
@@ -292,6 +293,23 @@ ipcMain.handle("import:zip", async (event, zipPath, options = {}) => {
     for (const n of names) {
       if (!entries[n].isDirectory) totalBytes += entries[n].size || 0;
     }
+
+    // --- 3.0. СВОБОДНОЕ МЕСТО: архив распаковывается во временную папку
+    // и затем копируется в корень данных (тома могут различаться,
+    // особенно со съёмным диском). totalBytes — верхняя оценка.
+    for (const [label, dir] of [
+      ["временной", uniqueTmpDir],
+      ["целевой", getBaseDir()],
+    ]) {
+      const freeBytes = getVolumeFreeBytes(dir);
+      if (freeBytes != null && freeBytes < totalBytes) {
+        throw new Error(
+          `Недостаточно места на диске (${label} папка ${dir}): ` +
+            `нужно ${formatBytes(totalBytes)}, свободно ${formatBytes(freeBytes)}`,
+        );
+      }
+    }
+
     let processedBytes = 0;
 
     // Считаем общее число файлов в папках people для корректного счетчика (например, 10500)
@@ -379,7 +397,7 @@ ipcMain.handle("import:zip", async (event, zipPath, options = {}) => {
           const filePercent = totalFilesWithDatabase
             ? Math.round((processedFilesCount / totalFilesWithDatabase) * 100)
             : 0;
-          console.log(filePercent);
+          log.info(filePercent);
           // ОТПРАВКА ДЕТАЛЬНОГО ПРОГРЕССА (как было нужно)
           sendProgress({
             current: idx,
@@ -496,7 +514,7 @@ async function restoreFaceDatabaseFromTemp(tmpDir) {
     initializeFaceDb();
     return { restored: true, files: restoredFiles };
   } catch (error) {
-    console.error("❌ restoreFaceDatabaseFromTemp:", error);
+    log.error("❌ restoreFaceDatabaseFromTemp:", error);
     throw error;
   }
 }
@@ -562,13 +580,13 @@ async function importExternalEntities(zip, entries, names) {
       "utf-8",
     );
 
-    console.log(
+    log.info(
       `✅ Справочник импортирован: ${externalEntities.length} записей, ${filesCopied} файлов`,
     );
 
     return { imported: externalEntities.length, files: filesCopied };
   } catch (err) {
-    console.error("❌ importExternalEntities:", err);
+    log.error("❌ importExternalEntities:", err);
     return { imported: 0, files: 0, error: err.message };
   }
 }

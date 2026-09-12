@@ -1,6 +1,13 @@
 // MainLayout.jsx
 import { Routes, Route, useNavigate } from "react-router-dom"; // BrowserRouter обычно оборачивает App
-import React, { useEffect, useState, useCallback, useRef } from "react";
+import React, {
+  useEffect,
+  useState,
+  useCallback,
+  useRef,
+  lazy,
+  Suspense,
+} from "react";
 import { useLocation, matchPath, Link as RouterLink } from "react-router-dom"; // Link переименован в RouterLink
 
 import { useSnackbar } from "notistack";
@@ -17,6 +24,7 @@ import {
   ToggleButton,
   ToggleButtonGroup,
   Button,
+  CircularProgress,
 } from "@mui/material";
 import { styled, useTheme } from "@mui/material/styles";
 import MuiAppBar from "@mui/material/AppBar";
@@ -25,6 +33,7 @@ import InfoIcon from "@mui/icons-material/Info";
 import PersonIcon from "@mui/icons-material/Person";
 import GroupIcon from "@mui/icons-material/Group";
 import CollectionsIcon from "@mui/icons-material/Collections";
+import MapIcon from "@mui/icons-material/Map";
 import ContactsIcon from "@mui/icons-material/Contacts";
 import GearIcon from "../components/svg/GearIcon";
 import PersonAddAlt1Icon from "@mui/icons-material/PersonAddAlt1";
@@ -33,16 +42,39 @@ import PetsIcon from "@mui/icons-material/Pets";
 import PersonOutlineIcon from "@mui/icons-material/PersonOutline";
 
 import AppDrawer, { DrawerHeader } from "./AppDrawer";
+import useAppHotkeys from "../hooks/useAppHotkeys";
 
-import PersonPage from "../pages/Page_Person/PersonPage";
 import PeopleListPage from "../pages/Page_Main/PeopleListPage";
-import GlobalPhotoGallery from "../pages/Page_GlobalPhotoGallery/GlobalPhotoGallery";
-import AboutPage from "../pages/Page_About/AboutPage";
-import ArchivedPeoplePage from "../pages/Page_Settings/ArchivedPeoplePage";
 import { UpdateBanner } from "../pages/Page_Settings/UpdateBanner";
-import DeletedPeoplePage from "../pages/Page_Main/DeletedPeoplePage";
-import ExternalPeoplePage from "../pages/Page_External/ExternalPeoplePage";
-import ExternalEntityPage from "../pages/Page_External/ExternalEntityPage";
+
+// Тяжёлые страницы — ленивая загрузка отдельными чанками.
+// Пути — статические строки в точном регистре (сборка на Linux чувствительна).
+const PersonPage = lazy(() => import("../pages/Page_Person/PersonPage"));
+const GlobalPhotoGallery = lazy(
+  () => import("../pages/Page_GlobalPhotoGallery/GlobalPhotoGallery"),
+);
+const AboutPage = lazy(() => import("../pages/Page_About/AboutPage"));
+const ArchivedPeoplePage = lazy(
+  () => import("../pages/Page_Settings/ArchivedPeoplePage"),
+);
+const DeletedPeoplePage = lazy(
+  () => import("../pages/Page_Main/DeletedPeoplePage"),
+);
+const ExternalPeoplePage = lazy(
+  () => import("../pages/Page_External/ExternalPeoplePage"),
+);
+const ExternalEntityPage = lazy(
+  () => import("../pages/Page_External/ExternalEntityPage"),
+);
+const MapPage = lazy(() => import("../pages/Page_Map/MapPage"));
+
+function RouteFallback() {
+  return (
+    <Box sx={{ display: "flex", justifyContent: "center", mt: 10 }}>
+      <CircularProgress />
+    </Box>
+  );
+}
 
 import LicenseModal from "./LicenseModal";
 import NavigationButtons from "./NavigationButtons";
@@ -71,6 +103,7 @@ const drawerItems = [
     icon: <CollectionsIcon />,
     path: "/globalPhotoGallery",
   },
+  { text: "Карта", icon: <MapIcon />, path: "/map" },
   { text: "Настройки", icon: <GearIcon />, path: "/settings" },
   { text: "О приложении", icon: <InfoIcon />, path: "/about" },
 ];
@@ -102,6 +135,7 @@ const AppBar = styled(MuiAppBar, {
 }));
 
 export default function MainLayout() {
+  useAppHotkeys(); // Cmd/Ctrl+K — поиск, Cmd/Ctrl+S — сохранить био
   const theme = useTheme();
   const isDark = theme.palette.mode === "dark";
   const [open, setOpen] = useState(false);
@@ -115,7 +149,6 @@ export default function MainLayout() {
   const [gallerySearch, setGallerySearch] = useState("");
   const [selectedPeople, setSelectedPeople] = useState([]);
   const [groupBy, setGroupBy] = useState("datePhoto");
-  const [sortBy, setSortBy] = useState("date");
   const [sortDir, setSortDir] = useState("desc");
   const [allPeople, setAllPeople] = useState([]); // Нужно загрузить список людей здесь для Autocomplete
   const [photos, setPhotos] = useState([]); // Добавляем этот стейт
@@ -567,9 +600,7 @@ export default function MainLayout() {
                 photos={photos}
                 groupBy={groupBy}
                 setGroupBy={setGroupBy}
-                sortBy={sortBy}
                 sortDir={sortDir}
-                setSortBy={setSortBy}
                 setSortDir={setSortDir}
                 search={gallerySearch} // Передаем стейт галереи
                 setSearch={setGallerySearch} // Передаем сеттер галереи
@@ -647,6 +678,7 @@ export default function MainLayout() {
         >
           <DrawerHeader />
           <UpdateBanner onOpenSettings={() => navigate("/settings")} />
+          <Suspense fallback={<RouteFallback />}>
           <Routes>
             <Route
               path="/"
@@ -671,7 +703,6 @@ export default function MainLayout() {
                   search={gallerySearch} // Используем стейт галереи
                   selectedPeople={selectedPeople}
                   groupBy={groupBy}
-                  sortBy={sortBy}
                   sortDir={sortDir}
                   initialPhotos={photos} // Данные
                   initialPeople={allPeople} // Данные
@@ -733,7 +764,9 @@ export default function MainLayout() {
               }
             />
             <Route path="/external/:id" element={<ExternalEntityPage />} />
+            <Route path="/map" element={<MapPage />} />
           </Routes>
+          </Suspense>
         </Box>
       </Box>
       <LicenseModal

@@ -47,7 +47,6 @@ export default function GlobalPhotoGallery({
   search,
   selectedPeople,
   groupBy,
-  sortBy = "date",
   sortDir = "desc",
   photos,
   allPeople,
@@ -57,7 +56,6 @@ export default function GlobalPhotoGallery({
   const theme = useTheme();
   const isDark = theme.palette.mode === "dark";
   const virtuosoRef = useRef(null);
-  const scrollTimeout = useRef(null);
 
   const [photoPaths, setPhotoPaths] = useState({ thumbs: {}, full: {} });
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
@@ -75,7 +73,6 @@ export default function GlobalPhotoGallery({
   const [metaInfo, setMetaInfo] = useState(null);
 
   const [activeHeader, setActiveHeader] = useState("");
-  const [isScrolling, setIsScrolling] = useState(false);
 
   const [scrollTop, setScrollTop] = useState(0);
   const [allExternal, setAllExternal] = useState([]);
@@ -146,6 +143,24 @@ export default function GlobalPhotoGallery({
 
     const cols = windowWidth < 1200 ? 3 : windowWidth < 1600 ? 4 : 5;
 
+    // Сравнение фото по ключу текущей группировки.
+    // Порядок групп задаётся sortedKeys, порядок внутри групп — тем же sortDir.
+    const comparePhotos = (a, b) => {
+      const datePhotoOf = (p) => normalizePhotoDate(p.datePhoto) || 0;
+      const dateOf = (p) => Date.parse(p.date) || 0;
+      let r = 0;
+      if (groupBy === "owner" || groupBy === "datePhoto") {
+        r =
+          datePhotoOf(a) - datePhotoOf(b) ||
+          dateOf(a) - dateOf(b);
+      } else {
+        // date + none: по дате загрузки
+        r = dateOf(a) - dateOf(b);
+      }
+      if (r === 0) r = (a.id || 0) - (b.id || 0);
+      return sortDir === "asc" ? r : -r;
+    };
+
     let filtered = photos.filter((p) => {
       // 1. Подготовка поисковых запросов (разбиваем строку на слова)
       // Убираем лишние пробелы и переводим в нижний регистр
@@ -183,24 +198,6 @@ export default function GlobalPhotoGallery({
       return matchSearch && matchPeople;
     });
 
-    filtered.sort((a, b) => {
-      let vA, vB;
-      if (sortBy === "name") {
-        vA = getOwnerName(a.owner).toLowerCase();
-        vB = getOwnerName(b.owner).toLowerCase();
-        return sortDir === "asc" ? vA.localeCompare(vB) : vB.localeCompare(vA);
-      }
-      vA =
-        sortBy === "datePhoto"
-          ? normalizePhotoDate(a.datePhoto) || 0
-          : Date.parse(a.date) || 0;
-      vB =
-        sortBy === "datePhoto"
-          ? normalizePhotoDate(b.datePhoto) || 0
-          : Date.parse(b.date) || 0;
-      return sortDir === "asc" ? vA - vB : vB - vA;
-    });
-
     const groupsMap = new Map();
     filtered.forEach((p) => {
       let key;
@@ -228,7 +225,8 @@ export default function GlobalPhotoGallery({
     let rowAcc = 0;
 
     sortedKeys.forEach((key) => {
-      const items = groupsMap.get(key);
+      const items = [...groupsMap.get(key)];
+      items.sort(comparePhotos);
       labels.push(String(key));
       offsets.push(rowAcc);
       fList.push(...items);
@@ -256,7 +254,6 @@ export default function GlobalPhotoGallery({
     search,
     selectedPeople,
     groupBy,
-    sortBy,
     sortDir,
     getOwnerName,
     windowWidth,
@@ -264,7 +261,6 @@ export default function GlobalPhotoGallery({
 
   const handleRangeChanged = useCallback(
     (range) => {
-      setIsScrolling(true);
       let curIdx = 0,
         acc = 0;
       for (let i = 0; i < groupCounts.length; i++) {
@@ -275,8 +271,6 @@ export default function GlobalPhotoGallery({
         }
       }
       if (headers[curIdx]) setActiveHeader(headers[curIdx]);
-      if (scrollTimeout.current) clearTimeout(scrollTimeout.current);
-      scrollTimeout.current = setTimeout(() => setIsScrolling(false), 2000);
     },
     [groupCounts, headers],
   );
@@ -558,7 +552,6 @@ export default function GlobalPhotoGallery({
         groupOffsets={groupOffsets}
         activeHeader={activeHeader}
         virtuosoRef={virtuosoRef}
-        forceVisible={isScrolling}
       />
 
       {/* ОСТАЛЬНЫЕ КОМПОНЕНТЫ */}
@@ -594,6 +587,7 @@ export default function GlobalPhotoGallery({
           await refresh();
         }}
         allPeople={allPeople}
+        setPhotoPaths={setPhotoPaths}
       />
 
       <PhotoUploadDialog

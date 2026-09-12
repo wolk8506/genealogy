@@ -2,6 +2,7 @@ const { ipcMain, BrowserWindow } = require("electron");
 const fs = require("fs");
 const path = require("path");
 const archiver = require("archiver");
+const log = require("../logger.cjs").createLogger("archive");
 
 // function listFilesRecursive(paths) {
 //   const files = [];
@@ -232,7 +233,7 @@ ipcMain.handle("archive:create", async (_, filePaths, archivePath) => {
       });
       resolve();
     });
-    archive.on("warning", (err) => console.warn("archiver warning", err));
+    archive.on("warning", (err) => log.warn("archiver warning", err));
     archive.on("error", (err) => reject(err));
   });
 

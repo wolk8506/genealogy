@@ -3,6 +3,7 @@ const { ipcMain, app, dialog } = require("electron");
 const path = require("path");
 const fs = require("fs");
 const { peopleDir } = require("../config.cjs");
+const log = require("../logger.cjs").createLogger("bio");
 
 const getBioDir = (id) => peopleDir(id);
 
@@ -40,7 +41,7 @@ ipcMain.handle("bio:save", async (event, id, content) => {
         try {
           fs.unlinkSync(path.join(imagesDir, f));
         } catch (e) {
-          console.error("Ошибка при удалении файла:", e);
+          log.error("Ошибка при удалении файла:", e);
         }
       }
     }
@@ -109,7 +110,7 @@ ipcMain.handle("bio:deleteImages", async (event, id, filenames) => {
       try {
         fs.unlinkSync(filePath);
       } catch (e) {
-        console.error(`Ошибка при удалении временного файла ${filename}:`, e);
+        log.error(`Ошибка при удалении временного файла ${filename}:`, e);
       }
     }
   }

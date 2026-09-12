@@ -3,23 +3,31 @@ import {
   Box,
   Stack,
   Typography,
-  Button,
   Card,
   Chip,
   IconButton,
   Divider,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
 } from "@mui/material";
+import AppButton from "../../components/AppButton";
 import { useSnackbar } from "notistack";
 import FolderOpenIcon from "@mui/icons-material/FolderOpen";
 import StorageIcon from "@mui/icons-material/Storage";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
+import ConfirmDialog from "../../components/Dialog/ConfirmDialog";
 
 export const StorageCard = ({ cardStyle }) => {
   const { enqueueSnackbar } = useSnackbar();
   const [info, setInfo] = useState(null);
   const [busy, setBusy] = useState(false);
+  const [confirm, setConfirm] = useState(null); // { kind: 'switch'|'remove', ... }
+  const [libraryCandidate, setLibraryCandidate] = useState(null); // { dir }
 
   const apiAvailable = typeof window !== "undefined" && !!window.storageAPI;
 
@@ -49,12 +57,23 @@ export const StorageCard = ({ cardStyle }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleAdd = async () => {
-    try {
-      const dir = await window.storageAPI.choose();
-      if (!dir) return;
-      const res = await window.storageAPI.add(dir);
+  const applyRoots = (res) => {
+    if (res?.roots) {
       setInfo((prev) => (prev ? { ...prev, roots: res.roots } : prev));
+    }
+  };
+
+  const handleAdd = async (force = false) => {
+    try {
+      const dir = force ? libraryCandidate?.dir : await window.storageAPI.choose();
+      if (!dir) return;
+      const res = await window.storageAPI.add(dir, force ? { force: true } : undefined);
+      if (res?.needsConfirm) {
+        setLibraryCandidate({ dir: res.dirPath || dir });
+        return;
+      }
+      setLibraryCandidate(null);
+      applyRoots(res);
       enqueueSnackbar("Папка добавлена в список", { variant: "success" });
     } catch (err) {
       enqueueSnackbar("Не удалось добавить папку: " + err.message, {
@@ -63,14 +82,7 @@ export const StorageCard = ({ cardStyle }) => {
     }
   };
 
-  const handleSwitch = async (dirPath) => {
-    if (
-      !window.confirm(
-        `Переключиться на папку:\n${dirPath}\n\nПриложение перезапустится. Продолжить?`,
-      )
-    ) {
-      return;
-    }
+  const doSwitch = async (dirPath) => {
     setBusy(true);
     try {
       const res = await window.storageAPI.switch(dirPath);
@@ -87,31 +99,20 @@ export const StorageCard = ({ cardStyle }) => {
       });
     } finally {
       setBusy(false);
+      setConfirm(null);
     }
   };
 
-  const handleRemove = async (root) => {
-    const isActive = info && root.path === info.activeRoot;
-    if (
-      !window.confirm(
-        isActive
-          ? `Удалить из списка активную папку:\n${root.path}\n\nПриложение вернётся на стандартную папку и перезапустится. Файлы на диске удалены НЕ будут. Продолжить?`
-          : `Удалить из списка:\n${root.path}\n\nФайлы на диске удалены НЕ будут. Продолжить?`,
-      )
-    ) {
-      return;
-    }
+  const doRemove = async (rootPath) => {
     setBusy(true);
     try {
-      const res = await window.storageAPI.remove(root.path);
+      const res = await window.storageAPI.remove(rootPath);
       if (res?.restart) {
         enqueueSnackbar("Возврат на стандартную папку. Перезапуск…", {
           variant: "success",
         });
       } else {
-        setInfo((prev) =>
-          prev ? { ...prev, roots: res.roots } : prev,
-        );
+        applyRoots(res);
         enqueueSnackbar("Удалено из списка", { variant: "success" });
       }
     } catch (err) {
@@ -120,10 +121,14 @@ export const StorageCard = ({ cardStyle }) => {
       });
     } finally {
       setBusy(false);
+      setConfirm(null);
     }
   };
 
   const roots = info?.roots ?? [];
+  const confirmIsRemove = confirm?.kind === "remove";
+  const confirmIsActive =
+    confirmIsRemove && info && confirm.root.path === info.activeRoot;
 
   return (
     <Card variant="outlined" sx={{ ...cardStyle }}>
@@ -203,22 +208,27 @@ export const StorageCard = ({ cardStyle }) => {
                     </Box>
                   </Box>
                   {!isActive && (
-                    <Button
-                      size="small"
-                      variant="outlined"
-                      onClick={() => handleSwitch(root.path)}
+                    <AppButton
+                      preset="secondary"
+                      onClick={(e) => {
+                        e.currentTarget.blur();
+                        setConfirm({ kind: "switch", dirPath: root.path });
+                      }}
                       disabled={!apiAvailable || busy}
-                      sx={{ textTransform: "none", flexShrink: 0 }}
+                      sx={{ flexShrink: 0 }}
                     >
                       Перейти
-                    </Button>
+                    </AppButton>
                   )}
                   {!root.isDefault && (
                     <IconButton
                       size="small"
                       color="error"
                       title="Удалить из списка (файлы останутся)"
-                      onClick={() => handleRemove(root)}
+                      onClick={(e) => {
+                        e.currentTarget.blur();
+                        setConfirm({ kind: "remove", root });
+                      }}
                       disabled={!apiAvailable || busy}
                       sx={{ flexShrink: 0 }}
                     >
@@ -237,30 +247,93 @@ export const StorageCard = ({ cardStyle }) => {
           </Typography>
 
           <Stack direction="row" spacing={1}>
-            <Button
+            <AppButton
+              preset="secondary"
               fullWidth
-              size="small"
-              variant="outlined"
               startIcon={<FolderOpenIcon />}
-              onClick={handleAdd}
+              onClick={(e) => {
+                e.currentTarget.blur();
+                handleAdd(false);
+              }}
               disabled={!apiAvailable || busy}
-              sx={{ textTransform: "none", fontWeight: 600 }}
             >
               Добавить папку…
-            </Button>
-            <Button
+            </AppButton>
+            <AppButton
+              preset="ghost"
               fullWidth
-              size="small"
-              variant="text"
               onClick={() => window.appAPI?.openDataFolder()}
               disabled={!apiAvailable}
-              sx={{ textTransform: "none" }}
             >
               Открыть активную
-            </Button>
+            </AppButton>
           </Stack>
         </Stack>
       </Box>
+
+      {/* Подтверждение перехода / удаления */}
+      <ConfirmDialog
+        open={confirm != null}
+        title={confirmIsRemove ? "Удалить из списка" : "Переключение папки"}
+        message={
+          confirmIsRemove
+            ? confirmIsActive
+              ? `Удалить из списка активную папку:\n${confirm.root.path}\n\nПриложение вернётся на стандартную папку и перезапустится. Файлы на диске удалены НЕ будут.`
+              : `Удалить из списка:\n${confirm.root.path}\n\nФайлы на диске удалены НЕ будут.`
+            : `Переключиться на папку:\n${confirm?.dirPath}\n\nПриложение перезапустится.`
+        }
+        confirmLabel={confirmIsRemove ? "Удалить" : "Переключиться"}
+        confirmColor={confirmIsRemove ? "error" : "primary"}
+        busy={busy}
+        onClose={(ok) => {
+          if (!ok) {
+            setConfirm(null);
+            return;
+          }
+          if (confirmIsRemove) doRemove(confirm.root.path);
+          else doSwitch(confirm.dirPath);
+        }}
+      />
+
+      {/* Папка не похожа на библиотеку */}
+      <Dialog
+        open={libraryCandidate != null}
+        onClose={() => setLibraryCandidate(null)}
+        PaperProps={{ sx: { borderRadius: 3 } }}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle sx={{ fontWeight: 700 }}>
+          Папка не похожа на библиотеку
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText sx={{ mb: 1.5 }}>
+            В папке есть файлы, но нет признаков библиотеки Genealogy
+            (`genealogy-data.json`, папки `people`):
+          </DialogContentText>
+          <Typography
+            variant="caption"
+            sx={{
+              wordBreak: "break-all",
+              fontFamily: "monospace",
+              display: "block",
+            }}
+          >
+            {libraryCandidate?.dir}
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ p: 2, flexDirection: "column", gap: 1, alignItems: "stretch" }}>
+          <AppButton preset="primary" onClick={() => handleAdd(true)}>
+            Создать новую здесь
+          </AppButton>
+          <AppButton preset="secondary" onClick={() => handleAdd(true)}>
+            Всё равно использовать
+          </AppButton>
+          <AppButton preset="ghost" onClick={() => setLibraryCandidate(null)}>
+            Отмена
+          </AppButton>
+        </DialogActions>
+      </Dialog>
     </Card>
   );
 };
