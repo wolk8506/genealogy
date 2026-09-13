@@ -36,6 +36,7 @@ import {
   findExternalById,
   findPersonById,
 } from "../../utils/externalEntities";
+import { btnStyleBlue, btnStyleRed } from "../../components/ButtonStyle";
 
 export default function ExternalEntityPage() {
   const { id } = useParams();
@@ -183,7 +184,12 @@ export default function ExternalEntityPage() {
           </Box>
 
           <Box sx={{ flex: 1 }}>
-            <Stack direction="row" alignItems="center" spacing={1} flexWrap="wrap">
+            <Stack
+              direction="row"
+              alignItems="center"
+              spacing={1}
+              flexWrap="wrap"
+            >
               {isPet ? (
                 <PetsIcon color="secondary" />
               ) : (
@@ -214,30 +220,29 @@ export default function ExternalEntityPage() {
             <Stack direction="row" spacing={1} mt={2}>
               <Button
                 size="small"
-                variant="outlined"
+                // color=""
+                // variant="contained"
                 startIcon={<EditIcon />}
                 onClick={() => setEditOpen(true)}
                 sx={{
-                      height: 24,
-                      borderRadius: "6px",
-                      px: 2.5,
-                      fontWeight: "bold",
-                    }}
+                  ...btnStyleBlue,
+                  // height: 24,
+                  // borderRadius: "6px",
+                  // px: 2.5,
+                  // fontWeight: "bold",
+                }}
               >
                 Редактировать
               </Button>
               <Button
                 size="small"
                 color="error"
-                variant="outlined"
+                // variant="outlined"
                 startIcon={<DeleteOutlineIcon />}
                 onClick={handleDelete}
                 sx={{
-                      height: 24,
-                      borderRadius: "6px",
-                      px: 2.5,
-                      fontWeight: "bold",
-                    }}
+                  ...btnStyleRed,
+                }}
               >
                 Удалить
               </Button>
@@ -245,7 +250,11 @@ export default function ExternalEntityPage() {
           </Box>
         </Stack>
 
-        {(entity.notes || entity.phone || entity.email || entity.address || entity.birthday) && (
+        {(entity.notes ||
+          entity.phone ||
+          entity.email ||
+          entity.address ||
+          entity.birthday) && (
           <>
             <Divider sx={{ my: 3 }} />
             <Typography variant="subtitle2" fontWeight={700} gutterBottom>
@@ -361,12 +370,20 @@ export default function ExternalEntityPage() {
                         </Typography>
                       )}
                       {rel.dates && (
-                        <Typography variant="caption" color="text.secondary" display="block">
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          display="block"
+                        >
                           Период: {rel.dates}
                         </Typography>
                       )}
                       {rel.notes && (
-                        <Typography variant="caption" color="text.secondary" display="block">
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          display="block"
+                        >
                           {rel.notes}
                         </Typography>
                       )}

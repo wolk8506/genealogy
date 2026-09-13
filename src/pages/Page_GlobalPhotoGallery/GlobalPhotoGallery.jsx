@@ -31,17 +31,9 @@ import PhotoMetaDialog from "../../components/Dialog/PhotoMetaDialog";
 import { ButtonScrollTop } from "../../components/ButtonScrollTop";
 import PhotoUploadDialog from "../../components/Dialog/PhotoUploadDialog";
 import { buildPhotoAttendeesText } from "../../utils/photoFaces";
+import { normalizePhotoDate } from "../../utils/photoDates";
 import { useModalStore } from "../../store/useModalStore";
 import { useLocation } from "react-router-dom";
-
-const normalizePhotoDate = (dp) => {
-  if (!dp) return null;
-  let s = String(dp).trim();
-  if (/^\d{4}$/.test(s)) s += "-01-01";
-  else if (/^\d{4}-\d{2}$/.test(s)) s += "-01";
-  const t = Date.parse(s);
-  return isNaN(t) ? null : t;
-};
 
 export default function GlobalPhotoGallery({
   search,

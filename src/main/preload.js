@@ -162,6 +162,7 @@ contextBridge.exposeInMainWorld("photosAPI", {
 // 🧬 Биография ✅
 contextBridge.exposeInMainWorld("bioAPI", {
   load: (id) => ipcRenderer.invoke("bio:load", id),
+  filledCount: (ids) => ipcRenderer.invoke("bio:filledCount", ids),
   save: (id, content) => ipcRenderer.invoke("bio:save", id, content),
   addImage: (id) => ipcRenderer.invoke("bio:addImage", id),
   getImagePath: (id, filename) =>

@@ -17,6 +17,20 @@ ipcMain.handle("bio:load", async (event, id) => {
   return fs.readFileSync(file, "utf-8");
 });
 
+// Сколько биографий заполнено (файл существует и не пуст, как hasBio).
+ipcMain.handle("bio:filledCount", async (event, ids) => {
+  let count = 0;
+  for (const id of ids || []) {
+    try {
+      const file = path.join(getBioDir(id), "bio.md");
+      if (fs.existsSync(file) && fs.statSync(file).size > 10) count += 1;
+    } catch {
+      // игнорируем недоступные
+    }
+  }
+  return count;
+});
+
 ipcMain.handle("bio:save", async (event, id, content) => {
   const dir = getBioDir(id);
   const imagesDir = getBioImagesDir(id);

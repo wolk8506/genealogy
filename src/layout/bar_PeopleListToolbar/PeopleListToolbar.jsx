@@ -13,9 +13,7 @@ import PersonAddAlt1Icon from "@mui/icons-material/PersonAddAlt1";
 import ExpandingSearch from "../../components/ExpandingSearch";
 import ExpandingTimeSelect from "./ExpandingTimeSelect";
 import ExpandingGenSelect from "./ExpandingGenSelect";
-import ExpandingRelationCheck from "./ExpandingRelationCheck";
 import ExpandingSortButton from "./ExpandingSortButton";
-import { StatisticPopover } from "./StatisticPopover";
 import DeleteIcon from "@mui/icons-material/Delete";
 import { usePeopleListStore } from "../../store/usePeopleListStore";
 
@@ -33,7 +31,6 @@ export default function PeopleListToolbar({
   onOpenFilter,
   sortOrder,
   onToggleSort,
-  onOpenStats,
   filters,
   updateFilter,
   allGenerations,
@@ -85,8 +82,6 @@ export default function PeopleListToolbar({
           </IconButton>
         </Tooltip>
       </ButtonConteiner>
-      {/* 1. СТАТИСТИКА (Компактно) */}
-      <StatisticPopover people={people} />
 
       <ExpandingTagsFilter
         selectedTags={filters.tags}
@@ -128,12 +123,6 @@ export default function PeopleListToolbar({
         options={allGenerations}
         value={filters.gens}
         onChange={(_, newValue) => updateFilter("gens", newValue)}
-      />
-
-      {/* Чекбокс связей */}
-      <ExpandingRelationCheck
-        checked={filters.showRelations}
-        onChange={(val) => updateFilter("showRelations", val)}
       />
 
       {/* ФИЛЬТРЫ */}
