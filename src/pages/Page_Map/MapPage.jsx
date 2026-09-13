@@ -4,14 +4,9 @@ import {
   Stack,
   Typography,
   CircularProgress,
-  Chip,
   LinearProgress,
-  IconButton,
 } from "@mui/material";
 import { alpha } from "@mui/material/styles";
-import MapIcon from "@mui/icons-material/Map";
-import RefreshIcon from "@mui/icons-material/Refresh";
-import PhotoLibraryIcon from "@mui/icons-material/PhotoLibrary";
 import EventIcon from "@mui/icons-material/Event";
 import "leaflet/dist/leaflet.css";
 import {
@@ -155,7 +150,7 @@ let cachedPoints = null;
 let savedView = null; // { center: [lat, lng], zoom }
 let mapFitted = false;
 
-export default function MapPage() {
+export default function MapPage({ showPhotos = true, showEvents = true, refreshKey = 0 }) {
   const [points, setPoints] = useState(() => cachedPoints || []);
   const [loading, setLoading] = useState(() => cachedPoints == null);
   const [progress, setProgress] = useState(null); // { done, total }
@@ -313,6 +308,11 @@ export default function MapPage() {
     loadData(false);
   }, [loadData]);
 
+  useEffect(() => {
+    if (refreshKey > 0) loadData(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [refreshKey]);
+
   const counts = useMemo(() => {
     let photos = 0;
     let events = 0;
@@ -322,9 +322,6 @@ export default function MapPage() {
     }
     return { photos, events };
   }, [points]);
-
-  const [showPhotos, setShowPhotos] = useState(true);
-  const [showEvents, setShowEvents] = useState(true);
 
   const visiblePoints = useMemo(
     () =>
@@ -357,40 +354,14 @@ export default function MapPage() {
       }}
     >
       <Box sx={{ px: 2, pt: 1.5, pb: 1 }}>
-        <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
-          <MapIcon color="primary" />
-          <Typography variant="h6" sx={{ fontWeight: 700, mr: 1 }}>
-            Карта мест
-          </Typography>
-          <Chip
-            icon={<PhotoLibraryIcon />}
-            label={`Фото: ${counts.photos}`}
-            size="small"
-            variant={showPhotos ? "filled" : "outlined"}
-            color={showPhotos ? "primary" : "default"}
-            onClick={() => setShowPhotos((v) => !v)}
-            sx={{ cursor: "pointer" }}
-          />
-          <Chip
-            icon={<EventIcon />}
-            label={`События: ${counts.events}`}
-            size="small"
-            variant={showEvents ? "filled" : "outlined"}
-            color={showEvents ? "secondary" : "default"}
-            onClick={() => setShowEvents((v) => !v)}
-            sx={{ cursor: "pointer" }}
-          />
-          {loading && <CircularProgress size={18} />}
-          <Box sx={{ flexGrow: 1 }} />
-          <IconButton
-            size="small"
-            title="Обновить точки"
-            onClick={() => loadData(true)}
-            disabled={loading}
-          >
-            <RefreshIcon fontSize="small" />
-          </IconButton>
-        </Stack>
+        {loading && (
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
+            <CircularProgress size={16} />
+            <Typography variant="caption" color="text.secondary">
+              Загрузка точек…
+            </Typography>
+          </Box>
+        )}
         {progress && (
           <Box sx={{ mt: 1, maxWidth: 420 }}>
             <Typography variant="caption" color="text.secondary">

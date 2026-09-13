@@ -22,6 +22,7 @@ import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
 import { DatePicker, TimePicker } from "@mui/x-date-pickers";
 import dayjs from "dayjs";
 import "dayjs/locale/ru";
+import { btnStyleBlue, btnStyleGrey } from "./ButtonStyle";
 
 dayjs.locale("ru");
 
@@ -338,24 +339,25 @@ export default function CustomDatePickerDialog({
         <Button
           onClick={onClose}
           sx={{
-            height: 24,
-            borderRadius: "6px",
-            py: 1.2,
-            px: 3.6,
-            textTransform: "none",
-            fontWeight: 600,
-            fontSize: "0.95rem",
-            color: "text.primary",
-            bgcolor: (theme) =>
-              theme.palette.mode === "dark"
-                ? "rgba(255,255,255,0.05)"
-                : "rgba(0,0,0,0.05)",
-            "&:hover": {
-              bgcolor: (theme) =>
-                theme.palette.mode === "dark"
-                  ? "rgba(255,255,255,0.1)"
-                  : "rgba(0,0,0,0.1)",
-            },
+            ...btnStyleGrey
+            // height: 24,
+            // borderRadius: "6px",
+            // py: 1.2,
+            // px: 3.6,
+            // textTransform: "none",
+            // fontWeight: 600,
+            // fontSize: "0.95rem",
+            // color: "text.primary",
+            // bgcolor: (theme) =>
+            //   theme.palette.mode === "dark"
+            //     ? "rgba(255,255,255,0.05)"
+            //     : "rgba(0,0,0,0.05)",
+            // "&:hover": {
+            //   bgcolor: (theme) =>
+            //     theme.palette.mode === "dark"
+            //       ? "rgba(255,255,255,0.1)"
+            //       : "rgba(0,0,0,0.1)",
+            // },
           }}
         >
           Отменить
@@ -365,11 +367,13 @@ export default function CustomDatePickerDialog({
           onClick={handleSave}
           disableElevation
           sx={{
-            height: 24,
-            borderRadius: "6px",
-            px: 3,
-            fontWeight: 600,
-            boxShadow: `0 4px 14px 0 ${alpha(theme.palette.primary.main, 0.39)}`,
+            ...btnStyleBlue,
+            // bgcolor: "#007AFF",
+            // height: 24,
+            // borderRadius: "6px",
+            // px: 3,
+            // fontWeight: 600,
+            // boxShadow: `0 4px 14px 0 ${alpha(theme.palette.primary.main, 0.39)}`,
           }}
         >
           Сохранить

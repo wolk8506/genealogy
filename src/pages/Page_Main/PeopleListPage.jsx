@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useRef } from "react";
 import {
   Avatar,
   Typography,
@@ -61,7 +61,7 @@ function checkDateFilter(dateStr, filter) {
   }
 }
 
-export default function PeopleListPage({ search, filters, sortOrder }) {
+export default function PeopleListPage({ search, filters, sortOrder, onShowRelations }) {
   const setHasArchived = usePeopleListStore((state) => state.setHasArchived);
   const personTags = useTagsStore((state) => state.personTags);
   const [people, setPeople] = useState([]);
@@ -192,6 +192,25 @@ export default function PeopleListPage({ search, filters, sortOrder }) {
       link: `/trash`,
     });
   };
+
+  // Поиск сузился до одного человека — показать его в связях панели.
+  // Срабатывает только на переходе (не на монтировании).
+  // Хуки строго до ранних return (правила хуков).
+  const prevFilteredCount = useRef(null);
+  useEffect(() => {
+    if (prevFilteredCount.current === null) {
+      prevFilteredCount.current = filtered.length;
+      return;
+    }
+    if (
+      filtered.length === 1 &&
+      prevFilteredCount.current !== 1 &&
+      onShowRelations
+    ) {
+      onShowRelations(filtered[0].id);
+    }
+    prevFilteredCount.current = filtered.length;
+  }, [filtered, onShowRelations]);
 
   if (loading) {
     return (
@@ -325,118 +344,10 @@ export default function PeopleListPage({ search, filters, sortOrder }) {
     );
   }
 
-  /* Родственные связи: включены и единственный результат */
-  const singleMatch =
-    filters.showRelations && filtered.length === 1 ? filtered[0] : null;
-  const findById = (id) => active.find((p) => p.id === id);
-  const father = singleMatch?.father ? findById(singleMatch.father) : null;
-  const mother = singleMatch?.mother ? findById(singleMatch.mother) : null;
-  const spouses = (singleMatch?.spouse || []).map(findById).filter(Boolean);
-  const children = (singleMatch?.children || []).map(findById).filter(Boolean);
-  const siblings = (singleMatch?.siblings || []).map(findById).filter(Boolean);
-
-  const renderRelationItem = (p) => (
-    <PersonCard
-      key={p.id}
-      person={p}
-      stats={personStats[p.id]}
-      onDelete={handleArchive}
-      size="small" // В связях используем компактный размер
-    />
-  );
-
   return (
     <>
       <Stack spacing={3} sx={{ width: "100%" }}>
-        {singleMatch ? (
-          /* РЕЖИМ 1: РОДСТВЕННЫЕ СВЯЗИ */
-          <Paper
-            elevation={0}
-            sx={{
-              p: 3,
-              borderRadius: "24px",
-              bgcolor: isDark
-                ? "rgba(255, 255, 255, 0.02)"
-                : "rgba(0, 0, 0, 0.02)",
-              border: "1px solid",
-              borderColor: "divider",
-            }}
-          >
-            <Typography
-              variant="h6"
-              sx={{ mb: 3, fontWeight: 800, color: "primary.main" }}
-            >
-              Родственные связи
-            </Typography>
-
-            <Box sx={{ mb: 4 }}>
-              <Typography variant="overline" sx={{ opacity: 0.6, ml: 1 }}>
-                Центральная фигура
-              </Typography>
-              <Box sx={{ mt: 1 }}>
-                <PersonCard
-                  person={singleMatch}
-                  stats={personStats[singleMatch.id]}
-                  onDelete={handleArchive}
-                  size="full"
-                />
-              </Box>
-            </Box>
-
-            <Grid
-              container
-              spacing={3}
-              flexWrap={"nowrap"}
-              justifyContent={"space-between"}
-            >
-              {[
-                {
-                  title: "Родители",
-                  data: [father, mother].filter(Boolean),
-                  empty: "Не указаны",
-                },
-                { title: "Супруги", data: spouses, empty: "Нет данных" },
-                { title: "Дети", data: children, empty: "Нет данных" },
-                {
-                  title: "Братья / Сёстры",
-                  data: siblings,
-                  empty: "Нет данных",
-                  fullWidth: true,
-                },
-              ].map((section) => (
-                <Grid
-                  size={{
-                    xs: 12,
-                    sm: section.fullWidth ? 12 : 6,
-                    md: section.fullWidth ? 12 : 4,
-                  }}
-                  key={section.title}
-                >
-                  <Typography
-                    variant="subtitle2"
-                    sx={{ mb: 1.5, fontWeight: 700, opacity: 0.8 }}
-                  >
-                    {section.title}
-                  </Typography>
-                  <Stack spacing={1}>
-                    {section.data.length > 0 ? (
-                      section.data.map(renderRelationItem)
-                    ) : (
-                      <Typography
-                        variant="caption"
-                        sx={{ fontStyle: "italic", opacity: 0.5, ml: 1 }}
-                      >
-                        {section.empty}
-                      </Typography>
-                    )}
-                  </Stack>
-                </Grid>
-              ))}
-            </Grid>
-          </Paper>
-        ) : (
-          /* РЕЖИМ 2: ПОКОЛЕНИЯ */
-          gens.map((g) => (
+        {gens.map((g) => (
             <Paper
               key={g}
               elevation={0}
@@ -499,14 +410,14 @@ export default function PeopleListPage({ search, filters, sortOrder }) {
                       person={person}
                       stats={personStats[person.id]}
                       onDelete={handleArchive}
+                      onShowRelations={onShowRelations}
                       size="full" // В основном списке всегда полный размер
                     />
                   </Grid>
                 ))}
               </Grid>
             </Paper>
-          ))
-        )}
+          ))}
       </Stack>
 
       <ButtonScrollTop />

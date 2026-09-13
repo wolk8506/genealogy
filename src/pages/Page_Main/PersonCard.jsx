@@ -7,6 +7,7 @@ import {
   Stack,
   Button,
   ListItemButton,
+  IconButton,
   useTheme,
   Paper,
   Tooltip,
@@ -16,6 +17,7 @@ import {
 } from "@mui/material";
 
 import SellIcon from "@mui/icons-material/Sell";
+import AccountTreeIcon from "@mui/icons-material/AccountTree";
 import TrashFillIcon from "../../components/svg/TrashFillIcon";
 import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
 import RestoreFromTrashIcon from "@mui/icons-material/RestoreFromTrash";
@@ -44,6 +46,7 @@ export const PersonCard = ({
   onDelete,
   onRestore,
   onDeleteForever,
+  onShowRelations,
   isArchived = false,
   size = "full",
 }) => {
@@ -233,6 +236,21 @@ export const PersonCard = ({
           }}
         >
           {/* ... твой код кнопок без изменений ... */}
+          {onShowRelations && !isSmall && (
+            <Tooltip title="Связи" arrow placement="top">
+              <IconButton
+                size="small"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onShowRelations(person.id);
+                }}
+                sx={{ color: "primary.main", p: 1 }}
+              >
+                <AccountTreeIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          )}
           {/* 3. Отрисовка стопки меток */}
           {!isSmall && (
             <>

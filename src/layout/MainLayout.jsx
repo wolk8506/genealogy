@@ -34,6 +34,7 @@ import PersonIcon from "@mui/icons-material/Person";
 import GroupIcon from "@mui/icons-material/Group";
 import CollectionsIcon from "@mui/icons-material/Collections";
 import MapIcon from "@mui/icons-material/Map";
+import TimelineIcon from "@mui/icons-material/Timeline";
 import ContactsIcon from "@mui/icons-material/Contacts";
 import GearIcon from "../components/svg/GearIcon";
 import PersonAddAlt1Icon from "@mui/icons-material/PersonAddAlt1";
@@ -67,6 +68,9 @@ const ExternalEntityPage = lazy(
   () => import("../pages/Page_External/ExternalEntityPage"),
 );
 const MapPage = lazy(() => import("../pages/Page_Map/MapPage"));
+const TimelinePage = lazy(
+  () => import("../pages/Page_Timeline/TimelinePage"),
+);
 
 function RouteFallback() {
   return (
@@ -83,10 +87,15 @@ import UserGuideModal from "./UserGuideModal";
 import FaceReviewQueueDialog from "../components/Dialog/FaceReviewQueueDialog";
 import FaceNoFacesQueueDialog from "../components/Dialog/FaceNoFacesQueueDialog";
 import { NotificationBell } from "./NotificationBell";
+import InspectorPanel from "./InspectorPanel";
+import SidebarRightIcon from "../components/svg/SidebarRightIcon";
+import useMemories from "../hooks/useMemories";
 import { countPendingReviewFaces, countNoFacePhotos } from "../utils/photoFaces";
 import { useFaceReviewStore } from "../store/useFaceReviewStore";
 
 import GalleryToolbar from "./bar_GlobalPhotoGallery/GalleryToolbar";
+import TimelineToolbar from "./bar_Timeline/TimelineToolbar";
+import MapToolbar from "./bar_Map/MapToolbar";
 import PeopleListToolbar from "./bar_PeopleListToolbar/PeopleListToolbar";
 import PersonToolbar from "./bar_PeopleToolbar/PersonToolbar";
 import ExternalToolbar from "./bar_External/ExternalToolbar";
@@ -104,6 +113,7 @@ const drawerItems = [
     path: "/globalPhotoGallery",
   },
   { text: "Карта", icon: <MapIcon />, path: "/map" },
+  { text: "Лента", icon: <TimelineIcon />, path: "/timeline" },
   { text: "Настройки", icon: <GearIcon />, path: "/settings" },
   { text: "О приложении", icon: <InfoIcon />, path: "/about" },
 ];
@@ -150,9 +160,49 @@ export default function MainLayout() {
   const [selectedPeople, setSelectedPeople] = useState([]);
   const [groupBy, setGroupBy] = useState("datePhoto");
   const [sortDir, setSortDir] = useState("desc");
+
+  // Лента времени: уровень, фильтры и триггер обновления живут здесь,
+  // чтобы переключатели были в хедере, как на остальных страницах.
+  const [timelineLevel, setTimelineLevel] = useState("years");
+  const [timelineYear, setTimelineYear] = useState(null);
+  const [timelineMonth, setTimelineMonth] = useState(null);
+  const [timelineShowPhotos, setTimelineShowPhotos] = useState(true);
+  const [timelineShowEvents, setTimelineShowEvents] = useState(true);
+
+  // Карта: фильтры слоёв и триггер перезагрузки точек — в хедере.
+  const [mapShowPhotos, setMapShowPhotos] = useState(true);
+  const [mapShowEvents, setMapShowEvents] = useState(true);
+  const [mapRefreshKey, setMapRefreshKey] = useState(0);
+
   const [allPeople, setAllPeople] = useState([]); // Нужно загрузить список людей здесь для Autocomplete
   const [photos, setPhotos] = useState([]); // Добавляем этот стейт
   const [loading, setLoading] = useState(true);
+
+  // «В этот день»: подборка считается из тех же данных, бейдж — суммарно.
+  // Строго после объявления photos/allPeople (иначе TDZ).
+  const memoryGroups = useMemories(photos, allPeople);
+  const memoriesTotal = memoryGroups.reduce(
+    (acc, g) => acc + g.photos.length + g.events.length,
+    0,
+  );
+  const [memoriesOpen, setMemoriesOpen] = useState(false);
+  const memoriesAutoOpened = useRef(false);
+  // Таб инспектора и фокусный человек для связей.
+  const [inspectorTab, setInspectorTab] = useState("memories");
+  const [relationPersonId, setRelationPersonId] = useState(null);
+  const isMainPage = location.pathname === "/";
+  // Автооткрытие при старте, если в этот день есть воспоминания (только главная).
+  useEffect(() => {
+    if (
+      !memoriesAutoOpened.current &&
+      !loading &&
+      memoriesTotal > 0 &&
+      isMainPage
+    ) {
+      memoriesAutoOpened.current = true;
+      setMemoriesOpen(true);
+    }
+  }, [loading, memoriesTotal, isMainPage]);
   // !!!  ▲▲▲   GlobalPhotoGallery  ▲▲▲
   // !!!  ▼▼▼   PeopleList  ▼▼▼
   // Внутри MainLayout
@@ -160,21 +210,18 @@ export default function MainLayout() {
   const [externalSearch, setExternalSearch] = useState("");
   const [externalTypeFilter, setExternalTypeFilter] = useState("all");
   const [filterOpen, setFilterOpen] = useState(false);
-  const [statsOpen, setStatsOpen] = useState(false);
   const [filters, setFilters] = useState({
     created: "",
     edited: "",
     gens: [],
     tags: [],
-    showRelations: false,
   });
 
   // Вычисляем, активен ли фильтр (для подсветки кнопки в тулбаре)
   const isFilterActive = !!(
     filters.created ||
     filters.edited ||
-    filters.gens.length > 0 ||
-    filters.showRelations
+    filters.gens.length > 0
   );
 
   // Сортировка поколений
@@ -618,7 +665,6 @@ export default function MainLayout() {
                 onToggleSort={() =>
                   setSortOrder((o) => (o === "asc" ? "desc" : "asc"))
                 }
-                onOpenStats={() => setStatsOpen(true)}
                 filters={filters}
                 updateFilter={updateFilter}
                 allGenerations={Array.from(
@@ -636,12 +682,64 @@ export default function MainLayout() {
               />
             )}
 
+            {location.pathname === "/timeline" && (
+              <TimelineToolbar
+                level={timelineLevel}
+                onLevelChange={(v) => {
+                  setTimelineLevel(v);
+                }}
+                showPhotos={timelineShowPhotos}
+                showEvents={timelineShowEvents}
+                onTogglePhotos={() => setTimelineShowPhotos((v) => !v)}
+                onToggleEvents={() => setTimelineShowEvents((v) => !v)}
+                year={timelineYear}
+                month={timelineMonth}
+                onGoYears={() => {
+                  setTimelineYear(null);
+                  setTimelineMonth(null);
+                  setTimelineLevel("years");
+                }}
+                onGoMonths={() => {
+                  setTimelineMonth(null);
+                  setTimelineLevel("months");
+                }}
+              />
+            )}
+
+            {location.pathname === "/map" && (
+              <MapToolbar
+                showPhotos={mapShowPhotos}
+                showEvents={mapShowEvents}
+                onTogglePhotos={() => setMapShowPhotos((v) => !v)}
+                onToggleEvents={() => setMapShowEvents((v) => !v)}
+                onRefresh={() => setMapRefreshKey((k) => k + 1)}
+              />
+            )}
+
+            {/* Кнопка правой панели — только на главной */}
+            {isMainPage && (
+              <Box sx={{ ml: "12px", display: "inline-flex" }}>
+                <ButtonConteiner>
+                  <IconButton
+                    title="Правая панель"
+                    onClick={() => setMemoriesOpen((v) => !v)}
+                    size="small"
+                    sx={{ color: "white", p: 1 }}
+                  >
+                    <SidebarRightIcon fontSize="inherit" />
+                  </IconButton>
+                </ButtonConteiner>
+              </Box>
+            )}
+
             {/* Заголовок для остальных страниц */}
             {!isGalleryPage &&
               !match &&
               location.pathname !== "/" &&
               location.pathname !== "/archive" &&
-              location.pathname !== "/external" && (
+              location.pathname !== "/external" &&
+              location.pathname !== "/timeline" &&
+              location.pathname !== "/map" && (
                 <Box
                   sx={{
                     display: "flex",
@@ -668,6 +766,13 @@ export default function MainLayout() {
           component="main"
           sx={{
             flexGrow: 1,
+            // Flex-item по умолчанию не сужается меньше контента
+            // (min-width: auto) — без этого любая широкая строка
+            // фиксировала ширину всего приложения.
+            minWidth: 0,
+            // Панель «В этот день» открывается рядом, а не поверх (только главная).
+            marginRight: isMainPage && memoriesOpen ? "340px" : 0,
+            transition: "margin-right 0.3s ease",
             // pt: 1,
             pr: 1,
             pb: 1,
@@ -687,11 +792,14 @@ export default function MainLayout() {
                   search={peopleSearch} // Используем стейт людей
                   filters={filters}
                   sortOrder={sortOrder}
-                  statsOpen={statsOpen}
-                  setStatsOpen={setStatsOpen}
                   filterOpen={filterOpen}
                   setFilterOpen={setFilterOpen}
                   setFilters={setFilters}
+                  onShowRelations={(id) => {
+                    setRelationPersonId(id);
+                    setInspectorTab("relations");
+                    setMemoriesOpen(true);
+                  }}
                 />
               }
             />
@@ -764,7 +872,33 @@ export default function MainLayout() {
               }
             />
             <Route path="/external/:id" element={<ExternalEntityPage />} />
-            <Route path="/map" element={<MapPage />} />
+            <Route
+              path="/map"
+              element={
+                <MapPage
+                  showPhotos={mapShowPhotos}
+                  showEvents={mapShowEvents}
+                  refreshKey={mapRefreshKey}
+                />
+              }
+            />
+            <Route
+              path="/timeline"
+              element={
+                <TimelinePage
+                  photos={photos}
+                  allPeople={allPeople}
+                  level={timelineLevel}
+                  setLevel={setTimelineLevel}
+                  year={timelineYear}
+                  setYear={setTimelineYear}
+                  month={timelineMonth}
+                  setMonth={setTimelineMonth}
+                  showPhotos={timelineShowPhotos}
+                  showEvents={timelineShowEvents}
+                />
+              }
+            />
           </Routes>
           </Suspense>
         </Box>
@@ -773,6 +907,22 @@ export default function MainLayout() {
         open={isLicenseOpen}
         onClose={() => setLicenseOpen(false)}
       />
+      {/* Правая панель-инспектор — на корне (только главная): внутри AppBar (backdrop-filter)
+          fixed-позиционирование ломается */}
+      {isMainPage && (
+        <InspectorPanel
+          open={memoriesOpen}
+          onClose={() => setMemoriesOpen(false)}
+          groups={memoryGroups}
+          allPeople={allPeople}
+          photos={photos}
+          memoriesTotal={memoriesTotal}
+          tab={inspectorTab}
+          setTab={setInspectorTab}
+          relationPersonId={relationPersonId}
+          onFocusPerson={setRelationPersonId}
+        />
+      )}
       <ChangelogModal />
       <UserGuideModal />
       <FaceReviewQueueDialog allPeople={allPeople} />

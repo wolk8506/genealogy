@@ -28,6 +28,7 @@ import {
   getRelationTypeLabel,
   findPersonById,
 } from "../../utils/externalEntities";
+import { btnStyleRed } from "../../components/ButtonStyle";
 
 export function ExternalEntityCard({
   entity,
@@ -188,13 +189,14 @@ export function ExternalEntityCard({
               }}
               startIcon={<DeleteOutlineIcon sx={{ fontSize: 18 }} />}
               sx={{
-                borderRadius: "10px",
-                fontWeight: 700,
-                opacity: 0.5,
-                "&:hover": {
-                  opacity: 1,
-                  bgcolor: alpha(theme.palette.error.main, 0.1),
-                },
+                ...btnStyleRed
+                // borderRadius: "10px",
+                // fontWeight: 700,
+                // opacity: 0.5,
+                // "&:hover": {
+                //   opacity: 1,
+                //   bgcolor: alpha(theme.palette.error.main, 0.1),
+                // },
               }}
             >
               Удалить
