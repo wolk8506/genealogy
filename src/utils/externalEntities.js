@@ -46,6 +46,15 @@ export function getEntityTypeLabel(type) {
   return ENTITY_TYPES[type]?.label || type;
 }
 
+export function isExternalArchived(entity) {
+  return Boolean(entity?.archived);
+}
+
+/** Активные записи справочника (не в корзине). */
+export function filterActiveExternal(entities) {
+  return (entities || []).filter((e) => !isExternalArchived(e));
+}
+
 export function getRelationTypeLabel(type) {
   return RELATION_TYPES[type] || type;
 }
@@ -139,14 +148,16 @@ export function collectRelationsForSave(relations = [], pendingRelation = null) 
 
 /** Объединённый список для Autocomplete на фото: родственники + внешние */
 export function buildFaceTagOptions(allPeople = [], allExternal = []) {
-  const peopleOptions = allPeople.map((p) => ({
+  const peopleOptions = (allPeople || [])
+    .filter((p) => !p.archived)
+    .map((p) => ({
     kind: "person",
     id: p.id,
     label: `${p.id} :: ${[p.firstName, p.lastName || p.maidenName].filter(Boolean).join(" ") || "Без имени"}`,
     data: p,
   }));
 
-  const externalOptions = allExternal.map((e) => ({
+  const externalOptions = filterActiveExternal(allExternal).map((e) => ({
     kind: "external",
     id: e.id,
     label: `${e.id} :: ${getExternalEntityLabel(e)} (справочник)`,

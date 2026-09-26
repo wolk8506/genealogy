@@ -2,14 +2,19 @@ import { create } from "zustand";
 
 export const usePeopleListStore = create((set) => ({
   hasArchived: false,
+  hasArchivedExternal: false,
 
-  // Метод для обновления статуса корзины
   setHasArchived: (status) => set({ hasArchived: status }),
+  setHasArchivedExternal: (status) => set({ hasArchivedExternal: status }),
 
-  // Опционально: функция, которая сама лезет в БД и обновляет стор
   refreshArchiveStatus: async () => {
-    const all = await window.peopleAPI.getAll();
-    const isFull = all.some((p) => p.archived);
-    set({ hasArchived: isFull });
+    const [all, external] = await Promise.all([
+      window.peopleAPI.getAll(),
+      window.externalAPI.getAll(),
+    ]);
+    set({
+      hasArchived: all.some((p) => p.archived),
+      hasArchivedExternal: external.some((e) => e.archived),
+    });
   },
 }));

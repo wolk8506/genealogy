@@ -62,7 +62,9 @@ function checkDateFilter(dateStr, filter) {
 }
 
 export default function PeopleListPage({ search, filters, sortOrder, onShowRelations }) {
-  const setHasArchived = usePeopleListStore((state) => state.setHasArchived);
+  const refreshArchiveStatus = usePeopleListStore(
+    (state) => state.refreshArchiveStatus,
+  );
   const personTags = useTagsStore((state) => state.personTags);
   const [people, setPeople] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -106,15 +108,14 @@ export default function PeopleListPage({ search, filters, sortOrder, onShowRelat
       setLoading(false);
 
       if (allPeople.length > 0) {
-        // 1. Проверяем наличие удаленных (архивированных) записей
-        const existsArchived = allPeople.some((p) => p.archived);
-        setHasArchived(existsArchived);
+        // 1. Проверяем наличие записей в корзине
+        refreshArchiveStatus();
 
         // 2. Загружаем статистику
         loadAllStats(allPeople);
       }
     });
-  }, [setHasArchived]);
+  }, [refreshArchiveStatus]);
 
   const active = useMemo(() => people.filter((p) => !p.archived), [people]);
 
@@ -174,7 +175,7 @@ export default function PeopleListPage({ search, filters, sortOrder, onShowRelat
       archived: true,
       editedAt: new Date().toISOString(),
     });
-    setHasArchived(true);
+    refreshArchiveStatus();
     const data = await window.peopleAPI.getAll();
     setPeople(data);
     const p = people.filter((el) => el.id === id)[0];
@@ -333,7 +334,7 @@ export default function PeopleListPage({ search, filters, sortOrder, onShowRelat
                   },
                 }}
               >
-                Восстановить из архива
+                Восстановить из бэкапа
               </Button>
             </Stack>
           </Stack>

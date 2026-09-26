@@ -18,12 +18,13 @@ import {
 
 import SellIcon from "@mui/icons-material/Sell";
 import AccountTreeIcon from "@mui/icons-material/AccountTree";
+import TimelineIcon from "@mui/icons-material/Timeline";
 import TrashFillIcon from "../../components/svg/TrashFillIcon";
 import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
 import RestoreFromTrashIcon from "@mui/icons-material/RestoreFromTrash";
 import DescriptionIcon from "@mui/icons-material/Description";
 import PhotoLibraryIcon from "@mui/icons-material/PhotoLibrary";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useSettingsStore } from "../../store/useSettingsStore";
 // 1. Импортируем стор меток
 import { useTagsStore } from "../../store/useTagsStore";
@@ -51,6 +52,7 @@ export const PersonCard = ({
   size = "full",
 }) => {
   const theme = useTheme();
+  const navigate = useNavigate();
   const isDark = theme.palette.mode === "dark";
   const isSmall = size === "small";
 
@@ -248,6 +250,21 @@ export const PersonCard = ({
                 sx={{ color: "primary.main", p: 1 }}
               >
                 <AccountTreeIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          )}
+          {!isSmall && (
+            <Tooltip title="Лента этого человека" arrow placement="top">
+              <IconButton
+                size="small"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  navigate(`/timeline?person=${person.id}`);
+                }}
+                sx={{ color: "primary.main", p: 1 }}
+              >
+                <TimelineIcon fontSize="small" />
               </IconButton>
             </Tooltip>
           )}

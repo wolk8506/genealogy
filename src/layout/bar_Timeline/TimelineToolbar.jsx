@@ -2,6 +2,8 @@ import React from "react";
 import { Box, Stack, Typography, styled } from "@mui/material";
 import PhotoLibraryIcon from "@mui/icons-material/PhotoLibrary";
 import EventIcon from "@mui/icons-material/Event";
+import ContactsIcon from "@mui/icons-material/Contacts";
+import CloseIcon from "@mui/icons-material/Close";
 
 const Pill = styled(Box)(({ theme }) => ({
   WebkitAppRegion: "no-drag",
@@ -72,8 +74,12 @@ export default function TimelineToolbar({
   onLevelChange,
   showPhotos,
   showEvents,
+  showExternal,
   onTogglePhotos,
   onToggleEvents,
+  onToggleExternal,
+  filterPerson,
+  onClearPersonFilter,
   year,
   month,
   onGoYears,
@@ -106,6 +112,35 @@ export default function TimelineToolbar({
         )}
       </Pill>
 
+      {filterPerson && (
+        <Pill>
+          <Typography
+            variant="caption"
+            sx={{ px: 1.5, color: "white", fontWeight: 600, maxWidth: 180 }}
+            noWrap
+          >
+            {[filterPerson.firstName, filterPerson.lastName || filterPerson.maidenName]
+              .filter(Boolean)
+              .join(" ")}
+          </Typography>
+          <Box
+            onClick={onClearPersonFilter}
+            title="Показать всю ленту"
+            sx={{
+              px: 1,
+              height: "100%",
+              display: "flex",
+              alignItems: "center",
+              cursor: "pointer",
+              opacity: 0.7,
+              "&:hover": { opacity: 1, bgcolor: "rgba(255,255,255,0.12)" },
+            }}
+          >
+            <CloseIcon sx={{ fontSize: 16, color: "white" }} />
+          </Box>
+        </Pill>
+      )}
+
       <Box sx={{ flexGrow: 1 }} />
       <Pill>
         <SegButton active={level === "years"} onClick={() => onLevelChange("years")}>
@@ -133,6 +168,13 @@ export default function TimelineToolbar({
           title="Показать/скрыть события"
           icon={<EventIcon sx={{ fontSize: 17 }} />}
           label="События"
+        />
+        <FilterToggle
+          active={showExternal}
+          onClick={onToggleExternal}
+          title="Показать/скрыть справочник"
+          icon={<ContactsIcon sx={{ fontSize: 17 }} />}
+          label="Спр."
         />
       </Pill>
     </Stack>

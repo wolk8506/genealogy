@@ -7,6 +7,10 @@ const PDFDocument = require("pdfkit");
 const os = require("os");
 const log = require("../logger.cjs").createLogger("photo");
 const { getPeopleRoot, peopleDir } = require("../config.cjs");
+const {
+  readPhotosMeta,
+  updatePhotosMeta,
+} = require("./photosMetaStore.cjs");
 
 module.exports = (settingsStore) => {
   global.globalHashtags = new Set();
@@ -144,10 +148,6 @@ module.exports = (settingsStore) => {
         );
       }
 
-      let photos = fs.existsSync(paths.meta)
-        ? JSON.parse(fs.readFileSync(paths.meta, "utf-8"))
-        : [];
-
       const newPhoto = {
         ...meta,
         id: Date.now(),
@@ -155,8 +155,10 @@ module.exports = (settingsStore) => {
         date: meta.date || new Date().toISOString().split("T")[0],
       };
 
-      photos.push(newPhoto);
-      fs.writeFileSync(paths.meta, JSON.stringify(photos, null, 2));
+      await updatePhotosMeta(personId, (photos) => {
+        photos.push(newPhoto);
+        return photos;
+      });
 
       updateGlobalHashtagsFromPhoto(newPhoto);
 
@@ -285,11 +287,6 @@ module.exports = (settingsStore) => {
           locationName = await getFriendlyLocation(meta.lat, meta.lng);
         }
 
-        // 3. Читаем существующую базу
-        let photos = fs.existsSync(paths.meta)
-          ? JSON.parse(fs.readFileSync(paths.meta, "utf-8"))
-          : [];
-        // 4. Формируем объект с учетом нового поля locationName
         const newPhoto = {
           ...meta,
           id: Date.now(),
@@ -298,8 +295,10 @@ module.exports = (settingsStore) => {
           date: meta.date || new Date().toISOString().split("T")[0],
         };
 
-        photos.push(newPhoto);
-        fs.writeFileSync(paths.meta, JSON.stringify(photos, null, 2));
+        await updatePhotosMeta(meta.owner, (photos) => {
+          photos.push(newPhoto);
+          return photos;
+        });
 
         return newPhoto;
       } catch (err) {
@@ -410,13 +409,11 @@ module.exports = (settingsStore) => {
   );
 
   // ✅ 4. Удаление (всех копий)
-  ipcMain.handle("photo:delete", (event, personId, id) => {
+  ipcMain.handle("photo:delete", async (event, personId, id) => {
     const paths = getUserPaths(personId);
-    if (!fs.existsSync(paths.meta)) return;
-
-    const photos = JSON.parse(fs.readFileSync(paths.meta, "utf-8"));
+    const photos = await readPhotosMeta(personId);
     const photo = photos.find((p) => p.id === id);
-    if (!photo) return;
+    if (!photo) return false;
 
     const webpName =
       photo.webpName || photo.filename.replace(/\.[^.]+$/, ".webp");
@@ -430,13 +427,8 @@ module.exports = (settingsStore) => {
       if (fs.existsSync(fp)) fs.unlinkSync(fp);
     });
 
-    fs.writeFileSync(
-      paths.meta,
-      JSON.stringify(
-        photos.filter((p) => p.id !== id),
-        null,
-        2,
-      ),
+    await updatePhotosMeta(personId, (list) =>
+      list.filter((p) => p.id !== id),
     );
     return true;
   });
@@ -585,7 +577,7 @@ module.exports = (settingsStore) => {
 
   ipcMain.handle("photo:exportZip", async (event, photos) => {
     const { canceled, filePath } = await dialog.showSaveDialog({
-      title: "Сохранить архив",
+      title: "Сохранить бэкап",
       defaultPath: "photos.zip",
       filters: [{ name: "ZIP Archive", extensions: ["zip"] }],
     });

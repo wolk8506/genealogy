@@ -77,7 +77,7 @@ export const NotificationBell = () => {
   const buttonName = (data) => {
     if (typeof data !== "string") return "Детали ▸";
     if (data.includes("/person/")) return "К человеку ▸";
-    if (data.includes("/external/")) return "В справочник ▸";
+    if (data.includes("/external")) return "В справочник ▸";
     if (data.includes("/trash")) return "Корзина ▸";
     return "Детали ▸";
   };

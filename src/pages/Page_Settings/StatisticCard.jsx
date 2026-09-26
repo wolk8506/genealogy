@@ -33,6 +33,8 @@ import PhotoLibraryIcon from "@mui/icons-material/PhotoLibrary";
 import DescriptionIcon from "@mui/icons-material/Description";
 import StorageIcon from "@mui/icons-material/Storage";
 import FolderOpenIcon from "@mui/icons-material/FolderOpen";
+import SellIcon from "@mui/icons-material/Sell";
+import HistoryIcon from "@mui/icons-material/History";
 import { alpha } from "@mui/material/styles";
 import { ImportDecisionInline } from "./ImportDecisionInline";
 import CustomSwitch from "../../components/CustomSwitch";
@@ -74,17 +76,21 @@ export const StatisticCard = ({ cardStyle, loadAll }) => {
     webp: true,
   });
   const [backupMaintenance, setBackupMaintenance] = useState(false);
+  const [backupIncludeTags, setBackupIncludeTags] = useState(true);
+  const [backupIncludeHistory, setBackupIncludeHistory] = useState(true);
 
   // --- Состояние подготовки восстановления ---
   const [importSetupOpen, setImportSetupOpen] = useState(false);
   const [importZipPath, setImportZipPath] = useState("");
   const [importArchiveMeta, setImportArchiveMeta] = useState(null);
   const [importPhotoFolders, setImportPhotoFolders] = useState([]);
+  const [importIncludeTags, setImportIncludeTags] = useState(false);
+  const [importIncludeHistory, setImportIncludeHistory] = useState(false);
 
   // --- Состояния экспорта (Бэкапа) ---
   const [isSaving, setIsSaving] = useState(false);
   const [saveDone, setSaveDone] = useState(false);
-  const [exportStatus, setExportStatus] = useState("Подготовка архива...");
+  const [exportStatus, setExportStatus] = useState("Подготовка бэкапа...");
   const [exportError, setExportError] = useState(false);
   const [exportPath, setExportPath] = useState("");
   const [archiveProgress, setArchiveProgress] = useState({
@@ -256,7 +262,7 @@ export const StatisticCard = ({ cardStyle, loadAll }) => {
     try {
       await window.appAPI.revealPath?.(exportPath);
     } catch (error) {
-      console.warn("Не удалось открыть путь архива", error);
+      console.warn("Не удалось открыть путь бэкапа", error);
     }
   };
 
@@ -264,6 +270,8 @@ export const StatisticCard = ({ cardStyle, loadAll }) => {
     setBackupArchiveName(getDefaultArchiveName());
     setBackupPhotoFolders({ original: true, thumbs: false, webp: false });
     setBackupMaintenance(false);
+    setBackupIncludeTags(true);
+    setBackupIncludeHistory(true);
     setBackupSetupOpen(true);
   };
 
@@ -278,7 +286,7 @@ export const StatisticCard = ({ cardStyle, loadAll }) => {
       addNotification({
         timestamp: new Date().toISOString(),
         title: "Бэкап",
-        message: "Выберите original или webp для архивации фото",
+        message: "Выберите original или webp для бэкапа фото",
         type: "warning",
         category: "dataManagement",
       });
@@ -308,6 +316,8 @@ export const StatisticCard = ({ cardStyle, loadAll }) => {
         defaultFilename: `${backupArchiveName}.zip`,
         archiveName: backupArchiveName,
         selectedPhotoFolders,
+        includeTags: backupIncludeTags,
+        includeHistory: backupIncludeHistory,
         runMaintenanceBeforeExport: backupMaintenance,
         onProgress: (payload) => {
           setArchiveProgress((prev) => ({
@@ -338,14 +348,14 @@ export const StatisticCard = ({ cardStyle, loadAll }) => {
       setExportPath(archivePath);
       setSaveDone(true);
 
-      setExportStatus("✅ Полный архив сохранён");
+      setExportStatus("✅ Полный бэкап сохранён");
       addNotification({
         timestamp: new Date().toISOString(),
         title: "Бэкап",
         message:
           allExternal.length > 0
-            ? `✅ Архив сохранён (родственники + справочник: ${allExternal.length})`
-            : `✅ Полный архив сохранён`,
+            ? `✅ Бэкап сохранён (родственники + справочник: ${allExternal.length})`
+            : `✅ Полный бэкап сохранён`,
         type: "success",
         category: "dataManagement",
       });
@@ -368,6 +378,8 @@ export const StatisticCard = ({ cardStyle, loadAll }) => {
     setImportZipPath("");
     setImportArchiveMeta(null);
     setImportPhotoFolders([]);
+    setImportIncludeTags(false);
+    setImportIncludeHistory(false);
   };
 
   const handleImportAll = async () => {
@@ -382,7 +394,7 @@ export const StatisticCard = ({ cardStyle, loadAll }) => {
         addNotification({
           timestamp: new Date().toISOString(),
           title: "Импорт",
-          message: "Архив не распознан как архив этого приложения",
+          message: "Файл не распознан как ZIP-бэкап этого приложения",
           type: "error",
           category: "dataManagement",
         });
@@ -405,6 +417,8 @@ export const StatisticCard = ({ cardStyle, loadAll }) => {
       setImportZipPath(zipPath);
       setImportArchiveMeta(archiveInfo);
       setImportPhotoFolders(defaultFolders);
+      setImportIncludeTags(Boolean(archiveInfo.hasTagsFile));
+      setImportIncludeHistory(Boolean(archiveInfo.hasHistoryFile));
       setImportSetupOpen(true);
     } catch (err) {
       setImportError(true);
@@ -428,11 +442,13 @@ export const StatisticCard = ({ cardStyle, loadAll }) => {
     setImportSetupOpen(false);
     setIsImporting(true);
     setIsImportingOpen(true);
-    setImportStatus("📥 Восстановление архива...");
+    setImportStatus("📥 Восстановление из бэкапа...");
 
     try {
       const importResult = await window.importAPI.importZip(importZipPath, {
         photoFolders: selectedFolders,
+        includeTags: importIncludeTags,
+        includeHistory: importIncludeHistory,
       });
 
       if (importResult?.cancelled) {
@@ -461,7 +477,7 @@ export const StatisticCard = ({ cardStyle, loadAll }) => {
           ? `Импорт завершён с ошибкой справочника: ${externalError}`
           : externalCount > 0
             ? `Импорт выполнен. Справочник: ${externalCount} записей${externalFiles ? `, ${externalFiles} файлов` : ""}.`
-            : "Импорт из ZIP архива выполнен успешно",
+            : "Импорт из ZIP-бэкапа выполнен успешно",
         type: externalError ? "warning" : "success",
         category: "dataManagement",
       });
@@ -642,9 +658,9 @@ export const StatisticCard = ({ cardStyle, loadAll }) => {
           {showExportProcess
             ? "Экспорт данных"
             : showBackupSetup
-              ? "Параметры архива"
+              ? "Параметры бэкапа"
               : showImportSetup
-                ? "Восстановление архива"
+                ? "Восстановление из бэкапа"
                 : showImportDecision
                   ? "Подтверждение импорта" // Добавили заголовок
                   : showImportProcess
@@ -667,13 +683,13 @@ export const StatisticCard = ({ cardStyle, loadAll }) => {
         {showBackupSetup && (
           <Stack spacing={1.25} sx={{ flexGrow: 1, minHeight: 0 }}>
             <Alert severity="info" sx={{ borderRadius: 2 }}>
-              Настройте имя архива, включаемые папки фото и, при необходимости,
+              Настройте имя бэкапа, включаемые папки фото и, при необходимости,
               обслуживание базы перед упаковкой.
             </Alert>
 
             <TextField
               fullWidth
-              label="Имя архива"
+              label="Имя бэкапа"
               value={backupArchiveName}
               onChange={(e) => setBackupArchiveName(e.target.value)}
               helperText={`Дата и время: ${new Date().toLocaleString("ru-RU")}`}
@@ -689,7 +705,7 @@ export const StatisticCard = ({ cardStyle, loadAll }) => {
             >
               <Stack spacing={1}>
                 <Typography variant="subtitle2" fontWeight={700}>
-                  Фото в архиве
+                  Фото в бэкапе
                 </Typography>
                 {[
                   ["original", "original"],
@@ -728,6 +744,51 @@ export const StatisticCard = ({ cardStyle, loadAll }) => {
                 borderColor: "divider",
               }}
             >
+              <Stack spacing={1}>
+                <Typography variant="subtitle2" fontWeight={700}>
+                  Дополнительные данные
+                </Typography>
+                <Stack
+                  direction="row"
+                  alignItems="center"
+                  justifyContent="space-between"
+                >
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <SellIcon sx={{ fontSize: 18, opacity: 0.7 }} />
+                    <Typography variant="body2">Метки (tags.json)</Typography>
+                  </Stack>
+                  <CustomSwitch
+                    checked={backupIncludeTags}
+                    onChange={() => setBackupIncludeTags((prev) => !prev)}
+                  />
+                </Stack>
+                <Stack
+                  direction="row"
+                  alignItems="center"
+                  justifyContent="space-between"
+                >
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <HistoryIcon sx={{ fontSize: 18, opacity: 0.7 }} />
+                    <Typography variant="body2">
+                      Журнал действий (history.jsonl)
+                    </Typography>
+                  </Stack>
+                  <CustomSwitch
+                    checked={backupIncludeHistory}
+                    onChange={() => setBackupIncludeHistory((prev) => !prev)}
+                  />
+                </Stack>
+              </Stack>
+            </Box>
+
+            <Box
+              sx={{
+                p: 1.5,
+                borderRadius: 2,
+                border: "1px solid",
+                borderColor: "divider",
+              }}
+            >
               <Stack
                 direction="row"
                 alignItems="center"
@@ -739,7 +800,7 @@ export const StatisticCard = ({ cardStyle, loadAll }) => {
                     Обслуживание базы
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
-                    VACUUM + ANALYZE перед архивацией
+                    VACUUM + ANALYZE перед экспортом
                   </Typography>
                 </Box>
                 <CustomSwitch
@@ -782,7 +843,7 @@ export const StatisticCard = ({ cardStyle, loadAll }) => {
                   boxShadow: "none",
                 }}
               >
-                Создать архив
+                Создать бэкап
               </Button>
             </Stack>
           </Stack>
@@ -792,7 +853,7 @@ export const StatisticCard = ({ cardStyle, loadAll }) => {
         {showImportSetup && (
           <Stack spacing={1.75} sx={{ flexGrow: 1, minHeight: 0 }}>
             <Alert severity="info" sx={{ borderRadius: 2 }}>
-              Проверьте архив, выберите нужные папки фото для восстановления и
+              Проверьте бэкап, выберите нужные папки фото для восстановления и
               запустите импорт.
             </Alert>
 
@@ -806,7 +867,7 @@ export const StatisticCard = ({ cardStyle, loadAll }) => {
             >
               <Stack spacing={1}>
                 <Typography variant="subtitle2" fontWeight={700}>
-                  Архив
+                  Бэкап
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
                   {importArchiveMeta?.archiveName || "Без имени"}
@@ -822,7 +883,63 @@ export const StatisticCard = ({ cardStyle, loadAll }) => {
                       <Chip key={folder} label={folder} size="small" />
                     ),
                   )}
+                  {importArchiveMeta?.hasTagsFile && (
+                    <Chip label="tags.json" size="small" />
+                  )}
+                  {importArchiveMeta?.hasHistoryFile && (
+                    <Chip label="history.jsonl" size="small" />
+                  )}
                 </Stack>
+              </Stack>
+            </Box>
+
+            <Box
+              sx={{
+                p: 1.5,
+                borderRadius: 2,
+                border: "1px solid",
+                borderColor: "divider",
+              }}
+            >
+              <Stack spacing={1}>
+                <Typography variant="subtitle2" fontWeight={700}>
+                  Дополнительные данные
+                </Typography>
+                <Stack
+                  direction="row"
+                  alignItems="center"
+                  justifyContent="space-between"
+                >
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <SellIcon sx={{ fontSize: 18, opacity: 0.7 }} />
+                    <Typography variant="body2">Метки (tags.json)</Typography>
+                  </Stack>
+                  <CustomSwitch
+                    disabled={!importArchiveMeta?.hasTagsFile}
+                    checked={importIncludeTags}
+                    onChange={() => setImportIncludeTags((prev) => !prev)}
+                  />
+                </Stack>
+                <Stack
+                  direction="row"
+                  alignItems="center"
+                  justifyContent="space-between"
+                >
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <HistoryIcon sx={{ fontSize: 18, opacity: 0.7 }} />
+                    <Typography variant="body2">
+                      Журнал действий (history.jsonl)
+                    </Typography>
+                  </Stack>
+                  <CustomSwitch
+                    disabled={!importArchiveMeta?.hasHistoryFile}
+                    checked={importIncludeHistory}
+                    onChange={() => setImportIncludeHistory((prev) => !prev)}
+                  />
+                </Stack>
+                <Typography variant="caption" color="text.secondary">
+                  Переключатели активны только если файл есть в бэкапе.
+                </Typography>
               </Stack>
             </Box>
 
@@ -866,7 +983,7 @@ export const StatisticCard = ({ cardStyle, loadAll }) => {
                   </Stack>
                 ))}
                 <Typography variant="caption" color="text.secondary">
-                  Если какой-то папки нет в архиве, она просто будет пропущена.
+                  Если какой-то папки нет в бэкапе, она просто будет пропущена.
                 </Typography>
               </Stack>
             </Box>
@@ -1644,7 +1761,7 @@ export const StatisticCard = ({ cardStyle, loadAll }) => {
                       color="text.secondary"
                       sx={{ fontWeight: 600 }}
                     >
-                      {importStatus || "Чтение архива..."}
+                      {importStatus || "Чтение бэкапа..."}
                     </Typography>
                   </Box>
                 </Box>
@@ -1693,7 +1810,7 @@ export const StatisticCard = ({ cardStyle, loadAll }) => {
                           mb: 0.5,
                         }}
                       >
-                        Идет распаковка архива
+                        Идёт распаковка бэкапа
                       </Typography>
 
                       <Box sx={{ display: "flex", alignItems: "baseline" }}>
@@ -1788,7 +1905,7 @@ export const StatisticCard = ({ cardStyle, loadAll }) => {
               >
                 <CheckCircleIcon sx={{ fontSize: 64, mb: 2, opacity: 0.9 }} />
                 <Typography variant="h6" fontWeight={900} gutterBottom>
-                  Архив успешно восстановлен!
+                  Данные успешно восстановлены!
                 </Typography>
                 <Button
                   variant="contained"

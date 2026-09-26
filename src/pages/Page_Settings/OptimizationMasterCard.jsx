@@ -299,7 +299,7 @@ export const OptimizationMasterCard = ({ cardStyle }) => {
                 }}
               />
               <Typography variant="h6" sx={{ fontWeight: 800, mb: 0.5 }}>
-                Управление архивом
+                Обслуживание медиа
               </Typography>
               <Typography
                 variant="body2"

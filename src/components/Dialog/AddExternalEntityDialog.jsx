@@ -128,7 +128,7 @@ export default function AddExternalEntityDialog({
         label: `${getPersonLabel(p)} (дерево)`,
       })),
     ...allExternal
-      .filter((e) => e?.id && e.id !== entity?.id)
+      .filter((e) => e?.id && e.id !== entity?.id && !e.archived)
       .map((e) => ({
         kind: "external",
         id: String(e.id),
@@ -194,6 +194,7 @@ export default function AddExternalEntityDialog({
     try {
       const relationsToSave = collectRelationsForSave(relations, newRelation);
 
+      let savedId;
       if (isEdit) {
         await window.externalAPI.update(entity.id, {
           type,
@@ -205,12 +206,13 @@ export default function AddExternalEntityDialog({
           birthday: birthday.trim(),
           relations: relationsToSave,
         });
+        savedId = entity.id;
         addNotification({
           title: "Справочник",
           message: "Запись обновлена",
           type: "success",
           category: "people",
-          link: `/external/${entity.id}`,
+          link: `/external?selected=${encodeURIComponent(entity.id)}`,
         });
       } else {
         const created = await window.externalAPI.add({
@@ -223,15 +225,16 @@ export default function AddExternalEntityDialog({
           birthday: birthday.trim(),
           relations: relationsToSave,
         });
+        savedId = created.id;
         addNotification({
           title: "Справочник",
           message: `Добавлено: ${created.name} (${created.id})`,
           type: "success",
           category: "people",
-          link: `/external/${created.id}`,
+          link: `/external?selected=${encodeURIComponent(created.id)}`,
         });
       }
-      onSaved?.();
+      onSaved?.(savedId);
       onClose();
     } catch (err) {
       console.error(err);

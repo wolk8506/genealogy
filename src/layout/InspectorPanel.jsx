@@ -103,6 +103,7 @@ function MemoriesTab({ groups, allPeople }) {
   const { thumbs, fetchThumb } = usePhotoThumbs();
   const [fullscreen, setFullscreen] = useState(false);
   const [fullIndex, setFullIndex] = useState(0);
+  const [slideDirection, setSlideDirection] = useState(0);
   const [fullPaths, setFullPaths] = useState({});
   const pendingFull = useRef(new Set());
 
@@ -128,6 +129,7 @@ function MemoriesTab({ groups, allPeople }) {
 
   const openPhoto = (photo) => {
     const idx = flatPhotos.findIndex((p) => p.id === photo.id);
+    setSlideDirection(0);
     setFullIndex(Math.max(0, idx));
     setFullscreen(true);
   };
@@ -258,13 +260,19 @@ function MemoriesTab({ groups, allPeople }) {
           flatPhotos.map((p) => [p.id, fullPaths[`${p.id}`]]),
         )}
         thumbPaths={thumbs}
-        direction={0}
+        direction={slideDirection}
         hideLabels={false}
         onClose={() => setFullscreen(false)}
-        onNext={() =>
-          setFullIndex((idx) => (idx + 1 < flatPhotos.length ? idx + 1 : idx))
-        }
-        onPrev={() => setFullIndex((idx) => (idx - 1 >= 0 ? idx - 1 : idx))}
+        onNext={() => {
+          setSlideDirection(1);
+          setFullIndex((idx) =>
+            idx + 1 < flatPhotos.length ? idx + 1 : idx,
+          );
+        }}
+        onPrev={() => {
+          setSlideDirection(-1);
+          setFullIndex((idx) => (idx - 1 >= 0 ? idx - 1 : idx));
+        }}
         onToggleMaximize={() => {}}
         currentPhotoInfo={flatPhotos[fullIndex] || null}
         allPeople={allPeople}

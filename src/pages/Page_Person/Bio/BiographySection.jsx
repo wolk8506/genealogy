@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
   Box,
   Button,
   IconButton,
@@ -10,9 +13,12 @@ import {
   alpha,
   Divider,
   Tooltip,
-  Paper
+  Paper,
+  TextField,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
+import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
+import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import EditIcon from "@mui/icons-material/Edit";
 import FeedIcon from "@mui/icons-material/Feed";
 import FormatAlignLeftIcon from "@mui/icons-material/FormatAlignLeft";
@@ -21,7 +27,8 @@ import FormatAlignRightIcon from "@mui/icons-material/FormatAlignRight";
 import { Menu, MenuItem, ListItemIcon, ListItemText } from "@mui/material";
 import { Milkdown, MilkdownProvider, useEditor } from "@milkdown/react";
 import { GlobalStyles } from "@mui/material";
-import { TextSelection } from "prosemirror-state";
+import { TextSelection, Plugin, PluginKey } from "prosemirror-state";
+import { Decoration, DecorationSet } from "prosemirror-view";
 import { keymap } from "@milkdown/prose/keymap";
 import { prosePluginsCtx } from "@milkdown/core";
 
@@ -43,6 +50,88 @@ import { gfm } from "@milkdown/kit/preset/gfm";
 import { block } from "@milkdown/plugin-block";
 import AddColumnRowRightIcon from "../../../components/svg/AddColumnRowRightIcon";
 import TrashFillIcon from "../../../components/svg/TrashFillIcon";
+import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import SubtitlesOutlinedIcon from "@mui/icons-material/SubtitlesOutlined";
+import PhotoSizeSelectSmallIcon from "@mui/icons-material/PhotoSizeSelectSmall";
+
+const BIO_SIZE_PREFIX = "bio-size:";
+const BIO_SIZE_CLASS = {
+  sm: "bio-img-size-sm",
+  md: "bio-img-size-md",
+  lg: "bio-img-size-lg",
+  full: "bio-img-size-full",
+};
+
+function parseBioSize(title) {
+  const raw = String(title || "").trim();
+  if (!raw.startsWith(BIO_SIZE_PREFIX)) return "md";
+  const size = raw.slice(BIO_SIZE_PREFIX.length);
+  return Object.prototype.hasOwnProperty.call(BIO_SIZE_CLASS, size) ? size : "md";
+}
+
+function buildBioSizeTitle(size) {
+  return `${BIO_SIZE_PREFIX}${size || "md"}`;
+}
+
+function findImageAtPos(doc, pos) {
+  const node = doc.nodeAt(pos);
+  if (node?.type.name === "image") return { pos, node };
+  const $pos = doc.resolve(pos);
+  if ($pos.nodeAfter?.type.name === "image") {
+    return { pos, node: $pos.nodeAfter };
+  }
+  return null;
+}
+
+function isSingleImageParagraph(doc, imagePos) {
+  const $pos = doc.resolve(imagePos);
+  const parent = $pos.parent;
+  if (parent.type.name !== "paragraph") return false;
+  let imageCount = 0;
+  parent.forEach((child) => {
+    if (child.type.name === "image") imageCount += 1;
+  });
+  return imageCount === 1;
+}
+
+const bioImagePluginKey = new PluginKey("bio-image-enhance");
+
+function createBioImagePlugin() {
+  return new Plugin({
+    key: bioImagePluginKey,
+    props: {
+      decorations(state) {
+        const decos = [];
+        state.doc.descendants((node, pos) => {
+          if (node.type.name !== "image") return;
+          const size = parseBioSize(node.attrs.title);
+          decos.push(
+            Decoration.node(pos, pos + node.nodeSize, {
+              class: BIO_SIZE_CLASS[size] || BIO_SIZE_CLASS.md,
+            }),
+          );
+          const alt = node.attrs.alt?.trim();
+          if (alt && alt !== "img") {
+            decos.push(
+              Decoration.widget(
+                pos + node.nodeSize,
+                () => {
+                  const el = document.createElement("div");
+                  el.className = "bio-caption-widget";
+                  el.textContent = alt;
+                  el.contentEditable = "false";
+                  return el;
+                },
+                { side: 1, key: `bio-cap-${pos}` },
+              ),
+            );
+          }
+        });
+        return DecorationSet.create(state.doc, decos);
+      },
+    },
+  });
+}
 
 const MilkdownEditor = ({
   content,
@@ -51,9 +140,12 @@ const MilkdownEditor = ({
   personId,
   onSaveRef,
   execRef,
+  lastSavedRef,
   setIsDirty,
   onImageClick,
   onImageAdded,
+  onRequestCaption,
+  onRequestLink,
 }) => {
   const editorRef = useRef(null);
   const isEditingRef = useRef(isEditing);
@@ -88,6 +180,7 @@ const MilkdownEditor = ({
                 return handleTabInTable(state, dispatch);
               },
             }),
+            createBioImagePlugin(),
           ]);
         })
         .config(nord)
@@ -111,6 +204,8 @@ const MilkdownEditor = ({
     if (!container || loading) return;
     const fixImages = () => {
       container.querySelectorAll("img").forEach((img) => {
+        if (img.classList.contains("ProseMirror-separator")) return;
+
         const src = img.getAttribute("src");
         if (
           src &&
@@ -122,10 +217,16 @@ const MilkdownEditor = ({
           const cleanSrc = src.replace(/\\/g, "/");
           img.src = `${cleanDir}/${cleanSrc}`;
         }
+
+        const size = parseBioSize(img.getAttribute("title"));
+        Object.values(BIO_SIZE_CLASS).forEach((cls) => img.classList.remove(cls));
+        img.classList.add(BIO_SIZE_CLASS[size] || BIO_SIZE_CLASS.md);
       });
     };
     const handleImgClick = (e) => {
-      if (e.target.tagName === "IMG") onImageClick(e.target.src);
+      if (e.target.tagName === "IMG" && !isEditingRef.current) {
+        onImageClick(e.target.src);
+      }
     };
     container.addEventListener("click", handleImgClick);
     const observer = new MutationObserver(fixImages);
@@ -135,20 +236,39 @@ const MilkdownEditor = ({
       container.removeEventListener("click", handleImgClick);
       observer.disconnect();
     };
-  }, [personDir, loading, onImageClick]);
+  }, [personDir, loading, onImageClick, isEditing]);
 
-  // Мониторинг изменений
+  // Dirty-state: сравнение с последним сохранённым markdown
   useEffect(() => {
-    if (loading) return;
-    const interval = setInterval(() => {
-      editorRef.current?.action((ctx) => {
-        const view = ctx.get(editorViewCtx);
-        const isDirtyValue = view?.state?.history$?.done?.items?.length > 0;
-        setIsDirty(!!isDirtyValue); // Гарантируем boolean
-      });
-    }, 300);
-    return () => clearInterval(interval);
-  }, [loading, setIsDirty]);
+    if (loading || !lastSavedRef) return;
+
+    let dispatchRestore = null;
+
+    editorRef.current?.action((ctx) => {
+      const view = ctx.get(editorViewCtx);
+      const serializer = ctx.get(serializerCtx);
+
+      const syncDirty = () => {
+        const md = serializer(view.state.doc);
+        setIsDirty(md !== lastSavedRef.current);
+      };
+
+      const originalDispatch = view.dispatch.bind(view);
+      view.dispatch = (tr) => {
+        originalDispatch(tr);
+        if (tr.docChanged) {
+          requestAnimationFrame(syncDirty);
+        }
+      };
+      dispatchRestore = () => {
+        view.dispatch = originalDispatch;
+      };
+
+      syncDirty();
+    });
+
+    return () => dispatchRestore?.();
+  }, [loading, setIsDirty, lastSavedRef, content]);
 
   // Команды для кнопок
   useEffect(() => {
@@ -174,17 +294,120 @@ const MilkdownEditor = ({
         }),
       insertImage: async () => {
         const file = await window.bioAPI.addImage(personId);
-        if (file) {
-          // Сообщаем BiographySection, что в папку упал новый файл
-          onImageAdded?.(file);
+        if (!file) return;
 
-          editorRef.current?.action((ctx) => {
-            const view = ctx.get(editorViewCtx);
-            const node = ctx.get(parserCtx)(`![img](${file})`).content
-              .firstChild;
-            view.dispatch(view.state.tr.replaceSelectionWith(node));
-          });
+        onImageAdded?.(file);
+        const caption = (await onRequestCaption?.())?.trim();
+        const alt = caption || "img";
+
+        editorRef.current?.action((ctx) => {
+          const view = ctx.get(editorViewCtx);
+          const node = ctx
+            .get(parserCtx)(`![${alt}](${file} "${buildBioSizeTitle("md")}")`)
+            .content.firstChild;
+          view.dispatch(view.state.tr.replaceSelectionWith(node));
+        });
+      },
+      getImageInfoAtDom: (dom) => {
+        let result = null;
+        editorRef.current?.action((ctx) => {
+          const view = ctx.get(editorViewCtx);
+          let found = findImageAtPos(view.state.doc, view.posAtDOM(dom, 0));
+          if (!found) {
+            found = findImageAtPos(view.state.doc, view.posAtDOM(dom, -1));
+          }
+          if (!found) return;
+          const { node, pos: imagePos } = found;
+          result = {
+            pos: imagePos,
+            alt: node.attrs.alt || "",
+            src: node.attrs.src || "",
+            title: node.attrs.title || "",
+            size: parseBioSize(node.attrs.title),
+            isSingle: isSingleImageParagraph(view.state.doc, imagePos),
+          };
+        });
+        return result;
+      },
+      updateImageAtPos: (pos, { alt, size } = {}) => {
+        editorRef.current?.action((ctx) => {
+          const view = ctx.get(editorViewCtx);
+          const found = findImageAtPos(view.state.doc, pos);
+          if (!found) return;
+          const { node, pos: imagePos } = found;
+          const attrs = { ...node.attrs };
+          if (alt !== undefined) attrs.alt = alt.trim() || "img";
+          if (size !== undefined) attrs.title = buildBioSizeTitle(size);
+          view.dispatch(view.state.tr.setNodeMarkup(imagePos, undefined, attrs));
+        });
+      },
+      deleteImageAtPos: (pos) => {
+        editorRef.current?.action((ctx) => {
+          const view = ctx.get(editorViewCtx);
+          const found = findImageAtPos(view.state.doc, pos);
+          if (!found) return;
+          view.dispatch(
+            view.state.tr.delete(found.pos, found.pos + found.node.nodeSize),
+          );
+        });
+      },
+      insertLink: async () => {
+        const linkData = await onRequestLink?.();
+        if (!linkData?.url?.trim()) return;
+
+        editorRef.current?.action((ctx) => {
+          const view = ctx.get(editorViewCtx);
+          const { state, dispatch } = view;
+          const { from, to } = state.selection;
+          const url = linkData.url.trim();
+          const label =
+            linkData.text?.trim() ||
+            (from !== to ? state.doc.textBetween(from, to) : url);
+          const node = ctx.get(parserCtx)(`[${label}](${url})`).content
+            .firstChild;
+          dispatch(state.tr.replaceSelectionWith(node));
+        });
+      },
+      markSaved: (markdown) => {
+        if (typeof markdown === "string" && lastSavedRef) {
+          lastSavedRef.current = markdown;
         }
+        setIsDirty(false);
+      },
+      search: (query, matchIndex = 0) => {
+        let matchCount = 0;
+        editorRef.current?.action((ctx) => {
+          const view = ctx.get(editorViewCtx);
+          const { state, dispatch } = view;
+          const q = query?.trim();
+          if (!q) return;
+
+          const matches = [];
+          const needle = q.toLowerCase();
+          state.doc.descendants((node, pos) => {
+            if (!node.isText) return;
+            const text = node.text;
+            const lower = text.toLowerCase();
+            let idx = 0;
+            while ((idx = lower.indexOf(needle, idx)) !== -1) {
+              matches.push({ from: pos + idx, to: pos + idx + q.length });
+              idx += needle.length;
+            }
+          });
+
+          matchCount = matches.length;
+          if (matchCount === 0) return;
+
+          const target = matches[matchIndex % matchCount];
+          dispatch(
+            state.tr
+              .setSelection(
+                TextSelection.create(state.doc, target.from, target.to),
+              )
+              .scrollIntoView(),
+          );
+        });
+        return matchCount;
       },
       insertTable: () =>
         editorRef.current?.action((ctx) => {
@@ -635,7 +858,16 @@ const MilkdownEditor = ({
           }
         }),
     };
-  }, [personId, loading, onSaveRef, execRef]);
+  }, [
+    personId,
+    loading,
+    onSaveRef,
+    execRef,
+    lastSavedRef,
+    setIsDirty,
+    onRequestCaption,
+    onRequestLink,
+  ]);
 
   // Функция проверки и добавления строки
 
@@ -774,33 +1006,81 @@ const MilkdownEditor = ({
           minHeight: "auto",
         },
 
-        // ГЛАВНЫЙ ФИКС: Скрываем всё, что не является картинкой внутри такого параграфа
-        "& .ProseMirror p:has(img) > *:not(img)": {
-          display: "none !important",
-        },
-
-        // Дополнительно скрываем системные элементы ProseMirror
         "& img.ProseMirror-separator": {
           display: "none !important",
         },
 
-        "& img": {
+        "& .ProseMirror p:has(img) img": {
           display: "inline-block",
-          width: "calc(33.33% - 12px)",
-          minWidth: "220px", // Чуть увеличим для стабильности
-          height: "250px",
           objectFit: "cover",
           borderRadius: "8px",
-          cursor: "pointer",
           border: "1px solid #444",
           boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
           transition: "transform 0.2s, box-shadow 0.2s",
+          verticalAlign: "top",
+        },
 
+        "& .ProseMirror img.bio-img-size-sm": {
+          width: "calc(25% - 12px)",
+          minWidth: "140px",
+          maxWidth: "calc(25% - 12px)",
+          aspectRatio: "1 / 1",
+          height: "auto",
+        },
+
+        "& .ProseMirror img.bio-img-size-md": {
+          width: "calc(33.33% - 12px)",
+          minWidth: "220px",
+          maxWidth: "calc(33.33% - 12px)",
+          aspectRatio: "1 / 1",
+          height: "auto",
+        },
+
+        "& .ProseMirror img.bio-img-size-lg": {
+          width: "calc(50% - 12px)",
+          minWidth: "280px",
+          maxWidth: "calc(50% - 12px)",
+          aspectRatio: "1 / 1",
+          height: "auto",
+        },
+
+        "& .ProseMirror img.bio-img-size-full": {
+          width: "100%",
+          minWidth: "100%",
+          maxWidth: "100%",
+          aspectRatio: "auto",
+          height: "auto",
+          maxHeight: "520px",
+          objectFit: "contain",
+        },
+
+        "& .ProseMirror p:has(img) img:not(.ProseMirror-separator)": {
+          cursor: "pointer",
           "&:hover": {
-            transform: "scale(1.05)",
+            transform: "scale(1.03)",
             boxShadow: "0 8px 20px rgba(0,0,0,0.5)",
             zIndex: 10,
           },
+        },
+
+        "& .bio-caption-widget": {
+          flexBasis: "100%",
+          textAlign: "center",
+          fontSize: "0.85rem",
+          lineHeight: 1.4,
+          color: "text.secondary",
+          mt: 0.5,
+          mb: 1,
+          pointerEvents: "none",
+          userSelect: "none",
+          textIndent: 0,
+        },
+
+        "& mark.bio-search-hit": {
+          bgcolor: (theme) => alpha(theme.palette.warning.main, 0.45),
+          color: "inherit",
+          borderRadius: "2px",
+          px: "1px",
         },
 
         "& u": { textDecoration: "underline" },
@@ -812,20 +1092,93 @@ const MilkdownEditor = ({
   );
 };
 
+function escapeRegex(str) {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function clearSearchHighlights(root) {
+  if (!root) return;
+  root.querySelectorAll("mark.bio-search-hit").forEach((mark) => {
+    const parent = mark.parentNode;
+    if (!parent) return;
+    parent.replaceChild(document.createTextNode(mark.textContent), mark);
+    parent.normalize();
+  });
+}
+
+function highlightSearchInDom(root, query) {
+  clearSearchHighlights(root);
+  if (!query?.trim()) return [];
+
+  const hits = [];
+  const regex = new RegExp(escapeRegex(query.trim()), "gi");
+
+  const walk = (node) => {
+    if (node.nodeType === Node.TEXT_NODE) {
+      const text = node.nodeValue;
+      if (!text || !regex.test(text)) return;
+      regex.lastIndex = 0;
+
+      const frag = document.createDocumentFragment();
+      let lastIndex = 0;
+      let match;
+      while ((match = regex.exec(text)) !== null) {
+        if (match.index > lastIndex) {
+          frag.appendChild(
+            document.createTextNode(text.slice(lastIndex, match.index)),
+          );
+        }
+        const mark = document.createElement("mark");
+        mark.className = "bio-search-hit";
+        mark.textContent = match[0];
+        hits.push(mark);
+        frag.appendChild(mark);
+        lastIndex = regex.lastIndex;
+      }
+      if (lastIndex < text.length) {
+        frag.appendChild(document.createTextNode(text.slice(lastIndex)));
+      }
+      node.parentNode?.replaceChild(frag, node);
+      return;
+    }
+
+    if (node.nodeType === Node.ELEMENT_NODE) {
+      if (node.tagName === "MARK" || node.closest("mark.bio-search-hit")) return;
+      Array.from(node.childNodes).forEach(walk);
+    }
+  };
+
+  walk(root);
+  return hits;
+}
+
 export default function BiographySection({
   personId,
+  personName,
   activeElement,
   isEditing,
   setIsEditing,
   execRef,
   requestToggleRef,
   isNavVisible,
-  setActiveElement, // <--- ВАЖНО: прокиньте этот сеттер из PersonPage/MainLayout
+  setActiveElement,
+  onDirtyChange,
+  searchQuery = "",
+  searchMatchIndex = 0,
+  onSearchMatchCountChange,
 }) {
-  const [isDirty, setIsDirty] = useState(false);
+  const [isDirty, setIsDirtyInternal] = useState(false);
+  const setIsDirty = useCallback(
+    (value) => {
+      setIsDirtyInternal(value);
+      onDirtyChange?.(value);
+    },
+    [onDirtyChange],
+  );
   const [bio, setBio] = useState(null);
   const [personDir, setPersonDir] = useState("");
-  const [previewImg, setPreviewImg] = useState(null);
+  const [previewImages, setPreviewImages] = useState([]);
+  const [previewIndex, setPreviewIndex] = useState(0);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [pendingAction, setPendingAction] = useState(null);
   const [sessionImages, setSessionImages] = useState([]);
@@ -833,9 +1186,15 @@ export default function BiographySection({
   const [activeHeadingId, setActiveHeadingId] = useState("");
 
   const saveRef = useRef(null);
+  const lastSavedRef = useRef("");
   const contentScrollRef = useRef(null);
   const articleRef = useRef(null);
+  const promptResolverRef = useRef(null);
+  const menuScrollYRef = useRef(0);
   const [contextMenu, setContextMenu] = React.useState(null);
+  const [imageMenu, setImageMenu] = useState(null);
+  const [promptState, setPromptState] = useState(null);
+  const [promptValues, setPromptValues] = useState({ text: "", url: "" });
 
   const collectHeadings = useCallback(() => {
     const root = articleRef.current;
@@ -845,7 +1204,7 @@ export default function BiographySection({
     }
 
     const nodes = Array.from(
-      root.querySelectorAll(".ProseMirror h1, .ProseMirror h2"),
+      root.querySelectorAll(".ProseMirror h1, .ProseMirror h2, .ProseMirror h3"),
     );
     const items = nodes
       .map((node, index) => {
@@ -853,11 +1212,13 @@ export default function BiographySection({
         if (!text) return null;
 
         const id = `bio-heading-${index}`;
+        const level =
+          node.tagName === "H1" ? 1 : node.tagName === "H2" ? 2 : 3;
 
         return {
           id,
           text,
-          level: node.tagName === "H1" ? 1 : 2,
+          level,
           sourceIndex: index,
         };
       })
@@ -871,7 +1232,9 @@ export default function BiographySection({
     const scroller = contentScrollRef.current;
     if (!root) return;
 
-    const nodes = Array.from(root.querySelectorAll(".ProseMirror h1, .ProseMirror h2"));
+    const nodes = Array.from(
+      root.querySelectorAll(".ProseMirror h1, .ProseMirror h2, .ProseMirror h3"),
+    );
     const target = nodes[sourceIndex];
     if (!target) return;
 
@@ -899,10 +1262,31 @@ export default function BiographySection({
   }, []);
 
   const handleContextMenu = (event) => {
-    // Находим, кликнули ли мы по таблице
+    const img = event.target.closest("img");
+    if (
+      img &&
+      isEditing &&
+      !img.classList.contains("ProseMirror-separator")
+    ) {
+      event.preventDefault();
+      menuScrollYRef.current = window.scrollY;
+      const info = execRef.current?.getImageInfoAtDom?.(img);
+      if (info) {
+        setContextMenu(null);
+        setImageMenu({
+          mouseX: event.clientX + 2,
+          mouseY: event.clientY - 6,
+          ...info,
+        });
+      }
+      return;
+    }
+
+    setImageMenu(null);
     const table = event.target.closest("table");
     if (table && isEditing) {
       event.preventDefault();
+      menuScrollYRef.current = window.scrollY;
       setContextMenu(
         contextMenu === null
           ? { mouseX: event.clientX + 2, mouseY: event.clientY - 6 }
@@ -911,12 +1295,249 @@ export default function BiographySection({
     }
   };
 
-  const handleCloseMenu = () => setContextMenu(null);
+  const preserveViewportScroll = useCallback((action) => {
+    const windowY = menuScrollYRef.current;
+    action();
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        window.scrollTo({ top: windowY, left: 0, behavior: "instant" });
+      });
+    });
+  }, []);
+
+  const bioContextMenuProps = {
+    disableAutoFocus: true,
+    disableEnforceFocus: true,
+    disableRestoreFocus: true,
+    disableScrollLock: true,
+    MenuListProps: { autoFocusItem: false, dense: true },
+  };
+
+  const handleCloseMenu = () =>
+    preserveViewportScroll(() => setContextMenu(null));
+  const handleCloseImageMenu = () =>
+    preserveViewportScroll(() => setImageMenu(null));
+
+  const runTableMenuAction = (action) =>
+    preserveViewportScroll(() => {
+      action?.();
+      setContextMenu(null);
+    });
+
+  const handleEditImageCaption = async () => {
+    if (!imageMenu) return;
+    const { pos, alt } = imageMenu;
+    handleCloseImageMenu();
+    const result = await requestPrompt({
+      type: "caption",
+      title: "Подпись к фото",
+      initial: {
+        text: alt === "img" ? "" : alt,
+      },
+    });
+    if (result !== null) {
+      preserveViewportScroll(() => {
+        execRef.current?.updateImageAtPos?.(pos, {
+          alt: result.text?.trim() || "img",
+        });
+      });
+    }
+  };
+
+  const handleDeleteImage = () => {
+    if (!imageMenu) return;
+    const { pos } = imageMenu;
+    handleCloseImageMenu();
+    preserveViewportScroll(() => {
+      execRef.current?.deleteImageAtPos?.(pos);
+    });
+  };
+
+  const handleSetImageSize = (size) => {
+    if (!imageMenu) return;
+    const { pos } = imageMenu;
+    handleCloseImageMenu();
+    preserveViewportScroll(() => {
+      execRef.current?.updateImageAtPos?.(pos, { size });
+    });
+  };
 
   // Очищаем список при входе в режим редактирования
   useEffect(() => {
     if (isEditing) setSessionImages([]);
   }, [isEditing]);
+
+  const requestPrompt = useCallback((config) => {
+    return new Promise((resolve) => {
+      promptResolverRef.current = resolve;
+      setPromptValues(config.initial || { text: "", url: "" });
+      setPromptState(config);
+    });
+  }, []);
+
+  const closePrompt = useCallback((value) => {
+    promptResolverRef.current?.(value);
+    promptResolverRef.current = null;
+    setPromptState(null);
+    setPromptValues({ text: "", url: "" });
+  }, []);
+
+  const onRequestCaption = useCallback(
+    () =>
+      requestPrompt({
+        type: "caption",
+        title: "Подпись к фото",
+        initial: { text: "" },
+      }).then((result) => result?.text ?? ""),
+    [requestPrompt],
+  );
+
+  const onRequestLink = useCallback(
+    () =>
+      requestPrompt({
+        type: "link",
+        title: "Вставить ссылку",
+        initial: { text: "", url: "https://" },
+      }),
+    [requestPrompt],
+  );
+
+  const handleSaveOnly = useCallback(async () => {
+    const markdown = saveRef.current?.();
+    if (typeof markdown !== "string") return;
+    await window.bioAPI.save(personId, markdown);
+    lastSavedRef.current = markdown;
+    execRef.current?.markSaved?.(markdown);
+    setBio(markdown);
+    setSessionImages([]);
+  }, [personId, execRef]);
+
+  const blobToDataUrl = (blob) =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+
+  const resolveBioImageRelPath = (src) => {
+    if (!src) return null;
+    const normalized = src.replace(/\\/g, "/");
+    const idx = normalized.indexOf("bio_images/");
+    if (idx >= 0) return normalized.slice(idx);
+    return null;
+  };
+
+  const embedImagesInClone = useCallback(async (clone) => {
+    const imgs = [...clone.querySelectorAll("img")];
+    await Promise.all(
+      imgs.map(async (img) => {
+        const src = img.getAttribute("src");
+        if (!src || src.startsWith("data:")) return;
+        const relPath = resolveBioImageRelPath(src);
+        if (!relPath) return;
+        try {
+          const blob = await window.bioAPI.readImage(personId, relPath);
+          img.src = await blobToDataUrl(blob);
+        } catch (err) {
+          console.warn("Не удалось встроить изображение для PDF:", relPath, err);
+        }
+      }),
+    );
+  }, [personId]);
+
+  const buildPrintHtml = useCallback(async () => {
+    const prose = articleRef.current?.querySelector(".ProseMirror");
+    if (!prose) return "";
+    const clone = prose.cloneNode(true);
+    clone.querySelectorAll("img").forEach((img) => {
+      const alt = img.getAttribute("alt")?.trim();
+      if (!alt || alt === "img" || img.closest("figure")) return;
+      const figure = document.createElement("figure");
+      img.parentNode.insertBefore(figure, img);
+      figure.appendChild(img);
+      const cap = document.createElement("figcaption");
+      cap.textContent = alt;
+      figure.appendChild(cap);
+    });
+    await embedImagesInClone(clone);
+    const escapeHtml = (s) =>
+      String(s)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    const title = escapeHtml(personName?.trim() || "Биография");
+    return `<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <title>${title}</title>
+  <style>
+    body { font-family: Georgia, "Times New Roman", serif; color: #1a1a1a; line-height: 1.7; margin: 40px; }
+    h1, h2, h3 { page-break-after: avoid; }
+    img { max-width: 100%; height: auto; border-radius: 8px; margin: 12px 0; }
+    figure { margin: 16px 0; text-align: center; }
+    figcaption { font-size: 0.9em; color: #555; margin-top: 6px; }
+    table { width: 100%; border-collapse: collapse; margin: 16px 0; }
+    th, td { border: 1px solid #ccc; padding: 8px; }
+    blockquote { border-left: 4px solid #999; padding-left: 16px; color: #444; }
+    a { color: #0062cc; }
+  </style>
+</head>
+<body>
+  <h1>${title}</h1>
+  ${clone.innerHTML}
+</body>
+</html>`;
+  }, [personName, embedImagesInClone]);
+
+  const handlePrint = useCallback(() => {
+    window.print();
+  }, []);
+
+  const handleExportPdf = useCallback(async () => {
+    try {
+      const html = await buildPrintHtml();
+      if (!html) return;
+      const safeName = (personName || "biography").replace(
+        /[^\p{L}\d_-]+/gu,
+        "_",
+      );
+      await window.bioAPI.exportPdf({
+        html,
+        defaultName: `${safeName}_bio.pdf`,
+      });
+    } catch (err) {
+      console.error("Ошибка экспорта PDF:", err);
+      window.alert("Не удалось экспортировать PDF. Попробуйте ещё раз.");
+    }
+  }, [buildPrintHtml, personName]);
+
+  const openImagePreview = useCallback((src) => {
+    const root = articleRef.current;
+    const imgs = root
+      ? Array.from(root.querySelectorAll(".ProseMirror img, .milkdown img"))
+      : [];
+    const urls = [...new Set(imgs.map((img) => img.src).filter(Boolean))];
+    const idx = urls.indexOf(src);
+    setPreviewImages(urls.length > 0 ? urls : [src]);
+    setPreviewIndex(idx >= 0 ? idx : 0);
+  }, []);
+
+  const closeImagePreview = useCallback(() => {
+    setPreviewImages([]);
+    setPreviewIndex(0);
+  }, []);
+
+  const goPreviewImage = useCallback(
+    (delta) => {
+      setPreviewIndex(
+        (prev) => (prev + delta + previewImages.length) % previewImages.length,
+      );
+    },
+    [previewImages.length],
+  );
 
   // Регистрация методов в рефе для MainLayout
   useEffect(() => {
@@ -935,12 +1556,86 @@ export default function BiographySection({
           setPendingAction(action);
           setConfirmOpen(true);
         },
+        save: handleSaveOnly,
+        print: handlePrint,
+        exportPdf: handleExportPdf,
       };
     }
     return () => {
       if (requestToggleRef) requestToggleRef.current = null;
     };
-  }, [isEditing, isDirty, setIsEditing, requestToggleRef]);
+  }, [
+    isEditing,
+    isDirty,
+    setIsEditing,
+    requestToggleRef,
+    handleSaveOnly,
+    handlePrint,
+    handleExportPdf,
+  ]);
+
+  useEffect(() => {
+    if (!isEditing || activeElement !== "bio") return;
+    const onKeyDown = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "s") {
+        e.preventDefault();
+        handleSaveOnly();
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [isEditing, activeElement, handleSaveOnly]);
+
+  useEffect(() => {
+    if (previewImages.length === 0) return;
+    const onKeyDown = (e) => {
+      if (e.key === "Escape") closeImagePreview();
+      if (e.key === "ArrowLeft") goPreviewImage(-1);
+      if (e.key === "ArrowRight") goPreviewImage(1);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [previewImages.length, closeImagePreview, goPreviewImage]);
+
+  useEffect(() => {
+    if (bio !== null) {
+      lastSavedRef.current = bio || "";
+      setIsDirty(false);
+    }
+  }, [bio, personId, setIsDirty]);
+
+  useEffect(() => {
+    if (activeElement !== "bio") {
+      onSearchMatchCountChange?.(0);
+      return;
+    }
+
+    if (isEditing) {
+      onSearchMatchCountChange?.(0);
+      return;
+    }
+
+    const prose = articleRef.current?.querySelector(".ProseMirror");
+    if (!prose) {
+      onSearchMatchCountChange?.(0);
+      return;
+    }
+
+    const hits = highlightSearchInDom(prose, searchQuery);
+    onSearchMatchCountChange?.(hits.length);
+    const target = hits[searchMatchIndex % Math.max(hits.length, 1)];
+    target?.scrollIntoView({ behavior: "smooth", block: "center" });
+
+    return () => clearSearchHighlights(prose);
+  }, [
+    searchQuery,
+    searchMatchIndex,
+    activeElement,
+    isEditing,
+    bio,
+    execRef,
+    onSearchMatchCountChange,
+  ]);
 
   // Загрузка данных и CLEANUP
   useEffect(() => {
@@ -993,7 +1688,7 @@ export default function BiographySection({
       const marker = hasInnerScroll ? scroller.scrollTop + 80 : window.scrollY + 120;
       let currentId = headings[0]?.id || "";
       const nodes = Array.from(
-        root.querySelectorAll(".ProseMirror h1, .ProseMirror h2"),
+        root.querySelectorAll(".ProseMirror h1, .ProseMirror h2, .ProseMirror h3"),
       );
 
       for (const heading of headings) {
@@ -1035,9 +1730,10 @@ export default function BiographySection({
     const markdown = saveRef.current?.();
     if (typeof markdown === "string") {
       await window.bioAPI.save(personId, markdown);
-      setIsDirty(false);
+      lastSavedRef.current = markdown;
+      execRef.current?.markSaved?.(markdown);
       setBio(markdown);
-      setSessionImages([]); // Очищаем, так как файлы теперь "закреплены" в MD
+      setSessionImages([]);
       executePending();
     }
   };
@@ -1085,7 +1781,22 @@ export default function BiographySection({
 
   return (
     <>
-      <GlobalStyles styles={(theme) => ({})} />
+      <GlobalStyles
+        styles={{
+          "@media print": {
+            "body *": { visibility: "hidden" },
+            "#bio-print-root, #bio-print-root *": { visibility: "visible" },
+            "#bio-print-root": {
+              position: "absolute",
+              left: 0,
+              top: 0,
+              width: "100%",
+              boxShadow: "none !important",
+              border: "none !important",
+            },
+          },
+        }}
+      />
       <Box
         sx={{
           display: "flex",
@@ -1152,7 +1863,7 @@ export default function BiographySection({
                     color="text.secondary"
                     sx={{ px: 1, py: 0.5 }}
                   >
-                    Добавьте заголовки H1/H2 в биографии
+                    Добавьте заголовки H1–H3 в биографии
                   </Typography>
                 )}
 
@@ -1172,8 +1883,15 @@ export default function BiographySection({
                       borderRadius: "10px",
                       px: 1.2,
                       py: 0.75,
-                      fontWeight: heading.level === 1 ? 700 : 500,
-                      pl: heading.level === 1 ? 1.2 : 2.8,
+                      fontWeight:
+                        heading.level === 1 ? 700 : heading.level === 2 ? 600 : 500,
+                      pl:
+                        heading.level === 1
+                          ? 1.2
+                          : heading.level === 2
+                            ? 2.8
+                            : 4.2,
+                      fontSize: heading.level === 3 ? "0.85rem" : undefined,
                       color:
                         activeHeadingId === heading.id
                           ? "primary.contrastText"
@@ -1201,6 +1919,7 @@ export default function BiographySection({
           }}
         >
           <Box
+            id="bio-print-root"
             ref={articleRef}
             sx={{
               maxWidth: "900px",
@@ -1237,10 +1956,12 @@ export default function BiographySection({
               color: (theme) =>
                 theme.palette.mode === "dark" ? "#e0e0e0" : "#1a1a1a", // Насыщенный черный для светлой темы
 
-              transition: "transform 0.3s ease, background-color 0.3s ease",
-              "&:hover": {
-                transform: "translateY(-2px)", // Легкий эффект парения при наведении
-              },
+              transition: "background-color 0.3s ease",
+              ...(isEditing && {
+                "&:hover": {
+                  transform: "translateY(-2px)",
+                },
+              }),
             }}
           >
             {activeElement === "bio" && bio === "" && !isEditing && (
@@ -1311,10 +2032,23 @@ export default function BiographySection({
                     personId={personId}
                     onSaveRef={saveRef}
                     execRef={execRef}
+                    lastSavedRef={lastSavedRef}
                     setIsDirty={setIsDirty}
-                    onImageClick={setPreviewImg}
+                    onImageClick={openImagePreview}
+                    onRequestCaption={onRequestCaption}
+                    onRequestLink={onRequestLink}
                   />
                 </MilkdownProvider>
+
+                {!isEditing && bio?.includes("bio_images") && (
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ display: "block", textAlign: "center", mt: 2, opacity: 0.7 }}
+                  >
+                    Клик по фото — увеличить
+                  </Typography>
+                )}
 
                 <Menu
                   open={contextMenu !== null}
@@ -1325,6 +2059,7 @@ export default function BiographySection({
                       ? { top: contextMenu.mouseY, left: contextMenu.mouseX }
                       : undefined
                   }
+                  {...bioContextMenuProps}
                   PaperProps={{
                     sx: {
                       // bgcolor: "background.paper",
@@ -1344,10 +2079,9 @@ export default function BiographySection({
                   }}
                 >
                   <MenuItem
-                    onClick={() => {
-                      execRef.current?.addRowBefore();
-                      handleCloseMenu();
-                    }}
+                    onClick={() =>
+                      runTableMenuAction(() => execRef.current?.addRowBefore())
+                    }
                     sx={{
                       px: 1,
                       borderRadius: "8px",
@@ -1369,10 +2103,9 @@ export default function BiographySection({
                     </ListItemText>
                   </MenuItem>
                   <MenuItem
-                    onClick={() => {
-                      execRef.current?.addRow();
-                      handleCloseMenu();
-                    }}
+                    onClick={() =>
+                      runTableMenuAction(() => execRef.current?.addRow())
+                    }
                     sx={{ px: 1, borderRadius: "8px" }}
                   >
                     <ListItemIcon>
@@ -1391,10 +2124,9 @@ export default function BiographySection({
                     </ListItemText>
                   </MenuItem>
                   <MenuItem
-                    onClick={() => {
-                      execRef.current?.addColBefore();
-                      handleCloseMenu();
-                    }}
+                    onClick={() =>
+                      runTableMenuAction(() => execRef.current?.addColBefore())
+                    }
                     sx={{ px: 1, borderRadius: "8px" }}
                   >
                     <ListItemIcon>
@@ -1413,10 +2145,9 @@ export default function BiographySection({
                     </ListItemText>
                   </MenuItem>
                   <MenuItem
-                    onClick={() => {
-                      execRef.current?.addCol();
-                      handleCloseMenu();
-                    }}
+                    onClick={() =>
+                      runTableMenuAction(() => execRef.current?.addCol())
+                    }
                     sx={{ px: 1, borderRadius: "8px" }}
                   >
                     <ListItemIcon>
@@ -1438,10 +2169,9 @@ export default function BiographySection({
                   <Divider />
 
                   <MenuItem
-                    onClick={() => {
-                      execRef.current?.deleteRow();
-                      handleCloseMenu();
-                    }}
+                    onClick={() =>
+                      runTableMenuAction(() => execRef.current?.deleteRow())
+                    }
                     sx={{ px: 1, borderRadius: "8px" }}
                   >
                     <ListItemIcon>
@@ -1460,10 +2190,9 @@ export default function BiographySection({
                     </ListItemText>
                   </MenuItem>
                   <MenuItem
-                    onClick={() => {
-                      execRef.current?.deleteCol();
-                      handleCloseMenu();
-                    }}
+                    onClick={() =>
+                      runTableMenuAction(() => execRef.current?.deleteCol())
+                    }
                     sx={{ px: 1, borderRadius: "8px" }}
                   >
                     <ListItemIcon>
@@ -1485,10 +2214,9 @@ export default function BiographySection({
                   <Divider />
 
                   <MenuItem
-                    onClick={() => {
-                      execRef.current?.deleteTable();
-                      handleCloseMenu();
-                    }}
+                    onClick={() =>
+                      runTableMenuAction(() => execRef.current?.deleteTable())
+                    }
                     sx={{ color: "error.main", px: 1, borderRadius: "8px" }}
                   >
                     <ListItemIcon>
@@ -1508,10 +2236,9 @@ export default function BiographySection({
                     </ListItemText>
                   </MenuItem>
                   <MenuItem
-                    onClick={() => {
-                      execRef.current?.alignLeft();
-                      handleCloseMenu();
-                    }}
+                    onClick={() =>
+                      runTableMenuAction(() => execRef.current?.alignLeft())
+                    }
                     sx={{ px: 1, borderRadius: "8px" }}
                   >
                     <ListItemIcon>
@@ -1530,10 +2257,9 @@ export default function BiographySection({
                     </ListItemText>
                   </MenuItem>
                   <MenuItem
-                    onClick={() => {
-                      execRef.current?.alignCenter();
-                      handleCloseMenu();
-                    }}
+                    onClick={() =>
+                      runTableMenuAction(() => execRef.current?.alignCenter())
+                    }
                     sx={{ px: 1, borderRadius: "8px" }}
                   >
                     <ListItemIcon>
@@ -1552,10 +2278,9 @@ export default function BiographySection({
                     </ListItemText>
                   </MenuItem>
                   <MenuItem
-                    onClick={() => {
-                      execRef.current?.alignRight();
-                      handleCloseMenu();
-                    }}
+                    onClick={() =>
+                      runTableMenuAction(() => execRef.current?.alignRight())
+                    }
                     sx={{ px: 1, borderRadius: "8px" }}
                   >
                     <ListItemIcon>
@@ -1574,12 +2299,148 @@ export default function BiographySection({
                     </ListItemText>
                   </MenuItem>
                 </Menu>
+
+                <Menu
+                  open={imageMenu !== null}
+                  onClose={handleCloseImageMenu}
+                  anchorReference="anchorPosition"
+                  anchorPosition={
+                    imageMenu !== null
+                      ? { top: imageMenu.mouseY, left: imageMenu.mouseX }
+                      : undefined
+                  }
+                  {...bioContextMenuProps}
+                  PaperProps={{
+                    sx: {
+                      bgcolor: "transparent",
+                      backgroundImage: "none",
+                      boxShadow: 24,
+                      borderRadius: "12px",
+                      minWidth: 220,
+                      fontSize: "13px",
+                      px: "6px",
+                      border: "1px solid",
+                      borderColor: "divider",
+                      backdropFilter: "blur(6px)",
+                    },
+                  }}
+                >
+                  <MenuItem
+                    onClick={handleEditImageCaption}
+                    sx={{ px: 1, borderRadius: "8px" }}
+                  >
+                    <ListItemIcon>
+                      <SubtitlesOutlinedIcon fontSize="small" />
+                    </ListItemIcon>
+                    <ListItemText primary="Изменить подпись" />
+                  </MenuItem>
+
+                  {imageMenu?.isSingle && (
+                    <>
+                      <Divider sx={{ my: 0.5 }} />
+                      <MenuItem disabled sx={{ opacity: 0.7, py: 0.5, minHeight: 28 }}>
+                        <ListItemIcon>
+                          <PhotoSizeSelectSmallIcon fontSize="small" />
+                        </ListItemIcon>
+                        <ListItemText primary="Размер" />
+                      </MenuItem>
+                      {[
+                        { id: "sm", label: "Маленький (25%)" },
+                        { id: "md", label: "Средний (33%)" },
+                        { id: "lg", label: "Большой (50%)" },
+                        { id: "full", label: "На всю ширину" },
+                      ].map(({ id, label }) => (
+                        <MenuItem
+                          key={id}
+                          selected={imageMenu?.size === id}
+                          onClick={() => handleSetImageSize(id)}
+                          sx={{ pl: 4, py: 0.75, borderRadius: "8px" }}
+                        >
+                          <ListItemText primary={label} />
+                        </MenuItem>
+                      ))}
+                    </>
+                  )}
+
+                  <Divider sx={{ my: 0.5 }} />
+                  <MenuItem
+                    onClick={handleDeleteImage}
+                    sx={{ color: "error.main", px: 1, borderRadius: "8px" }}
+                  >
+                    <ListItemIcon>
+                      <DeleteOutlineIcon fontSize="small" color="error" />
+                    </ListItemIcon>
+                    <ListItemText primary="Удалить фото" />
+                  </MenuItem>
+                </Menu>
               </Box>
             )}
             <ButtonScrollTop />
           </Box>
         </Box>
       </Box>
+
+      <Dialog
+        open={Boolean(promptState)}
+        onClose={() => closePrompt(null)}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle>{promptState?.title}</DialogTitle>
+        <DialogContent>
+          <Stack spacing={2} sx={{ mt: 1 }}>
+            {promptState?.type === "link" && (
+              <TextField
+                autoFocus
+                label="Текст ссылки"
+                fullWidth
+                value={promptValues.text}
+                onChange={(e) =>
+                  setPromptValues((prev) => ({ ...prev, text: e.target.value }))
+                }
+              />
+            )}
+            <TextField
+              autoFocus={promptState?.type !== "link"}
+              label={promptState?.type === "link" ? "URL" : "Подпись (необязательно)"}
+              fullWidth
+              value={promptState?.type === "link" ? promptValues.url : promptValues.text}
+              placeholder={promptState?.type === "caption" ? "Например: Свадьба, 1962 г." : undefined}
+              onChange={(e) =>
+                setPromptValues((prev) =>
+                  promptState?.type === "link"
+                    ? { ...prev, url: e.target.value }
+                    : { ...prev, text: e.target.value },
+                )
+              }
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  closePrompt(
+                    promptState?.type === "link"
+                      ? { text: promptValues.text, url: promptValues.url }
+                      : { text: promptValues.text },
+                  );
+                }
+              }}
+            />
+          </Stack>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={() => closePrompt(null)}>Отмена</Button>
+          <Button
+            variant="contained"
+            onClick={() =>
+              closePrompt(
+                promptState?.type === "link"
+                  ? { text: promptValues.text, url: promptValues.url }
+                  : { text: promptValues.text },
+              )
+            }
+          >
+            {promptState?.type === "link" ? "Вставить" : "OK"}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       <Dialog
         open={confirmOpen}
@@ -1719,8 +2580,8 @@ export default function BiographySection({
 
       {/* Модалка превью картинки */}
       <Dialog
-        open={Boolean(previewImg)}
-        onClose={() => setPreviewImg(null)}
+        open={previewImages.length > 0}
+        onClose={closeImagePreview}
         maxWidth="xl"
         slotProps={{
           backdrop: {
@@ -1769,11 +2630,45 @@ export default function BiographySection({
               fontSize: 20,
             }}
           >
-            <Tooltip title="Закрыть">
+            {previewImages.length > 1 && (
+              <>
+                <Tooltip title="Предыдущее (←)">
+                  <IconButton
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      goPreviewImage(-1);
+                    }}
+                    size="small"
+                    sx={{ color: "#fff", p: 1 }}
+                  >
+                    <ChevronLeftIcon fontSize="inherit" />
+                  </IconButton>
+                </Tooltip>
+                <Typography
+                  variant="caption"
+                  sx={{ color: "#fff", px: 0.5, userSelect: "none" }}
+                >
+                  {previewIndex + 1} / {previewImages.length}
+                </Typography>
+                <Tooltip title="Следующее (→)">
+                  <IconButton
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      goPreviewImage(1);
+                    }}
+                    size="small"
+                    sx={{ color: "#fff", p: 1 }}
+                  >
+                    <ChevronRightIcon fontSize="inherit" />
+                  </IconButton>
+                </Tooltip>
+              </>
+            )}
+            <Tooltip title="Закрыть (Esc)">
               <IconButton
                 onClick={(e) => {
                   e.stopPropagation();
-                  setPreviewImg(null);
+                  closeImagePreview();
                 }}
                 size="small"
                 sx={{
@@ -1788,7 +2683,7 @@ export default function BiographySection({
         </Stack>
 
         <Box
-          onClick={() => setPreviewImg(null)}
+          onClick={closeImagePreview}
           sx={{
             position: "relative",
             display: "flex",
@@ -1800,7 +2695,7 @@ export default function BiographySection({
         >
           <Box
             component="img"
-            src={previewImg}
+            src={previewImages[previewIndex]}
             alt="Preview"
             sx={{
               maxWidth: "95vw",

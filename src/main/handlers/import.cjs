@@ -5,9 +5,25 @@ const fs = require("fs");
 const path = require("path");
 const os = require("os");
 const { pipeline } = require("stream/promises");
-const { upsertPerson, readPeople } = require("./dataStore.cjs"); // убедитесь, что эти функции экспортируются
+const {
+  upsertPerson,
+  readPeople,
+  parseGenealogyDataFile,
+} = require("./dataStore.cjs");
 const { closeFaceDb, initializeFaceDb } = require("../db/faceDb.cjs");
-const { getBaseDir, getVolumeFreeBytes, formatBytes } = require("../config.cjs");
+const {
+  getBaseDir,
+  getTagsPath,
+  getHistoryPath,
+  getVolumeFreeBytes,
+  formatBytes,
+} = require("../config.cjs");
+const {
+  withWriteLock,
+  writeJsonAtomic,
+  writeTextAtomic,
+  readJsonFile,
+} = require("./jsonStore.cjs");
 const log = require("../logger.cjs").createLogger("import");
 const APP_IDENTIFIER = "MY_GENEALOGY_APP";
 const PHOTO_FOLDERS = new Set(["original", "thumbs", "webp"]);
@@ -16,12 +32,6 @@ const DB_FILES = ["genealogy.sqlite", "genealogy.sqlite-wal", "genealogy.sqlite-
 const ensureDir = async (p) => {
   await fs.promises.mkdir(p, { recursive: true });
 };
-
-function normalizePeopleList(data) {
-  if (Array.isArray(data)) return data;
-  if (data && Array.isArray(data.people)) return data.people;
-  return [];
-}
 
 function normalizeZipEntryName(name) {
   return String(name || "")
@@ -60,9 +70,9 @@ function parseArchiveMeta(parsedData) {
     archiveName: parsedData.archiveName || parsedData.name || null,
     createdAt: parsedData.createdAt || parsedData.exportedAt || null,
     selectedPhotoFolders,
-    peopleCount: Array.isArray(parsedData.people)
-      ? parsedData.people.length
-      : 0,
+    includeTags: parsedData.includeTags === true,
+    includeHistory: parsedData.includeHistory === true,
+    peopleCount: parseGenealogyDataFile(parsedData).people.length,
   };
 }
 
@@ -111,7 +121,10 @@ async function inspectArchive(zipPath) {
 
     const isOurArchive =
       meta.appIdentifier === APP_IDENTIFIER ||
-      (!manifestEntry && parsed && parsed.people && hasPeopleRoot);
+      (!manifestEntry &&
+        parsed &&
+        parseGenealogyDataFile(parsed).people.length > 0 &&
+        hasPeopleRoot);
 
     return {
       ok: true,
@@ -124,6 +137,11 @@ async function inspectArchive(zipPath) {
       availablePhotoFolders,
       hasPeopleRoot,
       hasExternalRoot,
+      hasTagsFile: Boolean(findZipEntry(entries, "tags.json")),
+      hasHistoryFile: Boolean(findZipEntry(entries, "history.jsonl")),
+      includeTags: meta.includeTags || Boolean(findZipEntry(entries, "tags.json")),
+      includeHistory:
+        meta.includeHistory || Boolean(findZipEntry(entries, "history.jsonl")),
       availableDatabaseFiles,
       hasDatabaseFiles: availableDatabaseFiles.length > 0,
       namesCount: names.length,
@@ -134,13 +152,13 @@ async function inspectArchive(zipPath) {
 }
 
 ipcMain.handle("import:inspect", async (_, zipPath) => {
-  if (!zipPath) throw new Error("Путь к архиву не передан");
+  if (!zipPath) throw new Error("Путь к ZIP-бэкапу не передан");
   return inspectArchive(zipPath);
 });
 
 ipcMain.handle("import:zip", async (event, zipPath, options = {}) => {
   const win = BrowserWindow.getAllWindows()[0];
-  if (!zipPath) throw new Error("Путь к архиву не передан");
+  if (!zipPath) throw new Error("Путь к ZIP-бэкапу не передан");
 
   // const tmpDir = path.join(os.tmpdir(), `genealogy-import-${Date.now()}`);
   const uniqueTmpDir = path.join(os.tmpdir(), `genealogy-import-${Date.now()}`);
@@ -167,7 +185,7 @@ ipcMain.handle("import:zip", async (event, zipPath, options = {}) => {
       entries["genealogy-data.json"] || entries["manifest.json"];
     if (!dataEntry) {
       await zip.close();
-      throw new Error("Файл не распознан. Это не архив Genealogy Pro.");
+      throw new Error("Файл не распознан. Это не ZIP-бэкап Genealogy Pro.");
     }
 
     const parsedData = await readZipJson(zip, dataEntry.name);
@@ -175,7 +193,8 @@ ipcMain.handle("import:zip", async (event, zipPath, options = {}) => {
     // Валидация подписи
     const isOurArchive =
       parsedData.appIdentifier === APP_IDENTIFIER ||
-      (!entries["manifest.json"] && parsedData.hasOwnProperty("people"));
+      (!entries["manifest.json"] &&
+        (Array.isArray(parsedData) || parsedData.hasOwnProperty("people")));
     if (!isOurArchive) {
       await zip.close();
       throw new Error("Данный ZIP-файл создан другой программой.");
@@ -204,7 +223,7 @@ ipcMain.handle("import:zip", async (event, zipPath, options = {}) => {
     const databaseEntries = names.filter((name) => isDatabaseArtifact(name));
 
     // Извлекаем список людей из метаданных
-    let archivePeople = normalizePeopleList(parsedData);
+    let archivePeople = parseGenealogyDataFile(parsedData).people;
 
     // Fallback: если JSON пуст, ищем папки вручную
     if (archivePeople.length === 0) {
@@ -222,7 +241,7 @@ ipcMain.handle("import:zip", async (event, zipPath, options = {}) => {
     await ensureDir(uniqueTmpDir);
     await ensureDir(getBaseDir());
 
-    const existingPeople = normalizePeopleList(await readPeople());
+    const existingPeople = await readPeople();
     const existingIds = new Set(existingPeople.map((p) => String(p.id)));
     const incomingMap = new Map(archivePeople.map((p) => [String(p.id), p]));
 
@@ -286,6 +305,64 @@ ipcMain.handle("import:zip", async (event, zipPath, options = {}) => {
       report.externalFiles = 0;
       report.errors.push({ scope: "external", error: externalErr.message });
       log.error("❌ Ошибка импорта справочника:", externalErr);
+    }
+
+    const shouldImportTags = options.includeTags === true;
+    const shouldImportHistory = options.includeHistory === true;
+
+    // --- 2.6. МЕТКИ ---
+    if (shouldImportTags) {
+      try {
+        sendProgress({
+          percent: 0,
+          message: "Импорт меток…",
+          messages: [{ key: "tags", text: "Восстановление tags.json" }],
+        });
+        const tagsImport = await importTags(zip, entries);
+        report.tagsImported = tagsImport.imported;
+        if (tagsImport.error) {
+          report.errors.push({ scope: "tags", error: tagsImport.error });
+        } else if (tagsImport.imported) {
+          sendProgress({
+            message: `Метки: ${tagsImport.tagCount} определений, ${tagsImport.personTagCount} назначений`,
+          });
+        }
+      } catch (tagsErr) {
+        report.tagsImported = false;
+        report.errors.push({ scope: "tags", error: tagsErr.message });
+        log.error("❌ Ошибка импорта меток:", tagsErr);
+      }
+    } else {
+      report.tagsImported = false;
+      report.tagsSkipped = true;
+    }
+
+    // --- 2.7. ЖУРНАЛ ДЕЙСТВИЙ ---
+    if (shouldImportHistory) {
+      try {
+        sendProgress({
+          percent: 0,
+          message: "Импорт журнала…",
+          messages: [{ key: "history", text: "Восстановление history.jsonl" }],
+        });
+        const historyImport = await importHistory(zip, entries);
+        report.historyImported = historyImport.imported;
+        report.historyLineCount = historyImport.lineCount;
+        if (historyImport.error) {
+          report.errors.push({ scope: "history", error: historyImport.error });
+        } else if (historyImport.imported) {
+          sendProgress({
+            message: `Журнал: добавлено ${historyImport.lineCount} записей`,
+          });
+        }
+      } catch (historyErr) {
+        report.historyImported = false;
+        report.errors.push({ scope: "history", error: historyErr.message });
+        log.error("❌ Ошибка импорта журнала:", historyErr);
+      }
+    } else {
+      report.historyImported = false;
+      report.historySkipped = true;
     }
 
     // --- 3. ПРОЦЕСС РАСПАКОВКИ ---
@@ -574,10 +651,8 @@ async function importExternalEntities(zip, entries, names) {
       if (entity?.id) mergedMap.set(entity.id, entity);
     }
 
-    fs.writeFileSync(
-      targetJson,
-      JSON.stringify(Array.from(mergedMap.values()), null, 2),
-      "utf-8",
+    await withWriteLock(() =>
+      writeJsonAtomic(targetJson, Array.from(mergedMap.values())),
     );
 
     log.info(
@@ -588,5 +663,117 @@ async function importExternalEntities(zip, entries, names) {
   } catch (err) {
     log.error("❌ importExternalEntities:", err);
     return { imported: 0, files: 0, error: err.message };
+  }
+}
+
+function normalizeTagsPayload(raw) {
+  if (!raw || typeof raw !== "object") return null;
+  const tags = Array.isArray(raw.tags) ? raw.tags : [];
+  const personTags =
+    raw.personTags && typeof raw.personTags === "object" ? raw.personTags : {};
+  return { tags, personTags };
+}
+
+async function importTags(zip, entries) {
+  const jsonEntry = findZipEntry(entries, "tags.json");
+  if (!jsonEntry) {
+    return { imported: false, tagCount: 0, personTagCount: 0 };
+  }
+
+  try {
+    const incoming = normalizeTagsPayload(await readZipJson(zip, jsonEntry.key));
+    if (!incoming) {
+      return {
+        imported: false,
+        tagCount: 0,
+        personTagCount: 0,
+        error: "tags.json: неверный формат",
+      };
+    }
+
+    const tagsPath = getTagsPath();
+    const existing = normalizeTagsPayload(await readJsonFile(tagsPath, null)) || {
+      tags: [],
+      personTags: {},
+    };
+
+    const mergedTags = new Map(
+      (existing.tags || []).map((tag) => [tag.id, tag]),
+    );
+    for (const tag of incoming.tags) {
+      if (tag?.id) mergedTags.set(tag.id, tag);
+    }
+
+    const mergedPersonTags = { ...existing.personTags };
+    for (const [personId, tagIds] of Object.entries(incoming.personTags)) {
+      if (Array.isArray(tagIds)) {
+        mergedPersonTags[String(personId)] = tagIds;
+      }
+    }
+
+    const merged = {
+      tags: Array.from(mergedTags.values()),
+      personTags: mergedPersonTags,
+    };
+
+    await withWriteLock(() => writeJsonAtomic(tagsPath, merged));
+
+    log.info(
+      `✅ Метки импортированы: ${merged.tags.length} определений, ${Object.keys(merged.personTags).length} назначений`,
+    );
+
+    return {
+      imported: true,
+      tagCount: incoming.tags.length,
+      personTagCount: Object.keys(incoming.personTags).length,
+    };
+  } catch (err) {
+    log.error("❌ importTags:", err);
+    return { imported: false, tagCount: 0, personTagCount: 0, error: err.message };
+  }
+}
+
+async function readZipText(zip, entryName) {
+  if (!entryName) return "";
+  const stream = await zip.stream(entryName);
+  const chunks = [];
+  for await (const chunk of stream) chunks.push(chunk);
+  return Buffer.concat(chunks).toString("utf8");
+}
+
+async function importHistory(zip, entries) {
+  const textEntry = findZipEntry(entries, "history.jsonl");
+  if (!textEntry) {
+    return { imported: false, lineCount: 0 };
+  }
+
+  try {
+    const incoming = (await readZipText(zip, textEntry.key)).trim();
+    if (!incoming) {
+      return { imported: false, lineCount: 0 };
+    }
+
+    const historyPath = getHistoryPath();
+    const lineCount = incoming.split("\n").filter(Boolean).length;
+
+    await withWriteLock(async () => {
+      let existing = "";
+      try {
+        existing = await fs.promises.readFile(historyPath, "utf-8");
+      } catch {
+        existing = "";
+      }
+
+      const needsSep = existing.length > 0 && !existing.endsWith("\n");
+      const merged = `${existing}${needsSep ? "\n" : ""}${incoming}\n`;
+      await writeTextAtomic(historyPath, merged);
+    });
+
+    log.info(`✅ Журнал импортирован: ${lineCount} записей`);
+
+    return { imported: true, lineCount };
+  } catch (err) {
+    log.error("❌ importHistory:", err);
+    return { imported: false, lineCount: 0, error: err.message };
   }
 }

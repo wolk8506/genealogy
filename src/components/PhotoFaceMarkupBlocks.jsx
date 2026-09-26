@@ -14,7 +14,9 @@ import AddIcon from "@mui/icons-material/Add";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import FaceIcon from "@mui/icons-material/Face";
 import FaceRetouchingNaturalIcon from "@mui/icons-material/FaceRetouchingNatural";
+import CropIcon from "@mui/icons-material/Crop";
 import CheckIcon from "@mui/icons-material/Check";
+import Chip from "@mui/material/Chip";
 import CircularProgress from "@mui/material/CircularProgress";
 import PhotoFaceOverlay from "./PhotoFaceOverlay";
 import { distanceToConfidence } from "../services/faceRecognition";
@@ -45,6 +47,8 @@ export function PhotoFacePreviewBlock({
   detecting,
   onDetect,
   onPreviewLoad,
+  onEditThumb,
+  customThumbReady = false,
 }) {
   if (!preview) return null;
 
@@ -149,7 +153,37 @@ export function PhotoFacePreviewBlock({
         >
           Найти
         </Button>
+        {onEditThumb && (
+          <Button
+            size="small"
+            variant="outlined"
+            startIcon={<CropIcon />}
+            onClick={onEditThumb}
+            sx={{
+              bgcolor: "rgba(0,0,0,0.55)",
+              color: "#fff",
+              borderColor: "rgba(255,255,255,0.3)",
+            }}
+          >
+            Превью
+          </Button>
+        )}
       </Stack>
+
+      {customThumbReady && (
+        <Chip
+          label="Превью настроено"
+          size="small"
+          color="success"
+          sx={{
+            position: "absolute",
+            top: 12,
+            right: 12,
+            zIndex: 3,
+            fontWeight: 600,
+          }}
+        />
+      )}
     </Box>
   );
 }

@@ -101,7 +101,7 @@ export function ImportDecisionInline({
         >
           <InfoOutlinedIcon color="info" fontSize="small" />
           <Typography variant="caption" color="text.secondary" lineHeight={1.2}>
-            В архиве найдены совпадения с текущей базой. Выберите, как поступить
+            В бэкапе найдены совпадения с текущей базой. Выберите, как поступить
             с данными.
           </Typography>
         </Box>

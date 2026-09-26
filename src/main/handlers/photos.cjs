@@ -3,6 +3,10 @@ const path = require("path");
 const fs = require("fs");
 const { peopleDir, photosMetaPath, getPeopleRoot } = require("../config.cjs");
 const log = require("../logger.cjs").createLogger("photos");
+const {
+  readPhotosMeta,
+  writePhotosMeta,
+} = require("./photosMetaStore.cjs");
 
 ipcMain.handle("photos:saveFile", async (event, id, filename, buffer) => {
   log.info("🧪 photos:saveFile args", {
@@ -23,19 +27,12 @@ ipcMain.handle("photos:saveFile", async (event, id, filename, buffer) => {
 });
 
 ipcMain.handle("photos:write", async (event, personId, data) => {
-  const filePath = photosMetaPath(personId);
-
-  await fs.promises.mkdir(path.dirname(filePath), { recursive: true });
-  await fs.promises.writeFile(filePath, JSON.stringify(data, null, 2), "utf-8");
+  await writePhotosMeta(personId, data);
 });
 
 ipcMain.handle("photos:getByOwner", async (event, ownerId) => {
-  const personDir = peopleDir(String(ownerId));
-  const photosPath = photosMetaPath(ownerId);
-
   try {
-    const content = await fs.promises.readFile(photosPath, "utf-8");
-    const allPhotos = JSON.parse(content);
+    const allPhotos = await readPhotosMeta(ownerId);
     return allPhotos.filter((p) => p.owner === ownerId);
   } catch (err) {
     log.warn(`📭 Нет photos.json для ${ownerId}`, err);
@@ -46,7 +43,6 @@ ipcMain.handle("photos:getByOwner", async (event, ownerId) => {
 ipcMain.handle("photos:getPath", async (event, photoId) => {
   const peopleDirPath = getPeopleRoot();
 
-  // Найдём, в какой папке лежит нужное фото
   const personFolders = await fs.promises.readdir(peopleDirPath);
   for (const folder of personFolders) {
     const photosJsonPath = path.join(peopleDirPath, folder, "photos.json");
@@ -73,42 +69,9 @@ ipcMain.handle("photos:getPath", async (event, photoId) => {
 });
 
 ipcMain.handle("photos:save", async (event, id, photos) => {
-  const file = photosMetaPath(id);
-  await fs.promises.writeFile(file, JSON.stringify(photos, null, 2), "utf-8");
+  await writePhotosMeta(id, photos);
 });
-
-// ipcMain.handle("photos:save", async (event, id, photos) => {
-//   const file = path.join(
-//     app.getPath("documents"),
-//     "Genealogy",
-//     "people",
-//     String(id),
-//     "photos.json",
-//   );
-
-//   await fs.promises.writeFile(file, JSON.stringify(photos, null, 2), "utf-8");
-
-//   // Обновляем кэш тегов, чтобы фронтенд сразу видел изменения
-//   // Внутри photos:save после записи файла
-//   photos.forEach((p) => {
-//     p.hashtags?.forEach((tag) => globalHashtags.add(tag.trim().toLowerCase()));
-//     // И если парсишь из описания:
-//     const matches = p.description?.match(/#[\p{L}\d_]+/gu);
-//     matches?.forEach((tag) => globalHashtags.add(tag.toLowerCase()));
-//   });
-// });
 
 ipcMain.handle("photos:read", async (event, personId) => {
-  const filePath = photosMetaPath(personId);
-
-  try {
-    const content = await fs.promises.readFile(filePath, "utf-8");
-    return JSON.parse(content);
-  } catch (err) {
-    if (err.code === "ENOENT") return null; // файл не найден — это нормально
-    throw err;
-  }
+  return readPhotosMeta(personId, { ifMissing: "null" });
 });
-
-// МОДИФИЦИРУЕМ ТВОЙ СУЩЕСТВУЮЩИЙ КХЕНДЛЕР СОХРАНЕНИЯ
-// Чтобы при сохранении фото индекс обновлялся автоматически

@@ -212,7 +212,7 @@ ipcMain.handle("archive:create", async (_, filePaths, archivePath) => {
       percent,
       currentFile,
       filePercent,
-      message: "Запись архива",
+      message: "Запись ZIP-бэкапа",
     });
   });
 
@@ -229,7 +229,7 @@ ipcMain.handle("archive:create", async (_, filePaths, archivePath) => {
           ? fileEntries[fileEntries.length - 1].name
           : "",
         filePercent: 100,
-        message: "Архив готов",
+        message: "Бэкап готов",
       });
       resolve();
     });

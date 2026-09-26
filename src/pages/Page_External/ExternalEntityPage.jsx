@@ -76,6 +76,12 @@ export default function ExternalEntityPage() {
   }, [id]);
 
   useEffect(() => {
+    if (!loading && entity?.archived) {
+      navigate("/trash?tab=external", { replace: true });
+    }
+  }, [loading, entity?.archived, navigate]);
+
+  useEffect(() => {
     if (!avatarOpen || !entity?.id) return;
 
     let isMounted = true;
@@ -93,17 +99,22 @@ export default function ExternalEntityPage() {
     [p.firstName, p.lastName || p.maidenName].filter(Boolean).join(" ") ||
     `ID ${p.id}`;
 
-  const handleDelete = async () => {
+  const handleArchive = async () => {
     const confirmed = window.confirm(
-      `Удалить «${entity?.name}» из справочника?`,
+      `Переместить «${entity?.name}» в корзину?`,
     );
     if (!confirmed) return;
-    await window.externalAPI.delete(id);
+    await window.externalAPI.update(id, {
+      archived: true,
+      editedAt: new Date().toISOString(),
+    });
     addNotification({
+      timestamp: new Date().toISOString(),
       title: "Справочник",
-      message: "Запись удалена",
-      type: "info",
-      category: "people",
+      message: `«${entity?.name || id}» перемещена в корзину`,
+      type: "warning",
+      category: "trash",
+      link: "/trash?tab=external",
     });
     navigate("/external");
   };
@@ -120,7 +131,10 @@ export default function ExternalEntityPage() {
     return (
       <Box sx={{ p: 4, textAlign: "center" }}>
         <Typography>Запись не найдена</Typography>
-        <Button onClick={() => navigate("/external")} sx={{ mt: 2 }}>
+        <Button
+          onClick={() => navigate("/external")}
+          sx={{ mt: 2 }}
+        >
           К справочнику
         </Button>
       </Box>
@@ -133,7 +147,9 @@ export default function ExternalEntityPage() {
     <Box sx={{ p: { xs: 1, sm: 2 }, maxWidth: 800, mx: "auto" }}>
       <Button
         startIcon={<ArrowBackIcon />}
-        onClick={() => navigate("/external")}
+        onClick={() =>
+          navigate(`/external?selected=${encodeURIComponent(entity.id)}`)
+        }
         sx={{ mb: 2, borderRadius: "10px" }}
       >
         К справочнику
@@ -236,15 +252,14 @@ export default function ExternalEntityPage() {
               </Button>
               <Button
                 size="small"
-                color="error"
-                // variant="outlined"
+                color="warning"
                 startIcon={<DeleteOutlineIcon />}
-                onClick={handleDelete}
+                onClick={handleArchive}
                 sx={{
                   ...btnStyleRed,
                 }}
               >
-                Удалить
+                В корзину
               </Button>
             </Stack>
           </Box>

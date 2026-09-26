@@ -4,21 +4,33 @@ import {
   Typography,
   CircularProgress,
   Box,
-  Paper,
   Grid,
+  Tabs,
+  Tab,
 } from "@mui/material";
 import { useTheme, alpha } from "@mui/material/styles";
+import { useSearchParams } from "react-router-dom";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import TrashFillIcon from "../../components/svg/TrashFillIcon";
-import { PersonCard } from "./PersonCard"; // Укажи правильный путь
+import { PersonCard } from "./PersonCard";
+import { ExternalEntityCard } from "../Page_External/ExternalEntityCard";
 import { useNotificationStore } from "../../store/useNotificationStore";
 import { usePeopleListStore } from "../../store/usePeopleListStore";
+import { getExternalEntityLabel } from "../../utils/externalEntities";
 
 export default function DeletedPeoplePage() {
   const theme = useTheme();
   const isDark = theme.palette.mode === "dark";
-  const setHasArchived = usePeopleListStore((state) => state.setHasArchived);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tab = searchParams.get("tab") === "external" ? "external" : "people";
+
+  const refreshArchiveStatus = usePeopleListStore(
+    (state) => state.refreshArchiveStatus,
+  );
   const [archivedPeople, setArchivedPeople] = useState([]);
+  const [archivedExternal, setArchivedExternal] = useState([]);
+  const [allPeople, setAllPeople] = useState([]);
+  const [allExternal, setAllExternal] = useState([]);
   const [loading, setLoading] = useState(true);
   const addNotification = useNotificationStore(
     (state) => state.addNotification,
@@ -26,9 +38,15 @@ export default function DeletedPeoplePage() {
 
   const loadData = async () => {
     setLoading(true);
-    const data = await window.peopleAPI.getAll();
-    const deleted = (data || []).filter((p) => p.archived);
-    setArchivedPeople(deleted);
+    const [people, external] = await Promise.all([
+      window.peopleAPI.getAll(),
+      window.externalAPI.getAll(),
+    ]);
+    setAllPeople(people || []);
+    setAllExternal(external || []);
+    setArchivedPeople((people || []).filter((p) => p.archived));
+    setArchivedExternal((external || []).filter((e) => e.archived));
+    await refreshArchiveStatus();
     setLoading(false);
   };
 
@@ -36,18 +54,19 @@ export default function DeletedPeoplePage() {
     loadData();
   }, []);
 
-  const handleRestore = async (id) => {
+  const handleTabChange = (_, value) => {
+    setSearchParams(value === "external" ? { tab: "external" } : {});
+  };
+
+  const handleRestorePerson = async (id) => {
     await window.peopleAPI.update(id, {
       archived: false,
       editedAt: new Date().toISOString(),
     });
 
-    // Оптимистичное обновление UI
     const restoredPerson = archivedPeople.find((p) => p.id === id);
     setArchivedPeople((prev) => prev.filter((p) => p.id !== id));
-
-    const all = await window.peopleAPI.getAll();
-    setHasArchived(all.some((p) => p.archived));
+    await refreshArchiveStatus();
 
     const name =
       [restoredPerson?.firstName, restoredPerson?.lastName]
@@ -63,7 +82,7 @@ export default function DeletedPeoplePage() {
     });
   };
 
-  const handleDeleteForever = async (id) => {
+  const handleDeletePersonForever = async (id) => {
     if (!window.confirm("Удалить человека навсегда? Это действие необратимо."))
       return;
 
@@ -72,7 +91,6 @@ export default function DeletedPeoplePage() {
     const person = all.find((p) => p.id === id);
     if (!person) return;
 
-    // Подчищаем связи (убираем ID удаляемого из массивов родственников)
     if (person.father) {
       const father = all.find((p) => p.id === person.father);
       if (father) {
@@ -113,8 +131,8 @@ export default function DeletedPeoplePage() {
     await window.peopleAPI.saveAll(all);
     await window.peopleAPI.delete(id);
 
-    // Обновляем список на экране
     setArchivedPeople((prev) => prev.filter((p) => p.id !== id));
+    await refreshArchiveStatus();
 
     addNotification({
       timestamp: new Date().toISOString(),
@@ -124,6 +142,50 @@ export default function DeletedPeoplePage() {
       category: "trash",
     });
   };
+
+  const handleRestoreExternal = async (id) => {
+    await window.externalAPI.update(id, {
+      archived: false,
+      editedAt: new Date().toISOString(),
+    });
+
+    const restored = archivedExternal.find((e) => e.id === id);
+    setArchivedExternal((prev) => prev.filter((e) => e.id !== id));
+    await refreshArchiveStatus();
+
+    addNotification({
+      timestamp: new Date().toISOString(),
+      title: "Восстановление",
+      message: `«${getExternalEntityLabel(restored) || id}» возвращена в справочник`,
+      type: "success",
+      category: "trash",
+      link: `/external?selected=${encodeURIComponent(id)}`,
+    });
+  };
+
+  const handleDeleteExternalForever = async (id) => {
+    if (
+      !window.confirm(
+        "Удалить запись справочника навсегда? Это действие необратимо.",
+      )
+    ) {
+      return;
+    }
+
+    await window.externalAPI.delete(id);
+    setArchivedExternal((prev) => prev.filter((e) => e.id !== id));
+    await refreshArchiveStatus();
+
+    addNotification({
+      timestamp: new Date().toISOString(),
+      title: "Полное удаление",
+      message: "Запись справочника полностью удалена",
+      type: "error",
+      category: "trash",
+    });
+  };
+
+  const totalCount = archivedPeople.length + archivedExternal.length;
 
   if (loading) {
     return (
@@ -137,7 +199,7 @@ export default function DeletedPeoplePage() {
     );
   }
 
-  if (archivedPeople.length === 0) {
+  if (totalCount === 0) {
     return (
       <Box
         sx={{
@@ -157,7 +219,6 @@ export default function DeletedPeoplePage() {
           sx={{
             p: 2,
             borderRadius: "50%",
-            // Используем нейтральный или зеленый цвет, т.к. пустая корзина — это хорошо
             bgcolor: alpha(theme.palette.success.main, 0.1),
             mb: 2,
           }}
@@ -169,7 +230,6 @@ export default function DeletedPeoplePage() {
               height: "92px",
               color: "success.main",
               opacity: 0.5,
-              // px: "19.5px",
             }}
           />
         </Box>
@@ -185,11 +245,11 @@ export default function DeletedPeoplePage() {
             color: "text.disabled",
             mt: 1,
             textAlign: "center",
-            maxWidth: 300,
+            maxWidth: 360,
           }}
         >
-          Здесь будут временно храниться люди, которых вы решили удалить из
-          основного списка.
+          Здесь временно хранятся люди и записи справочника, которые вы
+          переместили из основных списков.
         </Typography>
       </Box>
     );
@@ -199,23 +259,84 @@ export default function DeletedPeoplePage() {
     <Box sx={{ p: { xs: 1, md: 3 } }}>
       <Typography
         variant="h5"
-        sx={{ mb: 3, fontWeight: 800, color: "error.main" }}
+        sx={{ mb: 2, fontWeight: 800, color: "error.main" }}
       >
-        Корзина ({archivedPeople.length})
+        Корзина ({totalCount})
       </Typography>
 
-      <Grid container spacing={2} direction={"column"}>
-        {archivedPeople.map((person) => (
-          <Grid key={person.id} size={{ xs: 12 }}>
-            <PersonCard
-              person={person}
-              isArchived={true} // Включаем режим корзины!
-              onRestore={handleRestore}
-              onDeleteForever={handleDeleteForever}
-            />
-          </Grid>
-        ))}
-      </Grid>
+      <Tabs
+        value={tab}
+        onChange={handleTabChange}
+        sx={{ mb: 3, borderBottom: 1, borderColor: "divider" }}
+      >
+        <Tab value="people" label={`Люди (${archivedPeople.length})`} />
+        <Tab
+          value="external"
+          label={`Справочник (${archivedExternal.length})`}
+        />
+      </Tabs>
+
+      {tab === "people" && (
+        <>
+          {archivedPeople.length === 0 ? (
+            <EmptyTabMessage text="В корзине нет удалённых людей." />
+          ) : (
+            <Grid container spacing={2} direction="column">
+              {archivedPeople.map((person) => (
+                <Grid key={person.id} size={{ xs: 12 }}>
+                  <PersonCard
+                    person={person}
+                    isArchived
+                    onRestore={handleRestorePerson}
+                    onDeleteForever={handleDeletePersonForever}
+                  />
+                </Grid>
+              ))}
+            </Grid>
+          )}
+        </>
+      )}
+
+      {tab === "external" && (
+        <>
+          {archivedExternal.length === 0 ? (
+            <EmptyTabMessage text="В корзине нет записей справочника." />
+          ) : (
+            <Grid container spacing={2} direction="column">
+              {archivedExternal.map((entity) => (
+                <Grid key={entity.id} size={{ xs: 12 }}>
+                  <ExternalEntityCard
+                    entity={entity}
+                    allPeople={allPeople}
+                    allExternal={allExternal}
+                    isArchived
+                    onRestore={handleRestoreExternal}
+                    onDeleteForever={handleDeleteExternalForever}
+                  />
+                </Grid>
+              ))}
+            </Grid>
+          )}
+        </>
+      )}
+    </Box>
+  );
+}
+
+function EmptyTabMessage({ text }) {
+  return (
+    <Box
+      sx={{
+        py: 6,
+        textAlign: "center",
+        color: "text.secondary",
+        border: "1px dashed",
+        borderColor: "divider",
+        borderRadius: 3,
+      }}
+    >
+      <DeleteOutlineIcon sx={{ fontSize: 40, opacity: 0.35, mb: 1 }} />
+      <Typography variant="body2">{text}</Typography>
     </Box>
   );
 }

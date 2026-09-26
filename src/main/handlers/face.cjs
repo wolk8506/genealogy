@@ -9,6 +9,7 @@ const {
   getFaceScanState,
   reassignReferencesToPerson,
 } = require("../db/faceDb.cjs");
+const { writePhotosMeta } = require("./photosMetaStore.cjs");
 
 function getPeopleDir() {
   return getPeopleRoot();
@@ -91,7 +92,7 @@ ipcMain.handle("face:mergePersonIds", async (event, { keepPersonId, removePerson
     }
 
     if (changed) {
-      fs.writeFileSync(jsonPath, JSON.stringify(photos, null, 2), "utf-8");
+      await writePhotosMeta(folder, photos);
       updatedPhotos += 1;
     }
   }

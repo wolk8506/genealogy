@@ -7,6 +7,8 @@ const {
   externalDir,
 } = require("../config.cjs");
 const log = require("../logger.cjs").createLogger("external");
+const { withWriteLock, writeJsonAtomic } = require("./jsonStore.cjs");
+const { purgeExternalReferences } = require("./purgeExternal.cjs");
 
 function normalizeRelations(relations) {
   if (!Array.isArray(relations)) return [];
@@ -68,10 +70,9 @@ function readEntities() {
   }
 }
 
-function writeEntities(entities) {
+async function writeEntities(entities) {
   ensureBaseDir();
-  const filePath = externalDataPath();
-  fs.writeFileSync(filePath, JSON.stringify(entities, null, 2), "utf-8");
+  await withWriteLock(() => writeJsonAtomic(externalDataPath(), entities));
 }
 
 function generateEntityId(entities) {
@@ -106,12 +107,28 @@ function normalizeEntity(entity) {
   if (!entity) return null;
   return {
     ...entity,
+    archived: Boolean(entity.archived),
     phone: entity.phone || "",
     email: entity.email || "",
     address: entity.address || "",
     birthday: entity.birthday || "",
     relations: normalizeRelations(entity.relations),
   };
+}
+
+function stripRelationsToExternal(entities, externalId) {
+  let changed = false;
+  for (const entity of entities) {
+    const before = (entity.relations || []).length;
+    entity.relations = (entity.relations || []).filter(
+      (r) => r.mainExternalEntityId !== externalId,
+    );
+    if (entity.relations.length !== before) {
+      entity.editedAt = new Date().toISOString();
+      changed = true;
+    }
+  }
+  return changed;
 }
 
 ipcMain.handle("external:getAll", () =>
@@ -124,7 +141,7 @@ ipcMain.handle("external:getById", (_, id) => {
   return normalizeEntity(entity);
 });
 
-ipcMain.handle("external:add", (_, entity) => {
+ipcMain.handle("external:add", async (_, entity) => {
   const entities = readEntities();
   const now = new Date().toISOString();
   const id = entity.id || generateEntityId(entities);
@@ -138,16 +155,17 @@ ipcMain.handle("external:add", (_, entity) => {
     address: entity.address || "",
     birthday: entity.birthday || "",
     relations: normalizeRelations(entity.relations),
+    archived: false,
     createdAt: now,
     editedAt: now,
   };
   entities.push(newEntity);
-  writeEntities(entities);
+  await writeEntities(entities);
   ensureEntityFolder(id);
   return newEntity;
 });
 
-ipcMain.handle("external:update", (_, id, updatedData) => {
+ipcMain.handle("external:update", async (_, id, updatedData) => {
   const entities = readEntities();
   const index = entities.findIndex((e) => e.id === id);
   if (index === -1) throw new Error(`Внешняя персона ${id} не найдена`);
@@ -165,14 +183,17 @@ ipcMain.handle("external:update", (_, id, updatedData) => {
     id,
     editedAt: new Date().toISOString(),
   };
-  writeEntities(entities);
+  await writeEntities(entities);
   return entities[index];
 });
 
 ipcMain.handle("external:delete", async (_, id) => {
-  const entities = readEntities();
-  const updated = entities.filter((e) => e.id !== id);
-  writeEntities(updated);
+  let entities = readEntities();
+  entities = entities.filter((e) => e.id !== id);
+  stripRelationsToExternal(entities, id);
+  await writeEntities(entities);
+
+  purgeExternalReferences(id);
 
   const dir = externalDir(id);
   if (fs.existsSync(dir)) {
@@ -181,7 +202,7 @@ ipcMain.handle("external:delete", async (_, id) => {
   return true;
 });
 
-ipcMain.handle("external:addRelation", (_, entityId, relation) => {
+ipcMain.handle("external:addRelation", async (_, entityId, relation) => {
   const entities = readEntities();
   const index = entities.findIndex((e) => e.id === entityId);
   if (index === -1) throw new Error(`Внешняя персона ${entityId} не найдена`);
@@ -200,11 +221,11 @@ ipcMain.handle("external:addRelation", (_, entityId, relation) => {
   entity.relations = [...(entity.relations || []), newRelation];
   entity.editedAt = new Date().toISOString();
   entities[index] = entity;
-  writeEntities(entities);
+  await writeEntities(entities);
   return newRelation;
 });
 
-ipcMain.handle("external:removeRelation", (_, entityId, relationId) => {
+ipcMain.handle("external:removeRelation", async (_, entityId, relationId) => {
   const entities = readEntities();
   const index = entities.findIndex((e) => e.id === entityId);
   if (index === -1) throw new Error(`Внешняя персона ${entityId} не найдена`);
@@ -213,7 +234,7 @@ ipcMain.handle("external:removeRelation", (_, entityId, relationId) => {
   entity.relations = (entity.relations || []).filter((r) => r.id !== relationId);
   entity.editedAt = new Date().toISOString();
   entities[index] = entity;
-  writeEntities(entities);
+  await writeEntities(entities);
   return true;
 });
 

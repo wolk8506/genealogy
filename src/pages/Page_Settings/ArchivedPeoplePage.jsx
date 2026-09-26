@@ -42,7 +42,7 @@ const SECTIONS = [
   {
     id: "storage",
     title: "Хранилище и данные",
-    keywords: "папка диск место статистика импорт экспорт архив места",
+    keywords: "папка диск место статистика импорт экспорт бэкап резервная копия",
     icon: StorageIcon,
     cards: ["storage", "stats"],
   },
@@ -58,7 +58,7 @@ const SECTIONS = [
 
 const STORAGE_KEY = "settings-active-section";
 
-export default function ArchivePage() {
+export default function SettingsPage() {
   const theme = useTheme();
   const [activeId, setActiveId] = useState(
     () => localStorage.getItem(STORAGE_KEY) || "general",
