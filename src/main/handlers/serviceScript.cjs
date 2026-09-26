@@ -7,7 +7,12 @@ const {
   runFaceDbVacuumAnalyze,
   runFaceDbIntegrityCheck,
 } = require("../db/faceDb.cjs");
-const { getPeopleRoot, getDataPath } = require("../config.cjs");
+const { getPeopleRoot, getDataPath, photosMetaPath } = require("../config.cjs");
+const { readPeople } = require("./dataStore.cjs");
+const {
+  readPhotosMeta,
+  writePhotosMeta,
+} = require("./photosMetaStore.cjs");
 // Пути к данным — через активный корень (см. config.cjs):
 // Пути к данным — через активный корень (см. config.cjs)
 
@@ -47,41 +52,36 @@ async function fixMissingPhotos(sendLog) {
   sendLog(`Проверка ${personFolders.length} папок на битые ссылки...`);
   let globalDeletedCount = 0;
 
-  personFolders.forEach((id) => {
+  for (const id of personFolders) {
     const pPath = path.join(getPeopleRoot(), id);
-    const jsonPath = path.join(pPath, "photos.json");
     const diskPath = path.join(pPath, "photos", "original");
 
-    if (fs.existsSync(jsonPath)) {
-      try {
-        const originalData = JSON.parse(fs.readFileSync(jsonPath, "utf8"));
-        const filesOnDisk = fs.existsSync(diskPath)
-          ? new Set(fs.readdirSync(diskPath).filter((f) => !f.startsWith(".")))
-          : new Set();
+    if (!fs.existsSync(photosMetaPath(id))) continue;
 
-        const cleanedData = originalData.filter((photo) => {
-          const exists = filesOnDisk.has(photo.filename);
-          if (!exists) {
-            sendLog(
-              `[ID ${id}] Удалена ссылка на отсутствующий файл: ${photo.filename}`,
-            );
-            globalDeletedCount++;
-          }
-          return exists;
-        });
+    try {
+      const originalData = await readPhotosMeta(id);
+      const filesOnDisk = fs.existsSync(diskPath)
+        ? new Set(fs.readdirSync(diskPath).filter((f) => !f.startsWith(".")))
+        : new Set();
 
-        if (cleanedData.length !== originalData.length) {
-          fs.writeFileSync(
-            jsonPath,
-            JSON.stringify(cleanedData, null, 2),
-            "utf8",
+      const cleanedData = originalData.filter((photo) => {
+        const exists = filesOnDisk.has(photo.filename);
+        if (!exists) {
+          sendLog(
+            `[ID ${id}] Удалена ссылка на отсутствующий файл: ${photo.filename}`,
           );
+          globalDeletedCount++;
         }
-      } catch (err) {
-        sendLog(`[ID ${id}] Ошибка чтения JSON: ${err.message}`);
+        return exists;
+      });
+
+      if (cleanedData.length !== originalData.length) {
+        await writePhotosMeta(id, cleanedData);
       }
+    } catch (err) {
+      sendLog(`[ID ${id}] Ошибка чтения JSON: ${err.message}`);
     }
-  });
+  }
 
   return { success: true, affectedCount: globalDeletedCount };
 }
@@ -97,37 +97,31 @@ async function removePhotoDuplicates(sendLog) {
   sendLog(`Проверка ${personFolders.length} папок на дубликаты...`);
   let totalFixed = 0;
 
-  personFolders.forEach((id) => {
-    const jPath = path.join(getPeopleRoot(), id, "photos.json");
+  for (const id of personFolders) {
+    if (!fs.existsSync(photosMetaPath(id))) continue;
 
-    if (fs.existsSync(jPath)) {
-      try {
-        const photos = JSON.parse(fs.readFileSync(jPath, "utf8"));
-        const seen = new Set();
-        const uniquePhotos = [];
+    try {
+      const photos = await readPhotosMeta(id);
+      const seen = new Set();
+      const uniquePhotos = [];
 
-        photos.forEach((photo) => {
-          if (!seen.has(photo.filename)) {
-            seen.add(photo.filename);
-            uniquePhotos.push(photo);
-          } else {
-            sendLog(`[ID ${id}] Удален дубликат записи: ${photo.filename}`);
-            totalFixed++;
-          }
-        });
-
-        if (photos.length !== uniquePhotos.length) {
-          fs.writeFileSync(
-            jPath,
-            JSON.stringify(uniquePhotos, null, 2),
-            "utf8",
-          );
+      photos.forEach((photo) => {
+        if (!seen.has(photo.filename)) {
+          seen.add(photo.filename);
+          uniquePhotos.push(photo);
+        } else {
+          sendLog(`[ID ${id}] Удален дубликат записи: ${photo.filename}`);
+          totalFixed++;
         }
-      } catch (err) {
-        sendLog(`[ID ${id}] Ошибка: ${err.message}`);
+      });
+
+      if (photos.length !== uniquePhotos.length) {
+        await writePhotosMeta(id, uniquePhotos);
       }
+    } catch (err) {
+      sendLog(`[ID ${id}] Ошибка: ${err.message}`);
     }
-  });
+  }
 
   return { success: true, affectedCount: totalFixed };
 }
@@ -293,8 +287,7 @@ const tasks = {
     };
 
     try {
-      const data = await fs.promises.readFile(getDataPath(), "utf-8");
-      const people = JSON.parse(data);
+      const people = await readPeople();
       await sendLog(
         `Начинаем массовую обработку для ${people.length} человек...`,
       );
@@ -303,10 +296,9 @@ const tasks = {
 
       for (const person of people) {
         const personId = String(person.id);
-        const jsonPath = path.join(getPeopleRoot(), personId, "photos.json");
         const origDir = path.join(getPeopleRoot(), personId, "photos", "original");
 
-        if (!fs.existsSync(jsonPath)) {
+        if (!fs.existsSync(photosMetaPath(personId))) {
           // Чтобы видеть, что процесс идет, даже если папок нет
           await new Promise((resolve) => setImmediate(resolve));
           continue;
@@ -315,8 +307,7 @@ const tasks = {
         await sendLog(`\n--- Обработка человека ID: ${personId} ---`);
 
         try {
-          const photoData = await fs.promises.readFile(jsonPath, "utf-8");
-          let photos = JSON.parse(photoData);
+          const photos = await readPhotosMeta(personId);
           let updatedInThisPerson = 0;
 
           for (let photo of photos) {
@@ -360,10 +351,7 @@ const tasks = {
           }
 
           if (updatedInThisPerson > 0) {
-            await fs.promises.writeFile(
-              jsonPath,
-              JSON.stringify(photos, null, 2),
-            );
+            await writePhotosMeta(personId, photos);
             totalUpdated++;
             await sendLog(
               `✅ [${personId}] Обновлено записей: ${updatedInThisPerson}`,

@@ -3,46 +3,72 @@
 // атомарная запись (tmp + rename) + очередь записей против гонок
 // при параллельных read-modify-write (например, массовый импорт).
 const fs = require("fs");
-const path = require("path");
 const { getDataPath } = require("../config.cjs");
+const { withWriteLock, writeJsonAtomic } = require("./jsonStore.cjs");
 
-let writeQueue = Promise.resolve();
+const CURRENT_SCHEMA_VERSION = 1;
 
-function withWriteLock(fn) {
-  const run = writeQueue.then(() => fn());
-  writeQueue = run.catch(() => {});
-  return run;
+function detectSchemaVersion(parsed) {
+  if (Array.isArray(parsed)) return 0;
+  if (!parsed || typeof parsed !== "object") return 0;
+  if (typeof parsed.schemaVersion === "number" && parsed.schemaVersion >= 0) {
+    return parsed.schemaVersion;
+  }
+  if (Array.isArray(parsed.people)) return 0;
+  return 0;
 }
 
-function normalizePeopleList(parsed) {
+function extractPeople(parsed) {
   if (Array.isArray(parsed)) return parsed;
   if (parsed && Array.isArray(parsed.people)) return parsed.people;
   return [];
 }
 
+function migratePeopleData(parsed, fromVersion) {
+  let people = extractPeople(parsed);
+  let version = fromVersion;
+
+  // Будущие миграции: if (version < 2) { people = ...; version = 2; }
+  if (version < 1) {
+    version = 1;
+  }
+
+  return { people, schemaVersion: CURRENT_SCHEMA_VERSION };
+}
+
+function parseGenealogyDataFile(parsed) {
+  const fromVersion = detectSchemaVersion(parsed);
+  return migratePeopleData(parsed, fromVersion);
+}
+
+function normalizePeopleList(parsed) {
+  return parseGenealogyDataFile(parsed).people;
+}
+
+function buildGenealogyDataPayload(people) {
+  return {
+    schemaVersion: CURRENT_SCHEMA_VERSION,
+    people: Array.isArray(people) ? people : [],
+  };
+}
+
 async function readPeople() {
   try {
     const txt = await fs.promises.readFile(getDataPath(), "utf-8");
-    return normalizePeopleList(JSON.parse(txt));
+    return parseGenealogyDataFile(JSON.parse(txt)).people;
   } catch {
     return [];
   }
 }
 
-async function writeJsonAtomic(filePath, obj) {
-  await fs.promises.mkdir(path.dirname(filePath), { recursive: true });
-  const tmp = `${filePath}.tmp.${process.pid}.${Date.now()}`;
-  await fs.promises.writeFile(tmp, JSON.stringify(obj, null, 2), "utf-8");
-  try {
-    await fs.promises.rename(tmp, filePath);
-  } catch (err) {
-    await fs.promises.unlink(tmp).catch(() => {});
-    throw err;
-  }
+function writePeople(people) {
+  return withWriteLock(() =>
+    writeJsonAtomic(getDataPath(), buildGenealogyDataPayload(people)),
+  );
 }
 
-function writePeople(people) {
-  return withWriteLock(() => writeJsonAtomic(getDataPath(), people));
+function writePeoplePayload(people) {
+  return writeJsonAtomic(getDataPath(), buildGenealogyDataPayload(people));
 }
 
 function upsertPerson(person) {
@@ -55,7 +81,7 @@ function upsertPerson(person) {
     } else {
       people.push(person);
     }
-    await writeJsonAtomic(getDataPath(), people);
+    await writePeoplePayload(people);
     return true;
   });
 }
@@ -64,7 +90,7 @@ function addPerson(person) {
   return withWriteLock(async () => {
     const people = await readPeople();
     people.push(person);
-    await writeJsonAtomic(getDataPath(), people);
+    await writePeoplePayload(people);
     return true;
   });
 }
@@ -82,7 +108,7 @@ function updatePerson(id, updatedData) {
       throw new Error(`Человек с id=${id} не найден`);
     }
     people[index] = { ...people[index], ...updatedData };
-    await writeJsonAtomic(getDataPath(), people);
+    await writePeoplePayload(people);
     return true;
   });
 }
@@ -91,12 +117,15 @@ function deletePerson(id) {
   return withWriteLock(async () => {
     const people = await readPeople();
     const updated = people.filter((p) => String(p.id) !== String(id));
-    await writeJsonAtomic(getDataPath(), updated);
+    await writePeoplePayload(updated);
     return people.length - updated.length;
   });
 }
 
 module.exports = {
+  CURRENT_SCHEMA_VERSION,
+  parseGenealogyDataFile,
+  normalizePeopleList,
   readPeople,
   writePeople,
   upsertPerson,

@@ -12,8 +12,9 @@ import {
 } from "@mui/material";
 import { useSearchParams } from "react-router-dom";
 import { ButtonScrollTop } from "../../components/ButtonScrollTop";
-import { useNotificationStore } from "../../store/useNotificationStore";
 import { ExternalEntityCard } from "./ExternalEntityCard";
+import { filterActiveExternal } from "../../utils/externalEntities";
+import { usePeopleListStore } from "../../store/usePeopleListStore";
 import AddExternalEntityDialog from "../../components/Dialog/AddExternalEntityDialog";
 
 export default function ExternalPeoplePage({
@@ -21,6 +22,9 @@ export default function ExternalPeoplePage({
   setExternalSearch = () => {},
   externalTypeFilter = "all",
   setExternalTypeFilter = () => {},
+  selectedId = null,
+  onSelect = () => {},
+  listRefreshKey = 0,
 }) {
   const theme = useTheme();
   const isDark = theme.palette.mode === "dark";
@@ -40,10 +44,6 @@ export default function ExternalPeoplePage({
     setTypeFilter(externalTypeFilter);
   }, [externalTypeFilter]);
 
-  const addNotification = useNotificationStore(
-    (state) => state.addNotification,
-  );
-
   const loadData = async () => {
     setLoading(true);
     const [ext, people] = await Promise.all([
@@ -57,36 +57,28 @@ export default function ExternalPeoplePage({
 
   useEffect(() => {
     loadData();
-  }, []);
+    usePeopleListStore.getState().refreshArchiveStatus();
+  }, [listRefreshKey]);
 
   const handleCloseModal = () => {
-    setSearchParams({});
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.delete("action");
+      return next;
+    });
+  };
+
+  const handleSaved = (savedId) => {
     loadData();
+    if (savedId) onSelect(savedId);
   };
 
   const handleOpenAdd = () => {
     setSearchParams({ action: "add" });
   };
 
-  const handleDelete = async (id) => {
-    const entity = entities.find((e) => e.id === id);
-    const confirmed = window.confirm(
-      `Удалить «${entity?.name || id}» из справочника? Это действие необратимо.`,
-    );
-    if (!confirmed) return;
-
-    await window.externalAPI.delete(id);
-    addNotification({
-      title: "Справочник",
-      message: "Запись удалена",
-      type: "info",
-      category: "people",
-    });
-    loadData();
-  };
-
   const filtered = useMemo(() => {
-    let list = [...entities];
+    let list = filterActiveExternal(entities);
     if (typeFilter !== "all") {
       list = list.filter((e) => e.type === typeFilter);
     }
@@ -101,6 +93,18 @@ export default function ExternalPeoplePage({
     }
     return list.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
   }, [entities, search, typeFilter]);
+
+  useEffect(() => {
+    if (loading) return;
+    if (filtered.length === 0) {
+      if (selectedId) onSelect(null);
+      return;
+    }
+    const stillVisible = filtered.some((e) => e.id === selectedId);
+    if (!selectedId || !stillVisible) {
+      onSelect(filtered[0].id);
+    }
+  }, [loading, filtered, selectedId, onSelect]);
 
   return (
     <Box sx={{ p: { xs: 1, sm: 2 }, width: "100%", mx: "auto" }}>
@@ -120,11 +124,11 @@ export default function ExternalPeoplePage({
           }}
         >
           <Typography color="text.secondary" mb={2}>
-            {entities.length === 0
+            {filterActiveExternal(entities).length === 0
               ? "Справочник пуст. Добавьте крёстных, друзей или питомцев."
               : "Ничего не найдено по фильтру."}
           </Typography>
-          {entities.length === 0 && (
+          {filterActiveExternal(entities).length === 0 && (
             <Button variant="outlined" onClick={handleOpenAdd}>
               Добавить первую запись
             </Button>
@@ -138,7 +142,8 @@ export default function ExternalPeoplePage({
                 entity={entity}
                 allPeople={allPeople}
                 allExternal={entities}
-                onDelete={handleDelete}
+                selected={selectedId === entity.id}
+                onSelect={onSelect}
               />
             </Grid>
           ))}
@@ -148,7 +153,7 @@ export default function ExternalPeoplePage({
       <AddExternalEntityDialog
         open={isModalOpen}
         onClose={handleCloseModal}
-        onSaved={loadData}
+        onSaved={handleSaved}
       />
 
       <ButtonScrollTop />

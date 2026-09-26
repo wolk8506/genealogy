@@ -40,7 +40,7 @@ export default function ExportConfirmModal({
       <DialogContent dividers>
         {allPeople ? (
           <Typography color="inherit">
-            В архив будет добавлена вся база данных
+            В бэкап будет включена вся база данных
           </Typography>
         ) : (
           <List dense>
@@ -68,7 +68,7 @@ export default function ExportConfirmModal({
           variant="contained"
           color="primary"
         >
-          Архивировать
+          Экспортировать
         </Button>
       </DialogActions>
     </Dialog>

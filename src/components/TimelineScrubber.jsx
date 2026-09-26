@@ -1,6 +1,12 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { Box, Typography } from "@mui/material";
-import { alpha } from "@mui/material/styles";
+import { alpha, useTheme } from "@mui/material/styles";
 
 const MONTHS_GEN = [
   "января",
@@ -17,7 +23,6 @@ const MONTHS_GEN = [
   "декабря",
 ];
 
-// "2019-03-21" -> "21 марта 2019 г.", "2019-03" -> "март 2019 г.", остальное как есть.
 function formatHeaderLabel(header) {
   const s = String(header ?? "");
   const full = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
@@ -33,41 +38,162 @@ function formatHeaderLabel(header) {
   return s;
 }
 
-// Тонкий скраббер у правого края в стиле Google Photos: мини-полоса,
-// невидимые точки групп, при наведении/перетаскивании — горизонтальная
-// линия через экран с датой.
+// Отступы внутри трека: подписи годов с translateY(-50%) не залезают под AppBar.
+const RAIL_PAD_TOP = 22;
+const RAIL_PAD_BOTTOM = 16;
+
+function railInnerHeight(trackHeight) {
+  return Math.max(1, trackHeight - RAIL_PAD_TOP - RAIL_PAD_BOTTOM);
+}
+
+function ratioToTopPct(ratio, trackHeight) {
+  const h = Math.max(1, trackHeight);
+  const topPx = RAIL_PAD_TOP + ratio * railInnerHeight(h);
+  return (topPx / h) * 100;
+}
+
+function clientYToRatio(clientY, rect) {
+  const innerTop = rect.top + RAIL_PAD_TOP;
+  const innerH = railInnerHeight(rect.height);
+  return Math.min(1, Math.max(0, (clientY - innerTop) / innerH));
+}
+
+function buildLayout(headers, groupOffsets, groupCounts) {
+  const n = headers.length;
+  if (n === 0) {
+    return {
+      totalRows: 0,
+      rowCounts: [],
+      startRatios: [],
+      endRatios: [],
+      centerRatios: [],
+    };
+  }
+
+  const rowCounts =
+    groupCounts?.length === n
+      ? groupCounts
+      : groupOffsets.map((off, i) => {
+          const next = groupOffsets[i + 1];
+          return next != null ? next - off : 1;
+        });
+
+  const totalRows = Math.max(
+    1,
+    rowCounts.reduce((a, b) => a + b, 0),
+  );
+
+  const startRatios = groupOffsets.map((off) => off / totalRows);
+  const endRatios = rowCounts.map(
+    (c, i) => (groupOffsets[i] + c) / totalRows,
+  );
+  const centerRatios = rowCounts.map(
+    (c, i) => (groupOffsets[i] + c * 0.5) / totalRows,
+  );
+
+  return { totalRows, rowCounts, startRatios, endRatios, centerRatios };
+}
+
+function groupIndexFromRatio(r, groupOffsets, totalRows) {
+  const targetRow = Math.min(
+    totalRows - 1,
+    Math.max(0, Math.floor(r * totalRows)),
+  );
+  for (let i = groupOffsets.length - 1; i >= 0; i--) {
+    if (targetRow >= groupOffsets[i]) return i;
+  }
+  return 0;
+}
+
+// Скраббер в стиле Google Photos: heatmap по плотности, годы, точки месяцев,
+// горизонтальная линия и превью при hover/drag.
 export default function TimelineScrubber({
   headers = [],
+  dateKeys,
   groupOffsets = [],
-  activeHeader = "",
+  groupCounts = [],
+  groupWeights = [],
+  activeGroupIndex = 0,
+  mode = "date",
+  getPreviewUrl,
+  anchorRef,
   virtuosoRef,
+  showCrosshairLine = true,
 }) {
+  const theme = useTheme();
   const trackRef = useRef(null);
+  const draggingRef = useRef(false);
+  const lastJumpRef = useRef(-1);
   const [dragging, setDragging] = useState(false);
   const [dragIndex, setDragIndex] = useState(null);
-  const [hoverInfo, setHoverInfo] = useState(null); // { index, y }
-  const [trackH, setTrackH] = useState(0);
+  const [hoverInfo, setHoverInfo] = useState(null);
+  const [trackRect, setTrackRect] = useState(null);
+  const [anchorRect, setAnchorRect] = useState(null);
+
+  const dateHeaders = dateKeys?.length === headers.length ? dateKeys : headers;
+  const isDateMode = mode === "date";
+
+  const layout = useMemo(
+    () => buildLayout(headers, groupOffsets, groupCounts),
+    [headers, groupOffsets, groupCounts],
+  );
+
+  const maxWeight = useMemo(() => {
+    const w =
+      groupWeights?.length === headers.length
+        ? groupWeights
+        : layout.rowCounts;
+    return Math.max(1, ...w);
+  }, [groupWeights, headers.length, layout.rowCounts]);
+
+  const measureRects = useCallback(() => {
+    const track = trackRef.current;
+    if (track) setTrackRect(track.getBoundingClientRect());
+    const anchor = anchorRef?.current;
+    if (anchor) setAnchorRect(anchor.getBoundingClientRect());
+  }, [anchorRef]);
 
   useEffect(() => {
-    const measure = () =>
-      setTrackH(trackRef.current?.getBoundingClientRect().height ?? 0);
-    measure();
-    window.addEventListener("resize", measure);
-    return () => window.removeEventListener("resize", measure);
-    // Перезамер при появлении заголовков: первый рендер часто пустой
-    // (фото грузятся асинхронно), иначе высота останется 0 навсегда.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [headers.length]);
+    if (!dragging) return undefined;
+    const prev = document.body.style.userSelect;
+    const prevWebkit = document.body.style.webkitUserSelect;
+    document.body.style.userSelect = "none";
+    document.body.style.webkitUserSelect = "none";
+    return () => {
+      document.body.style.userSelect = prev;
+      document.body.style.webkitUserSelect = prevWebkit;
+    };
+  }, [dragging]);
 
-  // Уникальные годы в порядке заголовков: первый groupIndex года
-  // + месяцы года (первый groupIndex каждого месяца).
+  useEffect(() => {
+    measureRects();
+    const anchor = anchorRef?.current;
+    let ro;
+    if (anchor && typeof ResizeObserver !== "undefined") {
+      ro = new ResizeObserver(measureRects);
+      ro.observe(anchor);
+    }
+    window.addEventListener("resize", measureRects);
+    window.addEventListener("scroll", measureRects, true);
+    return () => {
+      ro?.disconnect();
+      window.removeEventListener("resize", measureRects);
+      window.removeEventListener("scroll", measureRects, true);
+    };
+  }, [anchorRef, measureRects, headers.length]);
+
   const years = useMemo(() => {
+    if (!isDateMode) return [];
     const byYear = new Map();
-    headers.forEach((h, idx) => {
+    dateHeaders.forEach((h, idx) => {
       const m = String(h ?? "").match(/^(\d{4})(?:-(\d{2})(?:-\d{2})?)?$/);
       if (!m) return;
       if (!byYear.has(m[1])) {
-        byYear.set(m[1], { year: m[1], groupIndex: idx, months: new Map() });
+        byYear.set(m[1], {
+          year: m[1],
+          groupIndex: idx,
+          months: new Map(),
+        });
       }
       if (m[2] != null) {
         const entry = byYear.get(m[1]);
@@ -83,19 +209,28 @@ export default function TimelineScrubber({
         .sort((a, b) => a[0] - b[0])
         .map(([month, monthGroup]) => ({ month, groupIndex: monthGroup })),
     }));
-  }, [headers]);
+  }, [dateHeaders, isDateMode]);
 
-  // Выборка подписей: столько, сколько влезает в трек (как у Google —
-  // каждый год или через N лет в зависимости от плотности).
-  // Позиция подписи — по индексу первой группы года на общей шкале
-  // заголовков, чтобы уровень совпадал с точками и ползунком.
+  const ratioForGroup = useCallback(
+    (groupIndex, useCenter = false) => {
+      if (headers.length === 0) return 0;
+      if (useCenter && layout.centerRatios[groupIndex] != null) {
+        return layout.centerRatios[groupIndex];
+      }
+      if (layout.startRatios[groupIndex] != null) {
+        return layout.startRatios[groupIndex];
+      }
+      return headers.length > 1 ? groupIndex / (headers.length - 1) : 0;
+    },
+    [headers.length, layout.centerRatios, layout.startRatios],
+  );
+
   const shownYears = useMemo(() => {
-    if (years.length === 0 || headers.length < 2) return [];
-    // Пока высота не замерена — считаем по оценке, чтобы не схлопнуться в один год.
-    const effH = trackH > 0 ? trackH : 600;
-    // Жёсткий лимит числа подписей: при тысячах групп DOM не должен расти
-    // бесконечно, даже на очень высоком экране.
-    const maxLabels = Math.min(40, Math.max(2, Math.floor(effH / 30)));
+    if (!isDateMode || years.length === 0 || headers.length < 2) return [];
+    const effH = trackRect?.height > 0 ? trackRect.height : 600;
+    const innerH = railInnerHeight(effH);
+    // ~1 подпись на 20px полезной высоты (как в Google Photos).
+    const maxLabels = Math.min(50, Math.max(2, Math.floor(innerH / 20)));
     const picked =
       years.length <= maxLabels
         ? years
@@ -104,81 +239,97 @@ export default function TimelineScrubber({
           );
     const withPos = picked.map((entry) => ({
       ...entry,
-      ratio: entry.groupIndex / (headers.length - 1),
+      labelTopPct: ratioToTopPct(ratioForGroup(entry.groupIndex), effH),
     }));
-    // Убираем наложения подписей: минимум 22px между соседними.
-    const minGap = 22 / Math.max(1, effH);
+    const minGapPx = 18;
+    const minGapPct = (minGapPx / effH) * 100;
     const result = [];
     for (const entry of withPos) {
       if (
         result.length === 0 ||
-        entry.ratio - result[result.length - 1].ratio >= minGap
+        entry.labelTopPct - result[result.length - 1].labelTopPct >= minGapPct
       ) {
         result.push(entry);
       }
     }
     return result;
-  }, [years, trackH, headers.length]);
+  }, [isDateMode, years, trackRect?.height, headers.length, ratioForGroup]);
 
   const jumpToGroup = useCallback(
     (groupIndex) => {
+      if (groupIndex === lastJumpRef.current) return;
+      lastJumpRef.current = groupIndex;
       virtuosoRef?.current?.scrollToIndex({
         index: groupOffsets[groupIndex] ?? 0,
         align: "start",
-        behavior: "auto",
+        behavior: draggingRef.current ? "auto" : "smooth",
       });
     },
     [groupOffsets, virtuosoRef],
   );
 
-  const infoByRatio = useCallback(
+  const trackHeight = trackRect?.height ?? 600;
+
+  const infoByClientY = useCallback(
     (clientY) => {
-      const track = trackRef.current;
-      if (!track || headers.length === 0) return null;
-      const rect = track.getBoundingClientRect();
-      const r = Math.min(1, Math.max(0, (clientY - rect.top) / rect.height));
-      const index = Math.min(
-        headers.length - 1,
-        Math.floor(r * headers.length),
+      const rect = trackRect;
+      if (!rect || headers.length === 0) return null;
+      const r = clientYToRatio(clientY, rect);
+      const index = groupIndexFromRatio(
+        r,
+        groupOffsets,
+        layout.totalRows,
       );
-      return { index, y: clientY };
+      const yOnRail =
+        rect.top + RAIL_PAD_TOP + r * railInnerHeight(rect.height);
+      return { index, y: yOnRail, ratio: r };
     },
-    [headers],
+    [trackRect, headers.length, groupOffsets, layout.totalRows],
+  );
+
+  const applyScrub = useCallback(
+    (info) => {
+      if (!info) return;
+      setHoverInfo(info);
+      setDragIndex(info.index);
+      jumpToGroup(info.index);
+    },
+    [jumpToGroup],
   );
 
   const handlePointerDown = (e) => {
+    e.preventDefault();
     e.currentTarget.setPointerCapture?.(e.pointerId);
-    const info = infoByRatio(e.clientY);
-    setHoverInfo(info);
+    draggingRef.current = true;
     setDragging(true);
-    if (info) {
-      setDragIndex(info.index);
-      jumpToGroup(info.index);
-    }
+    lastJumpRef.current = -1;
+    applyScrub(infoByClientY(e.clientY));
   };
 
   const handlePointerMove = (e) => {
-    const info = infoByRatio(e.clientY);
-    setHoverInfo(info);
-    if (dragging && info) {
-      setDragIndex(info.index);
-      jumpToGroup(info.index);
+    if (dragging) e.preventDefault();
+    const info = infoByClientY(e.clientY);
+    if (dragging) {
+      applyScrub(info);
+    } else if (info) {
+      setHoverInfo(info);
     }
   };
 
-  const endDrag = () => {
+  const endDrag = (e) => {
+    e?.currentTarget?.releasePointerCapture?.(e.pointerId);
+    draggingRef.current = false;
     setDragging(false);
     setDragIndex(null);
+    lastJumpRef.current = -1;
   };
 
-  const handleLeave = () => {
-    setHoverInfo(null);
+  const handlePointerLeave = () => {
+    if (!dragging) setHoverInfo(null);
   };
 
-  const activeIndex = Math.max(0, headers.indexOf(activeHeader));
-
-  // Все месяцы подряд (для колонки точек).
   const allMonths = useMemo(() => {
+    if (!isDateMode) return [];
     const list = [];
     years.forEach((entry) => {
       entry.months.forEach(({ month, groupIndex }) => {
@@ -186,16 +337,13 @@ export default function TimelineScrubber({
       });
     });
     return list;
-  }, [years]);
+  }, [years, isDateMode]);
 
-  // Единая колонка точек: истинные позиции месяцев на той же шкале,
-  // что у годов и маркера. Минимальный зазор — точки не касаются.
-  // Первый месяц каждого пропущенного выборкой года сохраняем,
-  // при необходимости вытесняя предыдущую обычную точку.
-  // Точки под подписями годов не показываем вообще.
   const railDots = useMemo(() => {
-    if (allMonths.length === 0 || headers.length < 2) return [];
-    const effH = trackH > 0 ? trackH : 600;
+    if (!isDateMode || allMonths.length === 0 || headers.length < 2) {
+      return [];
+    }
+    const effH = trackRect?.height > 0 ? trackRect.height : 600;
     const shown = new Set(shownYears.map((y) => y.year));
     const mustKeep = new Set();
     years.forEach((entry) => {
@@ -205,12 +353,17 @@ export default function TimelineScrubber({
     });
     const withPos = allMonths.map((entry) => ({
       ...entry,
-      ratio: entry.groupIndex / (headers.length - 1),
+      ratio: ratioForGroup(entry.groupIndex),
     }));
     const minGap = 12 / Math.max(1, effH);
-    const labelHalf = 14 / Math.max(1, effH);
+    const labelHalfPx = 14;
     const underLabel = (ratio) =>
-      shownYears.some((y) => Math.abs(ratio - y.ratio) < labelHalf);
+      shownYears.some(
+        (y) =>
+          Math.abs(
+            (ratioToTopPct(ratio, effH) - y.labelTopPct) * 0.01 * effH,
+          ) < labelHalfPx,
+      );
     const result = [];
     for (const entry of withPos) {
       if (underLabel(entry.ratio)) continue;
@@ -227,60 +380,129 @@ export default function TimelineScrubber({
       }
     }
     return result.slice(0, 200);
-  }, [allMonths, years, shownYears, trackH, headers.length]);
-  const previewIndex = hoverInfo?.index;
-  const shownIndex = dragIndex ?? previewIndex ?? activeIndex;
-  const ratio = headers.length > 1 ? shownIndex / (headers.length - 1) : 0;
-  const showLine = hoverInfo != null;
+  }, [
+    isDateMode,
+    allMonths,
+    years,
+    shownYears,
+    trackRect?.height,
+    headers.length,
+    ratioForGroup,
+  ]);
+
+  const heatmapSegments = useMemo(() => {
+    if (headers.length < 2) return [];
+    const weights =
+      groupWeights?.length === headers.length
+        ? groupWeights
+        : layout.rowCounts;
+    return headers.map((_, i) => ({
+      start: layout.startRatios[i] ?? 0,
+      end: layout.endRatios[i] ?? 1,
+      weight: weights[i] || 1,
+    }));
+  }, [headers, groupWeights, layout]);
+
+  const previewIndex =
+    dragIndex ?? hoverInfo?.index ?? activeGroupIndex;
+  const markerRatio = ratioForGroup(
+    activeGroupIndex,
+    true,
+  );
+  const scrubRatio =
+    hoverInfo?.ratio ??
+    (dragIndex != null ? ratioForGroup(dragIndex, true) : markerRatio);
+  const showScrubUI = dragging || hoverInfo != null;
+  const previewUrl = getPreviewUrl?.(previewIndex);
+  const previewLabel = formatHeaderLabel(headers[previewIndex]);
 
   if (headers.length < 2) return null;
 
+  const trackStyle = anchorRect
+    ? {
+        position: "fixed",
+        top: anchorRect.top,
+        height: anchorRect.height,
+        right: 0,
+        width: 76,
+      }
+    : {
+        position: "fixed",
+        top: 100,
+        bottom: 60,
+        right: 0,
+        width: 76,
+      };
+
+  const lineRight = 76;
+
   return (
     <>
-      {/* горизонтальная линия + дата */}
-      {showLine && (
+      {showScrubUI && hoverInfo && (
         <>
+          {showCrosshairLine && (
+            <Box
+              sx={{
+                position: "fixed",
+                left: anchorRect?.left ?? 0,
+                right: lineRight,
+                top: hoverInfo.y,
+                height: 1,
+                bgcolor: "primary.main",
+                opacity: 0.45,
+                zIndex: 198,
+                pointerEvents: "none",
+              }}
+            />
+          )}
           <Box
             sx={{
               position: "fixed",
-              right: 28,
-              width: 30,
-              top: hoverInfo.y,
-              height: 2,
-              mt: "-1px",
-              bgcolor: "primary.main",
-              opacity: 0.9,
-              zIndex: 199,
-              pointerEvents: "none",
-            }}
-          />
-          <Box
-            sx={{
-              position: "fixed",
-              right: 36,
+              right: lineRight + 4,
               top: hoverInfo.y,
               transform: "translateY(-50%)",
-              bgcolor: (t) => alpha(t.palette.background.paper, 0.95),
-              backdropFilter: "blur(8px)",
-              border: "1px solid",
-              borderColor: "divider",
-              borderLeft: "3px solid",
-              borderLeftColor: "primary.main",
-              borderRadius: 1.5,
-              px: 1.5,
-              py: 0.5,
-              boxShadow: 3,
-              pointerEvents: "none",
-              whiteSpace: "nowrap",
+              display: "flex",
+              alignItems: "center",
+              gap: 1,
               zIndex: 200,
+              pointerEvents: "none",
             }}
           >
-            <Typography
-              variant="caption"
-              sx={{ fontWeight: 700, fontFamily: "monospace" }}
+            {previewUrl && (
+              <Box
+                component="img"
+                src={previewUrl}
+                alt=""
+                sx={{
+                  width: 52,
+                  height: 52,
+                  objectFit: "cover",
+                  borderRadius: 1,
+                  boxShadow: 4,
+                  border: "2px solid",
+                  borderColor: "background.paper",
+                }}
+              />
+            )}
+            <Box
+              sx={{
+                bgcolor: (t) => alpha(t.palette.background.paper, 0.96),
+                backdropFilter: "blur(10px)",
+                border: "1px solid",
+                borderColor: "divider",
+                borderLeft: "3px solid",
+                borderLeftColor: "primary.main",
+                borderRadius: 1.5,
+                px: 1.5,
+                py: 0.75,
+                boxShadow: 4,
+                maxWidth: 220,
+              }}
             >
-              {formatHeaderLabel(headers[shownIndex])}
-            </Typography>
+              <Typography variant="caption" sx={{ fontWeight: 700 }}>
+                {previewLabel}
+              </Typography>
+            </Box>
           </Box>
         </>
       )}
@@ -291,100 +513,123 @@ export default function TimelineScrubber({
         onPointerMove={handlePointerMove}
         onPointerUp={endDrag}
         onPointerCancel={endDrag}
-        onMouseLeave={handleLeave}
+        onPointerLeave={handlePointerLeave}
         sx={{
-          position: "fixed",
-          right: 0,
-          top: 100,
-          bottom: 60,
-          width: 76,
+          ...trackStyle,
           zIndex: 200,
-          cursor: "row-resize",
+          cursor: "ns-resize",
           touchAction: "none",
           display: "flex",
           justifyContent: "flex-end",
           alignItems: "stretch",
-          pr: 1,
+          pr: 0.75,
+          overflow: "visible",
+          boxSizing: "border-box",
         }}
       >
-        {/* подписи лет */}
-        {shownYears.map(({ year, groupIndex, ratio: yearRatio }) => {
-          return (
-            <Typography
-              key={year}
+        {shownYears.map(({ year, groupIndex, labelTopPct }) => (
+          <Typography
+            key={year}
+            onClick={(e) => {
+              e.stopPropagation();
+              jumpToGroup(groupIndex);
+            }}
+            sx={{
+              position: "absolute",
+              right: 2,
+              top: `${labelTopPct.toFixed(3)}%`,
+              transform: "translateY(-50%)",
+              fontSize: "11px",
+              fontWeight: 600,
+              color: "text.secondary",
+              lineHeight: 1,
+              whiteSpace: "nowrap",
+              pointerEvents: "auto",
+              bgcolor: (t) => alpha(t.palette.background.default, 0.72),
+              backdropFilter: "blur(6px)",
+              borderRadius: 1,
+              px: 0.6,
+              py: 0.35,
+              cursor: "pointer",
+              "&:hover": { color: "primary.main" },
+            }}
+          >
+            {year}
+          </Typography>
+        ))}
+
+        <Box
+          sx={{
+            width: 8,
+            position: "absolute",
+            top: RAIL_PAD_TOP,
+            bottom: RAIL_PAD_BOTTOM,
+            right: 4,
+          }}
+        >
+          {/* heatmap — ширина сегмента ∝ плотность фото */}
+          {heatmapSegments.map((seg, i) => {
+            const hPct = Math.max(0.15, (seg.end - seg.start) * 100);
+            const topPct = seg.start * 100;
+            const bulge = 2 + (seg.weight / maxWeight) * 5;
+            return (
+              <Box
+                key={`heat-${i}`}
+                sx={{
+                  position: "absolute",
+                  top: `${topPct}%`,
+                  height: `${hPct}%`,
+                  right: 0,
+                  width: bulge,
+                  borderRadius: 1,
+                  bgcolor: alpha(theme.palette.primary.main, 0.2),
+                  opacity: 0.35 + (seg.weight / maxWeight) * 0.55,
+                  pointerEvents: "none",
+                }}
+              />
+            );
+          })}
+
+          {railDots.map(({ year, month, groupIndex, ratio: dotRatio }) => (
+            <Box
+              key={`${year}-${month}-${groupIndex}`}
               onClick={(e) => {
                 e.stopPropagation();
                 jumpToGroup(groupIndex);
               }}
               sx={{
                 position: "absolute",
-                right: 2,
-                top: `${(yearRatio * 100).toFixed(2)}%`,
+                top: `${(dotRatio * 100).toFixed(3)}%`,
+                right: 1,
                 transform: "translateY(-50%)",
-                fontSize: "12px",
-                fontWeight: 500,
-                color: "text.secondary",
-                lineHeight: 1,
-                whiteSpace: "nowrap",
+                width: 5,
+                height: 5,
+                borderRadius: "50%",
+                bgcolor: (t) => alpha(t.palette.text.primary, 0.4),
                 pointerEvents: "auto",
-                bgcolor: (t) => alpha(t.palette.background.default, 0.65),
-                backdropFilter: "blur(6px)",
-                borderRadius: 1,
-                px: 0.75,
-                py: 0.4,
+                cursor: "pointer",
+                "&:hover": {
+                  bgcolor: "primary.main",
+                  transform: "translateY(-50%) scale(1.3)",
+                },
               }}
-            >
-              {year}
-            </Typography>
-          );
-        })}
-        {/* трек-невидимка: только зона и ось позиционирования */}
-        <Box
-          sx={{
-            width: 4,
-            height: "100%",
-            borderRadius: 2,
-            bgcolor: "transparent",
-            position: "relative",
-          }}
-        >
-          {/* колонка точек — истинные позиции месяцев, без подсветки */}
-          {railDots.map(({ year, month, groupIndex, ratio: dotRatio }) => {
-            return (
-              <Box
-                key={`${year}-${month}`}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  jumpToGroup(groupIndex);
-                }}
-                sx={{
-                  position: "absolute",
-                  top: `${(dotRatio * 100).toFixed(2)}%`,
-                  left: "50%",
-                  transform: "translate(-50%, -50%)",
-                  width: 4,
-                  height: 4,
-                  borderRadius: "50%",
-                  bgcolor: (t) => alpha(t.palette.text.primary, 0.35),
-                  transition: "background-color 0.15s ease",
-                  pointerEvents: "auto",
-                }}
-              />
-            );
-          })}
+            />
+          ))}
 
-          {/* маркер текущего места — горизонтальная линия */}
+          {/* маркер текущей позиции (синий, как при выборе даты) */}
           <Box
             sx={{
               position: "absolute",
-              top: `${(ratio * 100).toFixed(2)}%`,
-              left: "50%",
-              transform: "translate(-50%, -50%)",
-              width: 20,
-              height: 3,
+              top: `${((showScrubUI ? scrubRatio : markerRatio) * 100).toFixed(3)}%`,
+              right: -1,
+              transform: "translateY(-50%)",
+              width: 18,
+              height: 4,
               borderRadius: 2,
               bgcolor: "primary.main",
+              boxShadow: 2,
               pointerEvents: "none",
+              transition: dragging ? "none" : "top 0.12s ease-out",
             }}
           />
         </Box>

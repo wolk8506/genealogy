@@ -164,6 +164,7 @@ contextBridge.exposeInMainWorld("bioAPI", {
   load: (id) => ipcRenderer.invoke("bio:load", id),
   filledCount: (ids) => ipcRenderer.invoke("bio:filledCount", ids),
   save: (id, content) => ipcRenderer.invoke("bio:save", id, content),
+  exportPdf: (payload) => ipcRenderer.invoke("bio:exportPdf", payload),
   addImage: (id) => ipcRenderer.invoke("bio:addImage", id),
   getImagePath: (id, filename) =>
     ipcRenderer.invoke("bio:getImagePath", id, filename),
@@ -217,6 +218,7 @@ contextBridge.exposeInMainWorld("geoAPI", {
   forward: (query) => ipcRenderer.invoke("geo:forward", query),
   getCache: () => ipcRenderer.invoke("geo:getCache"),
   reverse: (lat, lng) => ipcRenderer.invoke("geo:reverse", lat, lng),
+  clearCache: () => ipcRenderer.invoke("geo:clearCache"),
 });
 
 // 🧩 Информация о приложении
@@ -225,6 +227,7 @@ contextBridge.exposeInMainWorld("appAPI", {
   getPlatform: () => ipcRenderer.invoke("app:getPlatform"),
   getSysVersions: () => ipcRenderer.invoke("app:getSysVersions"),
   openDataFolder: () => ipcRenderer.invoke("app:openDataFolder"),
+  openPath: (targetPath) => ipcRenderer.invoke("app:openPath", targetPath),
   revealPath: (targetPath) => ipcRenderer.invoke("app:revealPath", targetPath),
   resetSettings: () => ipcRenderer.invoke("app:resetSettings"),
   getBuildDate: () => ipcRenderer.invoke("app:getBuildDate"),
@@ -310,6 +313,12 @@ contextBridge.exposeInMainWorld("fileAPI", {
     ipcRenderer.invoke("get-person-files", personId),
   deletePersonFile: (personId, fileName) =>
     ipcRenderer.invoke("delete-person-file", personId, fileName),
+  renamePersonFile: (personId, oldName, newName) =>
+    ipcRenderer.invoke("rename-person-file", personId, oldName, newName),
+  openPersonFilesFolder: (personId) =>
+    ipcRenderer.invoke("open-person-files-folder", personId),
+  openPersonPdfWindow: (filePath, title) =>
+    ipcRenderer.invoke("open-person-pdf-window", { filePath, title }),
 });
 
 contextBridge.exposeInMainWorld("pathAPI", {

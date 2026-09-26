@@ -16,6 +16,7 @@ import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
 import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
 import InfoIcon from "@mui/icons-material/Info";
 import DownloadIcon from "@mui/icons-material/Download";
+import EditIcon from "@mui/icons-material/Edit";
 import FaceIcon from "@mui/icons-material/Face";
 import PhotoFaceOverlay from "./PhotoFaceOverlay";
 import { normalizeFaces } from "../utils/photoFaces";
@@ -34,6 +35,7 @@ const PhotoFullscreenViewer = ({
   onToggleMaximize,
   currentPhotoInfo,
   onDownload,
+  onEdit,
   allPeople = [],
   allExternal = [],
 }) => {
@@ -176,6 +178,17 @@ const PhotoFullscreenViewer = ({
                 <DownloadIcon fontSize="inherit" />
               </IconButton>
             </Tooltip>
+            {onEdit && (
+              <Tooltip title="Редактировать">
+                <IconButton
+                  onClick={() => onEdit(photo)}
+                  size="small"
+                  sx={{ color: "white", p: 1 }}
+                >
+                  <EditIcon fontSize="inherit" />
+                </IconButton>
+              </Tooltip>
+            )}
 
             <Tooltip title={showInfo ? "Скрыть описание" : "Показать описание"}>
               <IconButton

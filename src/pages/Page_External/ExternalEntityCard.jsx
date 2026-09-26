@@ -4,22 +4,22 @@ import {
   ListItemText,
   Typography,
   Stack,
-  Button,
   ListItemButton,
   useTheme,
   Paper,
   Chip,
   alpha,
   Box,
+  Button,
 } from "@mui/material";
+import TrashFillIcon from "../../components/svg/TrashFillIcon";
+import TrashSlashFillIcon from "../../components/svg/TrashSlashFillIcon";
 import PetsIcon from "@mui/icons-material/Pets";
 import PersonOutlineIcon from "@mui/icons-material/PersonOutline";
-import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import PhoneIcon from "@mui/icons-material/Phone";
 import EmailIcon from "@mui/icons-material/Email";
 import HomeIcon from "@mui/icons-material/Home";
 import CakeIcon from "@mui/icons-material/Cake";
-import { Link } from "react-router-dom";
 import ExternalEntityAvatar from "../../components/ExternalEntityAvatar";
 import {
   findExternalById,
@@ -28,13 +28,15 @@ import {
   getRelationTypeLabel,
   findPersonById,
 } from "../../utils/externalEntities";
-import { btnStyleRed } from "../../components/ButtonStyle";
-
 export function ExternalEntityCard({
   entity,
   allPeople = [],
   allExternal = [],
-  onDelete,
+  selected = false,
+  onSelect,
+  isArchived = false,
+  onRestore,
+  onDeleteForever,
 }) {
   const theme = useTheme();
   const isDark = theme.palette.mode === "dark";
@@ -67,15 +69,22 @@ export function ExternalEntityCard({
   return (
     <>
       <ListItemButton
-        component={Link}
-        to={`/external/${entity.id}`}
+        selected={selected}
+        onClick={() => !isArchived && onSelect?.(entity.id)}
         sx={{
           p: 0,
           borderRadius: "16px",
           width: "100%",
           display: "flex",
           border: "1px solid",
-          borderColor: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)",
+          borderColor: selected
+            ? "primary.main"
+            : isDark
+              ? "rgba(255,255,255,0.08)"
+              : "rgba(0,0,0,0.06)",
+          bgcolor: selected
+            ? alpha(theme.palette.primary.main, isDark ? 0.12 : 0.06)
+            : "transparent",
           transition: "transform 0.2s, box-shadow 0.2s",
           "&:hover": {
             transform: "translateY(-4px)",
@@ -83,6 +92,12 @@ export function ExternalEntityCard({
               ? "0 12px 24px rgba(0,0,0,0.4)"
               : "0 8px 16px rgba(0,0,0,0.05)",
             borderColor: "primary.main",
+          },
+          "&.Mui-selected": {
+            bgcolor: alpha(theme.palette.primary.main, isDark ? 0.12 : 0.06),
+          },
+          "&.Mui-selected:hover": {
+            bgcolor: alpha(theme.palette.primary.main, isDark ? 0.16 : 0.08),
           },
         }}
       >
@@ -172,36 +187,49 @@ export function ExternalEntityCard({
             sx={{ flex: 1, minWidth: 0 }}
           />
 
-          <Box
-            sx={{ ml: "auto", zIndex: 10, alignSelf: "center" }}
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-            }}
-          >
-            <Button
-              size="small"
-              color="error"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                onDelete(entity.id);
-              }}
-              startIcon={<DeleteOutlineIcon sx={{ fontSize: 18 }} />}
+          {isArchived && (
+            <Box
               sx={{
-                ...btnStyleRed
-                // borderRadius: "10px",
-                // fontWeight: 700,
-                // opacity: 0.5,
-                // "&:hover": {
-                //   opacity: 1,
-                //   bgcolor: alpha(theme.palette.error.main, 0.1),
-                // },
+                ml: "auto",
+                display: "flex",
+                gap: 1,
+                alignItems: "center",
+                pl: 1,
               }}
+              onClick={(e) => e.stopPropagation()}
             >
-              Удалить
-            </Button>
-          </Box>
+              <Button
+                size="small"
+                color="success"
+                onClick={() => onRestore?.(entity.id)}
+                startIcon={<TrashSlashFillIcon sx={{ fontSize: 18 }} />}
+                sx={{
+                  borderRadius: "10px",
+                  fontWeight: 700,
+                  bgcolor: alpha(theme.palette.success.main, 0.05),
+                  "&:hover": {
+                    bgcolor: alpha(theme.palette.success.main, 0.15),
+                  },
+                }}
+              >
+                Восстановить
+              </Button>
+              <Button
+                size="small"
+                color="error"
+                onClick={() => onDeleteForever?.(entity.id)}
+                startIcon={<TrashFillIcon sx={{ fontSize: 18 }} />}
+                sx={{
+                  borderRadius: "10px",
+                  fontWeight: 700,
+                  bgcolor: alpha(theme.palette.error.main, 0.05),
+                  "&:hover": { bgcolor: alpha(theme.palette.error.main, 0.15) },
+                }}
+              >
+                Удалить
+              </Button>
+            </Box>
+          )}
         </Paper>
       </ListItemButton>
 

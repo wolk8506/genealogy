@@ -6,6 +6,7 @@ import {
   Box,
   IconButton,
   Tooltip,
+  Badge,
 } from "@mui/material";
 import PetsIcon from "@mui/icons-material/Pets";
 import PersonOutlineIcon from "@mui/icons-material/PersonOutline";
@@ -13,6 +14,8 @@ import { useNavigate } from "react-router-dom";
 import ExpandingSearch from "../../components/ExpandingSearch";
 import ButtonConteiner from "../../components/ButtonConteiner";
 import PersonFillBadgePlusIcon from "../../components/svg/PersonFillBadgePlusIcon";
+import TrashFillIcon from "../../components/svg/TrashFillIcon";
+import { usePeopleListStore } from "../../store/usePeopleListStore";
 
 export default function ExternalToolbar({
   search,
@@ -21,6 +24,11 @@ export default function ExternalToolbar({
   setTypeFilter,
 }) {
   const navigate = useNavigate();
+  const hasArchived = usePeopleListStore((state) => state.hasArchived);
+  const hasArchivedExternal = usePeopleListStore(
+    (state) => state.hasArchivedExternal,
+  );
+  const trashHasItems = hasArchived || hasArchivedExternal;
 
   return (
     <Stack
@@ -72,6 +80,24 @@ export default function ExternalToolbar({
           </ToggleButton>
         </ToggleButtonGroup>
       </Box>
+
+      <ButtonConteiner>
+        <Tooltip title="Корзина">
+          <IconButton
+            onClick={() => navigate("/trash?tab=external")}
+            size="small"
+            sx={{ color: "white", p: 1 }}
+          >
+            <Badge
+              variant="dot"
+              color="warning"
+              invisible={!trashHasItems}
+            >
+              <TrashFillIcon color="inherit" fontSize="inherit" />
+            </Badge>
+          </IconButton>
+        </Tooltip>
+      </ButtonConteiner>
 
       <ButtonConteiner>
         <Tooltip title="Добавить человека/питомца">

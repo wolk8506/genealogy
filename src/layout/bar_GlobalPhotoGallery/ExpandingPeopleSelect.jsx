@@ -34,6 +34,8 @@ export default function ExpandingPeopleSelect({
   selectedPeople,
   onChange,
   photos,
+  options,
+  placeholder = "Кто на фото?",
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -41,6 +43,15 @@ export default function ExpandingPeopleSelect({
 
   // 1. Умная сортировка: Выбранные сверху + Фильтр по фото
   const processedPeople = useMemo(() => {
+    if (options) {
+      return [...options].sort((a, b) => {
+        const aSel = selectedPeople.some((p) => p.id === a.id);
+        const bSel = selectedPeople.some((p) => p.id === b.id);
+        if (aSel && !bSel) return -1;
+        if (!aSel && bSel) return 1;
+        return 0;
+      });
+    }
     // Сначала фильтруем тех, у кого есть фото
     const idsInPhotos = new Set();
     photos?.forEach((p) => {
@@ -58,7 +69,7 @@ export default function ExpandingPeopleSelect({
       if (!aSel && bSel) return 1;
       return 0;
     });
-  }, [allPeople, photos, selectedPeople]);
+  }, [allPeople, photos, selectedPeople, options]);
 
   useEffect(() => {
     if (selectedPeople.length > 0) {
@@ -169,7 +180,7 @@ export default function ExpandingPeopleSelect({
             {...params}
             inputRef={inputRef}
             placeholder={
-              selectedPeople.length === 0 && isExpanded ? "Кто на фото?" : ""
+              selectedPeople.length === 0 && isExpanded ? placeholder : ""
             }
             variant="standard"
             InputProps={{ ...params.InputProps, disableUnderline: true }}

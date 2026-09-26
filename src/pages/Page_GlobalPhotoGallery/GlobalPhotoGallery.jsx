@@ -64,7 +64,8 @@ export default function GlobalPhotoGallery({
   const [openInfo, setOpenInfo] = useState(false);
   const [metaInfo, setMetaInfo] = useState(null);
 
-  const [activeHeader, setActiveHeader] = useState("");
+  const [activeGroupIndex, setActiveGroupIndex] = useState(0);
+  const scrollAreaRef = useRef(null);
 
   const [scrollTop, setScrollTop] = useState(0);
   const [allExternal, setAllExternal] = useState([]);
@@ -262,10 +263,23 @@ export default function GlobalPhotoGallery({
           break;
         }
       }
-      if (headers[curIdx]) setActiveHeader(headers[curIdx]);
+      setActiveGroupIndex(curIdx);
     },
-    [groupCounts, headers],
+    [groupCounts],
   );
+
+  const groupFirstPhotos = useMemo(() => {
+    const result = [];
+    let idx = 0;
+    for (let g = 0; g < photoCountsPerGroup.length; g++) {
+      result.push(displayList[idx] || null);
+      idx += photoCountsPerGroup[g] || 0;
+    }
+    return result;
+  }, [displayList, photoCountsPerGroup]);
+
+  const scrubberMode =
+    groupBy === "date" || groupBy === "datePhoto" ? "date" : "index";
 
   //  --- Управление слайдером ---
 
@@ -419,9 +433,21 @@ export default function GlobalPhotoGallery({
       }}
     >
       <Box
+        ref={scrollAreaRef}
         sx={{
           flexGrow: 1,
           mr: 4.5,
+          ...(groupBy === "datePhoto" && {
+            "& > div": {
+              scrollbarWidth: "none",
+              msOverflowStyle: "none",
+            },
+            "& > div::-webkit-scrollbar": {
+              display: "none",
+              width: 0,
+              height: 0,
+            },
+          }),
         }}
       >
         {isLoading ? (
@@ -535,15 +561,26 @@ export default function GlobalPhotoGallery({
             )}
           />
         )}
-        <ButtonScrollTop targetRef={virtuosoRef} scrollOffset={scrollTop} />
+        {groupBy !== "datePhoto" && (
+          <ButtonScrollTop targetRef={virtuosoRef} scrollOffset={scrollTop} />
+        )}
       </Box>
 
       {/* ТАЙМЛАЙН-СКРАББЕР в стиле Google Photos */}
       <TimelineScrubber
         headers={headers}
         groupOffsets={groupOffsets}
-        activeHeader={activeHeader}
+        groupCounts={groupCounts}
+        groupWeights={photoCountsPerGroup}
+        activeGroupIndex={activeGroupIndex}
+        mode={scrubberMode}
+        anchorRef={scrollAreaRef}
         virtuosoRef={virtuosoRef}
+        getPreviewUrl={(i) => {
+          const p = groupFirstPhotos[i];
+          return p ? photoPaths.thumbs[p.id] : null;
+        }}
+        showCrosshairLine={false}
       />
 
       {/* ОСТАЛЬНЫЕ КОМПОНЕНТЫ */}

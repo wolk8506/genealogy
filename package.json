@@ -1,6 +1,6 @@
 {
   "name": "genealogy-react",
-  "version": "1.11.4",
+  "version": "1.11.5",
   "main": "src/main/index.cjs",
   "type": "module",
   "description": "Генеалогическое приложение",
@@ -118,6 +118,10 @@
       "target": "dmg",
       "icon": "build/icons/icon.icns",
       "identity": "Genealogy Self-Sign"
+    },
+    "dmg": {
+      "icon": "build/icons/dmg-volume.icns",
+      "title": "Установка Genealogy"
     },
     "win": {
       "target": [

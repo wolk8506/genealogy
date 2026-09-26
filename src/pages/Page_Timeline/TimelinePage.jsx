@@ -10,16 +10,30 @@ import {
   Box,
   Stack,
   Typography,
+  IconButton,
+  Tooltip,
 } from "@mui/material";
 import { useTheme, alpha } from "@mui/material/styles";
-import { GroupedVirtuoso } from "react-virtuoso";
+import { GroupedVirtuoso, Virtuoso } from "react-virtuoso";
 import { useNavigate } from "react-router-dom";
 import EventIcon from "@mui/icons-material/Event";
+import ContactsIcon from "@mui/icons-material/Contacts";
+import MapIcon from "@mui/icons-material/Map";
 import { EVENT_TYPES } from "../Page_Person/Event/EventTypesList";
 import TimelineScrubber from "../../components/TimelineScrubber";
 import PhotoFullscreenViewer from "../../components/PhotoFullscreenViewer";
+import PhotoMetaUpdateDialog from "../../components/Dialog/PhotoMetaUpdateDialog";
+import EventEditorDialog from "../Page_Person/Event/EventEditorDialog";
+import TimelineEventDialog from "./TimelineEventDialog";
 import usePhotoThumbs from "../../hooks/usePhotoThumbs";
-import { buildTimeline } from "../../utils/timelineGroups";
+import onDownload from "../../utils/onDownload";
+import {
+  buildTimeline,
+  timelineEntryFocusKey,
+  dayMapFocusKey,
+} from "../../utils/timelineGroups";
+import { KIND_COLOR } from "../Page_Map/mapHelpers";
+import { useNotificationStore } from "../../store/useNotificationStore";
 
 const THUMB_SIZE = 120;
 const EVENT_CARD_WIDTH = THUMB_SIZE * 2 + 8; // как 2 фото + разделитель
@@ -124,7 +138,7 @@ function MediaStrip({
     >
       {shownEvents.map((ev, i) => (
         <Box
-          key={`ev-${i}`}
+          key={`ev-${ev.kind || "event"}-${i}`}
           onClick={(e) => {
             e.stopPropagation();
             onEventClick?.(ev);
@@ -142,17 +156,31 @@ function MediaStrip({
             cursor: onEventClick ? "pointer" : "default",
           }}
         >
-          {cloneElement(eventTypeIcon(ev.type), {
-            sx: {
-              position: "absolute",
-              bottom: -8,
-              right: -8,
-              fontSize: height * 0.75,
-              color: "primary.main",
-              opacity: 0.08,
-              pointerEvents: "none",
-            },
-          })}
+          {ev.kind === "external" ? (
+            <ContactsIcon
+              sx={{
+                position: "absolute",
+                bottom: -8,
+                right: -8,
+                fontSize: height * 0.75,
+                color: KIND_COLOR.external,
+                opacity: 0.12,
+                pointerEvents: "none",
+              }}
+            />
+          ) : (
+            cloneElement(eventTypeIcon(ev.type), {
+              sx: {
+                position: "absolute",
+                bottom: -8,
+                right: -8,
+                fontSize: height * 0.75,
+                color: "primary.main",
+                opacity: 0.08,
+                pointerEvents: "none",
+              },
+            })
+          )}
           <Typography
             variant="caption"
             sx={{
@@ -164,7 +192,7 @@ function MediaStrip({
               fontSize: height > 60 ? "0.72rem" : "0.65rem",
             }}
           >
-            {ev.type || "Событие"}
+            {ev.kind === "external" ? ev.label || "Справочник" : ev.type || "Событие"}
           </Typography>
           <Typography
             variant="caption"
@@ -211,27 +239,40 @@ export default function TimelinePage({
   photos,
   allPeople,
   level,
-  setLevel,
   year,
-  setYear,
   month,
-  setMonth,
+  onNavigate,
   showPhotos,
   showEvents,
+  showExternal = true,
+  filterPersonId = null,
+  refresh,
 }) {
   const theme = useTheme();
   const isDark = theme.palette.mode === "dark";
   const navigate = useNavigate();
   const virtuosoRef = useRef(null);
+  const scrollAreaRef = useRef(null);
   const pendingFull = useRef(new Set());
 
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
-  const [activeHeader, setActiveHeader] = useState("");
+  const [activeGroupIndex, setActiveGroupIndex] = useState(0);
 
   const [fullscreen, setFullscreen] = useState(false);
   const [fullIndex, setFullIndex] = useState(0);
   const [fullList, setFullList] = useState([]);
   const [fullPaths, setFullPaths] = useState({});
+  const [slideDirection, setSlideDirection] = useState(0);
+  const [hideLabels, setHideLabels] = useState(false);
+  const [sliderForcedFullscreen, setSliderForcedFullscreen] = useState(false);
+  const [editingPhoto, setEditingPhoto] = useState(null);
+  const [photoEditOpen, setPhotoEditOpen] = useState(false);
+  const [allExternal, setAllExternal] = useState([]);
+  const [selectedEvent, setSelectedEvent] = useState(null);
+  const [eventDialogOpen, setEventDialogOpen] = useState(false);
+  const [eventEditorOpen, setEventEditorOpen] = useState(false);
+  const [editingEventSource, setEditingEventSource] = useState(null);
+  const addNotification = useNotificationStore((s) => s.addNotification);
   const { thumbs, fetchThumb } = usePhotoThumbs();
   // Ширина списка строк — для заполнения ряда по ширине экрана.
   // ResizeObserver + дублирующий window.resize: пересчёт при любом сужении.
@@ -294,36 +335,167 @@ export default function TimelinePage({
     return () => window.removeEventListener("resize", onResize);
   }, []);
 
+  useEffect(() => {
+    window.externalAPI?.getAll().then((data) => setAllExternal(data || []));
+  }, []);
+
+  const filteredPhotos = useMemo(() => {
+    const list = photos || [];
+    if (!filterPersonId) return list;
+    const pid = Number(filterPersonId);
+    return list.filter(
+      (p) =>
+        p.owner === pid ||
+        (Array.isArray(p.people) && p.people.includes(pid)),
+    );
+  }, [photos, filterPersonId]);
+
   const events = useMemo(() => {
     const list = [];
     for (const person of allPeople || []) {
-      for (const ev of person.events || []) {
-        list.push({ ...ev, personId: person.id });
+      if (
+        filterPersonId &&
+        String(person.id) !== String(filterPersonId)
+      ) {
+        continue;
       }
+      (person.events || []).forEach((ev, eventIndex) => {
+        list.push({ ...ev, personId: person.id, _eventIndex: eventIndex });
+      });
     }
     return list;
-  }, [allPeople]);
+  }, [allPeople, filterPersonId]);
 
-  const timeline = useMemo(
-    () => buildTimeline(photos || [], events),
-    [photos, events],
+  const filteredExternal = useMemo(() => {
+    const activeExternal = (allExternal || []).filter((ent) => !ent.archived);
+    if (!filterPersonId) return activeExternal;
+    const pid = String(filterPersonId);
+    return activeExternal.filter((ent) =>
+      (ent.relations || []).some(
+        (r) =>
+          r?.targetKind === "person" &&
+          String(r.mainPersonId) === pid,
+      ),
+    );
+  }, [allExternal, filterPersonId]);
+
+  const filterDayEntries = useCallback(
+    (list) =>
+      (list || []).filter((e) =>
+        e.kind === "external" ? showExternal : showEvents,
+      ),
+    [showEvents, showExternal],
   );
 
-  const goYears = () => {
-    setYear(null);
-    setMonth(null);
-    setLevel("years");
-  };
-  const goMonths = (y) => {
-    setYear(y ?? null);
-    setMonth(null);
-    setLevel("months");
-  };
-  const goDays = (y, m) => {
-    if (y !== undefined) setYear(y);
-    if (m !== undefined) setMonth(m);
-    setLevel("days");
-  };
+  const timeline = useMemo(
+    () => buildTimeline(filteredPhotos, events, filteredExternal),
+    [filteredPhotos, events, filteredExternal],
+  );
+
+  const openEventCard = useCallback((ev) => {
+    setSelectedEvent(ev);
+    setEventDialogOpen(true);
+  }, []);
+
+  const navigateToMapFocus = useCallback(
+    (focusKey) => {
+      if (!focusKey) return;
+      navigate(`/map?focus=${encodeURIComponent(focusKey)}`);
+    },
+    [navigate],
+  );
+
+  const showEventOnMap = useCallback(
+    (ev) => {
+      navigateToMapFocus(timelineEntryFocusKey(ev));
+      setEventDialogOpen(false);
+    },
+    [navigateToMapFocus],
+  );
+
+  const openEventEditor = useCallback((ev) => {
+    const src = ev.sources?.[0];
+    const personId = src?.personId ?? ev.personIds?.[0] ?? ev.personId;
+    if (personId == null) return;
+    setEditingEventSource({
+      personId,
+      eventIndex: src?.eventIndex,
+      eventId: src?.eventId ?? ev.id,
+    });
+    setEventDialogOpen(false);
+    setEventEditorOpen(true);
+  }, []);
+
+  const saveTimelineEvent = useCallback(
+    async (ev) => {
+      const src = editingEventSource;
+      if (!src?.personId) return;
+      const person = (allPeople || []).find((p) => p.id === src.personId);
+      if (!person) return;
+      const safeEvents = person.events || [];
+      let idx = src.eventIndex;
+      if (idx == null && src.eventId != null) {
+        idx = safeEvents.findIndex((e) => e.id === src.eventId);
+      }
+      if (idx == null || idx < 0) return;
+
+      const now = new Date().toISOString();
+      const updatedEvents = safeEvents.map((e, i) =>
+        i === idx
+          ? {
+              ...e,
+              ...ev,
+              id: e.id,
+              createdAt: e.createdAt || now,
+              editedAt: now,
+            }
+          : e,
+      );
+      const updatedPerson = { ...person, events: updatedEvents, editedAt: now };
+      await window.peopleAPI.saveAll(
+        (allPeople || []).map((p) =>
+          p.id === person.id ? updatedPerson : p,
+        ),
+      );
+      addNotification({
+        title: "Событие обновлено",
+        message: `Обновлено событие: ${ev.type?.name || ev.type}`,
+        type: "success",
+        link: `/person/${person.id}`,
+        category: "event",
+      });
+      setEventEditorOpen(false);
+      setEditingEventSource(null);
+      await refresh?.();
+    },
+    [editingEventSource, allPeople, addNotification, refresh],
+  );
+
+  const goYears = useCallback(() => {
+    onNavigate?.({ level: "years", year: null, month: null });
+  }, [onNavigate]);
+
+  const goMonths = useCallback(
+    (y) => {
+      onNavigate?.({
+        level: "months",
+        year: y ?? null,
+        month: null,
+      });
+    },
+    [onNavigate],
+  );
+
+  const goDays = useCallback(
+    (y, m) => {
+      onNavigate?.({
+        level: "days",
+        year: y !== undefined ? y : year,
+        month: m !== undefined ? m : month,
+      });
+    },
+    [onNavigate, year, month],
+  );
 
   // Месяцы для уровня months (все или выбранного года).
   const monthsView = useMemo(() => {
@@ -342,9 +514,9 @@ export default function TimelinePage({
       for (const m of months) {
         for (const d of m.days) {
           const dayPhotos = showPhotos ? d.photos : [];
-          const dayEvents = showEvents
-            ? timeline.eventsByDay.get(d.key) || []
-            : [];
+          const dayEvents = filterDayEntries(
+            timeline.eventsByDay.get(d.key),
+          );
           if (dayPhotos.length === 0 && dayEvents.length === 0) continue;
           days.push({ ...d, photos: dayPhotos, events: dayEvents });
         }
@@ -362,7 +534,7 @@ export default function TimelinePage({
       for (const y of timeline.years) pushMonths(y.months);
     }
     return days;
-  }, [timeline, year, month, showPhotos, showEvents]);
+  }, [timeline, year, month, showPhotos, filterDayEntries]);
 
   const cols = windowWidth < 1200 ? 3 : windowWidth < 1600 ? 4 : 5;
 
@@ -441,13 +613,94 @@ export default function TimelinePage({
         dayHeaders: headers,
         dayOffsets: offsets,
       };
-    }, [daysView, cols, month, year, timeline.undatedPhotos]);
+    }, [daysView, cols, month, year, timeline.undatedPhotos, showPhotos]);
+
+  const scrubberDateKeys = useMemo(
+    () => dayGroups.map((chunk) => chunk[0]?.key || ""),
+    [dayGroups],
+  );
+
+  const dayGroupWeights = useMemo(
+    () =>
+      dayGroups.map((chunk) =>
+        chunk.reduce(
+          (sum, day) =>
+            sum + (day.photos?.length || 0) + (day.events?.length || 0),
+          0,
+        ),
+      ),
+    [dayGroups],
+  );
+
+  const scrubberPreviewPhotos = useMemo(
+    () =>
+      dayGroups.map((chunk) => {
+        for (const day of chunk) {
+          if (day.photos?.length) return day.photos[0];
+        }
+        return null;
+      }),
+    [dayGroups],
+  );
 
   const openDayFullscreen = useCallback((dayPhotos, photoId) => {
+    setSlideDirection(0);
     setFullList(dayPhotos);
     setFullIndex(Math.max(0, dayPhotos.findIndex((p) => p.id === photoId)));
     setFullscreen(true);
   }, []);
+
+  const handleFullscreenClose = useCallback(async () => {
+    setFullscreen(false);
+    if (sliderForcedFullscreen && window.windowAPI) {
+      await window.windowAPI.setFullscreen(false);
+      setSliderForcedFullscreen(false);
+    }
+    setHideLabels(false);
+  }, [sliderForcedFullscreen]);
+
+  const handleMaximizeWindow = useCallback(async () => {
+    const wantFullscreen = !hideLabels;
+    setHideLabels(wantFullscreen);
+    if (window.windowAPI) {
+      const isNow = await window.windowAPI.isFullscreen();
+      if (wantFullscreen && !isNow) {
+        await window.windowAPI.setFullscreen(true);
+        setSliderForcedFullscreen(true);
+      } else if (!wantFullscreen && sliderForcedFullscreen) {
+        await window.windowAPI.setFullscreen(false);
+        setSliderForcedFullscreen(false);
+      }
+    }
+  }, [hideLabels, sliderForcedFullscreen]);
+
+  const handlePhotoNext = useCallback(() => {
+    setSlideDirection(1);
+    setFullIndex((i) => (i + 1 < fullList.length ? i + 1 : i));
+  }, [fullList.length]);
+
+  const handlePhotoPrev = useCallback(() => {
+    setSlideDirection(-1);
+    setFullIndex((i) => (i - 1 >= 0 ? i - 1 : i));
+  }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (!fullscreen) return;
+      if (e.key === "ArrowLeft") handlePhotoPrev();
+      if (e.key === "ArrowRight") handlePhotoNext();
+      if (e.key === "Escape") handleFullscreenClose();
+      if (e.key.toLowerCase() === "f") handleMaximizeWindow();
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [
+    fullscreen,
+    handlePhotoNext,
+    handlePhotoPrev,
+    handleFullscreenClose,
+    handleMaximizeWindow,
+  ]);
 
   useEffect(() => {
     if (!fullscreen || !fullList[fullIndex]) return;
@@ -475,22 +728,62 @@ export default function TimelinePage({
           break;
         }
       }
-      if (dayHeaders[cur]) setActiveHeader(dayHeaders[cur]);
+      setActiveGroupIndex(cur);
     },
-    [dayGroupCounts, dayHeaders],
+    [dayGroupCounts],
   );
 
   const eventCounts = useMemo(() => {
     const byYear = new Map();
     const byMonth = new Map();
     for (const [key, list] of timeline.eventsByDay) {
+      const filtered = filterDayEntries(list);
+      if (filtered.length === 0) continue;
       const y = key.slice(0, 4);
       const m = key.slice(0, 7);
-      byYear.set(y, (byYear.get(y) || 0) + list.length);
-      byMonth.set(m, (byMonth.get(m) || 0) + list.length);
+      byYear.set(y, (byYear.get(y) || 0) + filtered.length);
+      byMonth.set(m, (byMonth.get(m) || 0) + filtered.length);
     }
     return { byYear, byMonth };
-  }, [timeline]);
+  }, [timeline, filterDayEntries]);
+
+  const yearsList = useMemo(
+    () =>
+      timeline.years.filter((y) => {
+        const photoCount = showPhotos ? y.count : 0;
+        const eventCount = showEvents || showExternal
+          ? eventCounts.byYear.get(y.year) || 0
+          : 0;
+        return photoCount > 0 || eventCount > 0;
+      }),
+    [timeline.years, showPhotos, showEvents, showExternal, eventCounts.byYear],
+  );
+
+  const monthsList = useMemo(
+    () =>
+      monthsView.filter((m) => {
+        const photoCount = showPhotos ? m.count : 0;
+        const eventCount = showEvents || showExternal
+          ? eventCounts.byMonth.get(m.key) || 0
+          : 0;
+        return photoCount > 0 || eventCount > 0;
+      }),
+    [monthsView, showPhotos, showEvents, showExternal, eventCounts.byMonth],
+  );
+
+  const editingEventInitial = useMemo(() => {
+    if (!editingEventSource) return null;
+    const person = (allPeople || []).find(
+      (p) => p.id === editingEventSource.personId,
+    );
+    if (!person) return null;
+    const eventsList = person.events || [];
+    let idx = editingEventSource.eventIndex;
+    if (idx == null && editingEventSource.eventId != null) {
+      idx = eventsList.findIndex((e) => e.id === editingEventSource.eventId);
+    }
+    return idx != null && idx >= 0 ? eventsList[idx] : null;
+  }, [editingEventSource, allPeople]);
 
   return (
     <Box
@@ -502,133 +795,119 @@ export default function TimelinePage({
         position: "relative",
       }}
     >
-      <Box sx={{ flexGrow: 1, mr: 3.5, overflow: "hidden" }}>
+      <Box ref={scrollAreaRef} sx={{ flexGrow: 1, mr: 3.5, overflow: "hidden" }}>
         {level === "years" && (
-          <Box
-            ref={listRef}
-            sx={{ height: "100%", overflowY: "auto", px: 2, pb: 2 }}
-          >
-            <Stack spacing={1.5}>
-              {timeline.years.map((y) => {
-                const photoCount = showPhotos ? y.count : 0;
-                const eventCount = showEvents
-                  ? eventCounts.byYear.get(y.year) || 0
-                  : 0;
-                if (photoCount === 0 && eventCount === 0) return null;
-                const sample = showPhotos
-                  ? y.months.flatMap((m) =>
-                      m.days.flatMap((d) => d.photos),
-                    )
-                  : [];
-                const yearEvents = showEvents
-                  ? y.months.flatMap(
-                      (m) =>
-                        m.days.flatMap(
-                          (d) => timeline.eventsByDay.get(d.key) || [],
-                        ),
-                    )
-                  : [];
-                const { limit: yearPhotoLimit, evShown: yearEvShown } =
-                  photoLimitFor(72, sample.length, yearEvents.length);
-                return (
-                  <Box
-                    key={y.year}
-                    onClick={() => goMonths(y.year)}
-                    sx={{
-                      p: 2,
-                      borderRadius: 3,
-                      border: "1px solid",
-                      borderColor: "divider",
-                      bgcolor: isDark
-                        ? alpha("#121212", 0.9)
-                        : alpha("#f5f5f5", 0.9),
-                      cursor: "pointer",
-                      display: "flex",
-                      gap: 2,
-                      alignItems: "center",
-                      overflow: "hidden",
-                      minWidth: 0,
-                      "&:hover": { borderColor: "primary.main" },
-                    }}
-                  >
-                    <Box sx={{ width: 167, flexShrink: 0 }}>
-                      <Typography variant="h4" sx={{ fontWeight: 800 }}>
-                        {y.year}
-                      </Typography>
-                      <Typography
-                        variant="caption"
-                        color="text.secondary"
-                        sx={{ display: "block" }}
-                      >
-                        {[
-                          photoCount > 0 ? `Фото: ${photoCount}` : null,
-                          eventCount > 0 ? `Событий: ${eventCount}` : null,
-                        ]
-                          .filter(Boolean)
-                          .join(" · ")}
-                      </Typography>
-                    </Box>
-                    <MediaStrip
-                      photos={sample}
-                      events={yearEvents}
-                      fetchThumb={fetchThumb}
-                      thumbs={thumbs}
-                      photoLimit={yearPhotoLimit}
-                      eventLimit={yearEvShown}
-                      onEventClick={(ev) => {
-                        const target =
-                          ev.personIds?.[0] ?? ev.personId;
-                        if (target != null) navigate(`/person/${target}`);
+          <Box ref={listRef} sx={{ height: "100%", px: 2, pb: 2 }}>
+            {yearsList.length === 0 ? (
+              <Typography color="text.secondary" sx={{ pt: 2 }}>
+                Нет датированных фото — всё в хвосте «Без даты» на уровне дней.
+              </Typography>
+            ) : (
+              <Virtuoso
+                style={{ height: "100%" }}
+                data={yearsList}
+                itemContent={(_, y) => {
+                  const photoCount = showPhotos ? y.count : 0;
+                  const eventCount = eventCounts.byYear.get(y.year) || 0;
+                  const sample = showPhotos
+                    ? y.months.flatMap((m) =>
+                        m.days.flatMap((d) => d.photos),
+                      )
+                    : [];
+                  const yearEvents = y.months.flatMap((m) =>
+                    m.days.flatMap((d) =>
+                      filterDayEntries(timeline.eventsByDay.get(d.key)),
+                    ),
+                  );
+                  const { limit: yearPhotoLimit, evShown: yearEvShown } =
+                    photoLimitFor(72, sample.length, yearEvents.length);
+                  return (
+                    <Box
+                      onClick={() => goMonths(y.year)}
+                      sx={{
+                        p: 2,
+                        mb: 1.5,
+                        borderRadius: 3,
+                        border: "1px solid",
+                        borderColor: "divider",
+                        bgcolor: isDark
+                          ? alpha("#121212", 0.9)
+                          : alpha("#f5f5f5", 0.9),
+                        cursor: "pointer",
+                        display: "flex",
+                        gap: 2,
+                        alignItems: "center",
+                        overflow: "hidden",
+                        minWidth: 0,
+                        "&:hover": { borderColor: "primary.main" },
                       }}
-                      eventPersonName={(ev) =>
-                        (ev.personIds?.length
-                          ? ev.personIds
-                          : [ev.personId].filter((id) => id != null)
-                        )
-                          .map((id) => ownerNameOf(allPeople, id))
-                          .join(", ")
-                      }
-                    />
-                  </Box>
-                );
-              })}
-              {timeline.years.length === 0 && (
-                <Typography color="text.secondary">
-                  Нет датированных фото — всё в хвосте «Без даты» на уровне дней.
-                </Typography>
-              )}
-            </Stack>
+                    >
+                      <Box sx={{ width: 167, flexShrink: 0 }}>
+                        <Typography variant="h4" sx={{ fontWeight: 800 }}>
+                          {y.year}
+                        </Typography>
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          sx={{ display: "block" }}
+                        >
+                          {[
+                            photoCount > 0 ? `Фото: ${photoCount}` : null,
+                            eventCount > 0 ? `Событий: ${eventCount}` : null,
+                          ]
+                            .filter(Boolean)
+                            .join(" · ")}
+                        </Typography>
+                      </Box>
+                      <MediaStrip
+                        photos={sample}
+                        events={yearEvents}
+                        fetchThumb={fetchThumb}
+                        thumbs={thumbs}
+                        photoLimit={yearPhotoLimit}
+                        eventLimit={yearEvShown}
+                        onEventClick={openEventCard}
+                        eventPersonName={(ev) =>
+                          ev.kind === "external"
+                            ? "Справочник"
+                            : (ev.personIds?.length
+                                ? ev.personIds
+                                : [ev.personId].filter((id) => id != null)
+                              )
+                                .map((id) => ownerNameOf(allPeople, id))
+                                .join(", ")
+                        }
+                      />
+                    </Box>
+                  );
+                }}
+              />
+            )}
           </Box>
         )}
 
         {level === "months" && (
-          <Box
-            ref={listRef}
-            sx={{ height: "100%", overflowY: "auto", px: 2, pb: 2 }}
-          >
-            <Stack spacing={1}>
-              {monthsView.map((m) => {
+          <Box ref={listRef} sx={{ height: "100%", px: 2, pb: 2 }}>
+            <Virtuoso
+              style={{ height: "100%" }}
+              data={monthsList}
+              itemContent={(_, m) => {
                 const photoCount = showPhotos ? m.count : 0;
-                const eventCount = showEvents
-                  ? eventCounts.byMonth.get(m.key) || 0
-                  : 0;
-                if (photoCount === 0 && eventCount === 0) return null;
+                const eventCount = eventCounts.byMonth.get(m.key) || 0;
                 const sample = showPhotos
                   ? m.days.flatMap((d) => d.photos)
                   : [];
-                const monthEvents = showEvents
-                  ? m.days.flatMap(
-                      (d) => timeline.eventsByDay.get(d.key) || [],
-                    )
-                  : [];
+                const monthEvents = m.days.flatMap((d) =>
+                  filterDayEntries(timeline.eventsByDay.get(d.key)),
+                );
                 const { limit: monthPhotoLimit, evShown: monthEvShown } =
                   photoLimitFor(56, sample.length, monthEvents.length);
                 return (
                   <Box
-                    key={m.key}
                     onClick={() => goDays(m.key.slice(0, 4), m.key)}
                     sx={{
                       p: 1.5,
+                      mb: 1,
                       borderRadius: 2.5,
                       border: "1px solid",
                       borderColor: "divider",
@@ -669,24 +948,22 @@ export default function TimelinePage({
                       height={56}
                       photoLimit={monthPhotoLimit}
                       eventLimit={monthEvShown}
-                      onEventClick={(ev) => {
-                        const target =
-                          ev.personIds?.[0] ?? ev.personId;
-                        if (target != null) navigate(`/person/${target}`);
-                      }}
+                      onEventClick={openEventCard}
                       eventPersonName={(ev) =>
-                        (ev.personIds?.length
-                          ? ev.personIds
-                          : [ev.personId].filter((id) => id != null)
-                        )
-                          .map((id) => ownerNameOf(allPeople, id))
-                          .join(", ")
+                        ev.kind === "external"
+                          ? "Справочник"
+                          : (ev.personIds?.length
+                              ? ev.personIds
+                              : [ev.personId].filter((id) => id != null)
+                            )
+                              .map((id) => ownerNameOf(allPeople, id))
+                              .join(", ")
                       }
                     />
                   </Box>
                 );
-              })}
-            </Stack>
+              }}
+            />
           </Box>
         )}
 
@@ -696,27 +973,41 @@ export default function TimelinePage({
             style={{ height: "100%" }}
             groupCounts={dayGroupCounts}
             rangeChanged={handleRangeChanged}
-            groupContent={(idx) => (
-              <Box
-                sx={{
-                  py: 1,
-                  px: 2,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  bgcolor: isDark
-                    ? alpha("#121212", 0.9)
-                    : alpha("#f5f5f5", 0.9),
-                  backdropFilter: "blur(4px)",
-                  borderBottom: "1px solid divider",
-                  borderRadius: "12px",
-                }}
-              >
-                <Typography variant="subtitle2" fontWeight="bold">
-                  {dayHeaders[idx]}
-                </Typography>
-              </Box>
-            )}
+            groupContent={(idx) => {
+              const chunk = dayGroups[idx] || [];
+              const mapKey = chunk[0] ? dayMapFocusKey(chunk[0]) : null;
+              return (
+                <Box
+                  sx={{
+                    py: 1,
+                    px: 2,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    bgcolor: isDark
+                      ? alpha("#121212", 0.9)
+                      : alpha("#f5f5f5", 0.9),
+                    backdropFilter: "blur(4px)",
+                    borderBottom: "1px solid divider",
+                    borderRadius: "12px",
+                  }}
+                >
+                  <Typography variant="subtitle2" fontWeight="bold">
+                    {dayHeaders[idx]}
+                  </Typography>
+                  {mapKey && (
+                    <Tooltip title="Показать на карте">
+                      <IconButton
+                        size="small"
+                        onClick={() => navigateToMapFocus(mapKey)}
+                      >
+                        <MapIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  )}
+                </Box>
+              );
+            }}
             itemContent={(idx) => {
               const row = dayRows[idx];
               if (!row) return null;
@@ -758,13 +1049,8 @@ export default function TimelinePage({
                     {row.firstOfDay &&
                       row.day.events.map((ev, k) => (
                       <Box
-                        key={`ev-${k}`}
-                        onClick={() => {
-                          const target =
-                            ev.personIds?.[0] ?? ev.personId;
-                          if (target != null)
-                            navigate(`/person/${target}`);
-                        }}
+                        key={`ev-${ev.kind || "event"}-${k}`}
+                        onClick={() => openEventCard(ev)}
                         sx={{
                           height: THUMB_SIZE,
                           width: EVENT_CARD_WIDTH,
@@ -778,27 +1064,35 @@ export default function TimelinePage({
                           position: "relative",
                           overflow: "hidden",
                           p: 1.25,
-                          cursor:
-                            (ev.personIds?.[0] ?? ev.personId) != null
-                              ? "pointer"
-                              : "default",
-                          "&:hover":
-                            (ev.personIds?.[0] ?? ev.personId) != null
-                              ? { borderColor: "primary.main" }
-                              : undefined,
+                          cursor: "pointer",
+                          "&:hover": { borderColor: "primary.main" },
                         }}
                       >
-                        {cloneElement(eventTypeIcon(ev.type), {
-                          sx: {
-                            position: "absolute",
-                            bottom: -12,
-                            right: -12,
-                            fontSize: 96,
-                            color: "primary.main",
-                            opacity: 0.07,
-                            pointerEvents: "none",
-                          },
-                        })}
+                        {ev.kind === "external" ? (
+                          <ContactsIcon
+                            sx={{
+                              position: "absolute",
+                              bottom: -12,
+                              right: -12,
+                              fontSize: 96,
+                              color: KIND_COLOR.external,
+                              opacity: 0.1,
+                              pointerEvents: "none",
+                            }}
+                          />
+                        ) : (
+                          cloneElement(eventTypeIcon(ev.type), {
+                            sx: {
+                              position: "absolute",
+                              bottom: -12,
+                              right: -12,
+                              fontSize: 96,
+                              color: "primary.main",
+                              opacity: 0.07,
+                              pointerEvents: "none",
+                            },
+                          })
+                        )}
                         <Typography
                           variant="body2"
                           sx={{
@@ -808,18 +1102,22 @@ export default function TimelinePage({
                             textOverflow: "ellipsis",
                           }}
                         >
-                          {ev.type || "Событие"}
+                          {ev.kind === "external"
+                            ? ev.label || "Справочник"
+                            : ev.type || "Событие"}
                         </Typography>
                         <Typography
                           variant="caption"
                           sx={{ display: "block", fontWeight: 600 }}
                         >
-                          {(ev.personIds?.length
-                            ? ev.personIds
-                            : [ev.personId].filter((id) => id != null)
-                          )
-                            .map((id) => ownerNameOf(allPeople, id))
-                            .join(", ")}
+                          {ev.kind === "external"
+                            ? "Справочник"
+                            : (ev.personIds?.length
+                                ? ev.personIds
+                                : [ev.personId].filter((id) => id != null)
+                              )
+                                .map((id) => ownerNameOf(allPeople, id))
+                                .join(", ")}
                         </Typography>
                         {(ev.date || ev.place) && (
                           <Typography
@@ -849,9 +1147,18 @@ export default function TimelinePage({
 
       <TimelineScrubber
         headers={level === "days" ? dayHeaders : []}
+        dateKeys={level === "days" ? scrubberDateKeys : []}
         groupOffsets={level === "days" ? dayOffsets : []}
-        activeHeader={activeHeader}
+        groupCounts={level === "days" ? dayGroupCounts : []}
+        groupWeights={level === "days" ? dayGroupWeights : []}
+        activeGroupIndex={activeGroupIndex}
+        mode="date"
+        anchorRef={scrollAreaRef}
         virtuosoRef={virtuosoRef}
+        getPreviewUrl={(i) => {
+          const p = scrubberPreviewPhotos[i];
+          return p ? thumbs[p.id] : null;
+        }}
       />
 
       <PhotoFullscreenViewer
@@ -862,17 +1169,60 @@ export default function TimelinePage({
           fullList.map((p) => [p.id, fullPaths[`${p.id}`]]),
         )}
         thumbPaths={thumbs}
-        direction={0}
-        hideLabels={false}
-        onClose={() => setFullscreen(false)}
-        onNext={() =>
-          setFullIndex((i) => (i + 1 < fullList.length ? i + 1 : i))
-        }
-        onPrev={() => setFullIndex((i) => (i - 1 >= 0 ? i - 1 : i))}
-        onToggleMaximize={() => {}}
+        direction={slideDirection}
+        hideLabels={hideLabels}
+        onClose={handleFullscreenClose}
+        onNext={handlePhotoNext}
+        onPrev={handlePhotoPrev}
+        onToggleMaximize={handleMaximizeWindow}
+        onDownload={onDownload}
+        onEdit={(p) => {
+          setEditingPhoto(p);
+          setPhotoEditOpen(true);
+        }}
         currentPhotoInfo={fullList[fullIndex] || null}
         allPeople={allPeople}
-        allExternal={[]}
+        allExternal={allExternal}
+      />
+
+      <PhotoMetaUpdateDialog
+        open={photoEditOpen}
+        meta={editingPhoto}
+        onClose={async () => {
+          setPhotoEditOpen(false);
+          setEditingPhoto(null);
+          await refresh?.();
+        }}
+      />
+
+      <TimelineEventDialog
+        open={eventDialogOpen}
+        event={selectedEvent}
+        allPeople={allPeople}
+        onClose={() => {
+          setEventDialogOpen(false);
+          setSelectedEvent(null);
+        }}
+        onShowMap={showEventOnMap}
+        onEdit={
+          selectedEvent?.kind !== "external" ? openEventEditor : null
+        }
+        onOpenExternal={(id) => {
+          setEventDialogOpen(false);
+          navigate(`/external?selected=${encodeURIComponent(id)}`);
+        }}
+        onOpenPerson={(id) => navigate(`/person/${id}`)}
+      />
+
+      <EventEditorDialog
+        allPeople={allPeople}
+        open={eventEditorOpen}
+        onClose={() => {
+          setEventEditorOpen(false);
+          setEditingEventSource(null);
+        }}
+        initialEvent={editingEventInitial}
+        onSave={saveTimelineEvent}
       />
     </Box>
   );

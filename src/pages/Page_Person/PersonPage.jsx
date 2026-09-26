@@ -495,13 +495,19 @@ const PersonPage = forwardRef(
           <Box>
             <BiographySection
               personId={person.id}
+              personName={[person.lastName, person.firstName, person.middleName]
+                .filter(Boolean)
+                .join(" ")}
               activeElement={activeElement}
-              // Прямая передача пропсов из Layout
               isEditing={bioProps.isEditing}
               setIsEditing={bioProps.setIsEditing}
               execRef={bioProps.execRef}
               requestToggleRef={bioProps.requestToggleRef}
               isNavVisible={bioProps.isNavVisible}
+              onDirtyChange={bioProps.onDirtyChange}
+              searchQuery={bioProps.searchQuery}
+              searchMatchIndex={bioProps.searchMatchIndex}
+              onSearchMatchCountChange={bioProps.onSearchMatchCountChange}
             />
           </Box>
         </Fade>

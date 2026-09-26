@@ -1,14 +1,20 @@
 // MainLayout.jsx
-import { Routes, Route, useNavigate } from "react-router-dom"; // BrowserRouter обычно оборачивает App
+import { Routes, Route, useNavigate, Navigate } from "react-router-dom"; // BrowserRouter обычно оборачивает App
 import React, {
   useEffect,
   useState,
   useCallback,
   useRef,
+  useMemo,
   lazy,
   Suspense,
 } from "react";
-import { useLocation, matchPath, Link as RouterLink } from "react-router-dom"; // Link переименован в RouterLink
+import {
+  useLocation,
+  matchPath,
+  Link as RouterLink,
+  useSearchParams,
+} from "react-router-dom"; // Link переименован в RouterLink
 
 import { useSnackbar } from "notistack";
 
@@ -88,13 +94,21 @@ import FaceReviewQueueDialog from "../components/Dialog/FaceReviewQueueDialog";
 import FaceNoFacesQueueDialog from "../components/Dialog/FaceNoFacesQueueDialog";
 import { NotificationBell } from "./NotificationBell";
 import InspectorPanel from "./InspectorPanel";
+import ExternalInspectorPanel from "./ExternalInspectorPanel";
+import MapInspectorPanel from "./MapInspectorPanel";
 import SidebarRightIcon from "../components/svg/SidebarRightIcon";
 import useMemories from "../hooks/useMemories";
 import { countPendingReviewFaces, countNoFacePhotos } from "../utils/photoFaces";
 import { useFaceReviewStore } from "../store/useFaceReviewStore";
+import { usePeopleListStore } from "../store/usePeopleListStore";
 
 import GalleryToolbar from "./bar_GlobalPhotoGallery/GalleryToolbar";
 import TimelineToolbar from "./bar_Timeline/TimelineToolbar";
+import {
+  parseTimelineSearch,
+  applyTimelineNav,
+  clearTimelinePerson,
+} from "../pages/Page_Timeline/timelineUrl";
 import MapToolbar from "./bar_Map/MapToolbar";
 import PeopleListToolbar from "./bar_PeopleListToolbar/PeopleListToolbar";
 import PersonToolbar from "./bar_PeopleToolbar/PersonToolbar";
@@ -161,22 +175,68 @@ export default function MainLayout() {
   const [groupBy, setGroupBy] = useState("datePhoto");
   const [sortDir, setSortDir] = useState("desc");
 
-  // Лента времени: уровень, фильтры и триггер обновления живут здесь,
-  // чтобы переключатели были в хедере, как на остальных страницах.
-  const [timelineLevel, setTimelineLevel] = useState("years");
-  const [timelineYear, setTimelineYear] = useState(null);
-  const [timelineMonth, setTimelineMonth] = useState(null);
+  // Лента: фильтры слоёв в state; level/year/month — в URL (?level=&year=&month=).
   const [timelineShowPhotos, setTimelineShowPhotos] = useState(true);
   const [timelineShowEvents, setTimelineShowEvents] = useState(true);
+  const [timelineShowExternal, setTimelineShowExternal] = useState(true);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const {
+    level: timelineLevel,
+    year: timelineYear,
+    month: timelineMonth,
+    person: timelinePersonId,
+  } = useMemo(() => parseTimelineSearch(searchParams), [searchParams]);
+
+  const navigateTimeline = useCallback(
+    (patch) => {
+      setSearchParams(applyTimelineNav(searchParams, patch));
+    },
+    [searchParams, setSearchParams],
+  );
 
   // Карта: фильтры слоёв и триггер перезагрузки точек — в хедере.
   const [mapShowPhotos, setMapShowPhotos] = useState(true);
   const [mapShowEvents, setMapShowEvents] = useState(true);
+  const [mapShowExternal, setMapShowExternal] = useState(true);
   const [mapRefreshKey, setMapRefreshKey] = useState(0);
+  const [mapClearGeocodeKey, setMapClearGeocodeKey] = useState(0);
+  const [mapFitBoundsKey, setMapFitBoundsKey] = useState(0);
+  const [mapPanelOpen, setMapPanelOpen] = useState(true);
+  const [mapFocusKey, setMapFocusKey] = useState(null);
+  const [mapFocusTrigger, setMapFocusTrigger] = useState(0);
+  const [mapSelectedPeople, setMapSelectedPeople] = useState([]);
+  const [appDataRevision, setAppDataRevision] = useState(0);
+  const [mapStats, setMapStats] = useState({
+    visiblePhotoCount: 0,
+    visibleEventCount: 0,
+    visibleExternalCount: 0,
+    loading: false,
+    peopleIds: [],
+    listPoints: [],
+  });
 
   const [allPeople, setAllPeople] = useState([]); // Нужно загрузить список людей здесь для Autocomplete
   const [photos, setPhotos] = useState([]); // Добавляем этот стейт
   const [loading, setLoading] = useState(true);
+
+  const timelineFilterPerson = useMemo(
+    () =>
+      timelinePersonId
+        ? (allPeople || []).find(
+            (p) => String(p.id) === String(timelinePersonId),
+          )
+        : null,
+    [allPeople, timelinePersonId],
+  );
+
+  const mapSelectedPeopleIds = useMemo(
+    () => mapSelectedPeople.map((p) => p.id),
+    [mapSelectedPeople],
+  );
+  const mapPeopleOptions = useMemo(
+    () => allPeople.filter((p) => mapStats.peopleIds.includes(p.id)),
+    [allPeople, mapStats.peopleIds],
+  );
 
   // «В этот день»: подборка считается из тех же данных, бейдж — суммарно.
   // Строго после объявления photos/allPeople (иначе TDZ).
@@ -191,6 +251,11 @@ export default function MainLayout() {
   const [inspectorTab, setInspectorTab] = useState("memories");
   const [relationPersonId, setRelationPersonId] = useState(null);
   const isMainPage = location.pathname === "/";
+  const isExternalPage = location.pathname === "/external";
+  const isMapPage = location.pathname === "/map";
+  const [externalPanelOpen, setExternalPanelOpen] = useState(true);
+  const [selectedExternalId, setSelectedExternalId] = useState(null);
+  const [externalListRefreshKey, setExternalListRefreshKey] = useState(0);
   // Автооткрытие при старте, если в этот день есть воспоминания (только главная).
   useEffect(() => {
     if (
@@ -203,6 +268,31 @@ export default function MainLayout() {
       setMemoriesOpen(true);
     }
   }, [loading, memoriesTotal, isMainPage]);
+
+  useEffect(() => {
+    if (!isExternalPage) return;
+    const fromUrl = new URLSearchParams(location.search).get("selected");
+    if (fromUrl) {
+      setSelectedExternalId(fromUrl);
+    }
+  }, [isExternalPage, location.search]);
+
+  const handleSelectExternal = useCallback(
+    (id) => {
+      setSelectedExternalId(id);
+      const params = new URLSearchParams(location.search);
+      if (id) {
+        params.set("selected", id);
+      } else {
+        params.delete("selected");
+      }
+      navigate(
+        { pathname: "/external", search: params.toString() },
+        { replace: true },
+      );
+    },
+    [location.search, navigate],
+  );
   // !!!  ▲▲▲   GlobalPhotoGallery  ▲▲▲
   // !!!  ▼▼▼   PeopleList  ▼▼▼
   // Внутри MainLayout
@@ -247,9 +337,21 @@ export default function MainLayout() {
   const [gallerySortDir, setGallerySortDir] = useState("desc");
   // bio
   const [isBioEditing, setIsBioEditing] = useState(false);
+  const [isBioDirty, setIsBioDirty] = useState(false);
   const [isBioNavVisible, setIsBioNavVisible] = useState(true);
+  const [bioSearchQuery, setBioSearchQuery] = useState("");
+  const [bioSearchMatchIndex, setBioSearchMatchIndex] = useState(0);
+  const [bioSearchMatchCount, setBioSearchMatchCount] = useState(0);
   const bioExecRef = useRef(null); // Ссылка на команды Milkdown
   const bioRequestToggleRef = useRef(null); // Сюда BiographySection положит свою функцию проверки "грязности"
+
+  useEffect(() => {
+    if (isBioEditing) {
+      setBioSearchQuery("");
+      setBioSearchMatchIndex(0);
+      setBioSearchMatchCount(0);
+    }
+  }, [isBioEditing]);
 
   // Чтобы открыть диалог загрузки из Toolbar, нам понадобится триггер или глобальный стейт
   const [uploadTrigger, setUploadTrigger] = useState(0);
@@ -267,6 +369,11 @@ export default function MainLayout() {
   useEffect(() => {
     if (activeElement !== "photo") {
       setUploadTrigger(0);
+    }
+    if (activeElement !== "bio") {
+      setBioSearchQuery("");
+      setBioSearchMatchIndex(0);
+      setBioSearchMatchCount(0);
     }
   }, [activeElement]);
 
@@ -354,6 +461,7 @@ export default function MainLayout() {
       setPhotos(list || []);
       useFaceReviewStore.getState().setPendingCount(countPendingReviewFaces(list || []));
       useFaceReviewStore.getState().setNoFacesCount(countNoFacePhotos(list || []));
+      setAppDataRevision((r) => r + 1);
     } catch (e) {
       console.error("Ошибка синхронизации данных:", e);
     } finally {
@@ -365,6 +473,15 @@ export default function MainLayout() {
   useEffect(() => {
     refreshAppData();
   }, [location.pathname, refreshAppData]);
+
+  useEffect(() => {
+    if (location.pathname !== "/map") return;
+    const focus = searchParams.get("focus");
+    if (focus) {
+      setMapFocusKey(focus);
+      setMapFocusTrigger((t) => t + 1);
+    }
+  }, [location.pathname, searchParams]);
   // Проверяем, на странице ли мы галереи
   const isGalleryPage = location.pathname === "/globalPhotoGallery";
 
@@ -587,6 +704,7 @@ export default function MainLayout() {
             <NotificationBell />
 
             {match && (
+              <Box sx={{ flex: 1, minWidth: 0, display: "flex" }}>
               <PersonToolbar
                 activeElement={activeElement}
                 setActiveElement={handleTabChange}
@@ -613,11 +731,20 @@ export default function MainLayout() {
                 }}
                 bioProps={{
                   isEditing: isBioEditing,
+                  isDirty: isBioDirty,
                   requestToggleEdit: () =>
                     bioRequestToggleRef.current?.toggle(),
+                  onSave: () => bioRequestToggleRef.current?.save?.(),
+                  onPrint: () => bioRequestToggleRef.current?.print?.(),
+                  onExportPdf: () => bioRequestToggleRef.current?.exportPdf?.(),
                   execRef: bioExecRef,
                   isNavVisible: isBioNavVisible,
                   onToggleNav: () => setIsBioNavVisible((prev) => !prev),
+                  searchQuery: bioSearchQuery,
+                  onSearchQueryChange: setBioSearchQuery,
+                  searchMatchIndex: bioSearchMatchIndex,
+                  onSearchMatchIndexChange: setBioSearchMatchIndex,
+                  searchMatchCount: bioSearchMatchCount,
                 }}
                 treeProps={{
                   treeMode: treeMode,
@@ -636,6 +763,7 @@ export default function MainLayout() {
                   fitView: () => treePageRef.current?.fitView(),
                 }}
               />
+              </Box>
             )}
 
             {/* 2. Если мы в галерее, показываем фильтры прямо здесь */}
@@ -685,44 +813,63 @@ export default function MainLayout() {
             {location.pathname === "/timeline" && (
               <TimelineToolbar
                 level={timelineLevel}
-                onLevelChange={(v) => {
-                  setTimelineLevel(v);
-                }}
+                onLevelChange={(v) => navigateTimeline({ level: v })}
                 showPhotos={timelineShowPhotos}
                 showEvents={timelineShowEvents}
+                showExternal={timelineShowExternal}
                 onTogglePhotos={() => setTimelineShowPhotos((v) => !v)}
                 onToggleEvents={() => setTimelineShowEvents((v) => !v)}
+                onToggleExternal={() => setTimelineShowExternal((v) => !v)}
+                filterPerson={timelineFilterPerson}
+                onClearPersonFilter={() =>
+                  setSearchParams(clearTimelinePerson(searchParams))
+                }
                 year={timelineYear}
                 month={timelineMonth}
-                onGoYears={() => {
-                  setTimelineYear(null);
-                  setTimelineMonth(null);
-                  setTimelineLevel("years");
-                }}
-                onGoMonths={() => {
-                  setTimelineMonth(null);
-                  setTimelineLevel("months");
-                }}
+                onGoYears={() =>
+                  navigateTimeline({ level: "years", year: null, month: null })
+                }
+                onGoMonths={() =>
+                  navigateTimeline({ level: "months", month: null })
+                }
               />
             )}
 
-            {location.pathname === "/map" && (
+            {isMapPage && (
               <MapToolbar
+                allPeople={allPeople}
+                mapPeopleOptions={mapPeopleOptions}
+                selectedPeople={mapSelectedPeople}
+                onPeopleChange={(_, value) => setMapSelectedPeople(value || [])}
                 showPhotos={mapShowPhotos}
                 showEvents={mapShowEvents}
+                showExternal={mapShowExternal}
                 onTogglePhotos={() => setMapShowPhotos((v) => !v)}
                 onToggleEvents={() => setMapShowEvents((v) => !v)}
-                onRefresh={() => setMapRefreshKey((k) => k + 1)}
+                onToggleExternal={() => setMapShowExternal((v) => !v)}
+                onRefresh={(e) => {
+                  if (e?.shiftKey) setMapClearGeocodeKey((k) => k + 1);
+                  setMapRefreshKey((k) => k + 1);
+                }}
+                onFitBounds={() => setMapFitBoundsKey((k) => k + 1)}
+                loading={mapStats.loading}
+                visiblePhotoCount={mapStats.visiblePhotoCount}
+                visibleEventCount={mapStats.visibleEventCount}
+                visibleExternalCount={mapStats.visibleExternalCount}
               />
             )}
 
-            {/* Кнопка правой панели — только на главной */}
-            {isMainPage && (
+            {/* Кнопка правой панели — главная, справочник, карта */}
+            {(isMainPage || isExternalPage || isMapPage) && (
               <Box sx={{ ml: "12px", display: "inline-flex" }}>
                 <ButtonConteiner>
                   <IconButton
                     title="Правая панель"
-                    onClick={() => setMemoriesOpen((v) => !v)}
+                    onClick={() => {
+                      if (isExternalPage) setExternalPanelOpen((v) => !v);
+                      else if (isMapPage) setMapPanelOpen((v) => !v);
+                      else setMemoriesOpen((v) => !v);
+                    }}
                     size="small"
                     sx={{ color: "white", p: 1 }}
                   >
@@ -736,7 +883,6 @@ export default function MainLayout() {
             {!isGalleryPage &&
               !match &&
               location.pathname !== "/" &&
-              location.pathname !== "/archive" &&
               location.pathname !== "/external" &&
               location.pathname !== "/timeline" &&
               location.pathname !== "/map" && (
@@ -771,7 +917,12 @@ export default function MainLayout() {
             // фиксировала ширину всего приложения.
             minWidth: 0,
             // Панель «В этот день» открывается рядом, а не поверх (только главная).
-            marginRight: isMainPage && memoriesOpen ? "340px" : 0,
+            marginRight:
+              (isMainPage && memoriesOpen) ||
+              (isExternalPage && externalPanelOpen) ||
+              (isMapPage && mapPanelOpen)
+                ? "340px"
+                : 0,
             transition: "margin-right 0.3s ease",
             // pt: 1,
             pr: 1,
@@ -845,8 +996,12 @@ export default function MainLayout() {
                     isEditing: isBioEditing,
                     setIsEditing: setIsBioEditing,
                     execRef: bioExecRef,
-                    requestToggleRef: bioRequestToggleRef, // Передаем реф для регистрации функции
+                    requestToggleRef: bioRequestToggleRef,
                     isNavVisible: isBioNavVisible,
+                    onDirtyChange: setIsBioDirty,
+                    searchQuery: bioSearchQuery,
+                    searchMatchIndex: bioSearchMatchIndex,
+                    onSearchMatchCountChange: setBioSearchMatchCount,
                   }}
                   treeProps={{
                     mode: treeMode,
@@ -856,6 +1011,7 @@ export default function MainLayout() {
               }
             />
             <Route path="/settings" element={<ArchivedPeoplePage />} />
+            <Route path="/archive" element={<Navigate to="/settings" replace />} />
 
             {/* <Route path="/photoUploader" element={<PhotoUploader />} /> */}
             <Route path="/about" element={<AboutPage />} />
@@ -868,6 +1024,9 @@ export default function MainLayout() {
                   setExternalSearch={setExternalSearch}
                   externalTypeFilter={externalTypeFilter}
                   setExternalTypeFilter={setExternalTypeFilter}
+                  selectedId={selectedExternalId}
+                  onSelect={handleSelectExternal}
+                  listRefreshKey={externalListRefreshKey}
                 />
               }
             />
@@ -878,7 +1037,16 @@ export default function MainLayout() {
                 <MapPage
                   showPhotos={mapShowPhotos}
                   showEvents={mapShowEvents}
+                  showExternal={mapShowExternal}
                   refreshKey={mapRefreshKey}
+                  clearGeocodeKey={mapClearGeocodeKey}
+                  dataRevision={appDataRevision}
+                  fitBoundsKey={mapFitBoundsKey}
+                  selectedPeopleIds={mapSelectedPeopleIds}
+                  focusPointKey={mapFocusKey}
+                  focusTrigger={mapFocusTrigger}
+                  allPeople={allPeople}
+                  onStatsChange={setMapStats}
                 />
               }
             />
@@ -889,13 +1057,14 @@ export default function MainLayout() {
                   photos={photos}
                   allPeople={allPeople}
                   level={timelineLevel}
-                  setLevel={setTimelineLevel}
                   year={timelineYear}
-                  setYear={setTimelineYear}
                   month={timelineMonth}
-                  setMonth={setTimelineMonth}
+                  onNavigate={navigateTimeline}
                   showPhotos={timelineShowPhotos}
                   showEvents={timelineShowEvents}
+                  showExternal={timelineShowExternal}
+                  filterPersonId={timelinePersonId}
+                  refresh={refreshAppData}
                 />
               }
             />
@@ -921,6 +1090,35 @@ export default function MainLayout() {
           setTab={setInspectorTab}
           relationPersonId={relationPersonId}
           onFocusPerson={setRelationPersonId}
+        />
+      )}
+      {isExternalPage && (
+        <ExternalInspectorPanel
+          open={externalPanelOpen}
+          onClose={() => setExternalPanelOpen(false)}
+          entityId={selectedExternalId}
+          onSelectExternal={handleSelectExternal}
+          onEntityChanged={() => {
+            setExternalListRefreshKey((k) => k + 1);
+            usePeopleListStore.getState().refreshArchiveStatus();
+          }}
+          onDeleted={() => {
+            setExternalListRefreshKey((k) => k + 1);
+            setSelectedExternalId(null);
+            usePeopleListStore.getState().refreshArchiveStatus();
+          }}
+        />
+      )}
+      {isMapPage && (
+        <MapInspectorPanel
+          open={mapPanelOpen}
+          onClose={() => setMapPanelOpen(false)}
+          points={mapStats.listPoints || []}
+          focusedKey={mapFocusKey}
+          onSelectPoint={(p) => {
+            setMapFocusKey(p.key);
+            setMapFocusTrigger((t) => t + 1);
+          }}
         />
       )}
       <ChangelogModal />

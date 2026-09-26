@@ -435,6 +435,35 @@ function getFaceScanState() {
   return readScanState(db);
 }
 
+function deleteReferencesForExternal(externalId) {
+  const id = String(externalId || "").trim();
+  if (!id.startsWith("E")) {
+    return { deleted: 0 };
+  }
+
+  const db = getDb();
+  const info = db.prepare("DELETE FROM face_references WHERE person_id = ?").run(id);
+  return { deleted: info.changes };
+}
+
+function deleteReferencesForPerson(personId) {
+  const id = Number(personId);
+  if (!Number.isFinite(id) || id <= 0) {
+    return { deleted: 0 };
+  }
+
+  const db = getDb();
+  const info = db
+    .prepare(
+      `DELETE FROM face_references
+       WHERE CAST(person_id AS REAL) = ?
+          OR CAST(owner AS REAL) = ?`,
+    )
+    .run(id, id);
+
+  return { deleted: info.changes };
+}
+
 function reassignReferencesToPerson(keepPersonId, removePersonIds) {
   const keep = Number(keepPersonId);
   const removeIds = (removePersonIds || [])
@@ -531,6 +560,11 @@ function geocodeCacheGetAll() {
   return out;
 }
 
+function geocodeCacheClear() {
+  const db = getDb();
+  db.prepare("DELETE FROM geocode_cache").run();
+}
+
 function geocodeCacheSet(key, entry) {
   const db = getDb();
   db.prepare(
@@ -562,10 +596,13 @@ module.exports = {
   saveFaceIndex,
   saveFaceScanState,
   getFaceScanState,
+  deleteReferencesForPerson,
+  deleteReferencesForExternal,
   reassignReferencesToPerson,
   getFaceDbStats,
   runFaceDbVacuumAnalyze,
   runFaceDbIntegrityCheck,
   geocodeCacheGetAll,
   geocodeCacheSet,
+  geocodeCacheClear,
 };

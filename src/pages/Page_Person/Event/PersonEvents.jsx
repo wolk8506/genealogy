@@ -301,7 +301,7 @@ export default function PersonEvents({
                               <Box
                                 key={`e-${eid}`}
                                 component={Link}
-                                to={`/external/${entity.id}`}
+                                to={`/external?selected=${encodeURIComponent(entity.id)}`}
                                 title={getExternalEntityLabel(entity)}
                                 display="flex"
                                 alignItems="center"

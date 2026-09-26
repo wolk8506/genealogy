@@ -43,6 +43,10 @@ export default function PeopleListToolbar({
   };
 
   const hasArchived = usePeopleListStore((state) => state.hasArchived);
+  const hasArchivedExternal = usePeopleListStore(
+    (state) => state.hasArchivedExternal,
+  );
+  const trashHasItems = hasArchived || hasArchivedExternal;
 
   return (
     <Stack
@@ -72,7 +76,7 @@ export default function PeopleListToolbar({
           >
             <Badge
               badgeContent={4}
-              invisible={!hasArchived}
+              invisible={!trashHasItems}
               variant="dot"
               color="warning"
             >

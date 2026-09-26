@@ -33,6 +33,11 @@ import {
   PhotoFaceFormSection,
 } from "../PhotoFaceMarkupBlocks";
 import {
+  PhotoThumbCropPanel,
+  PhotoThumbCropToolbar,
+} from "../PhotoThumbCropTools";
+import { cropToThumbWebp } from "../../utils/thumbCrop";
+import {
   enrichFacesWithDescriptors,
   syncReferencesAfterPhotoSave,
 } from "../../utils/faceIndex";
@@ -89,6 +94,14 @@ export default function PhotoUploadDialog({
   const [lat, setLat] = useState(null);
   const [lng, setLng] = useState(null);
   const [locationPickerOpen, setLocationPickerOpen] = useState(false);
+
+  const [thumbsEditing, setThumbsEditing] = useState(false);
+  const [thumbsCrop, setThumbsCrop] = useState({ x: 0, y: 0 });
+  const [thumbsZoom, setThumbsZoom] = useState(1);
+  const [thumbsPixels, setThumbsPixels] = useState(null);
+  const [thumbsBusy, setThumbsBusy] = useState(false);
+  const customThumbBlobRef = useRef(null);
+  const [customThumbReady, setCustomThumbReady] = useState(false);
 
   const faceMarkup = usePhotoFaceMarkup(addNotification);
   const {
@@ -161,6 +174,24 @@ export default function PhotoUploadDialog({
     }
   }, [open, saving]);
 
+  const clearCustomThumb = () => {
+    customThumbBlobRef.current = null;
+    setCustomThumbReady(false);
+  };
+
+  const exitThumbsEditing = () => {
+    setThumbsCrop({ x: 0, y: 0 });
+    setThumbsZoom(1);
+    setThumbsPixels(null);
+    setThumbsBusy(false);
+    setThumbsEditing(false);
+  };
+
+  const resetThumbEditor = () => {
+    exitThumbsEditing();
+    clearCustomThumb();
+  };
+
   useEffect(() => {
     if (open && !keepOpen) {
       setTitle("");
@@ -179,8 +210,13 @@ export default function PhotoUploadDialog({
       setLng(null);
       resetFaces();
       facesRef.current = [];
+      resetThumbEditor();
     }
   }, [open, keepOpen, resetFaces]);
+
+  useEffect(() => {
+    if (!open) resetThumbEditor();
+  }, [open]);
 
   useEffect(() => {
     if (!open || !selectedFaceId) return undefined;
@@ -233,6 +269,7 @@ export default function PhotoUploadDialog({
     setConvertedArrayBuffer(null);
     resetFaces();
     facesRef.current = [];
+    resetThumbEditor();
     const raw = result.path.replace(/^file:\/\//, "");
 
     const response = await fetch(`file://${raw}`);
@@ -292,6 +329,7 @@ export default function PhotoUploadDialog({
     setConvertedArrayBuffer(null);
     resetFaces();
     facesRef.current = [];
+    resetThumbEditor();
     let previewUrl, name, pathOnDisk = null;
 
     if (ext === "heic") {
@@ -319,6 +357,42 @@ export default function PhotoUploadDialog({
     setFilename(name);
     setFilePath(pathOnDisk);
     updateAspectRatio(previewUrl);
+  };
+
+  const enterThumbsEditing = () => {
+    if (!preview) return;
+    setDrawMode(false);
+    setSelectedFaceId(null);
+    setThumbsEditing(true);
+    setThumbsCrop({ x: 0, y: 0 });
+    setThumbsZoom(1);
+    setThumbsPixels(null);
+  };
+
+  const applyThumbDraft = async () => {
+    if (!preview || !thumbsPixels || thumbsBusy) return;
+    setThumbsBusy(true);
+    try {
+      const blob = await cropToThumbWebp(preview, thumbsPixels);
+      customThumbBlobRef.current = blob;
+      setCustomThumbReady(true);
+      exitThumbsEditing();
+      addNotification({
+        title: "Превью",
+        message: "Фрагмент будет сохранён вместе с фото",
+        type: "success",
+        category: "photo",
+      });
+    } catch (e) {
+      addNotification({
+        title: "Превью",
+        message: e.message || "Не удалось подготовить превью",
+        type: "error",
+        category: "photo",
+      });
+    } finally {
+      setThumbsBusy(false);
+    }
   };
 
   const handleSave = async () => {
@@ -397,6 +471,27 @@ export default function PhotoUploadDialog({
       }
 
       if (newPhoto) {
+        if (customThumbBlobRef.current && newPhoto.filename) {
+          try {
+            const thumbBuffer = await customThumbBlobRef.current.arrayBuffer();
+            await window.photoAPI.saveThumbs(
+              finalOwnerId,
+              newPhoto.filename,
+              thumbBuffer,
+            );
+          } catch (thumbErr) {
+            console.warn("Custom thumb save failed:", thumbErr);
+            addNotification({
+              title: "Превью",
+              message:
+                "Фото сохранено, но не удалось записать превью: " +
+                (thumbErr.message || thumbErr),
+              type: "warning",
+              category: "photo",
+            });
+          }
+        }
+
         await syncReferencesAfterPhotoSave(
           { owner: finalOwnerId, id: newPhoto.id },
           facesToSave
@@ -426,6 +521,7 @@ export default function PhotoUploadDialog({
           setLat(null);
           setLng(null);
           resetFaces();
+          resetThumbEditor();
         } else {
           onClose();
         }
@@ -830,6 +926,31 @@ export default function PhotoUploadDialog({
                     или перетащите его сюда
                   </Typography>
                 </Box>
+              ) : thumbsEditing ? (
+                <>
+                  <PhotoThumbCropPanel
+                    imageSrc={preview}
+                    crop={thumbsCrop}
+                    zoom={thumbsZoom}
+                    onCropChange={setThumbsCrop}
+                    onZoomChange={setThumbsZoom}
+                    onCropComplete={(_, pixels) => setThumbsPixels(pixels)}
+                  />
+                  <PhotoThumbCropToolbar
+                    zoom={thumbsZoom}
+                    onZoomDecrease={() =>
+                      setThumbsZoom((z) => Math.max(z - 0.2, 1))
+                    }
+                    onZoomIncrease={() =>
+                      setThumbsZoom((z) => Math.min(z + 0.2, 5))
+                    }
+                    onSave={applyThumbDraft}
+                    onCancel={exitThumbsEditing}
+                    canSave={Boolean(thumbsPixels)}
+                    busy={thumbsBusy}
+                    saveLabel="Применить"
+                  />
+                </>
               ) : (
                 <>
                   <PhotoFacePreviewBlock
@@ -850,6 +971,8 @@ export default function PhotoUploadDialog({
                       if (detected) onFacesChange(detected);
                     }}
                     onPreviewLoad={handlePreviewLoad}
+                    onEditThumb={enterThumbsEditing}
+                    customThumbReady={customThumbReady}
                   />
                   <Button
                     variant="contained"
@@ -884,6 +1007,7 @@ export default function PhotoUploadDialog({
             >
               {filename || "Файл не выбран"}
               {faces?.length > 0 && ` · Лиц на снимке: ${faces.length}`}
+              {customThumbReady && " · Превью настроено"}
             </Typography>
           </Stack>
         </Stack>

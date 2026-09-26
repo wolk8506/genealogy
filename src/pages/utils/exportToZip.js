@@ -7,6 +7,8 @@ export const exportPeopleToZip = async ({
   onError = () => {},
   archiveName = null,
   selectedPhotoFolders = ["webp"],
+  includeTags = true,
+  includeHistory = true,
   runMaintenanceBeforeExport = false,
 }) => {
   const emitProgress = (payload) => {
@@ -30,7 +32,7 @@ export const exportPeopleToZip = async ({
       new Set((selectedPhotoFolders || []).filter(Boolean)),
     );
     if (!photoFolders.includes("original") && !photoFolders.includes("webp")) {
-      throw new Error("Выберите original или webp для архивации фото");
+      throw new Error("Выберите original или webp для бэкапа фото");
     }
 
     // 1. ПЕРВЫМ ДЕЛОМ открываем диалог (пока прогресс еще 0%)
@@ -107,7 +109,7 @@ export const exportPeopleToZip = async ({
     console.log("[exportToZip] Clean basePath for Node.js:", basePath);
     console.log("[exportToZip] Genealogy root path:", genealogyRootPath);
 
-    onStatus("Подготовка архива...");
+    onStatus("Подготовка бэкапа...");
     const total = Array.isArray(people) ? people.length : 0;
     const archiveFiles = [];
     const tempDir = await window.pathAPI.getTempDir();
@@ -127,8 +129,10 @@ export const exportPeopleToZip = async ({
           createdAt,
           selectedPhotoFolders: photoFolders,
           photoFolders,
+          includeTags: Boolean(includeTags),
+          includeHistory: Boolean(includeHistory),
           kind: "genealogy-archive",
-          version: 1,
+          version: 2,
         },
         null,
         2,
@@ -141,11 +145,14 @@ export const exportPeopleToZip = async ({
       jsonPath,
       JSON.stringify(
         {
+          schemaVersion: 1,
           appIdentifier: "MY_GENEALOGY_APP",
           archiveName: resolvedArchiveName,
           exportedAt: createdAt,
           selectedPhotoFolders: photoFolders,
           photoFolders,
+          includeTags: Boolean(includeTags),
+          includeHistory: Boolean(includeHistory),
           people,
         },
         null,
@@ -219,6 +226,9 @@ export const exportPeopleToZip = async ({
     let files_d = 0;
     let external_json = 0;
     let external_avatar = 0;
+    let tags_json = 0;
+    let history_jsonl = 0;
+    let tagsData = null;
 
     const allExternal = (await window.externalAPI?.getAll?.()) || [];
 
@@ -226,6 +236,20 @@ export const exportPeopleToZip = async ({
       external_json = 1;
       const avatarPath = await window.externalAPI.avatar.getPath(entity.id);
       if (avatarPath) external_avatar += 1;
+    }
+
+    if (includeTags) {
+      tagsData = await window.tagsAPI?.load?.();
+      if (
+        tagsData &&
+        (tagsData.tags?.length || Object.keys(tagsData.personTags || {}).length)
+      ) {
+        tags_json = 1;
+      }
+    }
+
+    if (includeHistory) {
+      history_jsonl = 1;
     }
 
     for (const p of people) {
@@ -277,9 +301,10 @@ export const exportPeopleToZip = async ({
     console.log("files_d", files_d);
     console.log("external_json", external_json);
     console.log("external_avatar", external_avatar);
+    console.log("tags_json", tags_json);
     console.log("photo_thumbs", photo_thumbs);
 
-    totalFilesEstimated += external_json + external_avatar;
+    totalFilesEstimated += external_json + external_avatar + tags_json + history_jsonl;
 
     // ОСНОВНОЙ ЦИКЛ ОБРАБОТКИ
     for (let i = 0; i < total; i++) {
@@ -608,8 +633,56 @@ export const exportPeopleToZip = async ({
       console.warn("[exportToZip] Ошибка экспорта справочника:", e);
     }
 
+    // --- МЕТКИ ---
+    if (includeTags) {
+      try {
+        if (tagsData) {
+          onStatus("Экспорт меток...");
+          const tagsJsonPath = `${tempDir}/tags.json`;
+          await window.fileAPI.writeText(
+            tagsJsonPath,
+            JSON.stringify(tagsData, null, 2),
+          );
+          archiveFiles.push(tagsJsonPath);
+          processedFilesCount++;
+          emitProgress({
+            phase: "preparation",
+            processedFiles: processedFilesCount,
+            totalFiles: totalFilesEstimated,
+            currentFile: "tags.json",
+          });
+        }
+      } catch (e) {
+        console.warn("[exportToZip] Ошибка экспорта меток:", e);
+      }
+    }
+
+    // --- ЖУРНАЛ ДЕЙСТВИЙ ---
+    if (includeHistory) {
+      try {
+        onStatus("Экспорт журнала...");
+        const historySrc = `${genealogyRootPath}/history.jsonl`
+          .replace(/\\/g, "/")
+          .replace(/\/+/g, "/");
+        const historyDest = `${tempDir}/history.jsonl`;
+        const res = await window.fileAPI.copyFile(historySrc, historyDest);
+        if (res && res.success !== false) {
+          archiveFiles.push(historyDest);
+          processedFilesCount++;
+          emitProgress({
+            phase: "preparation",
+            processedFiles: processedFilesCount,
+            totalFiles: totalFilesEstimated,
+            currentFile: "history.jsonl",
+          });
+        }
+      } catch (e) {
+        console.warn("[exportToZip] Ошибка экспорта журнала:", e);
+      }
+    }
+
     // ЗАВЕРШЕНИЕ
-    onStatus("Создание архива...");
+    onStatus("Создание ZIP-бэкапа...");
     // const savePath = await window.dialogAPI.chooseSavePath(defaultFilename);
     // if (!savePath) {
     //   await window.fileAPI.delete(tempDir);
@@ -630,11 +703,11 @@ export const exportPeopleToZip = async ({
     });
 
     if (!archivePath) {
-      onError("Ошибка при создании архива");
+      onError("Ошибка при создании бэкапа");
       return null;
     }
 
-    onStatus("✅ Архив сохранён");
+    onStatus("✅ Бэкап сохранён");
     return archivePath;
   } catch (err) {
     console.error("exportPeopleToZip error:", err);

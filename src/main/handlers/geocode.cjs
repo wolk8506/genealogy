@@ -8,6 +8,7 @@ const { getActiveRoot } = require("../config.cjs");
 const {
   geocodeCacheGetAll,
   geocodeCacheSet,
+  geocodeCacheClear,
 } = require("../db/faceDb.cjs");
 const log = require("../logger.cjs").createLogger("geocode");
 
@@ -131,6 +132,19 @@ async function fetchPlaceName(lat, lng) {
 // без шторма IPC и без ожидания очереди.
 ipcMain.handle("geo:getCache", async () => {
   return ensureLoaded();
+});
+
+ipcMain.handle("geo:clearCache", async () => {
+  try {
+    geocodeCacheClear();
+    memoryCache = {};
+    cacheRoot = getActiveRoot();
+    log.info("geocode cache cleared");
+    return true;
+  } catch (err) {
+    log.warn("geocode cache clear failed:", err.message);
+    return false;
+  }
 });
 
 ipcMain.handle("geo:forward", async (_, query) => {

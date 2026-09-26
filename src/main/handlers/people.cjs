@@ -11,6 +11,7 @@ const {
   updatePerson,
   deletePerson,
 } = require("./dataStore.cjs");
+const { purgePersonReferences } = require("./purgePerson.cjs");
 const log = require("../logger.cjs").createLogger("people");
 
 // Тонкие обёртки над dataStore.cjs — вся работа с genealogy-data.json
@@ -31,6 +32,7 @@ ipcMain.handle("people:delete", async (event, id) => {
   const personDir = path.join(getBaseDir(), "people", String(id)); // ← теперь путь корректный!
 
   try {
+    await purgePersonReferences(id);
     await fs.promises.rm(personDir, { recursive: true, force: true });
 
     const removed = await deletePerson(id);

@@ -22,17 +22,14 @@ import EditOffIcon from "@mui/icons-material/EditOff";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import HashtagInput from "../HashtagInput";
 import PhotoFaceOverlay from "../PhotoFaceOverlay";
-import Cropper from "react-easy-crop";
-import ZoomInIcon from "@mui/icons-material/ZoomIn";
-import ZoomOutIcon from "@mui/icons-material/ZoomOut";
 import CropIcon from "@mui/icons-material/Crop";
+import {
+  PhotoThumbCropPanel,
+  PhotoThumbCropToolbar,
+} from "../PhotoThumbCropTools";
 import MapIcon from "@mui/icons-material/Map";
 import LocationPickerDialog from "./LocationPickerDialog";
-import {
-  loadImage,
-  cropToThumbWebp,
-  CROP_SOURCE_LABEL,
-} from "../../utils/thumbCrop";
+import { loadImage, cropToThumbWebp } from "../../utils/thumbCrop";
 import { useNotificationStore } from "../../store/useNotificationStore";
 import DraggableDialog from "./DraggableDialog";
 import FaceIcon from "@mui/icons-material/Face";
@@ -1243,38 +1240,14 @@ export default function PhotoMetaUpdateDialog({
 
               {/* Режим правки превью: кроппер исходника вместо фото */}
               {thumbsEditing && (
-                <Box
-                  sx={{
-                    position: "relative",
-                    width: "100%",
-                    height: 540,
-                    maxHeight: "100%",
-                  }}
-                >
-                  {thumbsSrc ? (
-                    <Cropper
-                      image={thumbsSrc}
-                      crop={thumbsCrop}
-                      zoom={thumbsZoom}
-                      aspect={1}
-                      onCropChange={setThumbsCrop}
-                      onZoomChange={setThumbsZoom}
-                      onCropComplete={(_, pixels) => setThumbsPixels(pixels)}
-                      zoomWithScroll
-                    />
-                  ) : (
-                    <Box
-                      sx={{
-                        height: "100%",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}
-                    >
-                      <CircularProgress />
-                    </Box>
-                  )}
-                </Box>
+                <PhotoThumbCropPanel
+                  imageSrc={thumbsSrc}
+                  crop={thumbsCrop}
+                  zoom={thumbsZoom}
+                  onCropChange={setThumbsCrop}
+                  onZoomChange={setThumbsZoom}
+                  onCropComplete={(_, pixels) => setThumbsPixels(pixels)}
+                />
               )}
 
               {/* Кнопки управления: разметка или правка превью */}
@@ -1289,82 +1262,29 @@ export default function PhotoMetaUpdateDialog({
                 }}
               >
                 {thumbsEditing ? (
-                  <>
-                    {thumbsAvailable.length > 1 &&
-                      thumbsAvailable.map((k) => (
-                        <Button
-                          key={k}
-                          size="small"
-                          variant={thumbsKind === k ? "contained" : "outlined"}
-                          onClick={() => loadThumbsSource(k)}
-                          sx={{
-                            bgcolor:
-                              thumbsKind === k
-                                ? "primary.main"
-                                : "rgba(0,0,0,0.55)",
-                            color: "#fff",
-                            borderColor: "rgba(255,255,255,0.3)",
-                          }}
-                        >
-                          {CROP_SOURCE_LABEL[k] || k}
-                        </Button>
-                      ))}
-                    <IconButton
-                      size="small"
-                      aria-label="Уменьшить"
-                      onClick={() =>
-                        setThumbsZoom((z) => Math.max(z - 0.2, 1))
-                      }
-                      disabled={thumbsZoom <= 1}
-                      sx={{
-                        bgcolor: "rgba(0,0,0,0.55)",
-                        color: "#fff",
-                        border: "1px solid rgba(255,255,255,0.3)",
-                        width: 34,
-                        height: 34,
-                      }}
-                    >
-                      <ZoomOutIcon fontSize="small" />
-                    </IconButton>
-                    <IconButton
-                      size="small"
-                      aria-label="Увеличить"
-                      onClick={() =>
-                        setThumbsZoom((z) => Math.min(z + 0.2, 5))
-                      }
-                      disabled={thumbsZoom >= 5}
-                      sx={{
-                        bgcolor: "rgba(0,0,0,0.55)",
-                        color: "#fff",
-                        border: "1px solid rgba(255,255,255,0.3)",
-                        width: 34,
-                        height: 34,
-                      }}
-                    >
-                      <ZoomInIcon fontSize="small" />
-                    </IconButton>
-                    <Button
-                      size="small"
-                      variant="contained"
-                      onClick={saveThumbsCrop}
-                      disabled={!thumbsPixels || thumbsBusy}
-                      sx={{ color: "#fff" }}
-                    >
-                      {thumbsBusy ? "Сохранение…" : "Сохранить"}
-                    </Button>
-                    <Button
-                      size="small"
-                      variant="outlined"
-                      onClick={exitThumbsEditing}
-                      sx={{
-                        bgcolor: "rgba(0,0,0,0.55)",
-                        color: "#fff",
-                        borderColor: "rgba(255,255,255,0.3)",
-                      }}
-                    >
-                      Отмена
-                    </Button>
-                  </>
+                  <PhotoThumbCropToolbar
+                    sourceOptions={
+                      thumbsAvailable.length > 1
+                        ? thumbsAvailable.map((k) => ({
+                            key: k,
+                            active: thumbsKind === k,
+                            onSelect: () => loadThumbsSource(k),
+                          }))
+                        : []
+                    }
+                    zoom={thumbsZoom}
+                    onZoomDecrease={() =>
+                      setThumbsZoom((z) => Math.max(z - 0.2, 1))
+                    }
+                    onZoomIncrease={() =>
+                      setThumbsZoom((z) => Math.min(z + 0.2, 5))
+                    }
+                    onSave={saveThumbsCrop}
+                    onCancel={exitThumbsEditing}
+                    canSave={Boolean(thumbsPixels)}
+                    busy={thumbsBusy}
+                    saveLabel="Сохранить"
+                  />
                 ) : (
                   <>
                 <Button

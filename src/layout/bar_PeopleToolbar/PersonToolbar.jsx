@@ -31,7 +31,7 @@ export default function ToolbarGroup({
       ml={2}
       direction="row"
       spacing={2}
-      sx={{ alignItems: "center", width: "100%" }}
+      sx={{ alignItems: "center", width: "100%", flex: 1, minWidth: 0 }}
     >
       {/* Вкладки: Анкета, Фото, Био, Древо */}
       <ToggleButtonGroup
@@ -114,10 +114,19 @@ export default function ToolbarGroup({
       {activeElement === "bio" && (
         <BioToolbar
           isEditing={bioProps.isEditing}
+          isDirty={bioProps.isDirty}
           requestToggleEdit={bioProps.requestToggleEdit}
+          onSave={bioProps.onSave}
+          onPrint={bioProps.onPrint}
+          onExportPdf={bioProps.onExportPdf}
           execRef={bioProps.execRef}
           isNavVisible={bioProps.isNavVisible}
           onToggleNav={bioProps.onToggleNav}
+          searchQuery={bioProps.searchQuery}
+          onSearchQueryChange={bioProps.onSearchQueryChange}
+          searchMatchIndex={bioProps.searchMatchIndex}
+          onSearchMatchIndexChange={bioProps.onSearchMatchIndexChange}
+          searchMatchCount={bioProps.searchMatchCount}
         />
       )}
 

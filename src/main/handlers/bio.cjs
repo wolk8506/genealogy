@@ -1,8 +1,10 @@
 // bio.cjs
-const { ipcMain, app, dialog } = require("electron");
+const { ipcMain, dialog, BrowserWindow } = require("electron");
 const path = require("path");
 const fs = require("fs");
+const os = require("os");
 const { peopleDir } = require("../config.cjs");
+const { withWriteLock, writeTextAtomic } = require("./jsonStore.cjs");
 const log = require("../logger.cjs").createLogger("bio");
 
 const getBioDir = (id) => peopleDir(id);
@@ -34,31 +36,105 @@ ipcMain.handle("bio:filledCount", async (event, ids) => {
 ipcMain.handle("bio:save", async (event, id, content) => {
   const dir = getBioDir(id);
   const imagesDir = getBioImagesDir(id);
-
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-
   const file = path.join(dir, "bio.md");
-  fs.writeFileSync(file, content, "utf-8");
 
-  // 🧹 Чистка неиспользуемых изображений в подпапке bio_images
-  if (fs.existsSync(imagesDir)) {
-    // Извлекаем имена файлов из путей типа bio_images/img_bio_0001.png
-    const usedFiles = [...content.matchAll(/\]\((.+?)\)/g)]
-      .map((m) => m[1])
-      .filter((p) => p.startsWith("bio_images/"))
-      .map((p) => path.basename(p));
+  await withWriteLock(async () => {
+    await writeTextAtomic(file, content);
 
-    const files = fs.readdirSync(imagesDir);
+    // 🧹 Чистка неиспользуемых изображений в подпапке bio_images
+    if (fs.existsSync(imagesDir)) {
+      const usedFiles = [...content.matchAll(/\]\((.+?)\)/g)]
+        .map((m) => m[1])
+        .filter((p) => p.startsWith("bio_images/"))
+        .map((p) => path.basename(p));
 
-    for (const f of files) {
-      if (!usedFiles.includes(f)) {
-        try {
-          fs.unlinkSync(path.join(imagesDir, f));
-        } catch (e) {
-          log.error("Ошибка при удалении файла:", e);
+      const files = fs.readdirSync(imagesDir);
+
+      for (const f of files) {
+        if (!usedFiles.includes(f)) {
+          try {
+            fs.unlinkSync(path.join(imagesDir, f));
+          } catch (e) {
+            log.error("Ошибка при удалении файла:", e);
+          }
         }
       }
     }
+  });
+});
+
+ipcMain.handle("bio:readImage", async (event, id, relPath) => {
+  const normalized = String(relPath || "").replace(/\\/g, "/");
+  const fullPath = path.join(getBioDir(id), normalized);
+  if (!fs.existsSync(fullPath)) {
+    throw new Error(`Изображение не найдено: ${normalized}`);
+  }
+  return fs.readFileSync(fullPath);
+});
+
+ipcMain.handle("bio:exportPdf", async (event, { html, defaultName }) => {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "bio-pdf-"));
+  const htmlPath = path.join(tmpDir, "bio.html");
+  let win = null;
+
+  try {
+    await fs.promises.writeFile(htmlPath, html, "utf-8");
+
+    win = new BrowserWindow({
+      show: false,
+      webPreferences: {
+        sandbox: false,
+        contextIsolation: true,
+        nodeIntegration: false,
+      },
+    });
+
+    await new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => reject(new Error("Таймаут загрузки HTML")), 30000);
+      win.webContents.once("did-finish-load", () => {
+        clearTimeout(timeout);
+        resolve();
+      });
+      win.webContents.once("did-fail-load", (_, __, desc) => {
+        clearTimeout(timeout);
+        reject(new Error(desc || "Не удалось загрузить HTML"));
+      });
+      win.loadFile(htmlPath);
+    });
+
+    await win.webContents.executeJavaScript(`
+      Promise.all(
+        Array.from(document.images).map(
+          (img) =>
+            img.complete
+              ? Promise.resolve()
+              : new Promise((resolve) => {
+                  img.onload = resolve;
+                  img.onerror = resolve;
+                }),
+        ),
+      )
+    `);
+
+    const pdfBuffer = await win.webContents.printToPDF({
+      printBackground: true,
+      margins: { top: 0.5, bottom: 0.5, left: 0.5, right: 0.5 },
+    });
+
+    const { canceled, filePath } = await dialog.showSaveDialog({
+      defaultPath: defaultName || "biography.pdf",
+      filters: [{ name: "PDF", extensions: ["pdf"] }],
+    });
+
+    if (canceled || !filePath) return null;
+    await fs.promises.writeFile(filePath, pdfBuffer);
+    return filePath;
+  } catch (err) {
+    log.error("bio:exportPdf failed:", err);
+    throw err;
+  } finally {
+    win?.destroy();
+    fs.rmSync(tmpDir, { recursive: true, force: true });
   }
 });
 

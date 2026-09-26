@@ -11,8 +11,11 @@ const {
   getTagsPath,
   getHistoryPath,
   peopleDir,
+  ensureBaseDir,
 } = require("../config.cjs");
+const { closeFaceDb, initializeFaceDb } = require("../db/faceDb.cjs");
 const log = require("../logger.cjs").createLogger("app");
+const { withWriteLock, writeJsonAtomic } = require("./jsonStore.cjs");
 // const checkDiskSpace = require("check-disk-space").default;
 
 function getUserPaths(personId) {
@@ -131,6 +134,19 @@ ipcMain.handle("app:openDataFolder", async () => {
     fs.mkdirSync(dataPath, { recursive: true });
   }
   await shell.openPath(dataPath);
+});
+
+ipcMain.handle("app:openPath", async (_, targetPath) => {
+  try {
+    if (!targetPath || typeof targetPath !== "string") return false;
+    const normalizedPath = path.resolve(targetPath);
+    if (!fs.existsSync(normalizedPath)) return false;
+    await shell.openPath(normalizedPath);
+    return true;
+  } catch (error) {
+    log.warn("app:openPath failed", error.message);
+    return false;
+  }
 });
 
 ipcMain.handle("app:revealPath", async (_, targetPath) => {
@@ -370,6 +386,8 @@ ipcMain.handle("app:full-reset", async () => {
   // Путь к активной папке данных (см. config.cjs)
   const userDataPath = getBaseDir();
 
+  closeFaceDb();
+
   try {
     if (fs.existsSync(userDataPath)) {
       const files = await fs.promises.readdir(userDataPath);
@@ -380,9 +398,17 @@ ipcMain.handle("app:full-reset", async () => {
         await fs.promises.rm(curPath, { recursive: true, force: true });
       }
     }
+
+    ensureBaseDir(userDataPath);
+    initializeFaceDb();
     return true;
   } catch (error) {
     log.error("Ошибка при полной очистке:", error);
+    try {
+      initializeFaceDb();
+    } catch {
+      // best-effort: приложение поднимет БД при следующем обращении
+    }
     throw error;
   }
 });
@@ -424,8 +450,7 @@ ipcMain.handle("app:logHistory", async (event, entry) => {
 // Метод сохранения
 ipcMain.handle("save-tags", async (event, data) => {
   try {
-    const jsonString = JSON.stringify(data, null, 2);
-    fs.writeFileSync(getTagsPath(), jsonString, "utf8");
+    await withWriteLock(() => writeJsonAtomic(getTagsPath(), data));
     return { success: true };
   } catch (error) {
     log.error("Failed to save tags:", error);
