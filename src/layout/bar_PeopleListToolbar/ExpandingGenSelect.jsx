@@ -27,7 +27,7 @@ const StyledContainer = styled(Box, {
   paddingRight: $expanded ? 12 : 0,
   cursor: "pointer",
   "&:hover": {
-    backgroundColor: "rgba(255,255,255,0.08)",
+    backgroundColor: "action.hover",
   },
 }));
 
@@ -68,14 +68,14 @@ export default function ExpandingGenSelect({ options, value, onChange }) {
           <IconButton
             size="small"
             sx={{
-              color: "white",
+              color: "text.primary",
               p: 1,
               "&:hover": { backgroundColor: "transparent" },
             }}
           >
             <LayersIcon
               color={isExpanded ? "primary" : "inherit"}
-              fontSize="inherit"
+              fontSize="small"
             />
           </IconButton>
 
@@ -83,7 +83,7 @@ export default function ExpandingGenSelect({ options, value, onChange }) {
             <Typography
               variant="caption"
               sx={{
-                color: "white",
+                color: "text.primary",
                 whiteSpace: "nowrap",
                 ml: 0.5,
                 fontWeight: 700,
@@ -183,7 +183,7 @@ export default function ExpandingGenSelect({ options, value, onChange }) {
                     variant="body2"
                     sx={{
                       fontWeight: isSelected ? 700 : 400,
-                      color: isSelected ? "white" : "text.secondary",
+                      color: isSelected ? "text.primary" : "text.secondary",
                     }}
                   >
                     Поколение {opt}

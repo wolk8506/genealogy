@@ -99,7 +99,7 @@ export default function BioToolbar({
           <IconButton
             size="small"
             onClick={requestToggleEdit}
-            sx={{ color: "white", p: "8px" }}
+            sx={{ color: "text.primary", p: "8px" }}
           >
             {isEditing ? (
               <EditOffIcon size="small" fontSize="inherit" />
@@ -114,7 +114,7 @@ export default function BioToolbar({
           <IconButton
             size="small"
             onClick={onToggleNav}
-            sx={{ color: "white", p: "8px" }}
+            sx={{ color: "text.primary", p: "8px" }}
           >
             <TocIcon fontSize="inherit" />
           </IconButton>
@@ -143,7 +143,7 @@ export default function BioToolbar({
                     </InputAdornment>
                   ),
                   sx: {
-                    color: "white",
+                    color: "text.primary",
                     fontSize: "0.85rem",
                     width: 160,
                     py: 0,
@@ -156,7 +156,7 @@ export default function BioToolbar({
               <>
                 <IconButton
                   size="small"
-                  sx={{ color: "white", p: 0.5 }}
+                  sx={{ color: "text.primary", p: 0.5 }}
                   onClick={() => goSearchMatch(-1)}
                   disabled={matchCount === 0}
                 >
@@ -164,7 +164,7 @@ export default function BioToolbar({
                 </IconButton>
                 <Typography
                   variant="caption"
-                  sx={{ color: "white", minWidth: 36, textAlign: "center" }}
+                  sx={{ color: "text.primary", minWidth: 36, textAlign: "center" }}
                 >
                   {matchCount > 0
                     ? `${(searchMatchIndex % matchCount) + 1}/${matchCount}`
@@ -172,7 +172,7 @@ export default function BioToolbar({
                 </Typography>
                 <IconButton
                   size="small"
-                  sx={{ color: "white", p: 0.5 }}
+                  sx={{ color: "text.primary", p: 0.5 }}
                   onClick={() => goSearchMatch(1)}
                   disabled={matchCount === 0}
                 >
@@ -186,7 +186,7 @@ export default function BioToolbar({
             <Tooltip title="Печать">
               <IconButton
                 size="small"
-                sx={{ color: "white", p: 1 }}
+                sx={{ color: "text.primary", p: 1 }}
                 onClick={onPrint}
               >
                 <PrintIcon fontSize="inherit" />
@@ -195,7 +195,7 @@ export default function BioToolbar({
             <Tooltip title="Экспорт в PDF">
               <IconButton
                 size="small"
-                sx={{ color: "white", p: 1 }}
+                sx={{ color: "text.primary", p: 1 }}
                 onClick={onExportPdf}
               >
                 <PictureAsPdfIcon fontSize="inherit" />
@@ -212,7 +212,7 @@ export default function BioToolbar({
               <span>
                 <IconButton
                   size="small"
-                  sx={{ color: isDirty ? "#ffd54f" : "white", p: 1 }}
+                  sx={{ color: isDirty ? "#ffd54f" : "text.primary", p: 1 }}
                   onClick={onSave}
                   disabled={!isDirty}
                 >
@@ -225,14 +225,14 @@ export default function BioToolbar({
           <ToolbarGroup>
             <IconButton
               size="small"
-              sx={{ color: "white", p: 1 }}
+              sx={{ color: "text.primary", p: 1 }}
               onClick={() => execRef.current?.exec("Undo")}
             >
               <UndoIcon fontSize="inherit" />
             </IconButton>
             <IconButton
               size="small"
-              sx={{ color: "white", p: 1 }}
+              sx={{ color: "text.primary", p: 1 }}
               onClick={() => execRef.current?.exec("Redo")}
             >
               <RedoIcon fontSize="inherit" />
@@ -243,7 +243,7 @@ export default function BioToolbar({
             <Tooltip title="Заголовок 1">
               <IconButton
                 size="small"
-                sx={{ color: "white", p: 1 }}
+                sx={{ color: "text.primary", p: 1 }}
                 onClick={() => execRef.current?.exec("WrapInHeading", 1)}
               >
                 <b style={{ fontSize: "16px" }}>H1</b>
@@ -252,7 +252,7 @@ export default function BioToolbar({
             <Tooltip title="Заголовок 2">
               <IconButton
                 size="small"
-                sx={{ color: "white", p: 1 }}
+                sx={{ color: "text.primary", p: 1 }}
                 onClick={() => execRef.current?.exec("WrapInHeading", 2)}
               >
                 <b style={{ fontSize: "16px" }}>H2</b>
@@ -261,7 +261,7 @@ export default function BioToolbar({
             <Tooltip title="Заголовок 3">
               <IconButton
                 size="small"
-                sx={{ color: "white", p: 1 }}
+                sx={{ color: "text.primary", p: 1 }}
                 onClick={() => execRef.current?.exec("WrapInHeading", 3)}
               >
                 <b style={{ fontSize: "16px" }}>H3</b>
@@ -270,7 +270,7 @@ export default function BioToolbar({
             <Tooltip title="Обычный текст">
               <IconButton
                 size="small"
-                sx={{ color: "white", p: 1 }}
+                sx={{ color: "text.primary", p: 1 }}
                 onClick={() => execRef.current?.exec("WrapInHeading", 0)}
               >
                 <TextFieldsIcon fontSize="inherit" />
@@ -282,7 +282,7 @@ export default function BioToolbar({
             <Tooltip title="Жирный">
               <IconButton
                 size="small"
-                sx={{ color: "white", p: 1 }}
+                sx={{ color: "text.primary", p: 1 }}
                 onClick={() => execRef.current?.exec("ToggleStrong")}
               >
                 <FormatBoldIcon fontSize="inherit" />
@@ -291,7 +291,7 @@ export default function BioToolbar({
             <Tooltip title="Курсив">
               <IconButton
                 size="small"
-                sx={{ color: "white", p: 1 }}
+                sx={{ color: "text.primary", p: 1 }}
                 onClick={() => execRef.current?.exec("ToggleEmphasis")}
               >
                 <FormatItalicIcon fontSize="inherit" />
@@ -300,7 +300,7 @@ export default function BioToolbar({
             <Tooltip title="Зачеркнутый">
               <IconButton
                 size="small"
-                sx={{ color: "white", p: 1 }}
+                sx={{ color: "text.primary", p: 1 }}
                 onClick={() => execRef.current?.exec("ToggleStrikeThrough")}
               >
                 <FormatStrikethroughIcon fontSize="inherit" />
@@ -309,7 +309,7 @@ export default function BioToolbar({
             <Tooltip title="Вставить ссылку">
               <IconButton
                 size="small"
-                sx={{ color: "white", p: 1 }}
+                sx={{ color: "text.primary", p: 1 }}
                 onClick={() => execRef.current?.insertLink?.()}
               >
                 <LinkIcon fontSize="inherit" />
@@ -321,7 +321,7 @@ export default function BioToolbar({
             <Tooltip title="Вставить таблицу">
               <IconButton
                 size="small"
-                sx={{ color: "white", p: 1 }}
+                sx={{ color: "text.primary", p: 1 }}
                 onClick={() => execRef.current?.insertTable()}
               >
                 <TableChartIcon fontSize="inherit" />
@@ -331,7 +331,7 @@ export default function BioToolbar({
             <Tooltip title="Список">
               <IconButton
                 size="small"
-                sx={{ color: "white", p: 1 }}
+                sx={{ color: "text.primary", p: 1 }}
                 onClick={() => execRef.current?.exec("WrapInBulletList")}
               >
                 <FormatListBulletedIcon fontSize="inherit" />
@@ -340,7 +340,7 @@ export default function BioToolbar({
             <Tooltip title="Нумерованный список">
               <IconButton
                 size="small"
-                sx={{ color: "white", p: 1 }}
+                sx={{ color: "text.primary", p: 1 }}
                 onClick={() => execRef.current?.exec("WrapInOrderedList")}
               >
                 <FormatListNumberedIcon fontSize="inherit" />
@@ -349,7 +349,7 @@ export default function BioToolbar({
             <Tooltip title="Цитата">
               <IconButton
                 size="small"
-                sx={{ color: "white", p: 1 }}
+                sx={{ color: "text.primary", p: 1 }}
                 onClick={() => execRef.current?.exec("WrapInBlockquote")}
               >
                 <FormatQuoteIcon fontSize="inherit" />
@@ -358,7 +358,7 @@ export default function BioToolbar({
             <Tooltip title="Вставить фото в текст">
               <IconButton
                 size="small"
-                sx={{ color: "white", p: 1 }}
+                sx={{ color: "text.primary", p: 1 }}
                 onClick={() => execRef.current?.insertImage()}
               >
                 <AddPhotoAlternateIcon fontSize="inherit" />

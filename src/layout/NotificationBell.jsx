@@ -1,5 +1,4 @@
 import {
-  Badge,
   IconButton,
   Popover,
   Box,
@@ -10,7 +9,8 @@ import {
   useTheme,
   lighten,
 } from "@mui/material";
-import NotificationsIcon from "@mui/icons-material/Notifications";
+import BellFillIcon from "../components/svg/BellFillIcon";
+import BellBadgeFillIcon from "../components/svg/BellBadgeFillIcon";
 import CircleIcon from "@mui/icons-material/Circle";
 import DeleteSweepIcon from "@mui/icons-material/DeleteSweep";
 import { useNotificationStore } from "../store/useNotificationStore";
@@ -99,9 +99,21 @@ export const NotificationBell = () => {
         }}
       >
         <IconButton onClick={handleOpen} sx={{ p: 1 }}>
-          <Badge variant="dot" invisible={!hasNew} color="warning">
-            <NotificationsIcon sx={{ color: "white", fontSize: 18 }} />
-          </Badge>
+          {hasNew ? (
+            <BellBadgeFillIcon
+              sx={{
+                color: anchorEl ? "primary.main" : "text.primary",
+                fontSize: 18,
+              }}
+            />
+          ) : (
+            <BellFillIcon
+              sx={{
+                color: anchorEl ? "primary.main" : "text.primary",
+                fontSize: 18,
+              }}
+            />
+          )}
         </IconButton>
       </Box>
 

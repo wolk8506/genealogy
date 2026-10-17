@@ -27,10 +27,10 @@ const StyledContainer = styled(Box)(({ theme }) => ({
   paddingRight: 12,
   overflow: "hidden",
   cursor: "pointer",
-  backgroundColor: "rgba(255,255,255,0.05)",
+  backgroundColor: "action.hover",
   "&:hover": {
     borderColor: theme.palette.primary.main,
-    backgroundColor: "rgba(255,255,255,0.1)",
+    backgroundColor: "action.selected",
   },
 }));
 
@@ -104,7 +104,7 @@ export default function ExpandingSelect({
 
   return (
     <StyledContainer onClick={handleOpen}>
-      <IconButton size="small" sx={{ color: "white", p: 1 }}>
+      <IconButton size="small" sx={{ color: "text.primary", p: 1 }}>
         {/* На главной кнопке показываем иконку текущего направления */}
         {selectedOption ? selectedOption.icon : <SortIcon fontSize="inherit" />}
       </IconButton>
@@ -112,7 +112,7 @@ export default function ExpandingSelect({
       <Typography
         variant="caption"
         sx={{
-          color: "white",
+          color: "text.primary",
           whiteSpace: "nowrap",
           ml: 0.5,
           fontWeight: 600,

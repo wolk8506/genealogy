@@ -222,16 +222,16 @@ export default function ExpandingSearch({
                 ? "primary.main"
                 : alpha(theme.palette.divider, 0.2),
               bgcolor: isFocused
-                ? alpha(theme.palette.common.white, 0.05)
+                ? alpha(theme.palette.text.primary, 0.05)
                 : "transparent",
             }}
           >
             <IconButton
               size="small"
               onClick={() => inputRef.current?.focus()}
-              sx={{ color: "white", p: 1 }}
+              sx={{ color: "text.primary", p: 1 }}
             >
-              <SearchIcon fontSize="inherit" />
+              <SearchIcon fontSize="small" />
             </IconButton>
 
             <Box
@@ -247,7 +247,7 @@ export default function ExpandingSearch({
                   sx={{
                     position: "absolute",
                     left: 9,
-                    color: alpha("#fff", 0.3),
+                    color: alpha(theme.palette.text.primary, 0.3),
                     fontSize: "0.875rem",
                     pointerEvents: "none",
                     whiteSpace: "pre",
@@ -268,7 +268,7 @@ export default function ExpandingSearch({
                 sx={{
                   ml: 1,
                   flex: 1,
-                  color: "white",
+                  color: "text.primary",
                   fontSize: "0.875rem",
                   zIndex: 1,
                   opacity: isExpanded ? 1 : 0,
@@ -283,7 +283,7 @@ export default function ExpandingSearch({
                   handleValueChange(""); // Очистка через Redux
                   setIsFocused(false);
                 }}
-                sx={{ color: "white", p: "5px", mr: 0.5 }}
+                sx={{ color: "text.primary", p: "5px", mr: 0.5 }}
               >
                 <CloseIcon fontSize="inherit" />
               </IconButton>

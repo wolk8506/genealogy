@@ -313,7 +313,7 @@ export default function AddPersonModal({ open, onClose }) {
           }}
         >
           <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-            <PersonFillBadgePlusIcon color="primary" />
+            <PersonFillBadgePlusIcon color="primary" sx={{ fontSize: 20 }} />
             Добавить человека
           </Box>
           <IconButton
@@ -349,7 +349,7 @@ export default function AddPersonModal({ open, onClose }) {
                   mb: 2,
                 }}
               >
-                <PersonFillBadgePlusIcon sx={{ fontSize: 20 }} /> Личные данные
+                <PersonFillBadgePlusIcon sx={{ fontSize: 16 }} /> Личные данные
               </Typography>
               <Grid container spacing={2}>
                 <Grid size={{ xs: 12, sm: 4 }}>

@@ -1,5 +1,5 @@
 import React from "react";
-import { Box, Stack, Typography } from "@mui/material";
+import { Box, Stack, Typography, useTheme } from "@mui/material";
 import { KIND_COLOR } from "./mapHelpers";
 
 const ITEMS = [
@@ -10,6 +10,11 @@ const ITEMS = [
 ];
 
 export default function MapLegend() {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === "dark";
+  const bg = isDark ? "rgba(30, 37, 48, 0.6)" : "rgba(255, 255, 255, 0.75)";
+  const fg = isDark ? "#fff" : "#1c1c1e";
+
   return (
     <Box
       sx={{
@@ -17,13 +22,14 @@ export default function MapLegend() {
         bottom: 12,
         left: 12,
         zIndex: 1000,
-        bgcolor: "background.paper",
+        color: fg,
+        bgcolor: bg,
         borderRadius: 2,
         px: 1.5,
         py: 1,
-        boxShadow: 2,
-        border: "1px solid",
-        borderColor: "divider",
+        boxShadow: "0 2px 12px rgba(0,0,0,0.22)",
+        backdropFilter: "blur(8px)",
+        WebkitBackdropFilter: "blur(8px)",
         pointerEvents: "none",
       }}
     >
@@ -39,7 +45,9 @@ export default function MapLegend() {
                 flexShrink: 0,
               }}
             />
-            <Typography variant="caption">{item.label}</Typography>
+            <Typography variant="caption" color="inherit">
+              {item.label}
+            </Typography>
           </Stack>
         ))}
       </Stack>

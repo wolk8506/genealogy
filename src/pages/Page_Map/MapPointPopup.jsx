@@ -1,6 +1,5 @@
 import React from "react";
 import { Box, Stack, Typography, Button } from "@mui/material";
-import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import EditLocationAltIcon from "@mui/icons-material/EditLocationAlt";
 import EventIcon from "@mui/icons-material/Event";
 import { KIND_COLOR } from "./mapHelpers";
@@ -135,7 +134,6 @@ export default function MapPointPopup({
                   </Typography>
                 )}
               </Box>
-              <ChevronRightIcon fontSize="small" sx={{ color: "text.secondary" }} />
             </Box>
           ))}
         </Stack>
@@ -165,7 +163,6 @@ export default function MapPointPopup({
             )}
           </Box>
         )}
-        <ChevronRightIcon fontSize="small" sx={{ color: "text.secondary" }} />
       </Box>
       {editable && single.kind !== "external" && onEditLocation && (
         <Button

@@ -35,7 +35,7 @@ const StyledContainer = styled(Box, {
   paddingRight: $expanded ? 12 : 0,
   cursor: "pointer",
   "&:hover": {
-    backgroundColor: "rgba(255,255,255,0.08)",
+    backgroundColor: "action.hover",
   },
 }));
 
@@ -96,10 +96,10 @@ export default function ExpandingTimeSelect({
     <>
       <Tooltip title={tooltipTitle}>
         <StyledContainer $expanded={isExpanded} onClick={handleOpen}>
-          <IconButton size="small" sx={{ color: "white", p: "8px" }}>
+          <IconButton size="small" sx={{ color: "text.primary", p: "8px" }}>
             <BaseIcon
               color={isExpanded ? "primary" : "inherit"}
-              fontSize="inherit"
+              fontSize="small"
             />
           </IconButton>
 
@@ -107,7 +107,7 @@ export default function ExpandingTimeSelect({
             <Typography
               variant="caption"
               sx={{
-                color: "white",
+                color: "text.primary",
                 whiteSpace: "nowrap",
                 ml: 0.5,
                 fontWeight: 700,
@@ -203,7 +203,7 @@ export default function ExpandingTimeSelect({
                   variant="body2"
                   sx={{
                     fontWeight: isSelected ? 700 : 400,
-                    color: isSelected ? "white" : "text.secondary",
+                    color: isSelected ? "text.primary" : "text.secondary",
                   }}
                 >
                   {opt.label}

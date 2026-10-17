@@ -61,9 +61,9 @@ export default function PeopleListToolbar({
           <IconButton
             onClick={() => navigate("/external")}
             size="small"
-            sx={{ color: "white", p: 1 }}
+            sx={{ color: "text.primary", p: 1 }}
           >
-            <ContactsIcon color="inherit" fontSize="inherit" />
+            <ContactsIcon color="inherit" fontSize="small" />
           </IconButton>
         </Tooltip>
       </ButtonConteiner>
@@ -72,7 +72,7 @@ export default function PeopleListToolbar({
           <IconButton
             onClick={() => navigate("/trash")}
             size="small"
-            sx={{ color: "white", p: 1 }}
+            sx={{ color: "text.primary", p: 1 }}
           >
             <Badge
               badgeContent={4}
@@ -80,7 +80,7 @@ export default function PeopleListToolbar({
               variant="dot"
               color="warning"
             >
-              <TrashFillIcon color={"inherit"} fontSize="inherit" />
+              <TrashFillIcon color={"inherit"} sx={{ fontSize: 16 }} />
               {/* <DeleteIcon color={"inherit"} fontSize="inherit" /> */}
             </Badge>
           </IconButton>
@@ -98,10 +98,10 @@ export default function PeopleListToolbar({
           <IconButton
             onClick={handleOpenAddModal}
             size="small"
-            sx={{ color: "white", p: 0.9 }}
+            sx={{ color: "text.primary", p: 0.9 }}
           >
             <PersonFillBadgePlusIcon
-              sx={{ fontSize: "20px", color: "white" }}
+              sx={{ fontSize: 16, color: "text.primary" }}
             />
             {/* <PersonAddAlt1Icon color={"inherit"} fontSize="inherit" /> */}
           </IconButton>

@@ -116,6 +116,13 @@ export default function AppDrawer({ open, onClose, items }) {
                   justifyContent: open ? "initial" : "center",
                   "&.Mui-selected": {
                     backgroundColor: theme.palette.action.selected,
+                    color: theme.palette.primary.main,
+                    "& .MuiListItemIcon-root": {
+                      color: theme.palette.primary.main,
+                    },
+                    "&:hover": {
+                      backgroundColor: theme.palette.action.selected,
+                    },
                   },
                 }}
               >

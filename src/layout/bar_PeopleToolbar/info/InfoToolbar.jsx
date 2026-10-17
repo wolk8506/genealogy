@@ -49,7 +49,7 @@ const InfoToolbar = ({ personRef, infoProps }) => {
                 <IconButton
                   onClick={infoProps.onCancel}
                   size="small"
-                  sx={{ color: "white", p: "8px" }}
+                  sx={{ color: "text.primary", p: "8px" }}
                 >
                   <CancelIcon fontSize="inherit" />
                 </IconButton>
@@ -58,7 +58,7 @@ const InfoToolbar = ({ personRef, infoProps }) => {
                 <IconButton
                   onClick={infoProps.onSave}
                   size="small"
-                  sx={{ color: "white", p: "8px" }}
+                  sx={{ color: "text.primary", p: "8px" }}
                 >
                   <SaveIcon fontSize="inherit" />
                 </IconButton>
@@ -81,7 +81,7 @@ const InfoToolbar = ({ personRef, infoProps }) => {
               onClick={() => infoProps.requestToggleEdit()}
               size="small"
               sx={{
-                color: "white",
+                color: "text.primary",
                 p: 1,
                 // Добавим поворот при редактировании для красоты
                 // transform: infoProps.isEditing ? "rotate(90deg)" : "none",
@@ -113,7 +113,7 @@ const InfoToolbar = ({ personRef, infoProps }) => {
                 <IconButton
                   onClick={() => personRef.current?.handleAddEvent()}
                   size="small"
-                  sx={{ color: "white", p: 1 }}
+                  sx={{ color: "text.primary", p: 1 }}
                 >
                   <StarIcon fontSize="inherit" />
                 </IconButton>
@@ -122,7 +122,7 @@ const InfoToolbar = ({ personRef, infoProps }) => {
                 <IconButton
                   onClick={() => personRef.current?.handleAddFact()}
                   size="small"
-                  sx={{ color: "white", p: 1 }}
+                  sx={{ color: "text.primary", p: 1 }}
                 >
                   <InfoIcon fontSize="inherit" />
                 </IconButton>

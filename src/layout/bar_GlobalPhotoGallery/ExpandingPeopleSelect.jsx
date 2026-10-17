@@ -100,10 +100,10 @@ export default function ExpandingPeopleSelect({
       sx={{
         border: "1px solid",
         borderColor: isMenuOpen ? "primary.main" : "divider",
-        bgcolor: isMenuOpen ? "rgba(255,255,255,0.08)" : "transparent",
+        bgcolor: isMenuOpen ? "action.hover" : "transparent",
       }}
     >
-      <IconButton size="small" sx={{ color: "white", p: 1 }}>
+      <IconButton size="small" sx={{ color: "text.primary", p: 1 }}>
         <GroupIcon fontSize="inherit" />
       </IconButton>
 
@@ -153,7 +153,7 @@ export default function ExpandingPeopleSelect({
                 variant="filled"
                 sx={{
                   // bgcolor: "primary.main",
-                  color: "white",
+                  color: "text.primary",
                   height: 24,
                   fontSize: "0.75rem",
                   maxWidth: 150,
@@ -188,7 +188,7 @@ export default function ExpandingPeopleSelect({
               ml: 1,
               flex: 1,
               "& .MuiInputBase-input": {
-                color: "white",
+                color: "text.primary",
                 fontSize: "0.875rem",
                 width: isExpanded ? "auto" : 0,
                 padding: 0,
@@ -228,7 +228,7 @@ export default function ExpandingPeopleSelect({
             setIsExpanded(false);
             setIsMenuOpen(false);
           }}
-          sx={{ color: "white", p: "5px", mr: 0.5 }}
+          sx={{ color: "text.primary", p: "5px", mr: 0.5 }}
         >
           <CloseIcon fontSize="inherit" style={{ fontSize: "14px" }} />
         </IconButton>

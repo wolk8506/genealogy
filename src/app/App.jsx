@@ -4,9 +4,9 @@ import {
   createTheme,
   CssBaseline,
   Box,
-  Typography,
 } from "@mui/material";
 import { keyframes } from "@mui/system";
+import { lighten } from "@mui/material/styles";
 
 import MainLayout from "../layout/MainLayout";
 import { ThemeContext } from "../theme/ThemeContext.cjs";
@@ -20,11 +20,6 @@ const pulse = keyframes`
 const orbit = keyframes`
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
-`;
-
-const shimmer = keyframes`
-  0% { background-position: -300px 0; }
-  100% { background-position: 300px 0; }
 `;
 
 export default function App() {
@@ -79,7 +74,10 @@ export default function App() {
   const theme = useMemo(
     () =>
       createTheme({
-        palette: { mode },
+        palette: {
+          mode,
+          primary: { main: "#3b86f3" },
+        },
         components: {
           // 1. Глобальные стили (ваши скроллбары)
           MuiCssBaseline: {
@@ -118,6 +116,16 @@ export default function App() {
                 scrollbarWidth: "thin",
                 scrollbarColor: `${themeParam.palette.divider} transparent`,
               },
+
+              /* Ховер кнопок — лёгкий оттенок их собственного (активного)
+                 цвета, а не серый action.hover. Включены только «плоские»
+                 варианты (outlined/text) и иконко-кнопки; у contained
+                 ховер и так = затемнённый цвет кнопки. */
+              ".MuiButton-outlined:hover:not(.Mui-disabled), .MuiButton-text:hover:not(.Mui-disabled), .MuiIconButton-root:hover:not(.Mui-disabled), .MuiToggleButton-root:hover:not(.Mui-disabled), .MuiButtonGroup-root .MuiButton-outlined:hover:not(.Mui-disabled)":
+                {
+                  backgroundColor:
+                    "color-mix(in srgb, currentColor 12%, transparent) !important",
+                },
             }),
           },
 
@@ -134,13 +142,28 @@ export default function App() {
             },
           },
 
-          // 3. Опционально: скругление для кнопок, чтобы всё было в одном стиле
+          // 3. Скругление для кнопок. Ховер contained-кнопок — лёгкое
+          // ОСВЕТЛЕНИЕ собственного цвета, а не тёмный primary.dark.
           MuiButton: {
-            styleOverrides: {
-              root: {
-                borderRadius: "10px",
-                textTransform: "none", // Убирает капс у кнопок (обычно хорошо смотрится со скруглениями)
-              },
+            styleOverrides: (theme) => {
+              const containedHover = (c) => ({
+                "&:hover:not(.Mui-disabled)": {
+                  backgroundColor: lighten(c, 0.12),
+                },
+              });
+
+              return {
+                root: {
+                  borderRadius: "10px",
+                  textTransform: "none", // Убирает капс у кнопок (обычно хорошо смотрится со скруглениями)
+                },
+                containedPrimary: containedHover(theme.palette.primary.main),
+                containedSecondary: containedHover(theme.palette.secondary.main),
+                containedError: containedHover(theme.palette.error.main),
+                containedInfo: containedHover(theme.palette.info.main),
+                containedSuccess: containedHover(theme.palette.success.main),
+                containedWarning: containedHover(theme.palette.warning.main),
+              };
             },
           },
 
@@ -269,46 +292,6 @@ export default function App() {
               position: "absolute",
             }}
           />
-
-          <Box
-            sx={{
-              px: 3,
-              py: 2,
-              borderRadius: "16px",
-              border: "1px solid rgba(255,255,255,0.08)",
-              bgcolor: "rgba(8, 12, 24, 0.64)",
-              backdropFilter: "blur(8px)",
-              textAlign: "center",
-            }}
-          >
-            <Typography
-              variant="h6"
-              sx={{
-                fontWeight: 800,
-                letterSpacing: 0.6,
-                color: "#f4f7ff",
-                mb: 0.5,
-              }}
-            >
-              GENEALOGY
-            </Typography>
-            <Typography
-              variant="caption"
-              sx={{
-                color: "rgba(215,225,255,0.72)",
-                display: "inline-block",
-                backgroundImage:
-                  "linear-gradient(90deg, rgba(220,230,255,0.55), rgba(220,230,255,1), rgba(220,230,255,0.55))",
-                backgroundSize: "300px 100%",
-                WebkitBackgroundClip: "text",
-                backgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-                animation: `${shimmer} 2.2s linear infinite`,
-              }}
-            >
-              Инициализация приложения...
-            </Typography>
-          </Box>
         </Box>
       </Box>
     );

@@ -43,13 +43,13 @@ export default function TreeToolbar({ treeProps }) {
 
             gap: 1,
             "& .MuiToggleButton-root": {
-              color: "white",
+              color: "text.primary",
               border: "none",
               borderRadius: 6,
               fontSize: 20,
               "&.Mui-selected": {
                 bgcolor: "divider",
-                color: "#90caf9",
+                color: "primary.main",
               },
             },
           }}
@@ -81,7 +81,7 @@ export default function TreeToolbar({ treeProps }) {
             <IconButton
               onClick={zoomIn}
               size="small"
-              sx={{ color: "white", p: 1 }}
+              sx={{ color: "text.primary", p: 1 }}
             >
               <ZoomInIcon fontSize="inherit" />
             </IconButton>
@@ -90,7 +90,7 @@ export default function TreeToolbar({ treeProps }) {
             <IconButton
               onClick={zoomOut}
               size="small"
-              sx={{ color: "white", p: 1 }}
+              sx={{ color: "text.primary", p: 1 }}
             >
               <ZoomOutIcon fontSize="inherit" />
             </IconButton>
@@ -99,7 +99,7 @@ export default function TreeToolbar({ treeProps }) {
             <IconButton
               onClick={fitView}
               size="small"
-              sx={{ color: "white", p: 1 }}
+              sx={{ color: "text.primary", p: 1 }}
             >
               <CenterFocusStrongIcon fontSize="inherit" />
             </IconButton>
@@ -111,7 +111,7 @@ export default function TreeToolbar({ treeProps }) {
           <IconButton
             onClick={onExport}
             size="small"
-            sx={{ color: "white", p: 1 }}
+            sx={{ color: "text.primary", p: 1 }}
           >
             <PhotoCameraIcon fontSize="inherit" />
           </IconButton>

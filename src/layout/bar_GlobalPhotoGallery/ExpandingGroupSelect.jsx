@@ -32,10 +32,10 @@ const StyledContainer = styled(Box, {
   paddingRight: $expanded ? 12 : 0,
   overflow: "hidden",
   cursor: "pointer",
-  backgroundColor: $expanded ? "rgba(255,255,255,0.08)" : "transparent",
+  backgroundColor: $expanded ? "action.hover" : "transparent",
   "&:hover": {
     borderColor: theme.palette.primary.main,
-    backgroundColor: "rgba(255,255,255,0.12)",
+    backgroundColor: "action.selected",
   },
 }));
 
@@ -85,7 +85,7 @@ export default function ExpandingGroupSelect({ value, onChange }) {
 
   return (
     <StyledContainer $expanded={isExpanded} onClick={handleOpen}>
-      <IconButton size="small" sx={{ color: "white", p: 1 }}>
+      <IconButton size="small" sx={{ color: "text.primary", p: 1 }}>
         <CurrentIcon fontSize="inherit" />
       </IconButton>
 
@@ -93,7 +93,7 @@ export default function ExpandingGroupSelect({ value, onChange }) {
         <Typography
           variant="caption"
           sx={{
-            color: "white",
+            color: "text.primary",
             whiteSpace: "nowrap",
             ml: 0.5,
             fontWeight: 600,
