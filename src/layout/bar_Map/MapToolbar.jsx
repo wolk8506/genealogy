@@ -17,7 +17,7 @@ const Pill = styled(Box)(({ theme }) => ({
   border: "1px solid",
   borderColor: theme.palette.divider,
   overflow: "hidden",
-  backgroundColor: "rgba(255,255,255,0.05)",
+  backgroundColor: "action.hover",
   "&:hover": {
     borderColor: theme.palette.primary.main,
   },
@@ -35,11 +35,11 @@ function FilterToggle({ active, onClick, icon, label, title }) {
         alignItems: "center",
         gap: 0.75,
         cursor: "pointer",
-        color: "white",
+        color: "text.primary",
         opacity: active ? 1 : 0.45,
         fontSize: "0.78rem",
         fontWeight: 600,
-        "&:hover": { bgcolor: "rgba(255,255,255,0.12)" },
+        "&:hover": { bgcolor: "action.selected" },
       }}
     >
       {icon}
@@ -118,7 +118,7 @@ export default function MapToolbar({
 
       <Typography
         variant="caption"
-        sx={{ color: "white", opacity: 0.75, whiteSpace: "nowrap" }}
+        sx={{ color: "text.primary", opacity: 0.75, whiteSpace: "nowrap" }}
       >
         {loading
           ? "…"
@@ -131,7 +131,7 @@ export default function MapToolbar({
           title="Показать все точки"
           onClick={onFitBounds}
           disabled={loading || totalVisible === 0}
-          sx={{ color: "white", p: 0.9 }}
+          sx={{ color: "text.primary", p: 0.9 }}
         >
           <FitScreenIcon sx={{ fontSize: 20 }} />
         </IconButton>
@@ -143,7 +143,7 @@ export default function MapToolbar({
           title="Обновить (Shift — перегеокодировать)"
           onClick={(e) => onRefresh?.(e)}
           disabled={loading}
-          sx={{ color: "white", p: 0.9 }}
+          sx={{ color: "text.primary", p: 0.9 }}
         >
           <RefreshIcon sx={{ fontSize: 20 }} />
         </IconButton>

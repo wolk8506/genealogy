@@ -21,7 +21,7 @@ export default function NavigationButtons() {
     <ButtonConteiner>
       <IconButton
         sx={{
-          color: "white",
+          color: "text.primary",
           p: 0.5,
         }}
         color={isDark ? "primary" : "default"}
@@ -33,7 +33,7 @@ export default function NavigationButtons() {
       </IconButton>
       <Divider orientation="vertical" variant="middle" flexItem />
       <IconButton
-        sx={{ color: "white", p: 0.5 }}
+        sx={{ color: "text.primary", p: 0.5 }}
         color={isDark ? "primary" : "default"}
         onClick={() => canGoForward && navigate(1)}
         disabled={!canGoForward}

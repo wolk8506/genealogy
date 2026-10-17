@@ -5,9 +5,9 @@ import { Stack, Tooltip, Box, Button } from "@mui/material";
 import { ToggleButton, ToggleButtonGroup } from "@mui/material";
 import { useTheme, alpha } from "@mui/material/styles";
 import BioToolbar from "./bio/BioToolbar";
-import PermIdentityIcon from "@mui/icons-material/PermIdentity";
-import FeedIcon from "@mui/icons-material/Feed";
-import PhotoLibraryIcon from "@mui/icons-material/PhotoLibrary";
+import PersonFillIcon from "../../components/svg/PersonFillIcon";
+import TextDocumentFillIcon from "../../components/svg/TextDocumentFillIcon";
+import PhotoOnRectangleAngledIcon from "../../components/svg/PhotoOnRectangleAngledIcon";
 import AccountTreeIcon from "@mui/icons-material/AccountTree";
 import PhotoToolbar from "./photo/PhotoToolbar";
 import TreeToolbar from "./tree/TreeToolbar";
@@ -48,7 +48,7 @@ export default function ToolbarGroup({
           // color: "white",
           gap: 1,
           "& .MuiToggleButton-root": {
-            color: "white",
+            color: "text.primary",
             border: "none",
             borderRadius: 6,
             fontSize: 20,
@@ -56,27 +56,27 @@ export default function ToolbarGroup({
             "&.Mui-selected": {
               // bgcolor: "text.secondary",
               bgcolor: "divider",
-              color: "#90caf9",
+              color: "primary.main",
               // "&:hover": { bgcolor: "#555" },
             },
           },
         }}
       >
         <Tooltip title="Инфо">
-          <ToggleButton value="info" color="white">
-            <PermIdentityIcon fontSize="inherit" />
+          <ToggleButton value="info">
+            <PersonFillIcon sx={{ fontSize: 16 }} />
           </ToggleButton>
         </Tooltip>
 
         <Tooltip title="Фотоальбом">
           <ToggleButton value="photo">
-            <PhotoLibraryIcon fontSize="inherit" />
+            <PhotoOnRectangleAngledIcon sx={{ fontSize: 19 }} />
           </ToggleButton>
         </Tooltip>
 
         <Tooltip title="Биография">
           <ToggleButton value="bio">
-            <FeedIcon fontSize="inherit" />
+            <TextDocumentFillIcon sx={{ fontSize: 16 }} />
           </ToggleButton>
         </Tooltip>
 

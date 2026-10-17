@@ -14,7 +14,7 @@ const Pill = styled(Box)(({ theme }) => ({
   border: "1px solid",
   borderColor: theme.palette.divider,
   overflow: "hidden",
-  backgroundColor: "rgba(255,255,255,0.05)",
+  backgroundColor: "action.hover",
   "&:hover": {
     borderColor: theme.palette.primary.main,
   },
@@ -30,11 +30,11 @@ function SegButton({ active, onClick, children }) {
         display: "flex",
         alignItems: "center",
         cursor: "pointer",
-        color: active ? "primary.main" : "white",
+        color: active ? "primary.main" : "text.primary",
         fontWeight: active ? 700 : 500,
         fontSize: "0.78rem",
-        bgcolor: active ? "rgba(255,255,255,0.08)" : "transparent",
-        "&:hover": { bgcolor: "rgba(255,255,255,0.12)" },
+        bgcolor: active ? "action.hover" : "transparent",
+        "&:hover": { bgcolor: "action.selected" },
       }}
     >
       {children}
@@ -54,11 +54,11 @@ function FilterToggle({ active, onClick, icon, label, title }) {
         alignItems: "center",
         gap: 0.75,
         cursor: "pointer",
-        color: "white",
+        color: "text.primary",
         opacity: active ? 1 : 0.45,
         fontSize: "0.78rem",
         fontWeight: 600,
-        "&:hover": { bgcolor: "rgba(255,255,255,0.12)" },
+        "&:hover": { bgcolor: "action.selected" },
       }}
     >
       {icon}
@@ -104,7 +104,7 @@ export default function TimelineToolbar({
             </Typography>
             <Typography
               variant="caption"
-              sx={{ fontWeight: 700, px: 1.5, color: "white" }}
+              sx={{ fontWeight: 700, px: 1.5, color: "text.primary" }}
             >
               {month}
             </Typography>
@@ -116,7 +116,7 @@ export default function TimelineToolbar({
         <Pill>
           <Typography
             variant="caption"
-            sx={{ px: 1.5, color: "white", fontWeight: 600, maxWidth: 180 }}
+            sx={{ px: 1.5, color: "text.primary", fontWeight: 600, maxWidth: 180 }}
             noWrap
           >
             {[filterPerson.firstName, filterPerson.lastName || filterPerson.maidenName]
@@ -133,10 +133,10 @@ export default function TimelineToolbar({
               alignItems: "center",
               cursor: "pointer",
               opacity: 0.7,
-              "&:hover": { opacity: 1, bgcolor: "rgba(255,255,255,0.12)" },
+              "&:hover": { opacity: 1, bgcolor: "action.selected" },
             }}
           >
-            <CloseIcon sx={{ fontSize: 16, color: "white" }} />
+            <CloseIcon sx={{ fontSize: 16, color: "text.primary" }} />
           </Box>
         </Pill>
       )}

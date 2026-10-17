@@ -55,16 +55,16 @@ export default function ExternalToolbar({
             borderRadius: 7,
             border: "1px solid",
             borderColor: "divider",
-            bgcolor: "rgba(255,255,255,0.02)",
+            bgcolor: "action.hover",
             '& .MuiToggleButton-root': {
-              color: "white",
+              color: "text.primary",
               border: "none",
               borderRadius: 6,
               textTransform: "none",
               px: 1.2,
               '&.Mui-selected': {
                 bgcolor: "divider",
-                color: "#90caf9",
+                color: "primary.main",
               },
             },
           }}
@@ -86,7 +86,7 @@ export default function ExternalToolbar({
           <IconButton
             onClick={() => navigate("/trash?tab=external")}
             size="small"
-            sx={{ color: "white", p: 1 }}
+            sx={{ color: "text.primary", p: 1 }}
           >
             <Badge
               variant="dot"
@@ -104,10 +104,10 @@ export default function ExternalToolbar({
           <IconButton
             onClick={() => navigate("/external?action=add")}
             size="small"
-            sx={{ color: "white", p: 0.9 }}
+            sx={{ color: "text.primary", p: 0.9 }}
           >
             <PersonFillBadgePlusIcon
-              sx={{ fontSize: "20px", color: "white" }}
+              sx={{ fontSize: 16, color: "text.primary" }}
             />
           </IconButton>
         </Tooltip>

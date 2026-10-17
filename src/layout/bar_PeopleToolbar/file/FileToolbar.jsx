@@ -20,7 +20,7 @@ export default function FileToolbar() {
           <IconButton
             onClick={() => openFilesFolder?.()}
             disabled={!openFilesFolder}
-            sx={{ color: "white", p: 1 }}
+            sx={{ color: "text.primary", p: 1 }}
           >
             <FolderOpenIcon sx={{ fontSize: 20 }} />
           </IconButton>
@@ -31,7 +31,7 @@ export default function FileToolbar() {
           <IconButton
             onClick={() => executeUpload?.()}
             disabled={!executeUpload}
-            sx={{ color: "white", p: 1 }}
+            sx={{ color: "text.primary", p: 1 }}
           >
             <UploadFileIcon sx={{ fontSize: 20 }} />
           </IconButton>

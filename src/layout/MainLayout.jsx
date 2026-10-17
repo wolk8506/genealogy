@@ -657,6 +657,7 @@ export default function MainLayout() {
         <CssBaseline />
         <AppBar
           position="fixed"
+          color="transparent"
           open={open}
           sx={{
             transition: "none !important",
@@ -664,9 +665,16 @@ export default function MainLayout() {
 
             WebkitAppRegion: "drag", // Делаем бар перетаскиваемым
             height: 50,
-            // ----
-            // bgcolor: "transparent",
-            backdropFilter: "blur(4px)",
+            // Полупрозрачный «фростед-гласс»: контент прокручивается под баром
+            // и размывается backdrop-filter (как тулбар в Finder/Notes).
+            bgcolor: isDark ? "rgba(18, 18, 18, 0.5)" : "rgba(246, 247, 251, 0.5)",
+            color: "text.primary",
+            backdropFilter: "blur(24px) saturate(180%)",
+            WebkitBackdropFilter: "blur(24px) saturate(180%)",
+            borderBottom: "1px solid",
+            borderColor: isDark
+              ? "rgba(255, 255, 255, 0.08)"
+              : "rgba(0, 0, 0, 0.06)",
           }}
         >
           <Toolbar
@@ -695,7 +703,9 @@ export default function MainLayout() {
                   // open && { display: "none" },
                 ]}
               >
-                <SidebarLeftIcon sx={{ fontSize: "20px", color: "white" }} />
+                <SidebarLeftIcon
+                  sx={{ fontSize: "20px", color: "text.primary" }}
+                />
               </IconButton>
             </ButtonConteiner>
             <Box width={"16px"} />
@@ -871,7 +881,7 @@ export default function MainLayout() {
                       else setMemoriesOpen((v) => !v);
                     }}
                     size="small"
-                    sx={{ color: "white", p: 1 }}
+                    sx={{ color: "text.primary", p: 1 }}
                   >
                     <SidebarRightIcon fontSize="inherit" />
                   </IconButton>
@@ -925,9 +935,9 @@ export default function MainLayout() {
                 : 0,
             transition: "margin-right 0.3s ease",
             // pt: 1,
-            pr: 1,
-            pb: 1,
-            pl: 1,
+            pr: isMapPage ? 0 : 1,
+            pb: isMapPage ? 0 : 1,
+            pl: isMapPage ? 0 : 1,
             // width: "calc(100% - 64px)",
             // height: "100vh",
           }}

@@ -45,7 +45,7 @@ export default function PhotoToolbar({
         <Tooltip title="Сортировка">
           <IconButton
             onClick={() => setSortDir((p) => (p === "asc" ? "desc" : "asc"))}
-            sx={{ color: "white", p: 1, WebkitAppRegion: "no-drag" }}
+            sx={{ color: "text.primary", p: 1, WebkitAppRegion: "no-drag" }}
           >
             <SortIcon
               sx={{

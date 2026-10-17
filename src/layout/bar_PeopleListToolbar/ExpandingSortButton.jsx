@@ -16,10 +16,9 @@ const StyledContainer = styled(Box, {
   height: 34,
   cursor: "pointer",
   overflow: "hidden",
-  backgroundColor:
-    $sortOrder === "desc" ? "rgba(255,255,255,0.08)" : "transparent",
+  backgroundColor: $sortOrder === "desc" ? "action.hover" : "transparent",
   "&:hover": {
-    backgroundColor: "rgba(255,255,255,0.12)",
+    backgroundColor: "action.selected",
   },
 }));
 
@@ -35,8 +34,11 @@ export default function ExpandingSortButton({ sortOrder, onToggle }) {
       }
     >
       <StyledContainer $sortOrder={sortOrder} onClick={onToggle}>
-        <IconButton size="small" sx={{ color: "white", p: 1 }}>
-          <SupervisorAccountIcon color={isDesc ? "primary" : "inherit"} />
+        <IconButton size="small" sx={{ color: "text.primary", p: 1 }}>
+          <SupervisorAccountIcon
+            color={isDesc ? "primary" : "inherit"}
+            fontSize="small"
+          />
           {isDesc ? (
             <KeyboardArrowDownIcon sx={{ fontSize: "1rem" }} />
           ) : (

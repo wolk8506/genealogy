@@ -4,13 +4,30 @@ import {
   Typography,
   CircularProgress,
   LinearProgress,
+  IconButton,
+  TextField,
+  InputAdornment,
+  Tooltip,
+  useTheme,
 } from "@mui/material";
+import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
+import SearchIcon from "@mui/icons-material/Search";
+import CheckIcon from "@mui/icons-material/Check";
+import CloseIcon from "@mui/icons-material/Close";
 import { useNavigate } from "react-router-dom";
 import usePhotoThumbs from "../../hooks/usePhotoThumbs";
 import PhotoFullscreenViewer from "../../components/PhotoFullscreenViewer";
-import LocationPickerDialog from "../../components/Dialog/LocationPickerDialog";
 import "leaflet/dist/leaflet.css";
-import { MapContainer, TileLayer, useMap } from "react-leaflet";
+import L from "leaflet";
+import {
+  MapContainer,
+  TileLayer,
+  LayersControl,
+  ZoomControl,
+  Marker,
+  useMap,
+  useMapEvents,
+} from "react-leaflet";
 import {
   getCachedPoints,
   setCachedPoints,
@@ -29,6 +46,16 @@ import {
 } from "./mapHelpers";
 import MapLegend from "./MapLegend";
 import MapMarkerLayer from "./MapMarkerLayer";
+
+const LAYERS_ICON =
+  "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%3E%3Cpath%20d='M11.99%2018.54l-7.37-5.73L3%2014.07l9%207%209-7-1.63-1.27-7.38%205.74zM12%2016l7.36-5.73L21%209l-9-7-9%207%201.63%201.27L12%2016z'/%3E%3C/svg%3E";
+
+const EDIT_PIN_ICON = L.divIcon({
+  className: "map-edit-pin",
+  html: '<div style="width:18px;height:18px;border-radius:50%;background:rgb(59 134 243);border:3px solid #fff;box-shadow:0 1px 5px rgba(0,0,0,0.5);"></div>',
+  iconSize: [18, 18],
+  iconAnchor: [9, 9],
+});
 
 function FitBounds({ points, fitRequestKey = 0 }) {
   const map = useMap();
@@ -76,6 +103,62 @@ function RememberView() {
   return null;
 }
 
+function AutoResize() {
+  const map = useMap();
+  useEffect(() => {
+    const container = map.getContainer();
+    let frame = null;
+    const invalidate = () => {
+      if (frame) cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        map.invalidateSize({ pan: false });
+      });
+    };
+    const observer = new ResizeObserver(invalidate);
+    observer.observe(container);
+    invalidate();
+    return () => {
+      if (frame) cancelAnimationFrame(frame);
+      observer.disconnect();
+    };
+  }, [map]);
+  return null;
+}
+
+function EditPin({ pos, onMove, flyTrigger }) {
+  const map = useMap();
+  useEffect(() => {
+    if (!pos || !flyTrigger) return;
+    try {
+      map.flyTo(pos, Math.max(map.getZoom(), 12), { duration: 0.6 });
+    } catch {
+      // ignore
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [flyTrigger]);
+
+  useMapEvents({
+    click(e) {
+      onMove([e.latlng.lat, e.latlng.lng]);
+    },
+  });
+
+  if (!pos) return null;
+  return (
+    <Marker
+      position={pos}
+      icon={EDIT_PIN_ICON}
+      draggable
+      eventHandlers={{
+        dragend: (e) => {
+          const m = e.target.getLatLng();
+          onMove([m.lat, m.lng]);
+        },
+      }}
+    />
+  );
+}
+
 export default function MapPage({
   showPhotos = true,
   showEvents = true,
@@ -91,6 +174,14 @@ export default function MapPage({
   allPeople = [],
 }) {
   const navigate = useNavigate();
+  const theme = useTheme();
+  const isDark = theme.palette.mode === "dark";
+  const zoomBg = isDark ? "rgba(30, 37, 48, 0.6)" : "rgba(255, 255, 255, 0.75)";
+  const zoomBgHover = isDark
+    ? "rgba(48, 58, 74, 0.8)"
+    : "rgba(255, 255, 255, 0.95)";
+  const zoomFg = isDark ? "#fff" : "#1c1c1e";
+  const zoomDivider = isDark ? "rgba(255, 255, 255, 0.14)" : "rgba(0, 0, 0, 0.1)";
   const { thumbs } = usePhotoThumbs();
   const [points, setPoints] = useState(() => getCachedPoints() || []);
   const [allPhotosCache, setAllPhotosCache] = useState([]);
@@ -103,6 +194,12 @@ export default function MapPage({
   const [fullPaths, setFullPaths] = useState({});
   const [editTarget, setEditTarget] = useState(null);
   const [locationPickerOpen, setLocationPickerOpen] = useState(false);
+  const [editPos, setEditPos] = useState(null);
+  const [editQuery, setEditQuery] = useState("");
+  const [editSearching, setEditSearching] = useState(false);
+  const [editError, setEditError] = useState("");
+  const [editFlyTrigger, setEditFlyTrigger] = useState(0);
+  const [editConfirming, setEditConfirming] = useState(false);
   const loadRun = useRef(0);
   const pendingFull = useRef(new Set());
 
@@ -565,9 +662,42 @@ export default function MapPage({
   );
 
   const handleEditLocation = useCallback((p) => {
+    const hasCoords =
+      Number.isFinite(Number(p?.lat)) && Number.isFinite(Number(p?.lng));
     setEditTarget(p);
+    setEditPos(hasCoords ? [Number(p.lat), Number(p.lng)] : null);
+    setEditQuery(p?.place || p?.label || "");
+    setEditError("");
     setLocationPickerOpen(true);
+    if (hasCoords) setEditFlyTrigger((k) => k + 1);
   }, []);
+
+  const handleEditCancel = useCallback(() => {
+    setLocationPickerOpen(false);
+    setEditTarget(null);
+    setEditPos(null);
+    setEditError("");
+  }, []);
+
+  const handleEditSearch = useCallback(async () => {
+    const q = editQuery.trim();
+    if (!q) return;
+    setEditSearching(true);
+    setEditError("");
+    try {
+      const geo = await window.geoAPI?.forward(q);
+      if (geo) {
+        setEditPos([geo.lat, geo.lng]);
+        setEditFlyTrigger((k) => k + 1);
+      } else {
+        setEditError("Ничего не найдено");
+      }
+    } catch (e) {
+      setEditError(e?.message || "Ошибка поиска");
+    } finally {
+      setEditSearching(false);
+    }
+  }, [editQuery]);
 
   const saveLocation = useCallback(
     async ({ lat, lng, name }) => {
@@ -583,6 +713,13 @@ export default function MapPage({
             lng,
             locationName: name || photo.locationName || "",
           });
+          setAllPhotosCache((prev) =>
+            prev.map((x) =>
+              x.id === photo.id
+                ? { ...x, lat, lng, locationName: name || x.locationName || "" }
+                : x,
+            ),
+          );
         } else if (editTarget.kind === "event") {
           const people = await window.peopleAPI.getAll();
           const person = people.find((x) => x.id === editTarget.personId);
@@ -608,15 +745,54 @@ export default function MapPage({
             ),
           );
         }
-        invalidateMapCache();
-        await loadData(true);
+
+        // Обновляем точку на месте — без перезагрузки карты.
+        const cached = getCachedPoints() || points;
+        const next = cached.map((p) => {
+          if (editTarget.kind === "photo") {
+            if (p.kind === "photo" && p.id === editTarget.id) {
+              return { ...p, lat, lng, place: name || p.place };
+            }
+            return p;
+          }
+          const sameEvent =
+            p.kind === "event" &&
+            p.personId === editTarget.personId &&
+            (editTarget.eventId != null
+              ? p.eventId === editTarget.eventId
+              : p.eventIndex === editTarget.eventIndex);
+          return sameEvent ? { ...p, lat, lng, place: name || p.place } : p;
+        });
+        setCachedPoints(next);
+        setPoints(next);
       } finally {
         setLocationPickerOpen(false);
         setEditTarget(null);
+        setEditPos(null);
+        setEditError("");
       }
     },
-    [editTarget, allPhotosCache, loadData],
+    [editTarget, allPhotosCache, points],
   );
+
+  const handleEditConfirm = useCallback(async () => {
+    if (!editPos) return;
+    setEditConfirming(true);
+    try {
+      let name = editTarget?.place || "";
+      try {
+        const rev = await window.geoAPI
+          ?.reverse(editPos[0], editPos[1])
+          .catch(() => null);
+        name = rev?.name || rev?.displayName || name;
+      } catch {
+        // ignore
+      }
+      await saveLocation({ lat: editPos[0], lng: editPos[1], name });
+    } finally {
+      setEditConfirming(false);
+    }
+  }, [editPos, editTarget, saveLocation]);
 
   const etaLabel = progress
     ? formatGeocodeEta(progress.done, progress.total)
@@ -625,15 +801,250 @@ export default function MapPage({
   return (
     <Box
       sx={{
-        display: "flex",
-        flexDirection: "column",
-        height: "calc(100vh - 60px)",
         position: "relative",
+        height: "calc(100vh - 50px)",
+        overflow: "hidden",
       }}
     >
-      <Box sx={{ px: 2, pt: 1.5, pb: 1 }}>
+      <style>{`
+        .map-custom-marker{background:transparent!important;border:none!important;}
+        .leaflet-control-zoom.leaflet-bar{
+          border:none!important;
+          border-radius:18px!important;
+          overflow:hidden!important;
+          box-shadow:0 2px 12px rgba(0,0,0,0.22)!important;
+        }
+        .leaflet-control-zoom a{
+          width:36px!important;
+          height:36px!important;
+          line-height:36px!important;
+          font-size:20px!important;
+          font-weight:400!important;
+          background:${zoomBg}!important;
+          color:${zoomFg}!important;
+          border:none!important;
+          -webkit-backdrop-filter:blur(8px);
+          backdrop-filter:blur(8px);
+        }
+        .leaflet-control-zoom a:hover{
+          background:${zoomBgHover}!important;
+          color:${zoomFg}!important;
+        }
+        .leaflet-control-zoom-in{
+          border-bottom:1px solid ${zoomDivider}!important;
+        }
+        .leaflet-control-layers{
+          border:none!important;
+          border-radius:12px!important;
+          background:${zoomBg}!important;
+          color:${zoomFg}!important;
+          box-shadow:0 2px 12px rgba(0,0,0,0.22)!important;
+          -webkit-backdrop-filter:blur(8px);
+          backdrop-filter:blur(8px);
+        }
+        .leaflet-control-layers-toggle{
+          width:36px!important;
+          height:36px!important;
+          background-image:none!important;
+          background-color:${zoomFg}!important;
+          -webkit-mask:url("${LAYERS_ICON}") center/20px 20px no-repeat;
+          mask:url("${LAYERS_ICON}") center/20px 20px no-repeat;
+          border-radius:12px!important;
+        }
+        .leaflet-control-layers-expanded{
+          padding:8px 12px 8px 10px!important;
+        }
+        .leaflet-control-layers-expanded .leaflet-control-layers-toggle{
+          display:none!important;
+        }
+        .leaflet-control-layers label{
+          color:${zoomFg}!important;
+          margin-bottom:2px;
+        }
+        .leaflet-control-layers-separator{
+          border-top-color:${zoomDivider}!important;
+        }
+        .leaflet-popup-content-wrapper{
+          background:${zoomBg}!important;
+          color:${zoomFg}!important;
+          border-radius:12px!important;
+          box-shadow:0 6px 20px rgba(0,0,0,0.28)!important;
+          -webkit-backdrop-filter:blur(8px);
+          backdrop-filter:blur(8px);
+        }
+        .leaflet-popup-tip{
+          background:${zoomBg}!important;
+          box-shadow:none!important;
+        }
+        .leaflet-popup-close-button{
+          display:none!important;
+        }
+        .leaflet-popup-content{
+          margin:12px 14px!important;
+        }
+      `}</style>
+      <MapContainer
+        center={[55, 60]}
+        zoom={3}
+        zoomControl={false}
+        style={{ height: "100%", width: "100%", background: "#aad3df" }}
+      >
+        <ZoomControl position="topright" />
+        <LayersControl position="topright">
+          <LayersControl.BaseLayer checked name="Схема (OSM)">
+            <TileLayer
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+              url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+              maxZoom={19}
+            />
+          </LayersControl.BaseLayer>
+          <LayersControl.BaseLayer name="Топография (OpenTopoMap)">
+            <TileLayer
+              attribution='Карты: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (CC-BY-SA) · данные &copy; OpenStreetMap'
+              url="https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png"
+              maxZoom={17}
+            />
+          </LayersControl.BaseLayer>
+          <LayersControl.BaseLayer name="Спутник (Esri)">
+            <TileLayer
+              attribution='Спутник: &copy; <a href="https://www.esri.com">Esri</a>, Maxar, Earthstar Geographics'
+              url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+              maxZoom={19}
+            />
+          </LayersControl.BaseLayer>
+        </LayersControl>
+        <FitBounds points={visiblePoints} fitRequestKey={fitBoundsKey} />
+        <RememberView />
+        <AutoResize />
+        <MapMarkerLayer
+          groups={groups}
+          focusTarget={focusTarget}
+          onItemClick={handlePointClick}
+          onEditLocation={handleEditLocation}
+        />
+        {locationPickerOpen && (
+          <EditPin
+            pos={editPos}
+            onMove={setEditPos}
+            flyTrigger={editFlyTrigger}
+          />
+        )}
+      </MapContainer>
+      <MapLegend />
+
+      {locationPickerOpen && (
+        <Box
+          sx={{
+            position: "absolute",
+            top: 12,
+            left: "50%",
+            transform: "translateX(-50%)",
+            zIndex: 1100,
+            display: "flex",
+            alignItems: "center",
+            gap: 1,
+            p: 1,
+            px: 1.5,
+            maxWidth: "calc(100% - 32px)",
+            bgcolor: zoomBg,
+            color: zoomFg,
+            borderRadius: 2,
+            boxShadow: "0 2px 12px rgba(0,0,0,0.22)",
+            backdropFilter: "blur(8px)",
+            WebkitBackdropFilter: "blur(8px)",
+          }}
+        >
+          <TextField
+            size="small"
+            autoFocus
+            placeholder="Найти место…"
+            value={editQuery}
+            onChange={(e) => setEditQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") handleEditSearch();
+              if (e.key === "Escape") handleEditCancel();
+            }}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <IconButton
+                    size="small"
+                    edge="start"
+                    title="Найти"
+                    onClick={handleEditSearch}
+                    disabled={editSearching || !editQuery.trim()}
+                    sx={{ color: "inherit" }}
+                  >
+                    {editSearching ? (
+                      <CircularProgress size={16} color="inherit" />
+                    ) : (
+                      <SearchIcon fontSize="small" />
+                    )}
+                  </IconButton>
+                </InputAdornment>
+              ),
+              sx: {
+                borderRadius: "10px",
+                width: 460,
+                maxWidth: "45vw",
+                bgcolor: "background.paper",
+              },
+            }}
+          />
+          <Tooltip title="Подтвердить">
+            <span>
+              <IconButton
+                onClick={handleEditConfirm}
+                disabled={!editPos || editConfirming}
+                sx={{ color: "success.main" }}
+              >
+                {editConfirming ? (
+                  <CircularProgress size={20} color="inherit" />
+                ) : (
+                  <CheckIcon />
+                )}
+              </IconButton>
+            </span>
+          </Tooltip>
+          <Tooltip title="Отмена">
+            <IconButton
+              onClick={handleEditCancel}
+              sx={{ color: "error.main" }}
+            >
+              <CloseIcon />
+            </IconButton>
+          </Tooltip>
+          {editError && (
+            <Typography variant="caption" color="error" sx={{ whiteSpace: "nowrap" }}>
+              {editError}
+            </Typography>
+          )}
+        </Box>
+      )}
+
+      <Box
+        sx={{
+          position: "absolute",
+          top: 12,
+          left: 16,
+          zIndex: 1001,
+          pointerEvents: "none",
+          maxWidth: 480,
+          display: "flex",
+          flexDirection: "column",
+          gap: 1,
+          bgcolor: "background.paper",
+          borderRadius: 2,
+          px: 1.5,
+          py: 1,
+          boxShadow: 2,
+          border: "1px solid",
+          borderColor: "divider",
+          "&:empty": { display: "none" },
+        }}
+      >
         {loading && (
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
             <CircularProgress size={16} />
             <Typography variant="caption" color="text.secondary">
               Загрузка точек…
@@ -641,7 +1052,7 @@ export default function MapPage({
           </Box>
         )}
         {progress && (
-          <Box sx={{ mt: 1, maxWidth: 480 }}>
+          <Box>
             <Typography variant="caption" color="text.secondary">
               Геокодирование: {progress.done}/{progress.total}
               {etaLabel ? ` · осталось ${etaLabel}` : ""} (карта уже показана)
@@ -657,41 +1068,39 @@ export default function MapPage({
           </Box>
         )}
         {!loading && points.length === 0 && (
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+          <Typography variant="body2" color="text.secondary">
             Нет точек: добавьте фото с координатами или укажите места у событий.
             Для подложки и геокодинга нужен интернет.
           </Typography>
         )}
       </Box>
 
-      <Box sx={{ flexGrow: 1, mx: 2, mb: 2, borderRadius: 3, overflow: "hidden", position: "relative" }}>
-        <style>{`.map-custom-marker{background:transparent!important;border:none!important;}`}</style>
-        <MapContainer
-          center={[55, 60]}
-          zoom={3}
-          style={{ height: "100%", width: "100%", background: "#aad3df" }}
+      <Tooltip
+        title="Координаты фото — из EXIF, названия мест — через Nominatim (с кэшем). Shift+«Обновить» — перегеокодировать."
+        arrow
+        placement="left"
+        slotProps={{ tooltip: { sx: { maxWidth: 320 } } }}
+      >
+        <IconButton
+          size="small"
+          sx={{
+            position: "absolute",
+            bottom: 26,
+            right: 10,
+            zIndex: 1001,
+            width: 36,
+            height: 36,
+            color: zoomFg,
+            bgcolor: zoomBg,
+            backdropFilter: "blur(8px)",
+            WebkitBackdropFilter: "blur(8px)",
+            boxShadow: "0 2px 12px rgba(0,0,0,0.22)",
+            "&:hover": { bgcolor: zoomBgHover },
+          }}
         >
-          <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-            url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
-            maxZoom={19}
-          />
-          <FitBounds points={visiblePoints} fitRequestKey={fitBoundsKey} />
-          <RememberView />
-          <MapMarkerLayer
-            groups={groups}
-            focusTarget={focusTarget}
-            onItemClick={handlePointClick}
-            onEditLocation={handleEditLocation}
-          />
-        </MapContainer>
-        <MapLegend />
-      </Box>
-
-      <Typography variant="caption" color="text.secondary" sx={{ px: 2, pb: 1 }}>
-        Координаты фото — из EXIF, названия мест — через Nominatim (с кэшем).
-        Shift+«Обновить» — перегеокодировать.
-      </Typography>
+          <HelpOutlineIcon sx={{ fontSize: 20 }} />
+        </IconButton>
+      </Tooltip>
 
       <PhotoFullscreenViewer
         open={fullscreen}
@@ -710,21 +1119,6 @@ export default function MapPage({
         currentPhotoInfo={viewerPhotos[fullIndex] || null}
         allPeople={allPeople}
         allExternal={[]}
-      />
-
-      <LocationPickerDialog
-        open={locationPickerOpen}
-        onClose={() => {
-          setLocationPickerOpen(false);
-          setEditTarget(null);
-        }}
-        initial={
-          editTarget?.lat != null && editTarget?.lng != null
-            ? { lat: editTarget.lat, lng: editTarget.lng }
-            : null
-        }
-        initialQuery={editTarget?.place || editTarget?.label || ""}
-        onSelect={saveLocation}
       />
     </Box>
   );
