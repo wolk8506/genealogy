@@ -1,19 +1,13 @@
 import React from "react";
-import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
-  Stack,
-  Typography,
-  Chip,
-  Box,
-} from "@mui/material";
-import MapIcon from "@mui/icons-material/Map";
-import EditIcon from "@mui/icons-material/Edit";
-import ContactsIcon from "@mui/icons-material/Contacts";
-import OpenInNewIcon from "@mui/icons-material/OpenInNew";
+import { Dialog, Stack, Typography, Chip, Box, Divider } from "@mui/material";
+import AppButton from "../../components/AppButton";
+
+const sectionLabelSx = {
+  display: "block",
+  mb: 1,
+  fontWeight: 700,
+  color: "text.secondary",
+};
 
 export default function TimelineEventDialog({
   open,
@@ -44,45 +38,86 @@ export default function TimelineEventDialog({
   const hasPlace = Boolean(event.place?.trim());
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
-      <DialogTitle sx={{ fontWeight: 800, pb: 1 }}>
-        {isExternal ? event.label : event.type || "Событие"}
-      </DialogTitle>
-      <DialogContent dividers>
-        <Stack spacing={1.5}>
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth={false}
+      transitionDuration={{ enter: 180, exit: 140 }}
+      PaperProps={{
+        sx: {
+          width: 440,
+          maxWidth: "94vw",
+          maxHeight: "calc(100vh - 64px)",
+          borderRadius: "24px",
+          backgroundImage: "none",
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden",
+        },
+      }}
+    >
+      <Box sx={{ p: 3, pb: 2, overflowY: "auto" }}>
+        <Typography
+          variant="h6"
+          sx={{ textAlign: "center", fontWeight: 700, mb: 3 }}
+        >
+          {isExternal ? event.label : event.type || "Событие"}
+        </Typography>
+
+        <Stack spacing={2} divider={<Divider flexItem />}>
           {isExternal && event.entityType && (
-            <Chip size="small" label={event.entityType} sx={{ alignSelf: "flex-start" }} />
+            <Chip
+              size="small"
+              label={event.entityType}
+              sx={{ alignSelf: "flex-start" }}
+            />
           )}
-          {(event.date || event.label) && (
-            <Typography variant="body2" color="text.secondary">
-              {[event.date, isExternal ? null : event.label]
-                .filter(Boolean)
-                .join(" · ")}
-            </Typography>
+
+          {(event.date || (!isExternal && event.label)) && (
+            <Box>
+              <Typography variant="overline" sx={sectionLabelSx}>
+                Дата
+              </Typography>
+              <Typography variant="body2">
+                {[event.date, isExternal ? null : event.label]
+                  .filter(Boolean)
+                  .join(" · ")}
+              </Typography>
+            </Box>
           )}
+
           {event.description && (
-            <Typography variant="body2">{event.description}</Typography>
+            <Box>
+              <Typography variant="overline" sx={sectionLabelSx}>
+                Описание
+              </Typography>
+              <Typography variant="body2">{event.description}</Typography>
+            </Box>
           )}
+
           {event.notes && (
-            <Typography variant="body2" color="text.secondary">
-              {event.notes}
-            </Typography>
+            <Box>
+              <Typography variant="overline" sx={sectionLabelSx}>
+                Заметки
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {event.notes}
+              </Typography>
+            </Box>
           )}
+
           {hasPlace && (
-            <Typography variant="body2">
-              <Box component="span" sx={{ color: "text.secondary" }}>
-                Место:{" "}
-              </Box>
-              {event.place}
-            </Typography>
+            <Box>
+              <Typography variant="overline" sx={sectionLabelSx}>
+                Место
+              </Typography>
+              <Typography variant="body2">{event.place}</Typography>
+            </Box>
           )}
+
           {participants.length > 0 && (
             <Box>
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                sx={{ fontWeight: 700, display: "block", mb: 0.75 }}
-              >
+              <Typography variant="overline" sx={sectionLabelSx}>
                 Участники
               </Typography>
               <Stack direction="row" flexWrap="wrap" gap={0.75}>
@@ -99,39 +134,53 @@ export default function TimelineEventDialog({
             </Box>
           )}
         </Stack>
-      </DialogContent>
-      <DialogActions sx={{ px: 2, py: 1.5, flexWrap: "wrap", gap: 0.5 }}>
+      </Box>
+
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          gap: 1,
+          p: 2,
+          pt: 1,
+        }}
+      >
         {hasPlace && onShowMap && (
-          <Button
-            size="small"
-            startIcon={<MapIcon />}
+          <AppButton
+            preset="secondary"
             onClick={() => onShowMap(event)}
+            sx={{ px: 2.5, borderRadius: "999px" }}
           >
             На карте
-          </Button>
-        )}
-        {!isExternal && onEdit && (
-          <Button
-            size="small"
-            startIcon={<EditIcon />}
-            onClick={() => onEdit(event)}
-          >
-            Редактировать
-          </Button>
+          </AppButton>
         )}
         {isExternal && onOpenExternal && (
-          <Button
-            size="small"
-            startIcon={<ContactsIcon />}
+          <AppButton
+            preset="secondary"
             onClick={() => onOpenExternal(event.externalId)}
+            sx={{ px: 2.5, borderRadius: "999px" }}
           >
             Справочник
-          </Button>
+          </AppButton>
         )}
-        <Button size="small" startIcon={<OpenInNewIcon />} onClick={onClose}>
+        <Box sx={{ flex: 1 }} />
+        <AppButton
+          preset="secondary"
+          onClick={onClose}
+          sx={{ px: 2.5, borderRadius: "999px" }}
+        >
           Закрыть
-        </Button>
-      </DialogActions>
+        </AppButton>
+        {!isExternal && onEdit && (
+          <AppButton
+            preset="primary"
+            onClick={() => onEdit(event)}
+            sx={{ px: 3, borderRadius: "999px" }}
+          >
+            Редактировать
+          </AppButton>
+        )}
+      </Box>
     </Dialog>
   );
 }

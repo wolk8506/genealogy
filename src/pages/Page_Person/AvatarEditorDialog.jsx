@@ -1,10 +1,6 @@
 import React, { useEffect, useState, useCallback } from "react";
 import {
   Dialog,
-  DialogTitle,
-  DialogActions,
-  DialogContent,
-  Button,
   Slider,
   Box,
   Avatar,
@@ -14,9 +10,6 @@ import {
 } from "@mui/material";
 import Cropper from "react-easy-crop";
 import PhotoCameraIcon from "@mui/icons-material/PhotoCamera";
-import SaveIcon from "@mui/icons-material/Save";
-import RestoreIcon from "@mui/icons-material/Restore";
-import CancelIcon from "@mui/icons-material/Cancel";
 import ZoomInIcon from "@mui/icons-material/ZoomIn";
 import ZoomOutIcon from "@mui/icons-material/ZoomOut";
 import heic2any from "heic2any";
@@ -24,7 +17,7 @@ import getCroppedImg from "../utils/cropImage";
 import { Buffer } from "buffer";
 import { alpha, useTheme } from "@mui/material/styles";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
-import CropIcon from "@mui/icons-material/Crop";
+import AppButton from "../../components/AppButton";
 import useDialogSaveHotkey from "../../hooks/useDialogSaveHotkey";
 
 export default function AvatarEditorDialog({
@@ -34,7 +27,6 @@ export default function AvatarEditorDialog({
   onSaved,
 }) {
   const theme = useTheme();
-  const isDark = theme.palette.mode === "dark";
   const [imageSrc, setImageSrc] = useState(null);
   const [fallback, setFallback] = useState(null);
   const [crop, setCrop] = useState({ x: 0, y: 0 });
@@ -208,32 +200,29 @@ export default function AvatarEditorDialog({
     <Dialog
       open={open}
       onClose={handleClose}
-      fullWidth
-      maxWidth="sm"
+      maxWidth={false}
+      transitionDuration={{ enter: 180, exit: 140 }}
       PaperProps={{
         sx: {
+          width: 600,
+          maxWidth: "94vw",
+          maxHeight: "calc(100vh - 64px)",
           borderRadius: "24px",
           backgroundImage: "none",
-          bgcolor: isDark ? alpha(theme.palette.background.paper, 0.9) : "#fff",
-          backdropFilter: "blur(15px)",
-          border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
-          boxShadow: theme.shadows[24],
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden",
         },
       }}
     >
-      <DialogTitle
-        sx={{
-          display: "flex",
-          alignItems: "center",
-          gap: 1.5,
-          fontWeight: 600,
-        }}
-      >
-        <CropIcon color="primary" />
-        Редактировать аватар
-      </DialogTitle>
+      <Box sx={{ p: 3, pb: 2, overflowY: "auto" }}>
+        <Typography
+          variant="h6"
+          sx={{ textAlign: "center", fontWeight: 700, mb: 3 }}
+        >
+          Редактировать аватар
+        </Typography>
 
-      <DialogContent sx={{ pb: 3 }}>
         <Stack spacing={3} alignItems="center">
           {/* Верхнее превью */}
           <Box sx={{ position: "relative" }}>
@@ -309,11 +298,10 @@ export default function AvatarEditorDialog({
               <Typography variant="body2" color="text.secondary" mb={3}>
                 Поддерживаются JPG, PNG, HEIC
               </Typography>
-              <Button
-                variant="contained"
+              <AppButton
+                preset="primary"
                 component="label"
-                disableElevation
-                sx={{ borderRadius: "10px", px: 4 }}
+                sx={{ px: 4, borderRadius: "999px" }}
               >
                 Выбрать файл
                 <input
@@ -322,7 +310,7 @@ export default function AvatarEditorDialog({
                   accept="image/*,.heic"
                   onChange={handleFileChange}
                 />
-              </Button>
+              </AppButton>
             </Box>
           ) : (
             /* Секция Кроппера */
@@ -394,42 +382,41 @@ export default function AvatarEditorDialog({
             </Box>
           )}
         </Stack>
-      </DialogContent>
+      </Box>
 
-      <DialogActions sx={{ p: 3, pt: 1 }}>
-        <Button
-          onClick={handleClose}
-          startIcon={<CancelIcon />}
-          sx={{ borderRadius: "10px", color: "text.secondary" }}
-        >
-          Отмена
-        </Button>
-        <Button
-          color="inherit"
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          gap: 1,
+          p: 2,
+          pt: 1,
+        }}
+      >
+        <AppButton
+          preset="dangerOutlined"
           onClick={handleReset}
-          startIcon={<RestoreIcon />}
-          sx={{ borderRadius: "10px", mr: "auto" }}
+          sx={{ px: 2.5, borderRadius: "999px" }}
         >
           Сброс
-        </Button>
-        <Button
+        </AppButton>
+        <AppButton
+          preset="secondary"
+          onClick={handleClose}
+          sx={{ px: 2.5, borderRadius: "999px" }}
+        >
+          Отмена
+        </AppButton>
+        <Box sx={{ flex: 1 }} />
+        <AppButton
+          preset="primary"
           onClick={uploadCropped}
-          variant="contained"
-          startIcon={<SaveIcon />}
           disabled={!imageSrc}
-          disableElevation
-          sx={{
-            borderRadius: "10px",
-            px: 4,
-            fontWeight: 600,
-            boxShadow: imageSrc
-              ? `0 4px 14px 0 ${alpha(theme.palette.primary.main, 0.39)}`
-              : "none",
-          }}
+          sx={{ px: 3, borderRadius: "999px" }}
         >
           Сохранить
-        </Button>
-      </DialogActions>
+        </AppButton>
+      </Box>
     </Dialog>
   );
 }

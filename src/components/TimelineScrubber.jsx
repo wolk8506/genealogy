@@ -119,6 +119,7 @@ export default function TimelineScrubber({
   anchorRef,
   virtuosoRef,
   showCrosshairLine = true,
+  rightOffset = 0,
 }) {
   const theme = useTheme();
   const trackRef = useRef(null);
@@ -423,18 +424,18 @@ export default function TimelineScrubber({
         position: "fixed",
         top: anchorRect.top,
         height: anchorRect.height,
-        right: 0,
+        right: rightOffset,
         width: 76,
       }
     : {
         position: "fixed",
         top: 100,
         bottom: 60,
-        right: 0,
+        right: rightOffset,
         width: 76,
       };
 
-  const lineRight = 76;
+  const lineRight = 76 + rightOffset;
 
   return (
     <>

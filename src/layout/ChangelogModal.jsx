@@ -1,16 +1,13 @@
 import { useEffect, useState } from "react";
-import {
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  Button,
-} from "@mui/material";
+import { Dialog, Box, Typography } from "@mui/material";
+import { alpha } from "@mui/material/styles";
 import MarkdownViewer from "../components/MarkdownViewer";
+import AppButton from "../components/AppButton";
 
 export default function ChangelogModal() {
   const [open, setOpen] = useState(false);
   const [text, setText] = useState("");
+  const [version, setVersion] = useState("");
 
   useEffect(() => {
     window.changelogAPI.onOpen(async () => {
@@ -18,35 +15,88 @@ export default function ChangelogModal() {
       setText(content);
       setOpen(true);
     });
+
+    window.appAPI
+      ?.getVersion?.()
+      .then((v) => setVersion(v || ""))
+      .catch(() => {});
   }, []);
 
   return (
     <Dialog
       open={open}
       onClose={() => setOpen(false)}
-      maxWidth="md"
-      PaperProps={{ sx: { borderRadius: "15px" } }}
-      fullWidth
+      maxWidth={false}
+      transitionDuration={{ enter: 180, exit: 140 }}
+      PaperProps={{
+        sx: {
+          width: 760,
+          maxWidth: "94vw",
+          height: "min(86vh, 860px)",
+          borderRadius: "24px",
+          backgroundImage: "none",
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden",
+          position: "relative",
+        },
+      }}
     >
-      <DialogTitle sx={{ textAlign: "center" }}>История версий</DialogTitle>
-      <DialogContent dividers sx={{ maxHeight: "70vh", overflowY: "auto" }}>
+      <Box
+        sx={{
+          p: { xs: 3, sm: 5 },
+          pb: 30,
+          overflowY: "auto",
+          flex: 1,
+          minHeight: 0,
+        }}
+      >
+        <Typography variant="h5" sx={{ fontWeight: 700, mb: 3 }}>
+          История версий
+        </Typography>
         <MarkdownViewer content={text} />
-      </DialogContent>
-      <DialogActions>
-        <Button
-          onClick={() => setOpen(false)}
+      </Box>
+
+      <Box
+        sx={{
+          position: "absolute",
+          left: 0,
+          right: 0,
+          bottom: 0,
+          display: "flex",
+          alignItems: "center",
+          gap: 1.5,
+          px: 2,
+          pb: 2,
+          pt: 0,
+          backdropFilter: "blur(18px)",
+          WebkitBackdropFilter: "blur(18px)",
+          backgroundImage: (t) =>
+            `linear-gradient(to top, ${alpha(t.palette.background.paper, 0.7)} 0%, ${alpha(t.palette.background.paper, 0.35)} 55%, ${alpha(t.palette.background.paper, 0)} 100%)`,
+        }}
+      >
+        <Box
           sx={{
-            height: 24,
-            borderRadius: "6px",
-            px: 3,
-            py: 1,
-            boxShadow: "none",
-            fontWeight: "bold",
+            flex: 1,
+            minWidth: 0,
+            px: 2.5,
+            py: 0.75,
+            borderRadius: "999px",
+            bgcolor: "action.hover",
           }}
         >
-          Закрыть
-        </Button>
-      </DialogActions>
+          <Typography variant="body2" color="text.secondary" noWrap>
+            {version ? `Текущая версия ${version}` : "История версий"}
+          </Typography>
+        </Box>
+        <AppButton
+          preset="primary"
+          onClick={() => setOpen(false)}
+          sx={{ px: 3, borderRadius: "999px" }}
+        >
+          Готово
+        </AppButton>
+      </Box>
     </Dialog>
   );
 }

@@ -1,25 +1,23 @@
 import React, { useState, useEffect } from "react";
 import {
   Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
   TextField,
   MenuItem,
   Grid,
   Box,
-  IconButton,
   alpha,
   useTheme,
   Typography,
   Stack,
 } from "@mui/material";
-import CloseIcon from "@mui/icons-material/Close";
-import PersonAddIcon from "@mui/icons-material/PersonAdd";
 import FemaleIcon from "@mui/icons-material/Female";
 import MaleIcon from "@mui/icons-material/Male";
+import AppButton from "../../../components/AppButton";
 import useDialogSaveHotkey from "../../../hooks/useDialogSaveHotkey";
+
+const fieldSx = {
+  "& .MuiOutlinedInput-root": { borderRadius: "12px" },
+};
 
 export default function QuickAddRelativeModal({
   open,
@@ -30,7 +28,6 @@ export default function QuickAddRelativeModal({
   allPeople,
 }) {
   const theme = useTheme();
-  const isDark = theme.palette.mode === "dark";
 
   // Состояния формы
   const [firstName, setFirstName] = useState("");
@@ -170,69 +167,49 @@ export default function QuickAddRelativeModal({
     <Dialog
       open={open}
       onClose={onClose}
-      fullWidth
-      maxWidth="sm"
+      maxWidth={false}
+      transitionDuration={{ enter: 180, exit: 140 }}
       PaperProps={{
         sx: {
-          borderRadius: "20px",
+          width: 600,
+          maxWidth: "94vw",
+          maxHeight: "calc(100vh - 64px)",
+          borderRadius: "24px",
           backgroundImage: "none",
-          bgcolor: isDark ? alpha(theme.palette.background.paper, 0.8) : "#fff",
-          backdropFilter: "blur(12px)",
-          border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
-          boxShadow: theme.shadows[24],
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden",
         },
       }}
     >
-      <DialogTitle
-        sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          pb: 1,
-          fontWeight: 700,
-        }}
-      >
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-          <PersonAddIcon color="primary" fontSize="large" />
-          <Typography variant="h6" fontWeight={700}>
-            {getRoleTitle()}
-          </Typography>
-        </Box>
-        <IconButton
-          onClick={onClose}
-          size="small"
-          sx={{
-            bgcolor: alpha(theme.palette.action.hover, 0.05),
-            borderRadius: "10px",
-          }}
+      <Box sx={{ p: 3, pb: 2, overflowY: "auto" }}>
+        <Typography
+          variant="h6"
+          sx={{ textAlign: "center", fontWeight: 700, mb: 3 }}
         >
-          <CloseIcon fontSize="small" />
-        </IconButton>
-      </DialogTitle>
+          {getRoleTitle()}
+        </Typography>
 
-      <DialogContent sx={{ pt: "16px !important" }}>
-        <Stack spacing={3}>
+        <Stack spacing={2}>
           {/* Акцентный контейнер для основных данных */}
           <Box
             sx={{
-              p: 2.5,
+              p: 2,
               borderRadius: "16px",
               bgcolor: alpha(theme.palette.action.hover, 0.04),
               border: `1px dashed ${alpha(theme.palette.divider, 0.2)}`,
             }}
           >
-            <Grid container spacing={2.5}>
+            <Grid container spacing={2}>
               {/* ФАМИЛИЯ */}
               <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField
                   label="Фамилия"
                   fullWidth
-                  sx={{ width: "244px" }}
+                  sx={fieldSx}
                   size="small"
                   value={lastName}
                   onChange={(e) => setLastName(e.target.value)}
-                  variant="outlined"
-                  InputProps={{ sx: { borderRadius: "10px" } }}
                 />
               </Grid>
 
@@ -241,12 +218,11 @@ export default function QuickAddRelativeModal({
                 <TextField
                   label="Имя"
                   fullWidth
-                  sx={{ width: "244px" }}
+                  sx={fieldSx}
                   size="small"
                   value={firstName}
                   onChange={(e) => setFirstName(e.target.value)}
                   autoFocus
-                  InputProps={{ sx: { borderRadius: "10px" } }}
                 />
               </Grid>
 
@@ -255,11 +231,10 @@ export default function QuickAddRelativeModal({
                 <TextField
                   label="Отчество"
                   fullWidth
-                  sx={{ width: "244px" }}
+                  sx={fieldSx}
                   size="small"
                   value={patronymic}
                   onChange={(e) => setPatronymic(e.target.value)}
-                  InputProps={{ sx: { borderRadius: "10px" } }}
                 />
               </Grid>
 
@@ -269,38 +244,27 @@ export default function QuickAddRelativeModal({
                   <TextField
                     label="Девичья фамилия"
                     fullWidth
-                    sx={{ width: "244px" }}
+                    sx={fieldSx}
                     size="small"
                     disabled={gender === "male"}
                     value={gender === "male" ? "" : maidenName}
                     onChange={(e) => setMaidenName(e.target.value)}
-                    InputProps={{ sx: { borderRadius: "10px" } }}
                   />
                 </Grid>
               )}
 
               {/* ПОЛ (если не скрыт) */}
               {!isGenderHidden && (
-                <Grid size={{ xs: 12 }}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <TextField
                     select
                     label="Пол"
                     fullWidth
-                    sx={{ width: "244px" }}
+                    sx={fieldSx}
                     size="small"
                     value={gender}
                     onChange={(e) => setGender(e.target.value)}
-                    InputProps={{ sx: { borderRadius: "10px" } }}
                     SelectProps={{
-                      MenuProps: {
-                        PaperProps: {
-                          sx: {
-                            borderRadius: "12px",
-                            mt: 1,
-                            boxShadow: "0 8px 32px rgba(0,0,0,0.15)",
-                          },
-                        },
-                      },
                       startAdornment: gender && (
                         <Box
                           sx={{
@@ -341,54 +305,33 @@ export default function QuickAddRelativeModal({
             основе текущего профиля.
           </Typography>
         </Stack>
-      </DialogContent>
+      </Box>
 
-      <DialogActions sx={{ p: 3, pt: 1 }}>
-        <Button
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          gap: 1,
+          p: 2,
+          pt: 1,
+        }}
+      >
+        <AppButton
+          preset="secondary"
           onClick={onClose}
-          sx={{
-            height: 24,
-            borderRadius: "6px",
-            py: 1.2,
-            px: 2,
-            textTransform: "none",
-            fontWeight: 600,
-            fontSize: "0.95rem",
-            color: "text.primary",
-            bgcolor: (theme) =>
-              theme.palette.mode === "dark"
-                ? "rgba(255,255,255,0.05)"
-                : "rgba(0,0,0,0.05)",
-            "&:hover": {
-              bgcolor: (theme) =>
-                theme.palette.mode === "dark"
-                  ? "rgba(255,255,255,0.1)"
-                  : "rgba(0,0,0,0.1)",
-            },
-          }}
+          sx={{ px: 2.5, borderRadius: "999px" }}
         >
-          Отменить
-        </Button>
-        <Button
+          Отмена
+        </AppButton>
+        <Box sx={{ flex: 1 }} />
+        <AppButton
+          preset="primary"
           onClick={handleSave}
-          variant="contained"
-          disableElevation
-          sx={{
-            height: 24,
-            borderRadius: "6px", // Системный радиус macOS
-            py: 1.2,
-            textTransform: "none",
-            fontWeight: 600,
-            fontSize: "0.95rem",
-            bgcolor: "#007AFF", // Фирменный Blue
-            "&:hover": {
-              bgcolor: "#0062CC",
-            },
-          }}
+          sx={{ px: 3, borderRadius: "999px" }}
         >
           Создать
-        </Button>
-      </DialogActions>
+        </AppButton>
+      </Box>
     </Dialog>
   );
 }

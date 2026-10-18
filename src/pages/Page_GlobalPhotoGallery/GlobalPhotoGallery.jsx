@@ -25,6 +25,8 @@ import PhotoLibraryIcon from "@mui/icons-material/PhotoLibrary";
 import PhotoFullscreenViewer from "../../components/PhotoFullscreenViewer";
 import TimelineScrubber from "../../components/TimelineScrubber";
 import PhotoMetaUpdateDialog from "../../components/Dialog/PhotoMetaUpdateDialog";
+import PhotoFacesDialog from "../../components/Dialog/PhotoFacesDialog";
+import PhotoPreviewDialog from "../../components/Dialog/PhotoPreviewDialog";
 import PhotoCell from "../../components/PhotoCell";
 import onDownload from "../../utils/onDownload";
 import PhotoMetaDialog from "../../components/Dialog/PhotoMetaDialog";
@@ -33,6 +35,7 @@ import PhotoUploadDialog from "../../components/Dialog/PhotoUploadDialog";
 import { buildPhotoAttendeesText } from "../../utils/photoFaces";
 import { normalizePhotoDate } from "../../utils/photoDates";
 import { useModalStore } from "../../store/useModalStore";
+import { usePhotoInspectorStore } from "../../store/usePhotoInspectorStore";
 import { useLocation } from "react-router-dom";
 
 export default function GlobalPhotoGallery({
@@ -43,6 +46,7 @@ export default function GlobalPhotoGallery({
   photos,
   allPeople,
   refresh,
+  setPhotos,
   isLoading,
 }) {
   const theme = useTheme();
@@ -60,6 +64,10 @@ export default function GlobalPhotoGallery({
   const [sliderForcedFullscreen, setSliderForcedFullscreen] = useState(false);
   const [openDialogUpdate, setOpenDialogUpdate] = useState(false);
   const [editingPhoto, setEditingPhoto] = useState(null);
+  const [facesDialogOpen, setFacesDialogOpen] = useState(false);
+  const [facesDialogPhoto, setFacesDialogPhoto] = useState(null);
+  const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
+  const [previewDialogPhoto, setPreviewDialogPhoto] = useState(null);
 
   const [openInfo, setOpenInfo] = useState(false);
   const [metaInfo, setMetaInfo] = useState(null);
@@ -76,6 +84,21 @@ export default function GlobalPhotoGallery({
 
   const isOpen = useModalStore((state) => state.isGlobalPhotoUploadOpen);
   const closeUpload = useModalStore((state) => state.closeGlobalPhotoUpload);
+  const selectedId = usePhotoInspectorStore((state) => state.selectedId);
+  const photoPanelOpen = usePhotoInspectorStore((state) => state.open);
+  const selectPhoto = usePhotoInspectorStore((state) => state.select);
+  const setInspectorActions = usePhotoInspectorStore(
+    (state) => state.setActions,
+  );
+  const registerSource = usePhotoInspectorStore((state) => state.registerSource);
+
+  // При входе в галерею — чистим состояние панели, затем регистрируем список.
+  useEffect(() => {
+    usePhotoInspectorStore.getState().reset();
+  }, []);
+  useEffect(() => {
+    registerSource({ photos, setPhotos });
+  }, [photos, setPhotos, registerSource]);
   const location = useLocation();
   const openUpload = useModalStore((state) => state.openGlobalPhotoUpload);
 
@@ -317,6 +340,39 @@ export default function GlobalPhotoGallery({
     setIndex((prev) => (prev - 1 >= 0 ? prev - 1 : prev));
   }, []);
 
+  // Действия правой панели-инспектора для выбранного фото.
+  useEffect(() => {
+    setInspectorActions({
+      openFullscreen: (photo) => {
+        const i = displayList.findIndex((x) => x.id === photo.id);
+        if (i === -1) return;
+        setDirection(0);
+        setIndex(i);
+        setFullscreen(true);
+      },
+      openFaces: (photo) => {
+        setFacesDialogPhoto(photo);
+        setFacesDialogOpen(true);
+      },
+      openPreview: (photo) => {
+        setPreviewDialogPhoto(photo);
+        setPreviewDialogOpen(true);
+      },
+      onSaved: (photo, { ownerChanged, filenameChanged } = {}) => {
+        if (ownerChanged || filenameChanged) {
+          setPhotoPaths((prev) => {
+            const copy = { ...prev };
+            if (copy.thumbs) delete copy.thumbs[photo.id];
+            if (copy.full) delete copy.full[photo.id];
+            delete copy[photo.id];
+            return { ...copy };
+          });
+        }
+        refresh();
+      },
+    });
+  }, [displayList, setInspectorActions, refresh]);
+
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (!fullscreen) return;
@@ -536,6 +592,8 @@ export default function GlobalPhotoGallery({
                       <PhotoCell
                         photo={item}
                         path={photoPaths.thumbs[item.id]}
+                        selected={selectedId === item.id}
+                        onSelect={(p) => selectPhoto(p, { open: false })}
                         onOpen={() => {
                           setIndex(
                             displayList.findIndex((p) => p.id === item.id),
@@ -548,10 +606,7 @@ export default function GlobalPhotoGallery({
                         )}
                         allPeople={allPeople}
                         allExternal={allExternal}
-                        onEdit={(p) => {
-                          setEditingPhoto(p);
-                          setOpenDialogUpdate(true);
-                        }}
+                        onEdit={(p) => selectPhoto(p)}
                         onDownload={onDownload}
                       />
                     </Box>
@@ -581,6 +636,7 @@ export default function GlobalPhotoGallery({
           return p ? photoPaths.thumbs[p.id] : null;
         }}
         showCrosshairLine={false}
+        rightOffset={photoPanelOpen ? 340 : 0}
       />
 
       {/* ОСТАЛЬНЫЕ КОМПОНЕНТЫ */}
@@ -616,6 +672,23 @@ export default function GlobalPhotoGallery({
           await refresh();
         }}
         allPeople={allPeople}
+        setPhotoPaths={setPhotoPaths}
+      />
+
+      <PhotoFacesDialog
+        open={facesDialogOpen}
+        meta={facesDialogPhoto}
+        onClose={() => setFacesDialogOpen(false)}
+        allPeople={allPeople}
+        photoPaths={photoPaths}
+        setPhotos={setPhotos}
+        onSaved={() => refresh()}
+      />
+
+      <PhotoPreviewDialog
+        open={previewDialogOpen}
+        meta={previewDialogPhoto}
+        onClose={() => setPreviewDialogOpen(false)}
         setPhotoPaths={setPhotoPaths}
       />
 

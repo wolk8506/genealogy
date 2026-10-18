@@ -1,12 +1,8 @@
 import React, { useState, useEffect } from "react";
 import {
   Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   Tabs,
   Tab,
-  Button,
   Stack,
   FormControlLabel,
   Checkbox,
@@ -14,7 +10,6 @@ import {
   Fade,
   Typography,
 } from "@mui/material";
-import { alpha, useTheme } from "@mui/material/styles";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import HistoryIcon from "@mui/icons-material/History";
 import EventAvailableIcon from "@mui/icons-material/EventAvailable";
@@ -22,9 +17,16 @@ import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
 import { DatePicker, TimePicker } from "@mui/x-date-pickers";
 import dayjs from "dayjs";
 import "dayjs/locale/ru";
-import { btnStyleBlue, btnStyleGrey } from "./ButtonStyle";
+import AppButton from "./AppButton";
 
 dayjs.locale("ru");
+
+const pickerFieldSx = {
+  "& .MuiOutlinedInput-root": {
+    borderRadius: "12px",
+    bgcolor: "background.paper",
+  },
+};
 
 export default function CustomDatePickerDialog({
   open,
@@ -34,9 +36,6 @@ export default function CustomDatePickerDialog({
   format = "DD.MM.YYYY",
   showTime = false,
 }) {
-  const theme = useTheme();
-  const isDark = theme.palette.mode === "dark";
-
   // --- ТВОИ СОСТОЯНИЯ ---
   const [tab, setTab] = useState(0);
   const [fullDate, setFullDate] = useState(null);
@@ -134,47 +133,41 @@ export default function CustomDatePickerDialog({
     <Dialog
       open={open}
       onClose={onClose}
-      maxWidth="xs"
-      fullWidth
+      maxWidth={false}
+      transitionDuration={{ enter: 180, exit: 140 }}
       PaperProps={{
         sx: {
+          width: 440,
+          maxWidth: "94vw",
           borderRadius: "24px",
           backgroundImage: "none",
-          bgcolor: isDark ? alpha(theme.palette.background.paper, 0.9) : "#fff",
-          backdropFilter: "blur(15px)",
-          border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
-          boxShadow: theme.shadows[24],
+          overflow: "hidden",
         },
       }}
     >
-      <DialogTitle
-        sx={{
-          display: "flex",
-          alignItems: "center",
-          gap: 1.5,
-          fontWeight: 600,
-          pb: 1,
-        }}
-      >
-        <CalendarMonthIcon color="primary" />
-        Указать дату
-      </DialogTitle>
+      <Box sx={{ p: 3, pb: 1.5 }}>
+        <Typography
+          variant="h6"
+          sx={{ textAlign: "center", fontWeight: 700, mb: 2.5 }}
+        >
+          Указать дату
+        </Typography>
 
-      <DialogContent>
         <Tabs
           value={tab}
           onChange={handleTabChange}
           variant="fullWidth"
           sx={{
-            mb: 3,
-            minHeight: "40px",
+            mb: 2.5,
+            minHeight: 40,
             "& .MuiTab-root": {
+              minHeight: 40,
+              minWidth: 0,
+              px: 1,
               fontSize: "0.75rem",
-              minHeight: "40px",
+              fontWeight: 600,
               textTransform: "none",
-              fontWeight: 500,
-              borderRadius: "8px",
-              "&.Mui-selected": { color: theme.palette.primary.main },
+              borderRadius: "10px",
             },
             "& .MuiTabs-indicator": { height: 3, borderRadius: "3px 3px 0 0" },
           }}
@@ -198,187 +191,147 @@ export default function CustomDatePickerDialog({
           sx={{
             p: 2,
             borderRadius: "16px",
-            bgcolor: alpha(theme.palette.action.hover, 0.03),
-            border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
-            minHeight: "140px",
+            border: "1px solid",
+            borderColor: "divider",
+            bgcolor: "action.hover",
+            minHeight: 140,
             display: "flex",
             flexDirection: "column",
             justifyContent: "center",
           }}
         >
           <Stack spacing={2}>
-            {tab === 0 && (
-              <Fade in={tab === 0}>
-                <Stack spacing={2}>
-                  <DatePicker
-                    label="Число, месяц, год"
-                    value={fullDate}
-                    onChange={(newVal) => setFullDate(newVal)}
-                    format={format}
-                    slotProps={{
-                      textField: {
-                        fullWidth: true,
-                        size: "small",
-                        sx: {
-                          "& .MuiOutlinedInput-root": {
-                            borderRadius: "10px",
-                            bgcolor: "background.paper",
-                          },
-                        },
-                      },
-                    }}
-                  />
-                  {showTime && (
-                    <TimePicker
-                      label="Точное время"
-                      value={time}
-                      onChange={(newVal) => setTime(newVal)}
-                      slotProps={{
-                        textField: {
-                          fullWidth: true,
-                          size: "small",
-                          sx: {
-                            "& .MuiOutlinedInput-root": {
-                              borderRadius: "10px",
-                              bgcolor: "background.paper",
-                            },
-                          },
-                        },
-                      }}
-                    />
-                  )}
-                </Stack>
-              </Fade>
-            )}
-
-            {tab === 1 && (
-              <Fade in={tab === 1}>
-                <Box>
-                  <DatePicker
-                    views={["year", "month"]}
-                    label="Месяц и год"
-                    value={monthYear}
-                    onChange={(newVal) => setMonthYear(newVal)}
-                    format={format === "YYYY-MM-DD" ? "YYYY-MM" : "MM.YYYY"}
-                    slotProps={{
-                      textField: {
-                        fullWidth: true,
-                        size: "small",
-                        sx: {
-                          "& .MuiOutlinedInput-root": {
-                            borderRadius: "10px",
-                            bgcolor: "background.paper",
-                          },
-                        },
-                      },
-                    }}
-                  />
-                </Box>
-              </Fade>
-            )}
-
-            {tab === 2 && (
-              <Fade in={tab === 2}>
-                <Box>
-                  <DatePicker
-                    views={["year"]}
-                    label="Укажите год"
-                    value={year}
-                    onChange={(newVal) => setYear(newVal)}
-                    format="YYYY"
-                    slotProps={{
-                      textField: {
-                        fullWidth: true,
-                        size: "small",
-                        sx: {
-                          "& .MuiOutlinedInput-root": {
-                            borderRadius: "10px",
-                            bgcolor: "background.paper",
-                          },
-                        },
-                      },
-                    }}
-                  />
-                </Box>
-              </Fade>
-            )}
-
-            {tab === 3 && (
-              <Fade in={tab === 3}>
-                <FormControlLabel
-                  sx={{
-                    ml: 0,
-                    p: 1.5,
-                    width: "100%",
-                    borderRadius: "10px",
-                    bgcolor: unknown
-                      ? alpha(theme.palette.primary.main, 0.08)
-                      : "transparent",
-                    border: `1px solid ${unknown ? theme.palette.primary.main : "transparent"}`,
-                    transition: "0.3s",
+          {tab === 0 && (
+            <Fade in={tab === 0}>
+              <Stack spacing={2}>
+                <DatePicker
+                  label="Число, месяц, год"
+                  value={fullDate}
+                  onChange={(newVal) => setFullDate(newVal)}
+                  format={format}
+                  slotProps={{
+                    textField: {
+                      fullWidth: true,
+                      size: "small",
+                      sx: pickerFieldSx,
+                    },
                   }}
-                  control={
-                    <Checkbox
-                      checked={unknown}
-                      onChange={(e) => setUnknown(e.target.checked)}
-                    />
-                  }
-                  label={
-                    <Typography variant="body2" fontWeight={500}>
-                      Дата полностью неизвестна
-                    </Typography>
-                  }
                 />
-              </Fade>
-            )}
+                {showTime && (
+                  <TimePicker
+                    label="Точное время"
+                    value={time}
+                    onChange={(newVal) => setTime(newVal)}
+                    slotProps={{
+                      textField: {
+                        fullWidth: true,
+                        size: "small",
+                        sx: pickerFieldSx,
+                      },
+                    }}
+                  />
+                )}
+              </Stack>
+            </Fade>
+          )}
+
+          {tab === 1 && (
+            <Fade in={tab === 1}>
+              <Box>
+                <DatePicker
+                  views={["year", "month"]}
+                  label="Месяц и год"
+                  value={monthYear}
+                  onChange={(newVal) => setMonthYear(newVal)}
+                  format={format === "YYYY-MM-DD" ? "YYYY-MM" : "MM.YYYY"}
+                  slotProps={{
+                    textField: {
+                      fullWidth: true,
+                      size: "small",
+                      sx: pickerFieldSx,
+                    },
+                  }}
+                />
+              </Box>
+            </Fade>
+          )}
+
+          {tab === 2 && (
+            <Fade in={tab === 2}>
+              <Box>
+                <DatePicker
+                  views={["year"]}
+                  label="Укажите год"
+                  value={year}
+                  onChange={(newVal) => setYear(newVal)}
+                  format="YYYY"
+                  slotProps={{
+                    textField: {
+                      fullWidth: true,
+                      size: "small",
+                      sx: pickerFieldSx,
+                    },
+                  }}
+                />
+              </Box>
+            </Fade>
+          )}
+
+          {tab === 3 && (
+            <Fade in={tab === 3}>
+              <FormControlLabel
+                sx={{
+                  ml: 0,
+                  p: 1.5,
+                  width: "100%",
+                  borderRadius: "12px",
+                  border: "1px solid",
+                  borderColor: unknown ? "primary.main" : "transparent",
+                  bgcolor: unknown ? "action.selected" : "transparent",
+                  transition: "background-color .2s, border-color .2s",
+                }}
+                control={
+                  <Checkbox
+                    checked={unknown}
+                    onChange={(e) => setUnknown(e.target.checked)}
+                  />
+                }
+                label={
+                  <Typography variant="body2" fontWeight={500}>
+                    Дата полностью неизвестна
+                  </Typography>
+                }
+              />
+            </Fade>
+          )}
           </Stack>
         </Box>
-      </DialogContent>
+      </Box>
 
-      <DialogActions sx={{ p: 3, pt: 1 }}>
-        <Button
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          p: 2,
+          pt: 0.5,
+        }}
+      >
+        <AppButton
+          preset="secondary"
           onClick={onClose}
-          sx={{
-            ...btnStyleGrey
-            // height: 24,
-            // borderRadius: "6px",
-            // py: 1.2,
-            // px: 3.6,
-            // textTransform: "none",
-            // fontWeight: 600,
-            // fontSize: "0.95rem",
-            // color: "text.primary",
-            // bgcolor: (theme) =>
-            //   theme.palette.mode === "dark"
-            //     ? "rgba(255,255,255,0.05)"
-            //     : "rgba(0,0,0,0.05)",
-            // "&:hover": {
-            //   bgcolor: (theme) =>
-            //     theme.palette.mode === "dark"
-            //       ? "rgba(255,255,255,0.1)"
-            //       : "rgba(0,0,0,0.1)",
-            // },
-          }}
+          sx={{ px: 2.5, borderRadius: "999px" }}
         >
-          Отменить
-        </Button>
-        <Button
-          variant="contained"
+          Отмена
+        </AppButton>
+        <AppButton
+          preset="primary"
           onClick={handleSave}
-          disableElevation
-          sx={{
-            ...btnStyleBlue,
-            // bgcolor: "#007AFF",
-            // height: 24,
-            // borderRadius: "6px",
-            // px: 3,
-            // fontWeight: 600,
-            // boxShadow: `0 4px 14px 0 ${alpha(theme.palette.primary.main, 0.39)}`,
-          }}
+          sx={{ px: 3, borderRadius: "999px" }}
         >
           Сохранить
-        </Button>
-      </DialogActions>
+        </AppButton>
+      </Box>
     </Dialog>
   );
 }

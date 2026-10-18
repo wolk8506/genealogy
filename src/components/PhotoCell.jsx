@@ -10,7 +10,7 @@ import {
   styled,
 } from "@mui/material";
 import DownloadIcon from "@mui/icons-material/Download";
-import EditIcon from "@mui/icons-material/Edit";
+import InfoIcon from "@mui/icons-material/Info";
 import DeleteIcon from "@mui/icons-material/Delete";
 import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
 import { useTheme, alpha } from "@mui/material/styles";
@@ -76,6 +76,8 @@ const PhotoCell = React.memo(
     onEdit,
     onDelete,
     onOpen,
+    onSelect,
+    selected = false,
     rowHeight,
     isDark,
     personId,
@@ -111,12 +113,15 @@ const PhotoCell = React.memo(
           position: "relative",
           overflow: "hidden", // КРИТИЧНО: обрезает всё, что выходит за границы
           bgcolor: isDark ? "#1e1e1e" : "#f0f0f0",
-          boxShadow: hover ? 6 : 1,
+          boxShadow: selected ? 2 : hover ? 6 : 1,
           transition: "all 0.3s ease",
-          border: isDark ? "1px solid #333" : "1px solid #e0e0e0",
-          "&:hover": {
-            transform: "translateY(-4px)",
-          },
+          // Рамку рисуем внутри (border), без внешнего box-shadow-кольца:
+          // внешнее кольцо обрезалось скроллером у краёв страницы.
+          border: selected
+            ? `2px solid ${theme.palette.primary.main}`
+            : isDark
+              ? "1px solid #333"
+              : "1px solid #e0e0e0",
         }}
       >
         <CardActionArea
@@ -129,7 +134,8 @@ const PhotoCell = React.memo(
               personId,
             );
           }}
-          onClick={() => onOpen(photo)}
+          onClick={() => (onSelect ? onSelect(photo) : onOpen?.(photo))}
+          onDoubleClick={() => onOpen?.(photo)}
           sx={{
             height: "100%",
             borderRadius: "inherit", // Чтобы ripple не вылетал за края
@@ -306,7 +312,7 @@ const PhotoCell = React.memo(
                 onEdit(photo);
               }}
             >
-              <EditIcon sx={{ fontSize: 16 }} />
+              <InfoIcon sx={{ fontSize: 16 }} />
             </IconButton>
           </Box>
 

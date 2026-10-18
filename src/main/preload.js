@@ -218,6 +218,7 @@ contextBridge.exposeInMainWorld("geoAPI", {
   forward: (query) => ipcRenderer.invoke("geo:forward", query),
   getCache: () => ipcRenderer.invoke("geo:getCache"),
   reverse: (lat, lng) => ipcRenderer.invoke("geo:reverse", lat, lng),
+  locate: () => ipcRenderer.invoke("geo:locate"),
   clearCache: () => ipcRenderer.invoke("geo:clearCache"),
 });
 
@@ -395,6 +396,11 @@ contextBridge.exposeInMainWorld("updater", {
     ipcRenderer.removeAllListeners("update:downloaded");
     ipcRenderer.removeAllListeners("app:update-available");
   },
+});
+
+//📋 Буфер обмена
+contextBridge.exposeInMainWorld("clipboardAPI", {
+  writeText: (text) => ipcRenderer.invoke("clipboard:writeText", text),
 });
 
 //🚪 Выход из приложения

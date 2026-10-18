@@ -125,7 +125,16 @@ async function fetchPlaceName(lat, lng) {
   }
   const data = await response.json();
   if (!data || data.error) return null;
-  return { lat, lng, name: shortPlaceName(data), displayName: data.display_name || null };
+  return {
+    lat,
+    lng,
+    name: shortPlaceName(data),
+    displayName: data.display_name || null,
+    // Имя самого объекта в точке (парк, здание и т.п.).
+    featureName: data.name || null,
+    // Структурные поля адреса — для нормализации строки на стороне UI.
+    address: data.address || null,
+  };
 }
 
 // Весь кэш одним запросом — для мгновенного рендера известных точек
@@ -173,6 +182,50 @@ ipcMain.handle("geo:forward", async (_, query) => {
   return result;
 });
 
+// Приблизительное «моё местоположение» по IP (браузерная геолокация
+// в Electron на macOS часто недоступна без системного разрешения).
+async function fetchIpLocation() {
+  try {
+    const response = await fetch("https://ipapi.co/json/", {
+      headers: { "User-Agent": "GenealogyApp/1.0 (contact: local)" },
+    });
+    if (response.ok) {
+      const data = await response.json();
+      const lat = Number(data.latitude);
+      const lng = Number(data.longitude);
+      if (Number.isFinite(lat) && Number.isFinite(lng)) {
+        const name = [data.city, data.country_name].filter(Boolean).join(", ");
+        return { lat, lng, name: name || null };
+      }
+    }
+  } catch (err) {
+    log.warn("ip locate (ipapi.co) failed:", err.message);
+  }
+  try {
+    const response = await fetch(
+      "http://ip-api.com/json/?fields=status,lat,lon,city,country",
+    );
+    if (response.ok) {
+      const data = await response.json();
+      if (data.status === "success") {
+        const lat = Number(data.lat);
+        const lng = Number(data.lon);
+        if (Number.isFinite(lat) && Number.isFinite(lng)) {
+          const name = [data.city, data.country].filter(Boolean).join(", ");
+          return { lat, lng, name: name || null };
+        }
+      }
+    }
+  } catch (err) {
+    log.warn("ip locate (ip-api.com) failed:", err.message);
+  }
+  return null;
+}
+
+ipcMain.handle("geo:locate", async () => {
+  return fetchIpLocation();
+});
+
 // Обратное геокодирование для пикера точки: координаты → короткое название.
 // Ключ кэша — округлённые координаты, без TTL (точки не двигаются).
 ipcMain.handle("geo:reverse", async (_, lat, lng) => {
@@ -182,7 +235,16 @@ ipcMain.handle("geo:reverse", async (_, lat, lng) => {
   const key = `rev:${flat.toFixed(3)},${flng.toFixed(3)}`;
 
   const cache = ensureLoaded();
-  if (cache[key] && !cache[key].miss) return cache[key];
+  // Старые записи без структурного `address`/`featureName` считаем устаревшими —
+  // перезапрашиваем, чтобы UI мог нормализовать строку.
+  if (
+    cache[key] &&
+    !cache[key].miss &&
+    cache[key].address &&
+    "featureName" in cache[key]
+  ) {
+    return cache[key];
+  }
 
   const result = await enqueue(() => fetchPlaceName(flat, flng));
   const entry = result

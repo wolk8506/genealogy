@@ -1,7 +1,12 @@
 // src/main/window.cjs
-const { BrowserWindow } = require("electron");
+const { BrowserWindow, session } = require("electron");
 const path = require("path");
 const isDev = process.env.NODE_ENV === "development";
+
+// Разрешаем запросы геолокации из рендерера (локатор «Моё местоположение»).
+session.defaultSession.setPermissionRequestHandler((_wc, permission, callback) => {
+  callback(permission === "geolocation");
+});
 
 // Проверка платформы
 const isMac = process.platform === "darwin";

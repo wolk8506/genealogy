@@ -1,22 +1,16 @@
 import React, { useEffect, useState } from "react";
 import {
   Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   Stack,
   TextField,
-  Button,
   MenuItem,
   ListItemIcon,
   ListItemText,
   Autocomplete,
   Typography,
+  Box,
 } from "@mui/material";
-import { Box } from "@mui/material";
-import { alpha, useTheme } from "@mui/material/styles";
-import EditNoteIcon from "@mui/icons-material/EditNote";
-import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
+import { alpha } from "@mui/material/styles";
 
 // ICON
 import BloodtypeIcon from "@mui/icons-material/Bloodtype";
@@ -31,7 +25,19 @@ import FaceIcon from "@mui/icons-material/Face";
 
 import nationalities from "./nationalities.json";
 import NumberField from "../../../components/NumberField";
+import AppButton from "../../../components/AppButton";
 import useDialogSaveHotkey from "../../../hooks/useDialogSaveHotkey";
+
+const fieldSx = {
+  "& .MuiOutlinedInput-root": { borderRadius: "12px" },
+};
+
+const sectionLabelSx = {
+  display: "block",
+  mb: 1,
+  fontWeight: 700,
+  color: "text.secondary",
+};
 
 const FACT_TYPES = [
   "Рост",
@@ -339,8 +345,6 @@ export default function FactsEditorDialog({
   onSave,
   onDelete,
 }) {
-  const theme = useTheme();
-  const isDark = theme.palette.mode === "dark";
   const [type, setType] = useState(FACT_TYPES[0]);
   const [value, setValue] = useState("");
 
@@ -370,188 +374,144 @@ export default function FactsEditorDialog({
     <Dialog
       open={open}
       onClose={onClose}
+      maxWidth={false}
+      transitionDuration={{ enter: 180, exit: 140 }}
       PaperProps={{
         sx: {
-          borderRadius: "20px",
-          backgroundImage: "none", // Убираем стандартное наложение в темной теме
-          bgcolor: isDark ? alpha(theme.palette.background.paper, 0.9) : "#fff",
-          backdropFilter: "blur(10px)", // Эффект размытия фона за диалогом
-          border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
-          boxShadow: theme.shadows[20],
+          width: 440,
+          maxWidth: "94vw",
+          maxHeight: "calc(100vh - 64px)",
+          borderRadius: "24px",
+          backgroundImage: "none",
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden",
         },
       }}
-      maxWidth="xs"
-      fullWidth
     >
-      <DialogTitle
+      <Box sx={{ p: 3, pb: 2, overflowY: "auto" }}>
+        <Typography
+          variant="h6"
+          sx={{ textAlign: "center", fontWeight: 700, mb: 3 }}
+        >
+          {initialFact ? "Редактировать факт" : "Новый факт"}
+        </Typography>
+
+        <Stack spacing={2.5}>
+          <Box>
+            <Typography variant="overline" sx={sectionLabelSx}>
+              Категория
+            </Typography>
+            <TextField
+              select
+              label="Категория"
+              value={type}
+              onChange={(e) => {
+                setType(e.target.value);
+                setValue("");
+              }}
+              size="small"
+              fullWidth
+              sx={fieldSx}
+              SelectProps={{
+                renderValue: (selected) => (
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        color: "primary.main",
+                        bgcolor: "action.selected",
+                        p: 0.5,
+                        borderRadius: "8px",
+                      }}
+                    >
+                      {getIcon(selected)}
+                    </Box>
+                    <Typography variant="body2" fontWeight={500}>
+                      {selected}
+                    </Typography>
+                  </Box>
+                ),
+              }}
+            >
+              {FACT_TYPES.map((t) => (
+                <MenuItem
+                  key={t}
+                  value={t}
+                  sx={{
+                    gap: 1,
+                    mx: 1,
+                    my: 0.5,
+                    borderRadius: "8px",
+                    "&.Mui-selected": { bgcolor: "action.selected" },
+                  }}
+                >
+                  <ListItemIcon sx={{ minWidth: 34, color: "primary.main" }}>
+                    {getIcon(t)}
+                  </ListItemIcon>
+                  <ListItemText primary={t} />
+                </MenuItem>
+              ))}
+            </TextField>
+          </Box>
+
+          <Box>
+            <Typography variant="overline" sx={sectionLabelSx}>
+              Значение
+            </Typography>
+            <Box
+              sx={{
+                p: 2,
+                borderRadius: "12px",
+                bgcolor: (t) => alpha(t.palette.action.hover, 0.04),
+                border: (t) => `1px dashed ${alpha(t.palette.divider, 0.2)}`,
+              }}
+            >
+              <FactInput
+                type={type}
+                value={value}
+                setValue={setValue}
+                gender={person.gender}
+              />
+            </Box>
+          </Box>
+        </Stack>
+      </Box>
+
+      <Box
         sx={{
           display: "flex",
           alignItems: "center",
-          gap: 1.5,
-          pb: 1,
-          fontWeight: 600,
+          gap: 1,
+          p: 2,
+          pt: 1,
         }}
       >
-        {initialFact ? (
-          <EditNoteIcon color="primary" fontSize="large" />
-        ) : (
-          <AddCircleOutlineIcon color="primary" fontSize="large" />
-        )}
-        {initialFact ? "Редактировать факт" : "Новый факт"}
-      </DialogTitle>
-
-      <DialogContent sx={{ pt: "12px !important" }}>
-        <Stack spacing={3}>
-          {" "}
-          {/* Увеличили расстояние для "воздуха" */}
-          <TextField
-            select
-            label="Выберите категорию"
-            value={type}
-            onChange={(e) => {
-              setType(e.target.value);
-              setValue("");
-            }}
-            size="small"
-            fullWidth
-            SelectProps={{
-              MenuProps: {
-                PaperProps: {
-                  sx: {
-                    borderRadius: "16px",
-                    mt: 1,
-                    boxShadow: "0 8px 32px rgba(0,0,0,0.15)",
-                    border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
-                  },
-                },
-              },
-              renderValue: (selected) => (
-                <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-                  <Box
-                    sx={{
-                      display: "flex",
-                      color: theme.palette.primary.main,
-                      bgcolor: alpha(theme.palette.primary.main, 0.1),
-                      p: 0.5,
-                      borderRadius: "8px",
-                    }}
-                  >
-                    {getIcon(selected)}
-                  </Box>
-                  <Typography variant="body2" fontWeight={500}>
-                    {selected}
-                  </Typography>
-                </Box>
-              ),
-            }}
-          >
-            {FACT_TYPES.map((t) => (
-              <MenuItem
-                key={t}
-                value={t}
-                sx={{
-                  mx: 1,
-                  my: 0.5,
-                  borderRadius: "8px",
-                  "&.Mui-selected": {
-                    bgcolor: alpha(theme.palette.primary.main, 0.1),
-                  },
-                }}
-              >
-                <ListItemIcon
-                  sx={{ minWidth: 38, color: theme.palette.primary.main }}
-                >
-                  {getIcon(t)}
-                </ListItemIcon>
-                <ListItemText primary={t} />
-              </MenuItem>
-            ))}
-          </TextField>
-          {/* Контейнер для FactInput, чтобы добавить ему легкий акцент */}
-          <Box
-            sx={{
-              p: 2,
-              borderRadius: "12px",
-              bgcolor: alpha(theme.palette.action.hover, 0.04),
-              border: `1px dashed ${alpha(theme.palette.divider, 0.2)}`,
-            }}
-          >
-            <FactInput
-              type={type}
-              value={value}
-              setValue={setValue}
-              gender={person.gender}
-            />
-          </Box>
-        </Stack>
-      </DialogContent>
-
-      <DialogActions sx={{ p: 3, pt: 1 }}>
         {initialFact && (
-          <Button
-            variant="text"
-            color="error"
+          <AppButton
+            preset="dangerOutlined"
             onClick={handleDelete}
-            sx={{
-              height: 24,
-              borderRadius: "6px",
-              py: 1.2,
-              px: 2,
-              mr: "auto",
-              textTransform: "none",
-              fontWeight: 500,
-              fontSize: "0.95rem",
-              color: (theme) =>
-                theme.palette.mode === "dark" ? "#FF453A" : "#FF3B30", // macOS Red
-              bgcolor: (theme) => alpha(theme.palette.error.main, 0.08), // Легкий тинт вместо рамки
-              "&:hover": {
-                bgcolor: (theme) => alpha(theme.palette.error.main, 0.15),
-              },
-            }}
+            sx={{ px: 2.5, borderRadius: "999px" }}
           >
             Удалить
-          </Button>
+          </AppButton>
         )}
-        <Button
+        <AppButton
+          preset="secondary"
           onClick={onClose}
-          sx={{
-            height: 24,
-            borderRadius: "6px",
-            py: 1.2,
-            px: 2,
-            textTransform: "none",
-            fontWeight: 600,
-            fontSize: "0.95rem",
-            color: "text.primary",
-            bgcolor: (theme) =>
-              theme.palette.mode === "dark"
-                ? "rgba(255,255,255,0.05)"
-                : "rgba(0,0,0,0.05)",
-            "&:hover": {
-              bgcolor: (theme) =>
-                theme.palette.mode === "dark"
-                  ? "rgba(255,255,255,0.1)"
-                  : "rgba(0,0,0,0.1)",
-            },
-          }}
+          sx={{ px: 2.5, borderRadius: "999px" }}
         >
-          Отменить
-        </Button>
-        <Button
+          Отмена
+        </AppButton>
+        <Box sx={{ flex: 1 }} />
+        <AppButton
+          preset="primary"
           onClick={handleSave}
-          variant="contained"
-          disableElevation
-          sx={{
-            height: 24,
-            borderRadius: "6px",
-            px: 2,
-            fontWeight: 600,
-            boxShadow: `0 4px 14px 0 ${alpha(theme.palette.primary.main, 0.39)}`,
-          }}
+          sx={{ px: 3, borderRadius: "999px" }}
         >
           {initialFact ? "Обновить" : "Сохранить"}
-        </Button>
-      </DialogActions>
+        </AppButton>
+      </Box>
     </Dialog>
   );
 }

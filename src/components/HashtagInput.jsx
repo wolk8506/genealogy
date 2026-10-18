@@ -36,7 +36,15 @@ const getCaretCoordinates = (element, position) => {
   return coords;
 };
 
-const HashtagInput = ({ value, onChange, suggestions = [], placeholder }) => {
+const HashtagInput = ({
+  value,
+  onChange,
+  suggestions = [],
+  placeholder,
+  label = "Описание",
+  onBlur,
+  onEscape,
+}) => {
   const theme = useTheme();
   const isDark = theme.palette.mode === "dark";
   const containerRef = useRef(null);
@@ -121,6 +129,16 @@ const HashtagInput = ({ value, onChange, suggestions = [], placeholder }) => {
   };
 
   const handleKeyDown = (e) => {
+    if (e.key === "Escape") {
+      e.stopPropagation?.();
+      if (showList) {
+        setShowList(false);
+      } else {
+        onEscape?.();
+        e.target.blur?.();
+      }
+      return;
+    }
     if (!showList || filteredTags.length === 0) return;
 
     if (e.key === "ArrowDown") {
@@ -180,13 +198,15 @@ const HashtagInput = ({ value, onChange, suggestions = [], placeholder }) => {
       </Box>
 
       <TextField
-        label="Описание"
+        label={label}
+        InputLabelProps={{ shrink: true }}
         multiline
         fullWidth
         rows={4}
         value={value}
         onChange={handleTextChange}
         onKeyDown={handleKeyDown} // Добавлен обработчик
+        onBlur={onBlur}
         variant="outlined"
         placeholder={placeholder}
         sx={{

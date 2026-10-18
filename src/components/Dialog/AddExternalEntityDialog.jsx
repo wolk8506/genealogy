@@ -1,30 +1,17 @@
 import React, { useEffect, useState } from "react";
 import {
   Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
   TextField,
   MenuItem,
   Stack,
   IconButton,
   Autocomplete,
   Typography,
-  Divider,
   Box,
 } from "@mui/material";
-import { useTheme, alpha } from "@mui/material/styles";
-import CloseIcon from "@mui/icons-material/Close";
-import PetsIcon from "@mui/icons-material/Pets";
-import PersonOutlineIcon from "@mui/icons-material/PersonOutline";
-import LinkIcon from "@mui/icons-material/Link";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
-import PhoneIcon from "@mui/icons-material/Phone";
-import EmailIcon from "@mui/icons-material/Email";
-import HomeIcon from "@mui/icons-material/Home";
-import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
 import CustomDatePickerDialog from "../CustomDatePickerDialog";
+import AppButton from "../AppButton";
 import { useNotificationStore } from "../../store/useNotificationStore";
 import {
   ENTITY_TYPES,
@@ -38,14 +25,23 @@ import {
 } from "../../utils/externalEntities";
 import useDialogSaveHotkey from "../../hooks/useDialogSaveHotkey";
 
+const fieldSx = {
+  "& .MuiOutlinedInput-root": { borderRadius: "12px" },
+};
+
+const sectionLabelSx = {
+  display: "block",
+  mb: 1,
+  fontWeight: 700,
+  color: "text.secondary",
+};
+
 export default function AddExternalEntityDialog({
   open,
   onClose,
   entity = null,
   onSaved,
 }) {
-  const theme = useTheme();
-  const isDark = theme.palette.mode === "dark";
   const isEdit = Boolean(entity?.id);
   const addNotification = useNotificationStore(
     (state) => state.addNotification,
@@ -255,32 +251,35 @@ export default function AddExternalEntityDialog({
     <Dialog
       open={open}
       onClose={onClose}
-      maxWidth="sm"
-      fullWidth
+      maxWidth={false}
+      transitionDuration={{ enter: 180, exit: 140 }}
       PaperProps={{
         sx: {
+          width: 600,
+          maxWidth: "94vw",
+          maxHeight: "calc(100vh - 64px)",
           borderRadius: "24px",
           backgroundImage: "none",
-          bgcolor: isDark ? alpha(theme.palette.background.paper, 0.94) : "#fff",
-          border: `1px solid ${alpha(theme.palette.divider, 0.12)}`,
-          boxShadow: theme.shadows[18],
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden",
         },
       }}
     >
-      <DialogTitle sx={{ display: "flex", alignItems: "center", gap: 1.25, fontWeight: 700, pb: 1 }}>
-        {isPet ? (
-          <PetsIcon color="primary" />
-        ) : (
-          <PersonOutlineIcon color="primary" />
-        )}
-        {isEdit ? "Редактировать запись" : "Новая запись в справочнике"}
-        <IconButton onClick={onClose} sx={{ ml: "auto" }} size="small">
-          <CloseIcon />
-        </IconButton>
-      </DialogTitle>
+      <Box sx={{ p: 3, pb: 2, overflowY: "auto" }}>
+        <Typography
+          variant="h6"
+          sx={{ textAlign: "center", fontWeight: 700, mb: 3 }}
+        >
+          {isEdit ? "Редактировать запись" : "Новая запись в справочнике"}
+        </Typography>
 
-      <DialogContent dividers>
         <Stack spacing={2.5}>
+          <Box>
+            <Typography variant="overline" sx={sectionLabelSx}>
+              Основное
+            </Typography>
+            <Stack spacing={2}>
           <TextField
             select
             label="Тип"
@@ -296,7 +295,7 @@ export default function AddExternalEntityDialog({
               }));
             }}
             fullWidth
-            sx={{ "& .MuiOutlinedInput-root": { borderRadius: "12px" } }}
+            sx={fieldSx}
           >
             {Object.entries(ENTITY_TYPES).map(([key, { label }]) => (
               <MenuItem key={key} value={key}>
@@ -311,80 +310,79 @@ export default function AddExternalEntityDialog({
             onChange={(e) => setName(e.target.value)}
             fullWidth
             required
-            sx={{ "& .MuiOutlinedInput-root": { borderRadius: "12px" } }}
+            sx={fieldSx}
           />
 
-          <TextField
-            label="Описание / справка"
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            fullWidth
-            multiline
-            minRows={3}
-            sx={{ "& .MuiOutlinedInput-root": { borderRadius: "12px" } }}
-          />
+          </Stack>
+          </Box>
 
-          {!isPet && (
-            <>
-              <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5}>
-                <TextField
-                  label="Телефон"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  fullWidth
-                  InputProps={{
-                    startAdornment: <PhoneIcon fontSize="small" sx={{ mr: 1, opacity: 0.7 }} />,
-                  }}
-                  sx={{ "& .MuiOutlinedInput-root": { borderRadius: "12px" } }}
-                />
-                <TextField
-                  label="E-mail"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  fullWidth
-                  InputProps={{
-                    startAdornment: <EmailIcon fontSize="small" sx={{ mr: 1, opacity: 0.7 }} />,
-                  }}
-                  sx={{ "& .MuiOutlinedInput-root": { borderRadius: "12px" } }}
-                />
-              </Stack>
+          <Box>
+            <Typography variant="overline" sx={sectionLabelSx}>
+              Описание
+            </Typography>
+            <TextField
+              label="Описание / справка"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              fullWidth
+              multiline
+              minRows={3}
+              sx={fieldSx}
+            />
+          </Box>
+
+          <Box>
+            <Typography variant="overline" sx={sectionLabelSx}>
+              Контакты
+            </Typography>
+            <Stack spacing={2}>
+              {!isPet && (
+                <>
+                  <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+                    <TextField
+                      label="Телефон"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      fullWidth
+                      sx={fieldSx}
+                    />
+                    <TextField
+                      label="E-mail"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      fullWidth
+                      sx={fieldSx}
+                    />
+                  </Stack>
+
+                  <TextField
+                    label="Адрес"
+                    value={address}
+                    onChange={(e) => setAddress(e.target.value)}
+                    fullWidth
+                    multiline
+                    minRows={2}
+                    sx={fieldSx}
+                  />
+                </>
+              )}
 
               <TextField
-                label="Адрес"
-                value={address}
-                onChange={(e) => setAddress(e.target.value)}
+                label="Дата рождения"
+                value={birthday}
+                onClick={() => setBirthdayPickerOpen(true)}
                 fullWidth
-                multiline
-                minRows={2}
-                InputProps={{
-                  startAdornment: <HomeIcon fontSize="small" sx={{ mr: 1, opacity: 0.7, alignSelf: "flex-start", mt: 0.8 }} />,
-                }}
-                sx={{ "& .MuiOutlinedInput-root": { borderRadius: "12px" } }}
+                InputProps={{ readOnly: true, sx: { cursor: "pointer" } }}
+                sx={fieldSx}
               />
-            </>
-          )}
+            </Stack>
+          </Box>
 
-          <TextField
-            label="Дата рождения"
-            value={birthday}
-            onClick={() => setBirthdayPickerOpen(true)}
-            fullWidth
-            InputProps={{
-              readOnly: true,
-              startAdornment: <CalendarTodayIcon fontSize="small" sx={{ mr: 1, opacity: 0.7 }} />,
-              sx: { borderRadius: "12px", cursor: "pointer" },
-            }}
-            sx={{ "& .MuiOutlinedInput-root": { borderRadius: "12px" } }}
-          />
-
-          <Divider />
-
-          <Stack direction="row" alignItems="center" spacing={1}>
-            <LinkIcon fontSize="small" color="primary" />
-            <Typography variant="subtitle2" fontWeight={700}>
-              Связи с людьми и справочником
+          <Box>
+            <Typography variant="overline" sx={sectionLabelSx}>
+              Связи
             </Typography>
-          </Stack>
+            <Stack spacing={2}>
 
           {relations.length > 0 && (
             <Stack spacing={1}>
@@ -400,9 +398,7 @@ export default function AddExternalEntityDialog({
                     sx={{
                       p: 1.5,
                       borderRadius: "12px",
-                      bgcolor: isDark
-                        ? alpha(theme.palette.primary.main, 0.08)
-                        : alpha(theme.palette.primary.main, 0.04),
+                      bgcolor: "action.hover",
                       border: "1px solid",
                       borderColor: "divider",
                       display: "flex",
@@ -470,7 +466,7 @@ export default function AddExternalEntityDialog({
                 <TextField
                   {...params}
                   label="Связь из дерева или справочника"
-                  sx={{ "& .MuiOutlinedInput-root": { borderRadius: "12px" } }}
+                  sx={fieldSx}
                 />
               )}
             />
@@ -488,7 +484,7 @@ export default function AddExternalEntityDialog({
                 }
                 fullWidth
                 disabled={isPet}
-                sx={{ "& .MuiOutlinedInput-root": { borderRadius: "12px" } }}
+                sx={fieldSx}
               >
                 {relationTypeOptions.map(([key, label]) => (
                   <MenuItem key={key} value={key}>
@@ -503,12 +499,12 @@ export default function AddExternalEntityDialog({
                 onChange={(e) =>
                   setNewRelation((s) => ({ ...s, dates: e.target.value }))
                 }
-                sx={{ "& .MuiOutlinedInput-root": { borderRadius: "12px" } }}
+                sx={fieldSx}
               />
             </Stack>
 
-            <Button
-              variant="outlined"
+            <AppButton
+              preset="secondary"
               onClick={handleAddRelation}
               disabled={
                 (newRelation.targetKind === "person" &&
@@ -516,32 +512,35 @@ export default function AddExternalEntityDialog({
                 (newRelation.targetKind === "external" &&
                   !newRelation.mainExternalEntityId)
               }
-              sx={{ borderRadius: "12px" }}
+              sx={{ alignSelf: "flex-start", px: 2.5, borderRadius: "999px" }}
             >
               + Добавить связь
-            </Button>
+            </AppButton>
           </Stack>
+            </Stack>
+          </Box>
         </Stack>
-      </DialogContent>
+      </Box>
 
-      <DialogActions sx={{ px: 3, py: 2 }}>
-        <Button onClick={onClose} disabled={saving} sx={{
-                      height: 24,
-                      borderRadius: "6px",
-                      px: 2.5,
-                      fontWeight: "bold",
-                    }}>
+      <Box sx={{ display: "flex", alignItems: "center", gap: 1, p: 2, pt: 1 }}>
+        <AppButton
+          preset="secondary"
+          onClick={onClose}
+          disabled={saving}
+          sx={{ px: 2.5, borderRadius: "999px" }}
+        >
           Отмена
-        </Button>
-        <Button variant="contained" onClick={handleSave} disabled={saving} sx={{
-                      height: 24,
-                      borderRadius: "6px",
-                      px: 2.5,
-                      fontWeight: "bold",
-                    }}>
+        </AppButton>
+        <Box sx={{ flex: 1 }} />
+        <AppButton
+          preset="primary"
+          onClick={handleSave}
+          disabled={saving}
+          sx={{ px: 3, borderRadius: "999px" }}
+        >
           {isEdit ? "Сохранить" : "Добавить"}
-        </Button>
-      </DialogActions>
+        </AppButton>
+      </Box>
 
       <CustomDatePickerDialog
         open={birthdayPickerOpen}
