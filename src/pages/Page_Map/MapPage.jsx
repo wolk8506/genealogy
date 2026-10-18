@@ -21,8 +21,6 @@ import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import {
   MapContainer,
-  TileLayer,
-  LayersControl,
   ZoomControl,
   Marker,
   useMap,
@@ -46,9 +44,11 @@ import {
 } from "./mapHelpers";
 import MapLegend from "./MapLegend";
 import MapMarkerLayer from "./MapMarkerLayer";
-
-const LAYERS_ICON =
-  "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%3E%3Cpath%20d='M11.99%2018.54l-7.37-5.73L3%2014.07l9%207%209-7-1.63-1.27-7.38%205.74zM12%2016l7.36-5.73L21%209l-9-7-9%207%201.63%201.27L12%2016z'/%3E%3C/svg%3E";
+import MapStyleSwitcher, {
+  MapBaseTileLayer,
+} from "../../components/MapStyleSwitcher";
+import { getBaseLayer } from "../../utils/mapLayers";
+import { getMyPosition } from "../../utils/geolocate";
 
 const EDIT_PIN_ICON = L.divIcon({
   className: "map-edit-pin",
@@ -125,6 +125,20 @@ function AutoResize() {
   return null;
 }
 
+function FlyToLocation({ pos, trigger }) {
+  const map = useMap();
+  useEffect(() => {
+    if (!pos || !trigger) return;
+    try {
+      map.flyTo(pos, Math.max(map.getZoom(), 13), { duration: 0.6 });
+    } catch {
+      // ignore
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [trigger]);
+  return null;
+}
+
 function EditPin({ pos, onMove, flyTrigger }) {
   const map = useMap();
   useEffect(() => {
@@ -192,6 +206,10 @@ export default function MapPage({
   const [fullIndex, setFullIndex] = useState(0);
   const [slideDirection, setSlideDirection] = useState(0);
   const [fullPaths, setFullPaths] = useState({});
+  const [baseLayer, setBaseLayer] = useState("osm");
+  const [locatePos, setLocatePos] = useState(null);
+  const [locateTrigger, setLocateTrigger] = useState(0);
+  const [locating, setLocating] = useState(false);
   const [editTarget, setEditTarget] = useState(null);
   const [locationPickerOpen, setLocationPickerOpen] = useState(false);
   const [editPos, setEditPos] = useState(null);
@@ -794,6 +812,23 @@ export default function MapPage({
     }
   }, [editPos, editTarget, saveLocation]);
 
+  const handleLocate = useCallback(async () => {
+    setLocating(true);
+    const result = await getMyPosition();
+    setLocating(false);
+    if (!result) {
+      alert("Не удалось определить местоположение");
+      return;
+    }
+    try {
+      localStorage.setItem("myGeoPos", JSON.stringify(result.pos));
+    } catch {
+      // ignore
+    }
+    setLocatePos(result.pos);
+    setLocateTrigger((t) => t + 1);
+  }, []);
+
   const etaLabel = progress
     ? formatGeocodeEta(progress.done, progress.total)
     : null;
@@ -808,6 +843,7 @@ export default function MapPage({
     >
       <style>{`
         .map-custom-marker{background:transparent!important;border:none!important;}
+        .leaflet-top .leaflet-control-zoom{margin-top:104px!important;}
         .leaflet-control-zoom.leaflet-bar{
           border:none!important;
           border-radius:18px!important;
@@ -833,37 +869,6 @@ export default function MapPage({
         .leaflet-control-zoom-in{
           border-bottom:1px solid ${zoomDivider}!important;
         }
-        .leaflet-control-layers{
-          border:none!important;
-          border-radius:12px!important;
-          background:${zoomBg}!important;
-          color:${zoomFg}!important;
-          box-shadow:0 2px 12px rgba(0,0,0,0.22)!important;
-          -webkit-backdrop-filter:blur(8px);
-          backdrop-filter:blur(8px);
-        }
-        .leaflet-control-layers-toggle{
-          width:36px!important;
-          height:36px!important;
-          background-image:none!important;
-          background-color:${zoomFg}!important;
-          -webkit-mask:url("${LAYERS_ICON}") center/20px 20px no-repeat;
-          mask:url("${LAYERS_ICON}") center/20px 20px no-repeat;
-          border-radius:12px!important;
-        }
-        .leaflet-control-layers-expanded{
-          padding:8px 12px 8px 10px!important;
-        }
-        .leaflet-control-layers-expanded .leaflet-control-layers-toggle{
-          display:none!important;
-        }
-        .leaflet-control-layers label{
-          color:${zoomFg}!important;
-          margin-bottom:2px;
-        }
-        .leaflet-control-layers-separator{
-          border-top-color:${zoomDivider}!important;
-        }
         .leaflet-popup-content-wrapper{
           background:${zoomBg}!important;
           color:${zoomFg}!important;
@@ -887,32 +892,12 @@ export default function MapPage({
         center={[55, 60]}
         zoom={3}
         zoomControl={false}
+        attributionControl={false}
         style={{ height: "100%", width: "100%", background: "#aad3df" }}
       >
         <ZoomControl position="topright" />
-        <LayersControl position="topright">
-          <LayersControl.BaseLayer checked name="Схема (OSM)">
-            <TileLayer
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-              url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
-              maxZoom={19}
-            />
-          </LayersControl.BaseLayer>
-          <LayersControl.BaseLayer name="Топография (OpenTopoMap)">
-            <TileLayer
-              attribution='Карты: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (CC-BY-SA) · данные &copy; OpenStreetMap'
-              url="https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png"
-              maxZoom={17}
-            />
-          </LayersControl.BaseLayer>
-          <LayersControl.BaseLayer name="Спутник (Esri)">
-            <TileLayer
-              attribution='Спутник: &copy; <a href="https://www.esri.com">Esri</a>, Maxar, Earthstar Geographics'
-              url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-              maxZoom={19}
-            />
-          </LayersControl.BaseLayer>
-        </LayersControl>
+        <MapBaseTileLayer layer={getBaseLayer(baseLayer)} />
+        <FlyToLocation pos={locatePos} trigger={locateTrigger} />
         <FitBounds points={visiblePoints} fitRequestKey={fitBoundsKey} />
         <RememberView />
         <AutoResize />
@@ -931,6 +916,14 @@ export default function MapPage({
         )}
       </MapContainer>
       <MapLegend />
+      <MapStyleSwitcher
+        baseLayer={baseLayer}
+        onChange={setBaseLayer}
+        showLocate
+        onLocate={handleLocate}
+        locating={locating}
+        sx={{ position: "absolute", top: 12, right: 10, zIndex: 1000 }}
+      />
 
       {locationPickerOpen && (
         <Box
@@ -1085,7 +1078,7 @@ export default function MapPage({
           size="small"
           sx={{
             position: "absolute",
-            bottom: 26,
+            bottom: 12,
             right: 10,
             zIndex: 1001,
             width: 36,

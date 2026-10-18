@@ -1,18 +1,16 @@
 import React from "react";
 import {
   Dialog,
-  DialogContent,
-  DialogActions,
   Typography,
-  Button,
   Box,
   Chip,
   Stack,
   Paper,
 } from "@mui/material";
-import InfoIcon from "@mui/icons-material/Info";
+import { alpha } from "@mui/material/styles";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import CancelIcon from "@mui/icons-material/Cancel";
+import AppButton from "../AppButton";
 
 export default function PhotoMetaDialog({ openDialog, meta, onClose }) {
   if (!meta) return null;
@@ -21,18 +19,29 @@ export default function PhotoMetaDialog({ openDialog, meta, onClose }) {
     <Dialog
       open={openDialog}
       onClose={onClose}
-      maxWidth="sm"
-      fullWidth
-      PaperProps={{ sx: { borderRadius: "15px" } }}
+      maxWidth={false}
+      transitionDuration={{ enter: 180, exit: 140 }}
+      PaperProps={{
+        sx: {
+          width: 600,
+          maxWidth: "94vw",
+          maxHeight: "calc(100vh - 64px)",
+          borderRadius: "24px",
+          backgroundImage: "none",
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden",
+        },
+      }}
     >
-      <Box sx={{ display: "flex", alignItems: "center", p: 3, pb: 1 }}>
-        <InfoIcon sx={{ mr: 1.5, color: "primary.main", fontSize: 28 }} />
-        <Typography variant="h6" fontWeight="bold">
+      <Box sx={{ p: 3, pb: 2, overflowY: "auto" }}>
+        <Typography
+          variant="h6"
+          sx={{ textAlign: "center", fontWeight: 700, mb: 3 }}
+        >
           Состояние медиа-файлов
         </Typography>
-      </Box>
 
-      <DialogContent>
         <Typography
           variant="caption"
           color="text.secondary"
@@ -48,9 +57,11 @@ export default function PhotoMetaDialog({ openDialog, meta, onClose }) {
               variant="outlined"
               sx={{
                 p: 2,
-                borderRadius: "12px",
+                borderRadius: "16px",
                 borderColor: file.exists ? "divider" : "error.light",
-                bgcolor: file.exists ? "inherit" : "error.lightest", // если есть прозрачность в теме
+                bgcolor: file.exists
+                  ? "action.hover"
+                  : (theme) => alpha(theme.palette.error.main, 0.08),
               }}
             >
               <Box
@@ -82,7 +93,8 @@ export default function PhotoMetaDialog({ openDialog, meta, onClose }) {
                   sx={{
                     mt: 1,
                     pl: 1,
-                    borderLeft: "2px solid #ccc",
+                    borderLeft: "2px solid",
+                    borderColor: "divider",
                     opacity: 0.8,
                   }}
                 >
@@ -109,36 +121,26 @@ export default function PhotoMetaDialog({ openDialog, meta, onClose }) {
             </Paper>
           ))}
         </Stack>
-      </DialogContent>
+      </Box>
 
-      <DialogActions sx={{ p: 2 }}>
-        <Button
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "flex-end",
+          alignItems: "center",
+          gap: 1,
+          p: 2,
+          pt: 1,
+        }}
+      >
+        <AppButton
+          preset="secondary"
           onClick={onClose}
-          variant="text"
-          sx={{
-            height: 24,
-            borderRadius: "6px",
-            py: 1.2,
-            px: 3.6,
-            textTransform: "none",
-            fontWeight: 600,
-            fontSize: "0.95rem",
-            color: "text.primary",
-            bgcolor: (theme) =>
-              theme.palette.mode === "dark"
-                ? "rgba(255,255,255,0.05)"
-                : "rgba(0,0,0,0.05)",
-            "&:hover": {
-              bgcolor: (theme) =>
-                theme.palette.mode === "dark"
-                  ? "rgba(255,255,255,0.1)"
-                  : "rgba(0,0,0,0.1)",
-            },
-          }}
+          sx={{ px: 3, borderRadius: "999px" }}
         >
           Закрыть
-        </Button>
-      </DialogActions>
+        </AppButton>
+      </Box>
     </Dialog>
   );
 }

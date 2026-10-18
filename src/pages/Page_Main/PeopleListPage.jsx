@@ -76,12 +76,16 @@ export default function PeopleListPage({ search, filters, sortOrder, onShowRelat
   );
 
   const handleCloseModal = () => {
-    window.peopleAPI.getAll().then((data) => {
-      setPeople(data || []);
-      setLoading(false);
-      if (data) loadAllStats(data);
-    });
+    // Сначала закрываем окно (URL), и только потом перезагружаем список,
+    // иначе тяжёлый рендер тормозит анимацию закрытия.
     setSearchParams({});
+    setTimeout(() => {
+      window.peopleAPI.getAll().then((data) => {
+        setPeople(data || []);
+        setLoading(false);
+        if (data) loadAllStats(data);
+      });
+    }, 160);
   };
 
   const theme = useTheme();

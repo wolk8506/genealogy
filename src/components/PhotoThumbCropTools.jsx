@@ -13,6 +13,7 @@ export function PhotoThumbCropPanel({
   onZoomChange,
   onCropComplete,
   height = 540,
+  maxZoom = 3,
 }) {
   return (
     <Box
@@ -32,6 +33,7 @@ export function PhotoThumbCropPanel({
           onCropChange={onCropChange}
           onZoomChange={onZoomChange}
           onCropComplete={onCropComplete}
+          maxZoom={maxZoom}
           zoomWithScroll
         />
       ) : (

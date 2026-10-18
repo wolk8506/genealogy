@@ -32,6 +32,7 @@ const log = require("./logger.cjs").createLogger("main");
   require("./handlers/dialogs.cjs");
   require("./handlers/dataStore.cjs");
   require("./handlers/geocode.cjs");
+  require("./handlers/clipboard.cjs");
   const { resolveStartupRoot } = require("./handlers/storage.cjs");
   require("./handlers/photoConversion.cjs"); // для конвертера фотографий нв странице архив
   require("./handlers/serviceScript.cjs"); // для конвертера фотографий нв странице архив

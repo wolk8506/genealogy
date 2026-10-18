@@ -1,32 +1,41 @@
 import React, { useEffect, useState } from "react";
 import {
   Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   Stack,
   TextField,
-  Button,
   MenuItem,
   Autocomplete,
   Box,
   ListItemText,
   Typography,
+  IconButton,
+  InputAdornment,
+  Tooltip,
 } from "@mui/material";
 import CustomDatePickerDialog from "../../../components/CustomDatePickerDialog";
 import { EVENT_TYPES } from "./EventTypesList";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
-import { alpha, useTheme } from "@mui/material/styles";
-import EventIcon from "@mui/icons-material/Event"; // Общая иконка для заголовка
-import PeopleAltIcon from "@mui/icons-material/PeopleAlt";
+import CloseIcon from "@mui/icons-material/Close";
 import MapIcon from "@mui/icons-material/Map";
 import LocationPickerDialog from "../../../components/Dialog/LocationPickerDialog";
+import AppButton from "../../../components/AppButton";
 import {
   buildFaceTagOptions,
   splitEventParticipantOptions,
   eventParticipantOptionsFromEvent,
 } from "../../../utils/externalEntities";
 import useDialogSaveHotkey from "../../../hooks/useDialogSaveHotkey";
+
+const fieldSx = {
+  "& .MuiOutlinedInput-root": { borderRadius: "12px" },
+};
+
+const sectionLabelSx = {
+  display: "block",
+  mb: 1,
+  fontWeight: 700,
+  color: "text.secondary",
+};
 
 export default function EventEditorDialog({
   open,
@@ -37,8 +46,6 @@ export default function EventEditorDialog({
   onCopyRequest,
   allPeople = [],
 }) {
-  const theme = useTheme();
-  const isDark = theme.palette.mode === "dark";
   const [type, setType] = useState(EVENT_TYPES[0]);
   const [date, setDate] = useState("");
   const [description, setDescription] = useState("");
@@ -109,197 +116,181 @@ export default function EventEditorDialog({
       <Dialog
         open={open}
         onClose={onClose}
-        maxWidth="sm"
-        fullWidth
+        maxWidth={false}
+        transitionDuration={{ enter: 180, exit: 140 }}
         PaperProps={{
           sx: {
-            borderRadius: "20px",
+            width: 600,
+            maxWidth: "94vw",
+            maxHeight: "calc(100vh - 64px)",
+            borderRadius: "24px",
             backgroundImage: "none",
-            bgcolor: isDark
-              ? alpha(theme.palette.background.paper, 0.9)
-              : "#fff",
-            backdropFilter: "blur(12px)",
-            border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
-            boxShadow: theme.shadows[20],
+            display: "flex",
+            flexDirection: "column",
+            overflow: "hidden",
           },
         }}
       >
-        <DialogTitle
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            gap: 1.5,
-            pb: 1,
-            fontWeight: 600,
-          }}
-        >
-          <EventIcon color="primary" fontSize="large" />
-          {initialEvent ? "Редактировать событие" : "Новое событие"}
-        </DialogTitle>
+        <Box sx={{ p: 3, pb: 2, overflowY: "auto" }}>
+          <Typography
+            variant="h6"
+            sx={{ textAlign: "center", fontWeight: 700, mb: 3 }}
+          >
+            {initialEvent ? "Редактировать событие" : "Новое событие"}
+          </Typography>
 
-        <DialogContent sx={{ pt: "16px !important" }}>
           <Stack spacing={2.5}>
-            {/* Секция: Тип и Дата (Основные данные) */}
-            <Box
-              sx={{
-                p: 2,
-                borderRadius: "16px",
-                bgcolor: alpha(theme.palette.primary.main, 0.03),
-                border: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`,
-                display: "flex",
-                flexDirection: "column",
-                gap: 2,
-              }}
-            >
-              <TextField
-                select
-                label="Категория события"
-                value={type.name}
-                onChange={(e) =>
-                  setType(EVENT_TYPES.find((i) => i.name === e.target.value))
-                }
-                size="small"
-                fullWidth
-                SelectProps={{
-                  MenuProps: {
-                    PaperProps: {
-                      sx: {
-                        borderRadius: "12px",
-                        mt: 1,
-                        boxShadow: theme.shadows[10],
-                      },
-                    },
-                  },
-                  renderValue: (selected) => {
-                    const eventType = EVENT_TYPES.find(
-                      (t) => t.name === selected,
-                    );
-                    return (
-                      <Box
-                        sx={{ display: "flex", alignItems: "center", gap: 1.5 }}
-                      >
+            <Box>
+              <Typography variant="overline" sx={sectionLabelSx}>
+                Основное
+              </Typography>
+              <Stack spacing={2}>
+                <TextField
+                  select
+                  label="Категория события"
+                  value={type.name}
+                  onChange={(e) =>
+                    setType(
+                      EVENT_TYPES.find((i) => i.name === e.target.value),
+                    )
+                  }
+                  size="small"
+                  fullWidth
+                  sx={fieldSx}
+                  SelectProps={{
+                    renderValue: (selected) => {
+                      const eventType = EVENT_TYPES.find(
+                        (t) => t.name === selected,
+                      );
+                      return (
                         <Box
                           sx={{
-                            color: theme.palette.primary.main,
                             display: "flex",
+                            alignItems: "center",
+                            gap: 1.5,
                           }}
                         >
-                          {eventType?.icon}
+                          <Box
+                            sx={{
+                              color: "primary.main",
+                              display: "flex",
+                            }}
+                          >
+                            {eventType?.icon}
+                          </Box>
+                          <Typography variant="body2" fontWeight={500}>
+                            {eventType?.name}
+                          </Typography>
                         </Box>
-                        <Typography variant="body2" fontWeight={500}>
-                          {eventType?.name}
-                        </Typography>
-                      </Box>
-                    );
-                  },
-                }}
-              >
-                {EVENT_TYPES.map((t) => (
-                  <MenuItem
-                    key={t.name}
-                    value={t.name}
-                    sx={{ gap: 1.5, mx: 1, my: 0.5, borderRadius: "8px" }}
-                  >
-                    <Box sx={{ color: theme.palette.primary.main }}>
-                      {t.icon}
-                    </Box>
-                    <ListItemText primary={t.name} />
-                  </MenuItem>
-                ))}
-              </TextField>
+                      );
+                    },
+                  }}
+                >
+                  {EVENT_TYPES.map((t) => (
+                    <MenuItem
+                      key={t.name}
+                      value={t.name}
+                      sx={{ gap: 1.5, mx: 1, my: 0.5, borderRadius: "8px" }}
+                    >
+                      <Box sx={{ color: "primary.main" }}>{t.icon}</Box>
+                      <ListItemText primary={t.name} />
+                    </MenuItem>
+                  ))}
+                </TextField>
 
-              <TextField
-                label="Когда произошло?"
-                value={date}
-                onClick={() => setDatePickerOpen(true)}
-                size="small"
-                fullWidth
-                placeholder="Нажмите для выбора даты"
-                InputProps={{
-                  readOnly: true,
-                  sx: { cursor: "pointer", borderRadius: "10px" },
-                }}
-              />
+                <TextField
+                  label="Когда произошло?"
+                  value={date}
+                  onClick={() => setDatePickerOpen(true)}
+                  size="small"
+                  fullWidth
+                  sx={fieldSx}
+                  placeholder="Нажмите для выбора даты"
+                  InputProps={{
+                    readOnly: true,
+                    sx: { cursor: "pointer" },
+                  }}
+                />
+              </Stack>
             </Box>
 
-            {/* Секция: Описание и Место */}
-            <Stack spacing={2}>
-              <TextField
-                label="Краткое описание"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                size="small"
-                fullWidth
-                placeholder="Напр: Переезд в другой город"
-              />
-              <TextField
-                multiline
-                rows={2}
-                label="Место"
-                value={place}
-                onChange={(e) => setPlace(e.target.value)}
-                size="small"
-                fullWidth
-              />
-              <Stack direction="row" spacing={1} alignItems="center">
-                <Button
+            <Box>
+              <Typography variant="overline" sx={sectionLabelSx}>
+                Описание и место
+              </Typography>
+              <Stack spacing={2}>
+                <TextField
+                  label="Краткое описание"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
                   size="small"
-                  variant="outlined"
-                  startIcon={<MapIcon />}
-                  onClick={() => setLocationPickerOpen(true)}
-                  sx={{ borderRadius: "10px", textTransform: "none" }}
-                >
-                  {evLat != null && evLng != null
-                    ? `${Number(evLat).toFixed(4)}, ${Number(evLng).toFixed(4)} — на карте`
-                    : "Указать на карте"}
-                </Button>
-                {evLat != null && evLng != null && (
-                  <Button
-                    size="small"
-                    variant="text"
-                    onClick={() => {
-                      setEvLat(null);
-                      setEvLng(null);
-                    }}
-                    sx={{ textTransform: "none" }}
-                  >
-                    Убрать
-                  </Button>
-                )}
-              </Stack>
+                  fullWidth
+                  sx={fieldSx}
+                  placeholder="Напр: Переезд в другой город"
+                />
+                <TextField
+                  label="Место"
+                  value={place}
+                  onChange={(e) => setPlace(e.target.value)}
+                  size="small"
+                  fullWidth
+                  sx={fieldSx}
+                  placeholder="Напр: Киев"
+                  helperText={
+                    evLat != null && evLng != null
+                      ? `Координаты: ${Number(evLat).toFixed(4)}, ${Number(evLng).toFixed(4)}`
+                      : "Можно указать точку на карте"
+                  }
+                  InputProps={{
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <Tooltip title="Указать на карте">
+                          <IconButton
+                            size="small"
+                            color={
+                              evLat != null && evLng != null
+                                ? "primary"
+                                : "default"
+                            }
+                            onClick={() => setLocationPickerOpen(true)}
+                          >
+                            <MapIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                        {(place.trim() !== "" ||
+                          (evLat != null && evLng != null)) && (
+                          <Tooltip title="Очистить">
+                            <IconButton
+                              size="small"
+                              onClick={() => {
+                                setPlace("");
+                                setEvLat(null);
+                                setEvLng(null);
+                              }}
+                            >
+                              <CloseIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        )}
+                      </InputAdornment>
+                    ),
+                  }}
+                />
 
-              <Stack direction="row" spacing={2}>
                 <TextField
                   label="Примечания"
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   size="small"
                   fullWidth
+                  sx={fieldSx}
                 />
               </Stack>
-            </Stack>
+            </Box>
 
-            {/* Секция: Участники */}
-            <Box
-              sx={{
-                p: 2,
-                borderRadius: "12px",
-                bgcolor: alpha(theme.palette.action.hover, 0.04),
-                border: `1px dashed ${alpha(theme.palette.divider, 0.2)}`,
-              }}
-            >
-              <Typography
-                variant="caption"
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 0.5,
-                  mb: 1,
-                  color: "text.secondary",
-                  fontWeight: 600,
-                }}
-              >
-                <PeopleAltIcon sx={{ fontSize: 14 }} /> УЧАСТНИКИ
+            <Box>
+              <Typography variant="overline" sx={sectionLabelSx}>
+                Участники
               </Typography>
               <Autocomplete
                 size="small"
@@ -322,75 +313,44 @@ export default function EventEditorDialog({
                 renderInput={(params) => (
                   <TextField
                     {...params}
-                    variant="standard"
+                    label="Участники"
                     placeholder="Родственники или справочник..."
                     fullWidth
+                    sx={fieldSx}
                   />
                 )}
-                sx={{
-                  "& .MuiInput-underline:before": {
-                    borderBottomColor: alpha(theme.palette.divider, 0.2),
-                  },
-                }}
               />
             </Box>
           </Stack>
-        </DialogContent>
+        </Box>
 
-        <DialogActions sx={{ p: 3, pt: 1 }}>
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            gap: 1,
+            p: 2,
+            pt: 1,
+          }}
+        >
           {initialEvent && (
-            <Button
-              color="error"
+            <AppButton
+              preset="dangerOutlined"
               onClick={handleDelete}
-              sx={{
-                height: 24,
-                borderRadius: "6px",
-                py: 1.2,
-                px: 2,
-                mr: "auto",
-                textTransform: "none",
-                fontWeight: 500,
-                fontSize: "0.95rem",
-                color: (theme) =>
-                  theme.palette.mode === "dark" ? "#FF453A" : "#FF3B30", // macOS Red
-                bgcolor: (theme) => alpha(theme.palette.error.main, 0.08), // Легкий тинт вместо рамки
-                "&:hover": {
-                  bgcolor: (theme) => alpha(theme.palette.error.main, 0.15),
-                },
-              }}
+              sx={{ px: 2.5, borderRadius: "999px" }}
             >
               Удалить
-            </Button>
+            </AppButton>
           )}
-
           {initialEvent && (
-            <Button
-              // variant="outlined"
-              startIcon={<ContentCopyIcon fontSize="12px" />}
-              sx={{
-                height: 24,
-                borderRadius: "6px",
-                py: 1.2,
-                px: 3.6,
-                textTransform: "none",
-                fontWeight: 600,
-                fontSize: "0.95rem",
-                color: "text.primary",
-                bgcolor: (theme) =>
-                  theme.palette.mode === "dark"
-                    ? "rgba(255,255,255,0.05)"
-                    : "rgba(0,0,0,0.05)",
-                "&:hover": {
-                  bgcolor: (theme) =>
-                    theme.palette.mode === "dark"
-                      ? "rgba(255,255,255,0.1)"
-                      : "rgba(0,0,0,0.1)",
-                },
-              }}
+            <AppButton
+              preset="secondary"
+              startIcon={<ContentCopyIcon />}
+              sx={{ px: 2.5, borderRadius: "999px" }}
               onClick={() => {
                 const { participants, externalParticipants } =
                   splitEventParticipantOptions(participantOptions);
-                const dataToCopy = {
+                onCopyRequest?.({
                   type: type.name,
                   date,
                   description,
@@ -400,55 +360,28 @@ export default function EventEditorDialog({
                   lng: evLng,
                   participants,
                   externalParticipants,
-                };
-                onCopyRequest?.(dataToCopy);
+                });
               }}
             >
               Копия
-            </Button>
+            </AppButton>
           )}
-
-          <Button
+          <AppButton
+            preset="secondary"
             onClick={onClose}
-            sx={{
-              height: 24,
-              borderRadius: "6px",
-              py: 1.2,
-              px: 2,
-              textTransform: "none",
-              fontWeight: 600,
-              fontSize: "0.95rem",
-              color: "text.primary",
-              bgcolor: (theme) =>
-                theme.palette.mode === "dark"
-                  ? "rgba(255,255,255,0.05)"
-                  : "rgba(0,0,0,0.05)",
-              "&:hover": {
-                bgcolor: (theme) =>
-                  theme.palette.mode === "dark"
-                    ? "rgba(255,255,255,0.1)"
-                    : "rgba(0,0,0,0.1)",
-              },
-            }}
+            sx={{ px: 2.5, borderRadius: "999px" }}
           >
-            Отменить
-          </Button>
-
-          <Button
-            variant="contained"
+            Отмена
+          </AppButton>
+          <Box sx={{ flex: 1 }} />
+          <AppButton
+            preset="primary"
             onClick={handleSave}
-            disableElevation
-            sx={{
-              height: 24,
-              borderRadius: "6px",
-              px: 3,
-              fontWeight: 600,
-              boxShadow: `0 4px 14px 0 ${alpha(theme.palette.primary.main, 0.39)}`,
-            }}
+            sx={{ px: 3, borderRadius: "999px" }}
           >
             {initialEvent ? "Обновить" : "Сохранить"}
-          </Button>
-        </DialogActions>
+          </AppButton>
+        </Box>
       </Dialog>
 
       {/* Встраиваем кастомный дейтпикер */}

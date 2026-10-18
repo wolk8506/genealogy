@@ -5,34 +5,33 @@ import {
   Typography,
   TextField,
   MenuItem,
-  Button,
   Alert,
   Autocomplete,
   Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  IconButton,
-  alpha,
   Box,
   Grid,
   CircularProgress,
 } from "@mui/material";
-import { useTheme } from "@mui/material/styles";
-import CloseIcon from "@mui/icons-material/Close";
-import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
-import AccountTreeIcon from "@mui/icons-material/AccountTree";
 import FemaleIcon from "@mui/icons-material/Female";
 import MaleIcon from "@mui/icons-material/Male";
 import CustomDatePickerDialog from "../../components/CustomDatePickerDialog";
 import NumberField from "../NumberField";
+import AppButton from "../AppButton";
 import { useNotificationStore } from "../../store/useNotificationStore";
-import PersonFillBadgePlusIcon from "../svg/PersonFillBadgePlusIcon";
 import useDialogSaveHotkey from "../../hooks/useDialogSaveHotkey";
 
+const fieldSx = {
+  "& .MuiOutlinedInput-root": { borderRadius: "12px" },
+};
+
+const sectionLabelSx = {
+  display: "block",
+  mb: 1,
+  fontWeight: 700,
+  color: "text.secondary",
+};
+
 export default function AddPersonModal({ open, onClose }) {
-  const theme = useTheme();
-  const isDark = theme.palette.mode === "dark";
   const { enqueueSnackbar } = useSnackbar();
   const [allPeople, setAllPeople] = useState([]);
   const [birthdayPickerOpen, setBirthdayPickerOpen] = useState(false);
@@ -126,7 +125,6 @@ export default function AddPersonModal({ open, onClose }) {
   };
 
   const handleSave = async () => {
-    setSaving(true);
     setError("");
     // ... (Вся ваша логика handleSave остается идентичной)
     if (!gender) {
@@ -161,6 +159,7 @@ export default function AddPersonModal({ open, onClose }) {
 
     const newId = generateId(genNum);
     const now = new Date().toISOString();
+    setSaving(true);
 
     const newPersonObj = {
       id: newId,
@@ -287,69 +286,37 @@ export default function AddPersonModal({ open, onClose }) {
       <Dialog
         open={open}
         onClose={onClose}
-        fullWidth
-        maxWidth="md" // Немного увеличим для удобства двух колонок
-        scroll="paper"
+        maxWidth="sm"
+        transitionDuration={{ enter: 180, exit: 140 }}
         PaperProps={{
           sx: {
             borderRadius: "24px",
             backgroundImage: "none",
-            bgcolor: isDark
-              ? alpha(theme.palette.background.paper, 0.85)
-              : "#fff",
-            backdropFilter: "blur(16px)",
-            border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
-            boxShadow: theme.shadows[24],
+            width: 600,
+            maxWidth: "94vw",
+            overflow: "hidden",
           },
         }}
       >
-        <DialogTitle
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            fontWeight: 600,
-            gap: 1.5,
-          }}
-        >
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-            <PersonFillBadgePlusIcon color="primary" sx={{ fontSize: 20 }} />
-            Добавить человека
-          </Box>
-          <IconButton
-            onClick={onClose}
-            size="small"
-            sx={{ color: "text.secondary" }}
+        <Box sx={{ p: 3, pb: 2 }}>
+          <Typography
+            variant="h6"
+            sx={{ textAlign: "center", fontWeight: 700, mb: 2.5 }}
           >
-            <CloseIcon />
-          </IconButton>
-        </DialogTitle>
+            Добавить человека
+          </Typography>
 
-        <DialogContent
-          dividers
-          sx={{ pt: "20px !important", borderBottom: "none" }}
-        >
-          <Stack spacing={4}>
-            {error && (
-              <Alert severity="error" sx={{ borderRadius: "12px" }}>
-                {error}
-              </Alert>
-            )}
+          {error && (
+            <Alert severity="error" sx={{ borderRadius: "12px", mb: 2 }}>
+              {error}
+            </Alert>
+          )}
 
-            {/* Секция 1: Личные данные (2 колонки) */}
+          <Stack spacing={2.5}>
+            {/* Секция 1: Личные данные */}
             <Box>
-              <Typography
-                variant="overline"
-                sx={{
-                  color: "primary.main",
-                  fontWeight: 700,
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 1,
-                  mb: 2,
-                }}
-              >
-                <PersonFillBadgePlusIcon sx={{ fontSize: 16 }} /> Личные данные
+              <Typography variant="overline" sx={sectionLabelSx}>
+                Личные данные
               </Typography>
               <Grid container spacing={2}>
                 <Grid size={{ xs: 12, sm: 4 }}>
@@ -357,6 +324,7 @@ export default function AddPersonModal({ open, onClose }) {
                     label="Фамилия"
                     size="small"
                     fullWidth
+                    sx={fieldSx}
                     value={lastName}
                     onChange={(e) => setLastName(e.target.value)}
                   />
@@ -366,6 +334,7 @@ export default function AddPersonModal({ open, onClose }) {
                     label="Имя"
                     size="small"
                     fullWidth
+                    sx={fieldSx}
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
                   />
@@ -375,6 +344,7 @@ export default function AddPersonModal({ open, onClose }) {
                     label="Отчество"
                     size="small"
                     fullWidth
+                    sx={fieldSx}
                     value={patronymic}
                     onChange={(e) => setPatronymic(e.target.value)}
                   />
@@ -385,7 +355,7 @@ export default function AddPersonModal({ open, onClose }) {
                     select
                     size="small"
                     fullWidth
-                    sx={{ width: "200px" }}
+                    sx={fieldSx}
                     value={gender}
                     onChange={(e) => setGender(e.target.value)}
                     InputProps={{
@@ -415,6 +385,7 @@ export default function AddPersonModal({ open, onClose }) {
                     label="Девичья фамилия"
                     size="small"
                     fullWidth
+                    sx={fieldSx}
                     disabled={gender !== "female"}
                     value={maidenName}
                     onChange={(e) => setMaidenName(e.target.value)}
@@ -424,65 +395,35 @@ export default function AddPersonModal({ open, onClose }) {
               </Grid>
             </Box>
 
-            {/* Секция 2: Даты и поколение (Стиль карточки) */}
-            <Box
-              sx={{
-                p: 2,
-                borderRadius: "16px",
-                bgcolor: alpha(theme.palette.action.hover, 0.04),
-                border: `1px solid ${alpha(theme.palette.divider, 0.05)}`,
-              }}
-            >
-              <Typography
-                variant="overline"
-                sx={{
-                  color: "text.secondary",
-                  fontWeight: 700,
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 1,
-                  mb: 2,
-                }}
-              >
-                <CalendarTodayIcon sx={{ fontSize: 18 }} /> Даты и поколение
+            {/* Секция 2: Даты и поколение */}
+            <Box>
+              <Typography variant="overline" sx={sectionLabelSx}>
+                Даты и поколение
               </Typography>
               <Grid container spacing={2}>
-                <Grid size={{ xs: 12, sm: 5 }}>
+                <Grid size={{ xs: 12, sm: 4.4 }}>
                   <TextField
                     label="Рождение"
                     size="small"
                     fullWidth
+                    sx={fieldSx}
                     value={birthday}
                     onClick={() => setBirthdayPickerOpen(true)}
-                    InputProps={{
-                      readOnly: true,
-                      sx: { borderRadius: "10px" },
-                    }}
+                    InputProps={{ readOnly: true }}
                   />
                 </Grid>
-                <Grid size={{ xs: 12, sm: 5 }}>
+                <Grid size={{ xs: 12, sm: 4.4 }}>
                   <TextField
                     label="Смерть"
                     size="small"
                     fullWidth
+                    sx={fieldSx}
                     value={died}
                     onClick={() => setDiedPickerOpen(true)}
-                    InputProps={{
-                      readOnly: true,
-                      sx: { borderRadius: "10px" },
-                    }}
+                    InputProps={{ readOnly: true }}
                   />
                 </Grid>
-                <Grid size={{ xs: 12, sm: 2 }}>
-                  {/* <TextField
-                    label="Поколение"
-                    size="small"
-                    fullWidth
-                    type="number"
-                    inputProps={{ min: 1 }}
-                    value={generation}
-                    onChange={(e) => setGeneration(e.target.value)}
-                  /> */}
+                <Grid size={{ xs: 12, sm: 3.2 }}>
                   <NumberField
                     label="Поколение"
                     size="small"
@@ -490,9 +431,6 @@ export default function AddPersonModal({ open, onClose }) {
                     min={1}
                     max={20}
                     value={generation}
-                    // Попробуйте оба варианта, если один не сработает:
-                    // onValueChange={(val) => setGeneration(val)}
-                    // onChange={(val) => setGeneration(val)}
                     onValueChange={handleGenerationChange}
                     onChange={handleGenerationChange}
                   />
@@ -502,24 +440,14 @@ export default function AddPersonModal({ open, onClose }) {
 
             {/* Секция 3: Родственные связи */}
             <Box>
-              <Typography
-                variant="overline"
-                sx={{
-                  color: "text.secondary",
-                  fontWeight: 700,
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 1,
-                  mb: 2,
-                }}
-              >
-                <AccountTreeIcon sx={{ fontSize: 18 }} /> Родственные связи
+              <Typography variant="overline" sx={sectionLabelSx}>
+                Родственные связи
               </Typography>
               <Stack spacing={2}>
                 <Grid container spacing={2}>
                   <Grid size={{ xs: 12, sm: 6 }}>
                     <Autocomplete
-                      sx={{ width: "416px" }}
+                      sx={fieldSx}
                       size="small"
                       options={byGen(genNum - 1).filter(
                         (p) => p.gender === "male",
@@ -534,7 +462,7 @@ export default function AddPersonModal({ open, onClose }) {
                   </Grid>
                   <Grid size={{ xs: 12, sm: 6 }}>
                     <Autocomplete
-                      sx={{ width: "416px" }}
+                      sx={fieldSx}
                       size="small"
                       options={byGen(genNum - 1).filter(
                         (p) => p.gender === "female",
@@ -562,6 +490,7 @@ export default function AddPersonModal({ open, onClose }) {
                 <Autocomplete
                   size="small"
                   multiple
+                  sx={fieldSx}
                   options={byGen(genNum).filter(
                     (p) => p.gender && p.gender !== gender,
                   )}
@@ -575,6 +504,7 @@ export default function AddPersonModal({ open, onClose }) {
                 <Autocomplete
                   size="small"
                   multiple
+                  sx={fieldSx}
                   options={byGen(genNum + 1).filter((p) => {
                     if (gender === "male") return !p.father;
                     if (gender === "female") return !p.mother;
@@ -590,72 +520,37 @@ export default function AddPersonModal({ open, onClose }) {
               </Stack>
             </Box>
           </Stack>
-        </DialogContent>
+        </Box>
 
-        <DialogActions sx={{ p: 3, pt: 1 }}>
-          <Button
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            p: 2,
+            pt: 0,
+          }}
+        >
+          <AppButton
+            preset="secondary"
             onClick={onClose}
-            sx={{
-              height: 24,
-              borderRadius: "6px",
-              py: 1.2,
-              px: 3.6,
-              textTransform: "none",
-              fontWeight: 600,
-              fontSize: "0.95rem",
-              color: "text.primary",
-              bgcolor: (theme) =>
-                theme.palette.mode === "dark"
-                  ? "rgba(255,255,255,0.05)"
-                  : "rgba(0,0,0,0.05)",
-              "&:hover": {
-                bgcolor: (theme) =>
-                  theme.palette.mode === "dark"
-                    ? "rgba(255,255,255,0.1)"
-                    : "rgba(0,0,0,0.1)",
-              },
-            }}
+            sx={{ px: 2.5, borderRadius: "999px" }}
           >
-            Отменить
-          </Button>
-          {/* <Button
-            onClick={handleSave}
-            variant="contained"
-            disableElevation
-            sx={{
-              borderRadius: "10px",
-              px: 4,
-              fontWeight: 600,
-              boxShadow: `0 4px 14px 0 ${alpha(theme.palette.primary.main, 0.39)}`,
-            }}
-          >
-            Сохранить
-          </Button> */}
-          <Button
-            variant="contained"
+            Отмена
+          </AppButton>
+          <AppButton
+            preset="primary"
             onClick={handleSave}
             disabled={saving}
-            disableElevation
-            sx={{
-              height: 24,
-              borderRadius: "6px",
-              px: 3,
-              // py: 1.2,
-              textTransform: "none",
-              fontWeight: 700,
-              boxShadow: `0 8px 20px -6px ${alpha(theme.palette.primary.main, 0.5)}`,
-              "&:hover": {
-                boxShadow: `0 12px 25px -6px ${alpha(theme.palette.primary.main, 0.6)}`,
-              },
-            }}
+            sx={{ px: 3, borderRadius: "999px" }}
           >
             {saving ? (
-              <CircularProgress size={22} color="inherit" />
+              <CircularProgress size={18} color="inherit" />
             ) : (
               "Сохранить"
             )}
-          </Button>
-        </DialogActions>
+          </AppButton>
+        </Box>
       </Dialog>
 
       {/* Пикеры дат вынесены из Dialog для корректного отображения слоев */}

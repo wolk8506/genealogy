@@ -96,11 +96,13 @@ import { NotificationBell } from "./NotificationBell";
 import InspectorPanel from "./InspectorPanel";
 import ExternalInspectorPanel from "./ExternalInspectorPanel";
 import MapInspectorPanel from "./MapInspectorPanel";
+import PhotoInspectorPanel from "./PhotoInspectorPanel";
 import SidebarRightIcon from "../components/svg/SidebarRightIcon";
 import useMemories from "../hooks/useMemories";
 import { countPendingReviewFaces, countNoFacePhotos } from "../utils/photoFaces";
 import { useFaceReviewStore } from "../store/useFaceReviewStore";
 import { usePeopleListStore } from "../store/usePeopleListStore";
+import { usePhotoInspectorStore } from "../store/usePhotoInspectorStore";
 
 import GalleryToolbar from "./bar_GlobalPhotoGallery/GalleryToolbar";
 import TimelineToolbar from "./bar_Timeline/TimelineToolbar";
@@ -484,6 +486,16 @@ export default function MainLayout() {
   }, [location.pathname, searchParams]);
   // Проверяем, на странице ли мы галереи
   const isGalleryPage = location.pathname === "/globalPhotoGallery";
+  // Вкладка «Фото» на странице человека — тоже использует панель-инспектор.
+  const isPersonPhotoPage =
+    Boolean(match) && activeElement === "photo";
+
+  // Правая панель-инспектор фото (галерея). При уходе со страницы — сброс.
+  const photoPanelOpen = usePhotoInspectorStore((s) => s.open);
+  useEffect(() => {
+    if (!isGalleryPage && !isPersonPhotoPage)
+      usePhotoInspectorStore.getState().reset();
+  }, [isGalleryPage, isPersonPhotoPage]);
 
   // Открывает лицензию
   useEffect(() => {
@@ -869,8 +881,8 @@ export default function MainLayout() {
               />
             )}
 
-            {/* Кнопка правой панели — главная, справочник, карта */}
-            {(isMainPage || isExternalPage || isMapPage) && (
+            {/* Кнопка правой панели — главная, справочник, карта, галерея */}
+            {(isMainPage || isExternalPage || isMapPage || isGalleryPage) && (
               <Box sx={{ ml: "12px", display: "inline-flex" }}>
                 <ButtonConteiner>
                   <IconButton
@@ -878,6 +890,8 @@ export default function MainLayout() {
                     onClick={() => {
                       if (isExternalPage) setExternalPanelOpen((v) => !v);
                       else if (isMapPage) setMapPanelOpen((v) => !v);
+                      else if (isGalleryPage)
+                        usePhotoInspectorStore.getState().toggle();
                       else setMemoriesOpen((v) => !v);
                     }}
                     size="small"
@@ -930,7 +944,9 @@ export default function MainLayout() {
             marginRight:
               (isMainPage && memoriesOpen) ||
               (isExternalPage && externalPanelOpen) ||
-              (isMapPage && mapPanelOpen)
+              (isMapPage && mapPanelOpen) ||
+              (isGalleryPage && photoPanelOpen) ||
+              (isPersonPhotoPage && photoPanelOpen)
                 ? "340px"
                 : 0,
             transition: "margin-right 0.3s ease",
@@ -1130,6 +1146,9 @@ export default function MainLayout() {
             setMapFocusTrigger((t) => t + 1);
           }}
         />
+      )}
+      {(isGalleryPage || isPersonPhotoPage) && (
+        <PhotoInspectorPanel allPeople={allPeople} />
       )}
       <ChangelogModal />
       <UserGuideModal />
