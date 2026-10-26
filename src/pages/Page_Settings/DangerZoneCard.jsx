@@ -7,25 +7,26 @@ import {
   TextField,
   Card,
   Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogContentText,
-  DialogActions,
 } from "@mui/material";
 import { useNotificationStore } from "../../store/useNotificationStore";
 import { DeleteForever as DeleteForeverIcon } from "@mui/icons-material";
-import { useTheme } from "@mui/material/styles";
 import WarningAmberIcon from "@mui/icons-material/WarningAmber";
+import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import ConfirmDialog from "../../components/Dialog/ConfirmDialog";
 import AppButton from "../../components/AppButton";
-
-import { alpha } from "@mui/material/styles";
-
+import DialogActionButton, {
+  DialogActionsBar,
+} from "../../components/Dialog/DialogActionButton";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
+import {
+  groupSx,
+  sectionLabelSx,
+  RowIcon,
+  RowDivider,
+  SettingsRow,
+} from "./settingsUi";
 
 export const DangerZoneCard = ({ cardStyle }) => {
-  const theme = useTheme();
-  const isDark = theme.palette.mode === "dark";
   const addNotification = useNotificationStore(
     (state) => state.addNotification,
   );
@@ -50,7 +51,7 @@ export const DangerZoneCard = ({ cardStyle }) => {
         });
         addNotification({
           timestamp: new Date().toISOString(),
-          title: "⚠️ Опасная зона",
+          title: "⚠️ Удаление данных",
           message: `Данные (${label}) успешно удалены`,
           type: "success",
           category: "dangerZone",
@@ -61,7 +62,7 @@ export const DangerZoneCard = ({ cardStyle }) => {
         });
         addNotification({
           timestamp: new Date().toISOString(),
-          title: "⚠️ Опасная зона",
+          title: "⚠️ Удаление данных",
           message: `Не удалось удалить ${label}`,
           type: "error",
           category: "dangerZone",
@@ -74,7 +75,7 @@ export const DangerZoneCard = ({ cardStyle }) => {
       });
       addNotification({
         timestamp: new Date().toISOString(),
-        title: "⚠️ Опасная зона",
+        title: "⚠️ Удаление данных",
         message: "Произошла системная ошибка при удалении",
         type: "error",
         category: "dangerZone",
@@ -103,7 +104,7 @@ export const DangerZoneCard = ({ cardStyle }) => {
         });
         addNotification({
           timestamp: new Date().toISOString(),
-          title: "⚠️ Опасная зона",
+          title: "⚠️ Удаление данных",
           message: `Все данные (база и фото) полностью удалены`,
           type: "success",
           category: "dangerZone",
@@ -117,7 +118,7 @@ export const DangerZoneCard = ({ cardStyle }) => {
       });
       addNotification({
         timestamp: new Date().toISOString(),
-        title: "⚠️ Опасная зона",
+        title: "⚠️ Удаление данных",
         message: "Ошибка при очистке: " + err.message,
         type: "error",
         category: "dangerZone",
@@ -128,194 +129,152 @@ export const DangerZoneCard = ({ cardStyle }) => {
     <Card
       variant="outlined"
       sx={{
-        // width: "100%",
         ...cardStyle,
-        // width: "600px",
-        // p: 2.5,
-        // borderRadius: 3,
-        border: "1px dashed",
-        borderColor: "error.main",
-        bgcolor: alpha(theme.palette.error.main, 0.02),
-        // flexGrow: 1,
+        borderRadius: "18px",
+        border: "none",
+        bgcolor: "transparent",
+        boxShadow: "none",
       }}
     >
-      {/* ШАПКА */}
       <Box
         sx={{
-          p: 2,
-          bgcolor: "action.hover",
-          borderBottom: "1px solid",
-          borderColor: "divider",
+          px: 2,
+          pt: 2,
+          pb: 1.5,
           display: "flex",
-          // alignItems: "center",
+          alignItems: "center",
           gap: 1.5,
         }}
       >
-        <WarningAmberIcon color="primary" sx={{ fontSize: 20 }} />
-        <Typography
-          variant="subtitle2"
-          sx={{
-            fontWeight: 800,
-            textTransform: "uppercase",
-            fontSize: "0.7rem",
-            letterSpacing: 1,
-          }}
-        >
-          Опасная зона
-        </Typography>
+        <RowIcon bg="red">
+          <WarningAmberIcon sx={{ fontSize: 18 }} />
+        </RowIcon>
+        <Box sx={{ minWidth: 0 }}>
+          <Typography variant="subtitle1" fontWeight={700} noWrap>
+            Удаление данных
+          </Typography>
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            display="block"
+            noWrap
+          >
+            Необратимые действия с фото и базой
+          </Typography>
+        </Box>
       </Box>
 
-      <Stack
-        sx={{ p: 2.5, height: 470 }}
-        justifyContent={"space-between"}
-        spacing={2.5}
-      >
-        {/* Блок Оригиналы */}
-        <Box
-          sx={{
-            p: 2,
-            borderRadius: 2,
-            bgcolor: isDark ? alpha("#000", 0.2) : "#fff",
-            border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
-          }}
-        >
-          <Typography
-            variant="caption"
-            sx={{
-              fontWeight: 700,
-              color: "text.primary",
-              display: "block",
-              mb: 0.5,
-            }}
-          >
-            ОРИГИНАЛЬНЫЕ ФОТО
-          </Typography>
-          <Typography
-            variant="caption"
-            sx={{
-              color: "text.secondary",
-              display: "block",
-              mb: 1.5,
-              lineHeight: 1.3,
-            }}
-          >
-            Занимают много места, но хранят исходное качество.
-            <Box component="span" sx={{ color: "error.main", fontWeight: 600 }}>
-              {" "}
-              Удаление необратимо
-            </Box>{" "}
-            — вернуть качество после будет невозможно.
-          </Typography>
-          <AppButton
-            preset="dangerOutlined"
-            fullWidth
-            onClick={(e) => {
-              e.currentTarget.blur();
-              setPendingClearType("originals");
-            }}
-          >
-            Удалить оригиналы
-          </AppButton>
-        </Box>
+      <Box sx={{ px: 2, pb: 2 }}>
+        <Stack spacing={2.5}>
+          <Box>
+            <Typography sx={sectionLabelSx}>Медиа</Typography>
+            <Box sx={groupSx}>
+              <Stack divider={<RowDivider />}>
+                <SettingsRow
+                  icon={
+                    <RowIcon bg="red">
+                      <DeleteForeverIcon sx={{ fontSize: 18 }} />
+                    </RowIcon>
+                  }
+                  title="Оригинальные фото"
+                  subtitle="Исходное качество будет потеряно безвозвратно"
+                  trailing={
+                    <AppButton
+                      preset="dangerOutlined"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        e.currentTarget.blur();
+                        setPendingClearType("originals");
+                      }}
+                      sx={{ flexShrink: 0 }}
+                    >
+                      Удалить
+                    </AppButton>
+                  }
+                />
+                <SettingsRow
+                  icon={
+                    <RowIcon bg="orange">
+                      <DeleteForeverIcon sx={{ fontSize: 18 }} />
+                    </RowIcon>
+                  }
+                  title="Кэш WebP и Thumbs"
+                  subtitle="Пересоберётся автоматически при просмотре"
+                  trailing={
+                    <AppButton
+                      preset="dangerOutlined"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        e.currentTarget.blur();
+                        setPendingClearType("cache");
+                      }}
+                      sx={{ flexShrink: 0 }}
+                    >
+                      Удалить
+                    </AppButton>
+                  }
+                />
+              </Stack>
+            </Box>
+          </Box>
 
-        {/* Блок Кэш */}
-        <Box
-          sx={{
-            p: 2,
-            borderRadius: 2,
-            bgcolor: isDark ? alpha("#000", 0.2) : "#fff",
-            border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
-          }}
-        >
-          <Typography
-            variant="caption"
-            sx={{
-              fontWeight: 700,
-              color: "text.primary",
-              display: "block",
-              mb: 0.5,
-            }}
-          >
-            ВРЕМЕННЫЙ КЭШ (WEB-ВЕРСИИ)
-          </Typography>
-          <Typography
-            variant="caption"
-            sx={{
-              color: "text.secondary",
-              display: "block",
-              mb: 1.5,
-              lineHeight: 1.3,
-            }}
-          >
-            Используется для быстрой загрузки превью в браузере. Можно безопасно
-            удалить для очистки места, кэш пересоберется автоматически при
-            просмотре.
-          </Typography>
-          <AppButton
-            preset="dangerOutlined"
-            fullWidth
-            onClick={(e) => {
-              e.currentTarget.blur();
-              setPendingClearType("cache");
-            }}
-          >
-            Удалить кэш
-          </AppButton>
-        </Box>
+          <Box>
+            <Typography sx={sectionLabelSx}>База данных</Typography>
+            <Box sx={groupSx}>
+              <SettingsRow
+                danger
+                icon={
+                  <RowIcon bg="red">
+                    <DeleteForeverIcon sx={{ fontSize: 18 }} />
+                  </RowIcon>
+                }
+                title="Полный сброс базы данных"
+                subtitle="Удалить всех людей и фотографии"
+                trailing={
+                  <ChevronRightIcon
+                    sx={{ fontSize: 20, color: "error.main" }}
+                  />
+                }
+                onClick={(e) => {
+                  e.currentTarget.blur();
+                  setResetDialogOpen(true);
+                }}
+              />
+            </Box>
+          </Box>
 
-        {/* Финальное предупреждение и Сброс */}
-        <Stack spacing={2}>
           <Box
             sx={{
               display: "flex",
               alignItems: "flex-start",
               gap: 1,
-              px: 1,
+              px: 0.5,
               color: "error.main",
             }}
           >
             <InfoOutlinedIcon sx={{ fontSize: 16, mt: 0.2 }} />
             <Typography
               variant="caption"
-              sx={{
-                fontWeight: 600,
-                fontStyle: "italic",
-                lineHeight: 1.2,
-              }}
+              sx={{ fontWeight: 600, lineHeight: 1.4 }}
             >
               Перед удалением убедитесь, что у вас создана резервная копия
               данных на внешнем носителе!
             </Typography>
           </Box>
-
-          <AppButton
-            preset="danger"
-            fullWidth
-            startIcon={<DeleteForeverIcon />}
-            onClick={(e) => {
-              e.currentTarget.blur();
-              setResetDialogOpen(true);
-            }}
-            sx={{
-              py: 1.5,
-              boxShadow: "none",
-              "&:hover": {
-                bgcolor: "error.dark",
-                boxShadow: `0 4px 12px ${alpha(theme.palette.error.main, 0.3)}`,
-              },
-            }}
-          >
-            Полный сброс базы данных
-          </AppButton>
         </Stack>
-      </Stack>
+      </Box>
+
       {/* Диалог подтверждения удаления оригиналов/кэша */}
       <ConfirmDialog
         open={pendingClearType != null}
         title="Удаление данных"
         message={
           pendingClearType
-            ? `Вы уверены, что хотите удалить ${pendingClearType === "originals" ? "оригиналы" : "кэш (webp/thumbs)"}? Это действие необратимо.`
+            ? `Вы уверены, что хотите удалить ${
+                pendingClearType === "originals"
+                  ? "оригиналы"
+                  : "кэш (webp/thumbs)"
+              }? Это действие необратимо.`
             : ""
         }
         confirmLabel="Удалить"
@@ -326,50 +285,60 @@ export const DangerZoneCard = ({ cardStyle }) => {
           else setPendingClearType(null);
         }}
       />
+
       {/* Диалог подтверждения полного удаления */}
       <Dialog
         open={resetDialogOpen}
         onClose={() => setResetDialogOpen(false)}
-        PaperProps={{ sx: { borderRadius: 3, p: 1 } }}
+        maxWidth="xs"
+        fullWidth
+        transitionDuration={{ enter: 180, exit: 140 }}
+        PaperProps={{
+          sx: { borderRadius: "20px", backgroundImage: "none" },
+        }}
       >
-        <DialogTitle sx={{ color: "error.main", fontWeight: "bold" }}>
-          ⚠️ Полная очистка данных
-        </DialogTitle>
-        <DialogContent>
-          <DialogContentText sx={{ mb: 2 }}>
-            Это действие безвозвратно удалит <strong>всех людей</strong> и{" "}
-            <strong>все фотографии</strong> из папки Genealogy. Приложение
-            станет абсолютно чистым.
-          </DialogContentText>
+        <Box sx={{ px: 3, pt: 3, pb: 1 }}>
+          <Typography
+            variant="h6"
+            fontWeight={700}
+            textAlign="center"
+            color="error.main"
+            sx={{ mb: 2 }}
+          >
+            Полная очистка данных
+          </Typography>
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{ mb: 2, lineHeight: 1.5 }}
+          >
+            Это действие безвозвратно удалит <b>всех людей</b> и{" "}
+            <b>все фотографии</b> из папки Genealogy. Приложение станет
+            абсолютно чистым.
+          </Typography>
           <TextField
             fullWidth
             label="Введите слово УДАЛИТЬ"
+            size="small"
             variant="outlined"
             value={resetConfirmText}
             onChange={(e) => setResetConfirmText(e.target.value)}
             autoFocus
+            sx={{ "& .MuiOutlinedInput-root": { borderRadius: "12px" } }}
           />
-        </DialogContent>
-        <DialogActions sx={{ p: 2 }}>
-          <AppButton preset="ghost" onClick={() => setResetDialogOpen(false)}>
-            Отменить
-          </AppButton>
-          <AppButton
-            preset="danger"
+        </Box>
+        <DialogActionsBar sx={{ px: 3, pb: 3, pt: 2 }}>
+          <DialogActionButton onClick={() => setResetDialogOpen(false)}>
+            Отмена
+          </DialogActionButton>
+          <DialogActionButton
+            tone="danger"
             onClick={handleFullReset}
             disabled={resetConfirmText !== "УДАЛИТЬ"}
-            sx={{
-              px: 2,
-              py: 1.2,
-              boxShadow: `0 8px 20px -6px ${alpha(theme.palette.primary.main, 0.5)}`,
-              "&:hover": {
-                boxShadow: `0 12px 25px -6px ${alpha(theme.palette.primary.main, 0.6)}`,
-              },
-            }}
           >
             Удалить всё навсегда
-          </AppButton>
-        </DialogActions>
+          </DialogActionButton>
+        </DialogActionsBar>
       </Dialog>
     </Card>
   );

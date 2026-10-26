@@ -12,6 +12,9 @@ import {
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import CustomDatePickerDialog from "../CustomDatePickerDialog";
 import AppButton from "../AppButton";
+import DialogActionButton, {
+  DialogActionsBar,
+} from "./DialogActionButton";
 import { useNotificationStore } from "../../store/useNotificationStore";
 import {
   ENTITY_TYPES,
@@ -512,7 +515,7 @@ export default function AddExternalEntityDialog({
                 (newRelation.targetKind === "external" &&
                   !newRelation.mainExternalEntityId)
               }
-              sx={{ alignSelf: "flex-start", px: 2.5, borderRadius: "999px" }}
+              sx={{ alignSelf: "flex-start" }}
             >
               + Добавить связь
             </AppButton>
@@ -522,25 +525,18 @@ export default function AddExternalEntityDialog({
         </Stack>
       </Box>
 
-      <Box sx={{ display: "flex", alignItems: "center", gap: 1, p: 2, pt: 1 }}>
-        <AppButton
-          preset="secondary"
-          onClick={onClose}
-          disabled={saving}
-          sx={{ px: 2.5, borderRadius: "999px" }}
-        >
+      <DialogActionsBar>
+        <DialogActionButton onClick={onClose} disabled={saving}>
           Отмена
-        </AppButton>
-        <Box sx={{ flex: 1 }} />
-        <AppButton
-          preset="primary"
+        </DialogActionButton>
+        <DialogActionButton
+          tone="primary"
           onClick={handleSave}
           disabled={saving}
-          sx={{ px: 3, borderRadius: "999px" }}
         >
           {isEdit ? "Сохранить" : "Добавить"}
-        </AppButton>
-      </Box>
+        </DialogActionButton>
+      </DialogActionsBar>
 
       <CustomDatePickerDialog
         open={birthdayPickerOpen}

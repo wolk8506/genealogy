@@ -75,16 +75,19 @@
 // );
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
+import { getAccents } from "../theme/palette";
+
+const TAG_ACCENTS = getAccents("light");
 
 export const DEFAULT_PALETTE = [
-  "#f44336",
-  "#e91e63",
-  "#9c27b0",
-  "#3f51b5",
-  "#2196f3",
-  "#00bcd4",
-  "#4caf50",
-  "#ff9800",
+  TAG_ACCENTS.red,
+  TAG_ACCENTS.pink,
+  TAG_ACCENTS.purple,
+  TAG_ACCENTS.indigo,
+  TAG_ACCENTS.blue,
+  TAG_ACCENTS.cyan,
+  TAG_ACCENTS.green,
+  TAG_ACCENTS.orange,
 ];
 
 const INITIAL_TAGS = [

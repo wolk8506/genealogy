@@ -29,20 +29,42 @@ import NavigateBeforeIcon from "@mui/icons-material/NavigateBefore";
 import NavigateNextIcon from "@mui/icons-material/NavigateNext";
 import PrintIcon from "@mui/icons-material/Print";
 import PictureAsPdfIcon from "@mui/icons-material/PictureAsPdf";
+import SvgIcon from "@mui/material/SvgIcon";
+import { toolbarPillBg, toolbarPillHoverBg, toolbarPillSx } from "../../toolbarStyles";
+
+const HEADER_ICON_PATHS = {
+  1: "M3,4H5V10H9V4H11V18H9V12H5V18H3V4M14,18V16H16V6.31L13.5,7.75V5.44L16,4H18V16H20V18H14Z",
+  2: "M3,4H5V10H9V4H11V18H9V12H5V18H3V4M21,18H15A2,2 0 0,1 13,16C13,15.47 13.2,15 13.54,14.64L18.41,9.41C18.78,9.05 19,8.55 19,8A2,2 0 0,0 17,6A2,2 0 0,0 15,8H13A4,4 0 0,1 17,4A4,4 0 0,1 21,8C21,9.1 20.55,10.1 19.83,10.83L15,16H21V18Z",
+  3: "M3,4H5V10H9V4H11V18H9V12H5V18H3V4M15,4H19A2,2 0 0,1 21,6V16A2,2 0 0,1 19,18H15A2,2 0 0,1 13,16V15H15V16H19V12H15V10H19V6H15V7H13V6A2,2 0 0,1 15,4Z",
+};
+
+function HeaderIcon({ level }) {
+  return (
+    <SvgIcon viewBox="0 0 24 24" fontSize="inherit">
+      <path d={HEADER_ICON_PATHS[level]} />
+    </SvgIcon>
+  );
+}
 
 const ToolbarGroup = ({ children }) => (
   <Box
     sx={{
-      WebkitAppRegion: "no-drag",
+      ...toolbarPillSx,
       display: "inline-flex",
       alignItems: "center",
       gap: 1,
-      border: "1px solid",
-      borderColor: "divider",
-      borderRadius: 7,
-      height: 34,
       fontSize: 20,
-      color: "text.secondary",
+      color: "text.primary",
+      "&:hover": { backgroundColor: toolbarPillBg },
+      "& > .MuiIconButton-root, & > span > .MuiIconButton-root": {
+        width: 36,
+        height: 36,
+        p: "3px",
+        backgroundClip: "content-box",
+      },
+      "& > .MuiIconButton-root:hover:not(.Mui-disabled), & > span > .MuiIconButton-root:hover:not(.Mui-disabled)": {
+        backgroundColor: toolbarPillHoverBg,
+      },
     }}
   >
     {children}
@@ -246,7 +268,7 @@ export default function BioToolbar({
                 sx={{ color: "text.primary", p: 1 }}
                 onClick={() => execRef.current?.exec("WrapInHeading", 1)}
               >
-                <b style={{ fontSize: "16px" }}>H1</b>
+                <HeaderIcon level={1} />
               </IconButton>
             </Tooltip>
             <Tooltip title="Заголовок 2">
@@ -255,7 +277,7 @@ export default function BioToolbar({
                 sx={{ color: "text.primary", p: 1 }}
                 onClick={() => execRef.current?.exec("WrapInHeading", 2)}
               >
-                <b style={{ fontSize: "16px" }}>H2</b>
+                <HeaderIcon level={2} />
               </IconButton>
             </Tooltip>
             <Tooltip title="Заголовок 3">
@@ -264,7 +286,7 @@ export default function BioToolbar({
                 sx={{ color: "text.primary", p: 1 }}
                 onClick={() => execRef.current?.exec("WrapInHeading", 3)}
               >
-                <b style={{ fontSize: "16px" }}>H3</b>
+                <HeaderIcon level={3} />
               </IconButton>
             </Tooltip>
             <Tooltip title="Обычный текст">

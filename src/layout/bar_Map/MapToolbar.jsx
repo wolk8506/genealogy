@@ -7,20 +7,13 @@ import RefreshIcon from "@mui/icons-material/Refresh";
 import FitScreenIcon from "@mui/icons-material/FitScreen";
 import ButtonConteiner from "../../components/ButtonConteiner";
 import ExpandingPeopleSelect from "../bar_GlobalPhotoGallery/ExpandingPeopleSelect";
+import { toolbarPillSx } from "../toolbarStyles";
 
 const Pill = styled(Box)(({ theme }) => ({
-  WebkitAppRegion: "no-drag",
+  ...toolbarPillSx,
   display: "flex",
   alignItems: "center",
-  borderRadius: 20,
-  height: 34,
-  border: "1px solid",
-  borderColor: theme.palette.divider,
   overflow: "hidden",
-  backgroundColor: "action.hover",
-  "&:hover": {
-    borderColor: theme.palette.primary.main,
-  },
 }));
 
 function FilterToggle({ active, onClick, icon, label, title }) {

@@ -98,7 +98,9 @@ export default function AppDrawer({ open, onClose, items }) {
       <List>
         {/* 1. ОБЯЗАТЕЛЬНО вытаскиваем onClick из item */}
         {items.map(({ text, icon, path, onClick }) => {
-          let isActive = location.pathname === path;
+          let isActive =
+            location.pathname === path ||
+            (path !== "/" && location.pathname.startsWith(`${path}/`));
           if (path === "/" && matchPath("/person/:id", location.pathname)) {
             isActive = true;
           }

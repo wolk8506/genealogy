@@ -3,8 +3,6 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
-  DialogActions,
-  Button,
   Stack,
   Typography,
   Box,
@@ -16,7 +14,9 @@ import {
   Chip,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
-import MergeTypeIcon from "@mui/icons-material/MergeType";
+import DialogActionButton, {
+  DialogActionsBar,
+} from "./DialogActionButton";
 import { findDuplicatePersonClusters } from "../../utils/faceIndex";
 import { rebuildReferencesFromDatabase } from "../../services/faceScanService";
 import { getPersonLabel } from "../../utils/photoFaces";
@@ -177,17 +177,16 @@ export default function FaceMergeDialog({
         )}
       </DialogContent>
 
-      <DialogActions>
-        <Button onClick={onClose}>Закрыть</Button>
-        <Button
-          variant="contained"
-          startIcon={<MergeTypeIcon />}
+      <DialogActionsBar>
+        <DialogActionButton onClick={onClose}>Закрыть</DialogActionButton>
+        <DialogActionButton
+          tone="primary"
           disabled={!activeCluster || !selectedKeep || merging}
           onClick={handleMerge}
         >
           {merging ? "Объединение…" : "Объединить"}
-        </Button>
-      </DialogActions>
+        </DialogActionButton>
+      </DialogActionsBar>
     </Dialog>
   );
 }

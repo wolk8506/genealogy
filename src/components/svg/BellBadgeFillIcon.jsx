@@ -1,5 +1,5 @@
 import SvgIcon from "@mui/material/SvgIcon";
-function BellBadgeFillIcon({ dotColor = "#ff9800", ...props }) {
+function BellBadgeFillIcon({ dotColor = "#FF8D28", ...props }) {
   return (
     <SvgIcon {...props} viewBox="0 0 18.7891 20.5566">
       <g fill="currentColor" transform="translate(0, -1.40625)">

@@ -2,7 +2,6 @@ import React, { useEffect, useState, useRef } from "react";
 import {
   Dialog,
   DialogContent,
-  DialogActions,
   Button,
   TextField,
   Stack,
@@ -16,6 +15,9 @@ import {
 } from "@mui/material";
 import { alpha, useTheme } from "@mui/material/styles";
 import CloseIcon from "@mui/icons-material/Close";
+import DialogActionButton, {
+  DialogActionsBar,
+} from "./DialogActionButton";
 import CustomDatePickerDialog from "../CustomDatePickerDialog";
 import EditIcon from "@mui/icons-material/Edit";
 import EditOffIcon from "@mui/icons-material/EditOff";
@@ -577,17 +579,6 @@ export default function PhotoMetaUpdateDialog({
     }
   };
 
-  // Стиль для кнопок из FaceReviewQueueDialog
-  const macButtonStyle = {
-    height: 24,
-    borderRadius: "8px",
-    px: 3,
-    py: 1,
-    textTransform: "none",
-    fontWeight: 600,
-    boxShadow: "none",
-  };
-
   useDialogSaveHotkey({
     open,
     onSave: handleSave,
@@ -1073,7 +1064,7 @@ export default function PhotoMetaUpdateDialog({
                     variant="outlined"
                     startIcon={<MapIcon />}
                     onClick={() => setLocationPickerOpen(true)}
-                    sx={{ borderRadius: "10px", textTransform: "none" }}
+                    sx={{ textTransform: "none" }}
                   >
                     {local.lat != null && local.lng != null
                       ? `${Number(local.lat).toFixed(4)}, ${Number(local.lng).toFixed(4)} — на карте`
@@ -1145,39 +1136,29 @@ export default function PhotoMetaUpdateDialog({
                 </Box>
               </Stack>
             </Box>
-            {/* Футер модального окна (DialogActions в точности как в FaceReviewQueueDialog) */}
-            <DialogActions
+            <DialogActionsBar
               sx={{
                 px: 3,
                 py: 2,
                 borderTop: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
                 bgcolor: isDark ? alpha("#000", 0.2) : alpha("#000", 0.01),
-                justifyContent: "space-around",
-                // gap: 1.5,
               }}
             >
-              <Button
-                onClick={onClose}
-                size="small"
-                variant="outlined"
-                sx={{ ...macButtonStyle }}
-              >
+              <DialogActionButton onClick={onClose}>
                 Отменить
-              </Button>
-              <Button
-                variant="contained"
+              </DialogActionButton>
+              <DialogActionButton
+                tone="primary"
                 onClick={handleSave}
                 disabled={saving}
-                size="small"
-                sx={{ ...macButtonStyle }}
               >
                 {saving ? (
                   <CircularProgress size={16} color="inherit" />
                 ) : (
                   "Сохранить"
                 )}
-              </Button>
-            </DialogActions>
+              </DialogActionButton>
+            </DialogActionsBar>
           </Box>
 
           {/* ПРАВАЯ КОЛОНКА: Превью фотографии */}

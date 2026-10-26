@@ -96,9 +96,10 @@ export default function MapStyleSwitcher({
   const anchorRef = useRef(null);
   const CurrentLayerIcon = LAYER_ICONS[baseLayer] || LAYER_ICONS.osm;
 
-  const glassBg = isDark ? "rgba(30, 37, 48, 0.72)" : "rgba(255, 255, 255, 0.86)";
-  const glassFg = isDark ? "#fff" : "#1c1c1e";
-  const hoverBg = isDark ? "rgba(48, 58, 74, 0.85)" : "rgba(255, 255, 255, 0.95)";
+  const glassBg = theme.palette.glass.surface;
+  const popoverBg = theme.palette.glass.strong;
+  const glassFg = theme.palette.text.primary;
+  const hoverBg = theme.palette.glass.hover;
   const btnSx = {
     width: 36,
     height: 36,
@@ -165,7 +166,7 @@ export default function MapStyleSwitcher({
             sx: {
               borderRadius: "22px",
               p: 2,
-              bgcolor: glassBg,
+              bgcolor: popoverBg,
               color: glassFg,
               backgroundImage: "none",
               backdropFilter: "blur(20px)",
@@ -182,7 +183,7 @@ export default function MapStyleSwitcher({
                 height: 0,
                 borderTop: "9px solid transparent",
                 borderBottom: "9px solid transparent",
-                borderLeft: `9px solid ${glassBg}`,
+                borderLeft: `9px solid ${popoverBg}`,
               },
             },
           },

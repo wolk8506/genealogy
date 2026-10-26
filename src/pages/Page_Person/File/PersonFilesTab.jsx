@@ -1,14 +1,18 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+  useRef,
+} from "react";
 import {
   Box,
   Button,
   Typography,
-  Grid,
   IconButton,
   Dialog,
   DialogTitle,
   DialogContent,
-  DialogActions,
   Stack,
   Divider,
   CircularProgress,
@@ -17,6 +21,9 @@ import {
 } from "@mui/material";
 import { Menu, MenuItem, ListItemIcon, ListItemText } from "@mui/material";
 import { CloudUploadOutlined as UploadIcon } from "@mui/icons-material";
+import DialogActionButton, {
+  DialogActionsBar,
+} from "../../../components/Dialog/DialogActionButton";
 import {
   AudioFile as AudioIcon,
   Description as DocIcon,
@@ -26,30 +33,14 @@ import {
   DriveFileRenameOutline as RenameIcon,
   FolderOpen as FolderOpenIcon,
   OpenInNew as OpenInNewIcon,
+  KeyboardArrowDown as SortArrowIcon,
 } from "@mui/icons-material";
 import { alpha, useTheme } from "@mui/material/styles";
 import VideoFileIcon from "@mui/icons-material/VideoFile";
-import NameSection from "../../../components/NameSection";
-import LibraryMusicIcon from "@mui/icons-material/LibraryMusic";
-import LibraryBooksIcon from "@mui/icons-material/LibraryBooks";
-import PhotoLibraryIcon from "@mui/icons-material/PhotoLibrary";
-import VideoLibraryIcon from "@mui/icons-material/VideoLibrary";
-import SvgIcon from "@mui/material/SvgIcon";
 import CustomAudioPlayer from "./CustomAudioPlayer";
 import { useSettingsStore } from "../../../store/useSettingsStore";
 import { usePersonStore } from "../../../store/usePersonStore";
 import { useNotificationStore } from "../../../store/useNotificationStore";
-
-function DocumentWithMountainsIcon(props) {
-  return (
-    <SvgIcon {...props} viewBox="0 0 24 24">
-      <g fill="currentColor">
-        <path d="M6 2c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm7 7V3.5L18.5 9z" />
-        <path fill="#000" d="M7 18l2.38-3.17L11 17l2.62-3.5L17 18z" />
-      </g>
-    </SvgIcon>
-  );
-}
 
 const ALLOWED_TYPES = {
   "video/mp4": "video",
@@ -92,18 +83,42 @@ const EXT_FALLBACK = {
 
 function formatFileSize(bytes) {
   if (!bytes) return "";
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  const number = (value) => value.toFixed(1).replace(".", ",");
+  if (bytes < 1024) return `${bytes} Б`;
+  if (bytes < 1024 * 1024) return `${number(bytes / 1024)} КБ`;
+  if (bytes < 1024 * 1024 * 1024)
+    return `${number(bytes / (1024 * 1024))} МБ`;
+  return `${number(bytes / (1024 * 1024 * 1024))} ГБ`;
 }
 
-function formatDate(ms) {
-  if (!ms) return "";
-  return new Date(ms).toLocaleString("ru-RU", {
-    day: "2-digit",
-    month: "2-digit",
+function formatFinderDate(ms) {
+  if (!ms) return "—";
+  return new Intl.DateTimeFormat("ru-RU", {
+    day: "numeric",
+    month: "short",
     year: "numeric",
-  });
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).format(new Date(ms));
+}
+
+function getFinderKindLabel(file) {
+  const ext = file.name.split(".").pop()?.toLowerCase();
+  switch (file.type) {
+    case "image":
+      return `Изображение ${ext === "jpg" ? "JPEG" : ext?.toUpperCase()}`;
+    case "video":
+      return ext === "mp4" ? "Фильм MPEG-4" : `Фильм ${ext?.toUpperCase()}`;
+    case "audio":
+      return ext === "m4a" ? "Аудио MPEG-4" : `Аудио ${ext?.toUpperCase()}`;
+    case "doc":
+      return file.name.toLowerCase().endsWith(".pdf")
+        ? "Документ PDF"
+        : "Текстовый документ";
+    default:
+      return "Файл";
+  }
 }
 
 function isPdfFile(file) {
@@ -217,11 +232,37 @@ const contextMenuProps = {
   MenuListProps: { autoFocusItem: false, dense: true },
 };
 
+const FINDER_GRID = "minmax(0, 1fr) 180px 100px 150px";
+const FINDER_FONT =
+  "-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', 'Segoe UI', sans-serif";
+const FINDER_COLUMNS = [
+  { key: "name", label: "Имя" },
+  { key: "mtime", label: "Дата изменения" },
+  { key: "size", label: "Размер" },
+  { key: "kind", label: "Тип" },
+];
+
 export default function PersonFilesTab({ personId }) {
   const appSettings = useSettingsStore((state) => state.appSettings);
   const MAX_FILE_SIZE = appSettings.maxUploadSize * 1024 * 1024 * 1024;
   const theme = useTheme();
+  const isDark = theme.palette.mode === "dark";
   const addNotification = useNotificationStore((state) => state.addNotification);
+
+  const finderColors = {
+    containerBg: isDark ? "#1c1c1e" : "#ffffff",
+    containerBorder: isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.12)",
+    headerBg: isDark ? "#2b2b2d" : "#f5f5f7",
+    headerText: isDark ? "#9a9aa0" : "#6e6e73",
+    headerSeparator: isDark ? "rgba(0,0,0,0.4)" : "rgba(0,0,0,0.1)",
+    rowEven: isDark ? "rgba(255,255,255,0.055)" : "rgba(0,0,0,0.035)",
+    rowHover: isDark ? "rgba(255,255,255,0.11)" : "rgba(0,0,0,0.06)",
+    primaryText: isDark ? "#e8e8ea" : "#1d1d1f",
+    secondaryText: isDark ? "rgba(235,235,245,0.72)" : "rgba(60,60,67,0.65)",
+    iconDoc: isDark ? "#b8c0c8" : "#7a7a80",
+    iconVideo: isDark ? "#c07df0" : "#8944ab",
+    iconAudio: isDark ? "#ff6482" : "#d6335c",
+  };
 
   const [contextMenu, setContextMenu] = useState(null);
   const [renameDialog, setRenameDialog] = useState(null);
@@ -234,18 +275,13 @@ export default function PersonFilesTab({ personId }) {
   const [loading, setLoading] = useState(false);
   const [previewFile, setPreviewFile] = useState(null);
   const [activeAudio, setActiveAudio] = useState(null);
+  const [sort, setSort] = useState({ key: "kind", direction: "asc" });
 
   const menuScrollYRef = useRef(0);
   const fileInputRef = useRef(null);
 
   const setUploadHandler = usePersonStore((state) => state.setUploadHandler);
   const setOpenFolderHandler = usePersonStore((state) => state.setOpenFolderHandler);
-
-  const isFilesEmpty =
-    files.audio.length === 0 &&
-    files.video.length === 0 &&
-    files.image.length === 0 &&
-    files.doc.length === 0;
 
   const preserveViewportScroll = useCallback((action) => {
     const windowY = menuScrollYRef.current;
@@ -498,55 +534,171 @@ export default function PersonFilesTab({ personId }) {
     }
   };
 
-  const renderFileRow = (file, fileIcon) => (
-    <Box
-      key={file.name}
-      display="flex"
-      gap={1.5}
-      alignItems="center"
-      onClick={() => handleFileClick(file)}
-      onContextMenu={(e) => handleContextMenu(e, file)}
-      sx={{
-        cursor: "pointer",
-        p: 1,
-        borderRadius: "12px",
-        "&:hover": { bgcolor: "action.hover" },
-      }}
-    >
-      {file.type === "image" ? (
+  const handleSort = (key) => {
+    setSort((prev) =>
+      prev.key === key
+        ? { key, direction: prev.direction === "asc" ? "desc" : "asc" }
+        : { key, direction: "asc" },
+    );
+  };
+
+  const finderRows = useMemo(() => {
+    const rows = [
+      ...files.image,
+      ...files.video,
+      ...files.audio,
+      ...files.doc,
+    ];
+    const direction = sort.direction === "asc" ? 1 : -1;
+    return rows.sort((a, b) => {
+      let result = 0;
+      switch (sort.key) {
+        case "mtime":
+          result = (a.mtime || 0) - (b.mtime || 0);
+          break;
+        case "size":
+          result = (a.size || 0) - (b.size || 0);
+          break;
+        case "kind":
+          result = getFinderKindLabel(a).localeCompare(
+            getFinderKindLabel(b),
+            "ru",
+            { sensitivity: "base" },
+          );
+          break;
+        default:
+          result = a.name.localeCompare(b.name, "ru", {
+            numeric: true,
+            sensitivity: "base",
+          });
+      }
+      return result * direction;
+    });
+  }, [files, sort]);
+
+  const renderFinderIcon = (file) => {
+    if (file.type === "image") {
+      return (
         <Box
           component="img"
           src={file.path}
           alt={file.name}
           sx={{
-            width: 44,
-            height: 44,
-            borderRadius: 1,
+            width: 16,
+            height: 16,
             objectFit: "cover",
-            flexShrink: 0,
-            bgcolor: "action.selected",
+            borderRadius: "3px",
+            display: "block",
+            boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.18)",
           }}
         />
-      ) : (
-        fileIcon
-      )}
-      <Box sx={{ minWidth: 0, flex: 1 }}>
-        <Typography noWrap>{file.name}</Typography>
-        <Typography variant="caption" color="text.secondary">
-          {[formatFileSize(file.size), formatDate(file.mtime)]
-            .filter(Boolean)
-            .join(" · ")}
+      );
+    }
+
+    if (file.type === "video") {
+      return (
+        <VideoFileIcon sx={{ fontSize: 17, color: finderColors.iconVideo }} />
+      );
+    }
+
+    if (file.type === "audio") {
+      return <AudioIcon sx={{ fontSize: 17, color: finderColors.iconAudio }} />;
+    }
+
+    return <DocIcon sx={{ fontSize: 17, color: finderColors.iconDoc }} />;
+  };
+
+  const finderCellSx = {
+    minWidth: 0,
+    pl: 1.25,
+    pr: 1,
+    display: "flex",
+    alignItems: "center",
+  };
+
+  const renderFinderRow = (file, rowIndex = 0) => (
+    <Box
+      key={file.name}
+      onClick={() => handleFileClick(file)}
+      onContextMenu={(e) => handleContextMenu(e, file)}
+      sx={{
+        display: "grid",
+        gridTemplateColumns: FINDER_GRID,
+        alignItems: "center",
+        height: 24,
+        mx: "6px",
+        borderRadius: "6px",
+        color: finderColors.primaryText,
+        bgcolor: rowIndex % 2 === 0 ? finderColors.rowEven : "transparent",
+        cursor: "pointer",
+        transition: "background-color 0.12s ease",
+        "&:hover": { bgcolor: finderColors.rowHover },
+        fontFamily: FINDER_FONT,
+      }}
+    >
+      <Box sx={{ ...finderCellSx, gap: "6px", pl: "6px", pr: 1 }}>
+        <Box
+          sx={{
+            width: 16,
+            height: 16,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            flexShrink: 0,
+          }}
+        >
+          {renderFinderIcon(file)}
+        </Box>
+        <Typography
+          noWrap
+          sx={{
+            fontSize: 13,
+            fontWeight: 400,
+            lineHeight: 1.2,
+            letterSpacing: "-0.005em",
+            minWidth: 0,
+          }}
+        >
+          {file.name}
         </Typography>
       </Box>
-    </Box>
-  );
 
-  const renderSection = (title, items, icon, fileIcon) => (
-    <Box sx={{ mb: 4 }}>
-      <NameSection title={title} icon={icon} />
-      <Grid container spacing={0} direction="column">
-        {items.map((file) => renderFileRow(file, fileIcon))}
-      </Grid>
+      <Box sx={finderCellSx}>
+        <Typography
+          noWrap
+          sx={{
+            fontSize: 13,
+            lineHeight: 1.2,
+            color: finderColors.secondaryText,
+          }}
+        >
+          {formatFinderDate(file.mtime)}
+        </Typography>
+      </Box>
+      <Box sx={finderCellSx}>
+        <Typography
+          noWrap
+          sx={{
+            fontSize: 13,
+            lineHeight: 1.2,
+            color: finderColors.secondaryText,
+          }}
+        >
+          {formatFileSize(file.size) || "—"}
+        </Typography>
+      </Box>
+      <Box sx={finderCellSx}>
+        <Typography
+          noWrap
+          sx={{
+            fontSize: 13,
+            lineHeight: 1.2,
+            color: finderColors.secondaryText,
+          }}
+        >
+          {getFinderKindLabel(file)}
+        </Typography>
+      </Box>
     </Box>
   );
 
@@ -603,7 +755,16 @@ export default function PersonFilesTab({ personId }) {
   };
 
   return (
-    <Box sx={{ p: 2, position: "relative" }}>
+    <Box
+      sx={{
+        position: "relative",
+        mx: -1,
+        height: "calc(100dvh - 50px)",
+        minHeight: 0,
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
       <input
         type="file"
         multiple
@@ -629,92 +790,158 @@ export default function PersonFilesTab({ personId }) {
         </Box>
       )}
 
-      <Stack
-        direction="row"
-        justifyContent="space-between"
-        alignItems="center"
-        sx={{ mb: 4 }}
+      <Box
+        sx={{
+          flex: 1,
+          minHeight: 0,
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden",
+          border: `1px solid ${finderColors.containerBorder}`,
+          background: finderColors.containerBg,
+          fontFamily: FINDER_FONT,
+        }}
       >
-        <Typography variant="h5" fontWeight="bold">
-          Файлы
-        </Typography>
-      </Stack>
-
-      {files.image.length > 0 &&
-        renderSection(
-          "Изображения",
-          files.image,
-          <PhotoLibraryIcon color="primary" />,
-          <DocumentWithMountainsIcon />,
-        )}
-      {files.video.length > 0 &&
-        renderSection(
-          "Видео",
-          files.video,
-          <VideoLibraryIcon color="error" />,
-          <VideoFileIcon />,
-        )}
-      {files.audio.length > 0 &&
-        renderSection(
-          "Аудио",
-          files.audio,
-          <LibraryMusicIcon color="info" />,
-          <AudioIcon />,
-        )}
-      {files.doc.length > 0 &&
-        renderSection(
-          "Документы",
-          files.doc,
-          <LibraryBooksIcon color="success" />,
-          <DocIcon />,
-        )}
-
-      {isFilesEmpty && !loading && (
-        <Stack
-          spacing={2}
-          alignItems="center"
-          justifyContent="center"
+        <Box
           sx={{
-            py: 8,
-            px: 2,
-            border: "2px dashed",
-            borderColor: (t) => alpha(t.palette.divider, 0.1),
-            borderRadius: 4,
+            flex: 1,
+            minHeight: 0,
+            display: "flex",
+            flexDirection: "column",
+            overflowY: "auto",
+            overflowX: "hidden",
+            overscrollBehavior: "contain",
+          }}
+        >
+        <Box
+          sx={{
+            position: "sticky",
+            top: 0,
+            zIndex: 2,
+            flexShrink: 0,
+            background: finderColors.headerBg,
+            borderBottom: `1px solid ${finderColors.containerBorder}`,
           }}
         >
           <Box
             sx={{
-              width: 80,
-              height: 80,
-              borderRadius: "50%",
-              display: "flex",
+              display: "grid",
+              gridTemplateColumns: FINDER_GRID,
               alignItems: "center",
-              justifyContent: "center",
-              bgcolor: (t) => alpha(t.palette.primary.main, 0.1),
-              color: "primary.main",
+              height: 24,
+              mx: "6px",
+              color: finderColors.headerText,
             }}
           >
-            <UploadIcon sx={{ fontSize: 40 }} />
+            {FINDER_COLUMNS.map((column, index) => (
+              <Box
+                key={column.key}
+                role="button"
+                tabIndex={0}
+                onClick={() => handleSort(column.key)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    handleSort(column.key);
+                  }
+                }}
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "2px",
+                  minWidth: 0,
+                  height: "100%",
+                  pl: index === 0 ? "28px" : 1.25,
+                  pr: index === 0 ? 1.5 : 1,
+                  borderLeft:
+                    index === 0
+                      ? "none"
+                      : `1px solid ${finderColors.headerSeparator}`,
+                  cursor: "pointer",
+                  userSelect: "none",
+                  outline: "none",
+                }}
+              >
+                <Typography
+                  noWrap
+                  sx={{
+                    fontSize: 11,
+                    fontWeight: 500,
+                    lineHeight: 1,
+                    letterSpacing: 0,
+                    color: "inherit",
+                  }}
+                >
+                  {column.label}
+                </Typography>
+                {sort.key === column.key && (
+                  <SortArrowIcon
+                    sx={{
+                      ml: "auto",
+                      fontSize: 14,
+                      opacity: 0.7,
+                      transform:
+                        sort.direction === "desc" ? "rotate(180deg)" : "none",
+                      transition: "transform 0.15s ease",
+                    }}
+                  />
+                )}
+              </Box>
+            ))}
           </Box>
-          <Box textAlign="center">
-            <Typography variant="h6" fontWeight="600" gutterBottom>
-              Здесь пока пусто
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 360 }}>
-              Добавьте документы, аудио, видео или изображения. Поддерживаются JPG,
-              PNG, MP4, MP3, PDF, TXT и другие форматы.
-            </Typography>
+        </Box>
+
+        {finderRows.length > 0 ? (
+          <Box sx={{ flexShrink: 0, py: "2px" }}>
+            {finderRows.map((file, idx) => renderFinderRow(file, idx))}
           </Box>
-          <Button
-            variant="outlined"
-            size="small"
-            sx={{ mt: 1, borderRadius: 2, textTransform: "none" }}
-            onClick={handleFileUploadBar}
+        ) : (
+          <Stack
+            spacing={2}
+            alignItems="center"
+            justifyContent="center"
+            sx={{
+              flex: 1,
+              minHeight: 0,
+              py: 8,
+              px: 2,
+            }}
           >
-            Выбрать файлы
-          </Button>
-        </Stack>
-      )}
+            <Box
+              sx={{
+                width: 80,
+                height: 80,
+                borderRadius: "50%",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                bgcolor: (t) => alpha(t.palette.primary.main, 0.1),
+                color: "primary.main",
+              }}
+            >
+              <UploadIcon sx={{ fontSize: 40 }} />
+            </Box>
+            <Box textAlign="center">
+              <Typography variant="h6" fontWeight="600" gutterBottom>
+                Здесь пока пусто
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 360 }}>
+                Добавьте документы, аудио, видео или изображения. Поддерживаются JPG,
+                PNG, MP4, MP3, PDF, TXT и другие форматы.
+              </Typography>
+            </Box>
+            <Button
+              variant="outlined"
+              size="small"
+              sx={{ mt: 1, borderRadius: 2, textTransform: "none" }}
+              onClick={handleFileUploadBar}
+            >
+              Выбрать файлы
+            </Button>
+          </Stack>
+        )}
+        </Box>
+      </Box>
 
       <Dialog
         open={Boolean(previewFile)}
@@ -878,12 +1105,14 @@ export default function PersonFilesTab({ personId }) {
             }}
           />
         </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={() => setRenameDialog(null)}>Отмена</Button>
-          <Button variant="contained" onClick={handleRenameSubmit}>
+        <DialogActionsBar sx={{ px: 3 }}>
+          <DialogActionButton onClick={() => setRenameDialog(null)}>
+            Отмена
+          </DialogActionButton>
+          <DialogActionButton tone="primary" onClick={handleRenameSubmit}>
             Сохранить
-          </Button>
-        </DialogActions>
+          </DialogActionButton>
+        </DialogActionsBar>
       </Dialog>
     </Box>
   );

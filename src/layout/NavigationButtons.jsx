@@ -1,10 +1,8 @@
-import { Box, IconButton } from "@mui/material";
+import { IconButton } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import NavigateBeforeIcon from "@mui/icons-material/NavigateBefore";
 import NavigateNextIcon from "@mui/icons-material/NavigateNext";
-import ArrowBackIosIcon from "@mui/icons-material/ArrowBackIos";
-import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
-import { styled, useTheme } from "@mui/material/styles";
+import { useTheme } from "@mui/material/styles";
 
 import Divider from "@mui/material/Divider";
 import ButtonConteiner from "../components/ButtonConteiner";
@@ -29,7 +27,7 @@ export default function NavigationButtons() {
         disabled={!canGoBack}
         size="small"
       >
-        <NavigateBeforeIcon />
+        <NavigateBeforeIcon style={{ fontSize: 22 }} />
       </IconButton>
       <Divider orientation="vertical" variant="middle" flexItem />
       <IconButton
@@ -39,7 +37,7 @@ export default function NavigationButtons() {
         disabled={!canGoForward}
         size="small"
       >
-        <NavigateNextIcon />
+        <NavigateNextIcon style={{ fontSize: 22 }} />
       </IconButton>
     </ButtonConteiner>
   );

@@ -14,6 +14,7 @@ import TreeToolbar from "./tree/TreeToolbar";
 import InfoToolbar from "./info/InfoToolbar";
 import FileCopyIcon from "@mui/icons-material/FileCopy";
 import FileToolbar from "./file/FileToolbar";
+import { toolbarPillSx } from "../toolbarStyles";
 // import TreeToolbar
 
 export default function ToolbarGroup({
@@ -33,64 +34,69 @@ export default function ToolbarGroup({
       spacing={2}
       sx={{ alignItems: "center", width: "100%", flex: 1, minWidth: 0 }}
     >
-      {/* Вкладки: Анкета, Фото, Био, Древо */}
-      <ToggleButtonGroup
-        value={activeElement}
-        exclusive
-        onChange={(e, val) => val && setActiveElement(val)}
-        size="small"
+      {/* Вкладки: Анкета, Фото, Био, Древо, Файлы */}
+      <Box
         sx={{
-          WebkitAppRegion: "no-drag",
-          border: "1px solid",
-          borderRadius: 7,
-          borderColor: "divider",
-          height: 34,
-          // color: "white",
-          gap: 1,
-          "& .MuiToggleButton-root": {
-            color: "text.primary",
-            border: "none",
-            borderRadius: 6,
-            fontSize: 20,
-            // gap: 1,
-            "&.Mui-selected": {
-              // bgcolor: "text.secondary",
-              bgcolor: "divider",
-              color: "primary.main",
-              // "&:hover": { bgcolor: "#555" },
-            },
-          },
+          ...toolbarPillSx,
+          display: "inline-flex",
+          flexShrink: 0,
+          alignItems: "center",
+          p: "3px",
         }}
       >
-        <Tooltip title="Инфо">
-          <ToggleButton value="info">
-            <PersonFillIcon sx={{ fontSize: 16 }} />
-          </ToggleButton>
-        </Tooltip>
+        <ToggleButtonGroup
+          value={activeElement}
+          exclusive
+          onChange={(e, val) => val && setActiveElement(val)}
+          size="small"
+          sx={{
+            gap: 0.5,
+            bgcolor: "transparent",
+            "& .MuiToggleButton-root": {
+              color: "text.primary",
+              border: "none",
+              borderRadius: "14px",
+              minWidth: 36,
+              height: 30,
+              p: 0,
+              fontSize: 20,
+              "&.Mui-selected": {
+                bgcolor: "rgba(153, 153, 153, 0.24)",
+                color: "primary.main",
+              },
+            },
+          }}
+        >
+          <Tooltip title="Инфо">
+            <ToggleButton value="info">
+              <PersonFillIcon sx={{ fontSize: 18 }} />
+            </ToggleButton>
+          </Tooltip>
 
-        <Tooltip title="Фотоальбом">
-          <ToggleButton value="photo">
-            <PhotoOnRectangleAngledIcon sx={{ fontSize: 19 }} />
-          </ToggleButton>
-        </Tooltip>
+          <Tooltip title="Фотоальбом">
+            <ToggleButton value="photo">
+              <PhotoOnRectangleAngledIcon sx={{ fontSize: 18 }} />
+            </ToggleButton>
+          </Tooltip>
 
-        <Tooltip title="Биография">
-          <ToggleButton value="bio">
-            <TextDocumentFillIcon sx={{ fontSize: 16 }} />
-          </ToggleButton>
-        </Tooltip>
+          <Tooltip title="Биография">
+            <ToggleButton value="bio">
+              <TextDocumentFillIcon sx={{ fontSize: 18 }} />
+            </ToggleButton>
+          </Tooltip>
 
-        <Tooltip title="Древо">
-          <ToggleButton value="tree">
-            <AccountTreeIcon fontSize="inherit" />
-          </ToggleButton>
-        </Tooltip>
-        <Tooltip title="Файлы">
-          <ToggleButton value="files">
-            <FileCopyIcon fontSize="inherit" />
-          </ToggleButton>
-        </Tooltip>
-      </ToggleButtonGroup>
+          <Tooltip title="Древо">
+            <ToggleButton value="tree">
+              <AccountTreeIcon sx={{ fontSize: 18 }} />
+            </ToggleButton>
+          </Tooltip>
+          <Tooltip title="Файлы">
+            <ToggleButton value="files">
+              <FileCopyIcon sx={{ fontSize: 18 }} />
+            </ToggleButton>
+          </Tooltip>
+        </ToggleButtonGroup>
+      </Box>
       {activeElement === "files" && <FileToolbar />}
 
       {activeElement === "info" && (

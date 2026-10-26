@@ -8,7 +8,6 @@ import {
   ListItemText,
   Checkbox,
   IconButton,
-  Button,
   TextField,
   Box,
   Stack,
@@ -18,6 +17,9 @@ import {
   CircularProgress,
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
+import DialogActionButton, {
+  DialogActionsBar,
+} from "../../components/Dialog/DialogActionButton";
 import AddIcon from "@mui/icons-material/Add";
 import SellIcon from "@mui/icons-material/Sell";
 
@@ -149,17 +151,16 @@ export default function TagManagementDialog({ personId }) {
             }}
           >
             {!isCreating ? (
-              <Button
-                fullWidth
+              <DialogActionButton
                 startIcon={<AddIcon />}
                 disabled={!canAddNew}
                 onClick={() => setIsCreating(true)}
-                sx={{ textTransform: "none" }}
+                sx={{ width: "100%", maxWidth: "100%" }}
               >
                 {canAddNew
                   ? "Создать новую метку"
                   : "Достигнут лимит меток (8)"}
-              </Button>
+              </DialogActionButton>
             ) : (
               <Stack spacing={2}>
                 <TextField
@@ -190,14 +191,14 @@ export default function TagManagementDialog({ personId }) {
                     />
                   ))}
                 </Stack>
-                <Stack direction="row" spacing={1}>
-                  <Button fullWidth variant="contained" onClick={handleAddTag}>
-                    Добавить
-                  </Button>
-                  <Button fullWidth onClick={() => setIsCreating(false)}>
+                <DialogActionsBar sx={{ px: 0, pt: 0, pb: 0 }}>
+                  <DialogActionButton onClick={() => setIsCreating(false)}>
                     Отмена
-                  </Button>
-                </Stack>
+                  </DialogActionButton>
+                  <DialogActionButton tone="primary" onClick={handleAddTag}>
+                    Добавить
+                  </DialogActionButton>
+                </DialogActionsBar>
               </Stack>
             )}
           </Box>

@@ -1,19 +1,22 @@
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
-  Stack,
-  Typography,
-  Divider,
-  Button,
   Box,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemIcon,
   Checkbox,
   FormControlLabel,
+  Stack,
+  Typography,
 } from "@mui/material";
 import { alpha, useTheme } from "@mui/material/styles";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
+import ListAltOutlinedIcon from "@mui/icons-material/ListAltOutlined";
+import AppButton from "../../components/AppButton";
+import CustomSwitch from "../../components/CustomSwitch";
+import {
+  groupSx,
+  RowIcon,
+  sectionLabelSx,
+  SettingsRow,
+} from "./settingsUi";
 
 export function ImportDecisionInline({
   summary = "",
@@ -77,318 +80,282 @@ export function ImportDecisionInline({
   const handleManual = () =>
     onSelect({ action: "selected", selected: selectedIds.slice() });
 
+  const manualMode = mode === "manual";
+
   return (
-    <Box
-      sx={{
-        display: "flex",
-        flexDirection: "column",
-        height: "100%",
-        flexGrow: 1,
-      }}
-    >
-      {/* Скроллируемая область контента */}
-      <Box sx={{ flexGrow: 1, overflowY: "auto", pr: 1, mb: 2 }}>
+    <Box sx={{ display: "flex", flexDirection: "column", flexGrow: 1 }}>
+      <Stack spacing={2}>
         <Box
           sx={{
             display: "flex",
             alignItems: "center",
-            gap: 1,
-            mb: 2,
-            bgcolor: alpha(theme.palette.info.main, 0.1),
-            p: 1.5,
-            borderRadius: 2,
+            gap: 1.25,
+            px: 2,
+            py: 1.25,
+            borderRadius: "12px",
+            border: `1px solid ${alpha(theme.palette.info.main, 0.2)}`,
+            bgcolor: alpha(theme.palette.info.main, 0.08),
           }}
         >
-          <InfoOutlinedIcon color="info" fontSize="small" />
-          <Typography variant="caption" color="text.secondary" lineHeight={1.2}>
-            В бэкапе найдены совпадения с текущей базой. Выберите, как поступить
-            с данными.
+          <InfoOutlinedIcon
+            color="info"
+            sx={{ fontSize: 18, flexShrink: 0 }}
+          />
+          <Typography variant="caption" color="text.secondary" lineHeight={1.35}>
+            {summary ||
+              "В бэкапе найдены совпадения с текущей базой. Выберите, как поступить с данными."}
           </Typography>
         </Box>
 
-        <Stack spacing={2}>
-          {/* Сводка: Новые и Обновления */}
-          <Stack direction="row" spacing={2}>
+        <Stack direction="row" spacing={1.5}>
+          {[
+            {
+              label: "Новые записи",
+              value: toAdd.length,
+              color: theme.palette.success.main,
+            },
+            {
+              label: "Конфликты",
+              value: toUpdate.length,
+              color: theme.palette.warning.main,
+            },
+          ].map((item) => (
             <Box
+              key={item.label}
               sx={{
+                ...groupSx,
                 flex: 1,
-                p: 1.5,
-                borderRadius: 2,
-                border: "1px solid",
-                borderColor: "divider",
+                px: 2,
+                py: 1.5,
               }}
             >
               <Typography
-                variant="caption"
-                color="text.secondary"
-                fontWeight={700}
-                textTransform="uppercase"
-              >
-                Новые записи
-              </Typography>
-              <Typography variant="h4" fontWeight={800} color="success.main">
-                {toAdd.length}
-              </Typography>
-            </Box>
-            <Box
-              sx={{
-                flex: 1,
-                p: 1.5,
-                borderRadius: 2,
-                border: "1px solid",
-                borderColor: "divider",
-              }}
-            >
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                fontWeight={700}
-                textTransform="uppercase"
-              >
-                Конфликты
-              </Typography>
-              <Typography variant="h4" fontWeight={800} color="warning.main">
-                {toUpdate.length}
-              </Typography>
-            </Box>
-          </Stack>
-
-          <Divider sx={{ borderStyle: "dashed" }} />
-
-          {/* Переключатель ручного режима */}
-          <Box>
-            <Button
-              size="small"
-              onClick={() =>
-                setMode((m) => (m === "manual" ? "default" : "manual"))
-              }
-              sx={{ textTransform: "none", fontWeight: 600, borderRadius: 2 }}
-            >
-              {mode === "manual"
-                ? "Скрыть ручной выбор"
-                : "Выбрать записи вручную"}
-            </Button>
-
-            {mode === "manual" && (
-              <Box
                 sx={{
-                  mt: 1.5,
-                  border: "1px solid",
-                  borderColor: "divider",
-                  borderRadius: 2,
-                  overflow: "hidden",
+                  fontSize: "0.72rem",
+                  fontWeight: 600,
+                  letterSpacing: "0.04em",
+                  textTransform: "uppercase",
+                  color: "text.secondary",
                 }}
               >
-                <Box
-                  sx={{
-                    px: 2,
-                    py: 1,
-                    bgcolor: "action.hover",
-                    borderBottom: "1px solid",
-                    borderColor: "divider",
-                  }}
-                >
-                  <FormControlLabel
-                    control={
-                      <Checkbox
-                        size="small"
-                        checked={masterChecked}
-                        indeterminate={masterIndeterminate}
-                        onChange={toggleAll}
-                      />
-                    }
-                    label={
-                      <Typography variant="caption" fontWeight={600}>
-                        Выбрать все ({allIds.length})
-                      </Typography>
-                    }
-                  />
-                </Box>
-                <Box
-                  sx={{
-                    maxHeight: 200,
-                    overflowY: "auto",
-                    mt: 1.5,
-                    p: 1.5,
-                    border: "1px solid",
-                    borderColor: "divider",
-                    borderRadius: 2,
-                    bgcolor: alpha(theme.palette.background.paper, 0.4),
-                  }}
-                >
-                  {allIds.length === 0 ? (
-                    <Typography
-                      variant="caption"
-                      color="text.secondary"
-                      sx={{ display: "block", textAlign: "center", py: 2 }}
-                    >
-                      Нет доступных персон
-                    </Typography>
-                  ) : (
-                    <Box
-                      sx={{
-                        display: "flex",
-                        flexWrap: "wrap",
-                        justifyContent: "space-evenly",
-                        gap: 1, // Расстояние между элементами
-                      }}
-                    >
-                      {allIds.map((id) => {
-                        const isSelected = selectedIds.includes(id);
-                        return (
-                          <Box
-                            key={id}
-                            onClick={() => toggleId(id)}
-                            sx={{
-                              minWidth: 85,
-                              cursor: "pointer",
-                              px: 1.5,
-                              py: 0.6,
-                              borderRadius: "8px",
-                              border: "1px solid",
-                              // Динамическая смена цвета границы и фона
-                              borderColor: isSelected
-                                ? "primary.main"
-                                : "divider",
-                              bgcolor: isSelected
-                                ? alpha(theme.palette.primary.main, 0.08)
-                                : "transparent",
-                              transition: "all 0.2s ease-in-out",
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "space-around",
-                              userSelect: "none",
-                              "&:hover": {
-                                bgcolor: isSelected
-                                  ? alpha(theme.palette.primary.main, 0.12)
-                                  : alpha(theme.palette.action.hover, 0.8),
-                                borderColor: isSelected
-                                  ? "primary.main"
-                                  : alpha(theme.palette.text.primary, 0.2),
-                                transform: "translateY(-1px)",
-                              },
-                              "&:active": {
-                                transform: "translateY(0)",
-                              },
-                            }}
-                          >
-                            <Typography
-                              variant="caption"
-                              sx={{
-                                fontWeight: isSelected ? 700 : 500,
-                                color: isSelected
-                                  ? "primary.main"
-                                  : "text.primary",
-                                fontSize: "0.75rem",
-                              }}
-                            >
-                              {id}
-                            </Typography>
-
-                            {/* Маленький индикатор-точка для выбранных (опционально) */}
-                            {isSelected && (
-                              <Box
-                                sx={{
-                                  width: 6,
-                                  height: 6,
-                                  borderRadius: "50%",
-                                  bgcolor: "primary.main",
-                                  ml: 1,
-                                }}
-                              />
-                            )}
-                          </Box>
-                        );
-                      })}
-                    </Box>
-                  )}
-                </Box>
-              </Box>
-            )}
-          </Box>
+                {item.label}
+              </Typography>
+              <Typography
+                sx={{
+                  mt: 0.25,
+                  fontSize: "1.5rem",
+                  fontWeight: 700,
+                  lineHeight: 1.2,
+                  color: item.color,
+                }}
+              >
+                {item.value}
+              </Typography>
+            </Box>
+          ))}
         </Stack>
-      </Box>
 
-      {/* Закрепленные кнопки действий внизу (macOS Style) */}
+        <Box>
+          <Typography sx={sectionLabelSx}>Способ импорта</Typography>
+          <Box sx={groupSx}>
+            <SettingsRow
+              icon={
+                <RowIcon bg="blue">
+                  <ListAltOutlinedIcon sx={{ fontSize: 18 }} />
+                </RowIcon>
+              }
+              title="Выбрать записи вручную"
+              subtitle={
+                manualMode
+                  ? `Выбрано ${selectedIds.length} из ${allIds.length}`
+                  : "Отметьте только нужные записи"
+              }
+              trailing={
+                <CustomSwitch
+                  checked={manualMode}
+                  onChange={() =>
+                    setMode((m) => (m === "manual" ? "default" : "manual"))
+                  }
+                />
+              }
+            />
+          </Box>
+        </Box>
+
+        {manualMode && (
+          <Box>
+            <Typography sx={sectionLabelSx}>Записи</Typography>
+            <Box sx={groupSx}>
+              <Box
+                sx={{
+                  px: 2,
+                  py: 1,
+                  borderBottom: `1px solid ${theme.palette.divider}`,
+                }}
+              >
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      size="small"
+                      checked={masterChecked}
+                      indeterminate={masterIndeterminate}
+                      onChange={toggleAll}
+                    />
+                  }
+                  label={
+                    <Typography variant="body2" fontWeight={600}>
+                      Выбрать все ({allIds.length})
+                    </Typography>
+                  }
+                  sx={{ m: 0 }}
+                />
+              </Box>
+
+              {allIds.length === 0 ? (
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ display: "block", textAlign: "center", py: 3 }}
+                >
+                  Нет доступных персон
+                </Typography>
+              ) : (
+                <Box
+                  sx={{
+                    p: 1.5,
+                    display: "grid",
+                    gridTemplateColumns:
+                      "repeat(auto-fill, minmax(76px, 1fr))",
+                    gap: 1,
+                  }}
+                >
+                  {allIds.map((id) => {
+                    const isSelected = selectedIds.includes(id);
+                    return (
+                      <Box
+                        key={id}
+                        role="checkbox"
+                        aria-checked={isSelected}
+                        tabIndex={0}
+                        onClick={() => toggleId(id)}
+                        onKeyDown={(e) => {
+                          if (e.key === " " || e.key === "Enter") {
+                            e.preventDefault();
+                            toggleId(id);
+                          }
+                        }}
+                        sx={{
+                          minWidth: 0,
+                          cursor: "pointer",
+                          px: 1,
+                          py: 0.6,
+                          borderRadius: "8px",
+                          border: `1px solid ${
+                            isSelected
+                              ? theme.palette.primary.main
+                              : theme.palette.divider
+                          }`,
+                          bgcolor: isSelected
+                            ? alpha(theme.palette.primary.main, 0.08)
+                            : "transparent",
+                          transition:
+                            "background-color 120ms, border-color 120ms",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          gap: 0.75,
+                          userSelect: "none",
+                          "&:hover": {
+                            bgcolor: isSelected
+                              ? alpha(theme.palette.primary.main, 0.12)
+                              : "action.hover",
+                            borderColor: isSelected
+                              ? theme.palette.primary.main
+                              : alpha(theme.palette.text.primary, 0.24),
+                          },
+                          "&:focus-visible": {
+                            outline: `2px solid ${theme.palette.primary.main}`,
+                            outlineOffset: 1,
+                          },
+                        }}
+                      >
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            fontWeight: isSelected ? 700 : 500,
+                            color: isSelected
+                              ? "primary.main"
+                              : "text.primary",
+                            fontSize: "0.75rem",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {id}
+                        </Typography>
+                        {isSelected && (
+                          <Box
+                            sx={{
+                              width: 5,
+                              height: 5,
+                              borderRadius: "50%",
+                              bgcolor: "primary.main",
+                              flexShrink: 0,
+                            }}
+                          />
+                        )}
+                      </Box>
+                    );
+                  })}
+                </Box>
+              )}
+            </Box>
+          </Box>
+        )}
+
+        <Box sx={{ flexGrow: 1 }} />
+      </Stack>
+
       <Stack
-        flexDirection={"row"}
-        justifyContent={"space-around"}
-        gap={1}
-        sx={{ mt: "auto", pt: 1 }}
+        direction="row"
+        spacing={1}
+        justifyContent="flex-end"
+        sx={{
+          position: "sticky",
+          bottom: 0,
+          zIndex: 1,
+          mt: 2,
+          mx: -2,
+          px: 2,
+          pt: 1.5,
+          pb: 0.5,
+          borderTop: `1px solid ${theme.palette.divider}`,
+          bgcolor: theme.palette.background.default,
+        }}
       >
-        {mode === "manual" ? (
-          <Button
-            variant="contained"
-            // fullWidth
-            disableElevation
+        <AppButton preset="ghost" onClick={handleClose} sx={{ px: 2 }}>
+          Отменить
+        </AppButton>
+        {manualMode ? (
+          <AppButton
+            preset="primary"
             onClick={handleManual}
             disabled={selectedIds.length === 0}
-            sx={{
-              height: 24,
-              borderRadius: "6px",
-              py: 1,
-              fontWeight: 600,
-              textTransform: "none",
-            }}
+            sx={{ px: 2.5 }}
           >
             Импортировать выбранные ({selectedIds.length})
-          </Button>
+          </AppButton>
         ) : (
           <>
-            <Button
-              variant="contained"
-              // fullWidth
-              disableElevation
-              onClick={handleAll}
-              sx={{
-                height: 24,
-                borderRadius: "6px",
-                py: 1,
-                fontWeight: 600,
-                textTransform: "none",
-                bgcolor: "#007AFF",
-                "&:hover": { bgcolor: "#0062CC" },
-              }}
-            >
-              Заменить всё
-            </Button>
-            <Button
-              variant="contained"
-              // fullWidth
-              disableElevation
-              color="success"
-              onClick={handleNew}
-              sx={{
-                height: 24,
-                borderRadius: "6px",
-                py: 1,
-                fontWeight: 600,
-                textTransform: "none",
-              }}
-            >
+            <AppButton preset="secondary" onClick={handleNew} sx={{ px: 2 }}>
               Только новые
-            </Button>
+            </AppButton>
+            <AppButton preset="primary" onClick={handleAll} sx={{ px: 2.5 }}>
+              Заменить всё
+            </AppButton>
           </>
         )}
-        <Button
-          variant="text"
-          // fullWidth
-          onClick={handleClose}
-          sx={{
-            height: 24,
-            borderRadius: "6px",
-            py: 1,
-            fontWeight: 500,
-            textTransform: "none",
-            color: "text.primary",
-            bgcolor: (theme) => alpha(theme.palette.action.active, 0.05),
-            "&:hover": {
-              bgcolor: (theme) => alpha(theme.palette.action.active, 0.1),
-            },
-          }}
-        >
-          Отменить
-        </Button>
       </Stack>
     </Box>
   );

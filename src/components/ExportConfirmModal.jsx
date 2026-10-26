@@ -3,15 +3,14 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
-  DialogActions,
-  Button,
   List,
   ListItem,
   ListItemText,
   Typography,
 } from "@mui/material";
-import BlockIcon from "@mui/icons-material/Block";
-import ArchiveIcon from "@mui/icons-material/Archive";
+import DialogActionButton, {
+  DialogActionsBar,
+} from "./Dialog/DialogActionButton";
 
 export default function ExportConfirmModal({
   open,
@@ -58,19 +57,12 @@ export default function ExportConfirmModal({
           </List>
         )}
       </DialogContent>
-      <DialogActions sx={{ pr: "24px", pl: "24px", pb: "16px", pt: "16px" }}>
-        <Button onClick={onCancel} startIcon={<BlockIcon />}>
-          Отменить
-        </Button>
-        <Button
-          onClick={onConfirm}
-          startIcon={<ArchiveIcon />}
-          variant="contained"
-          color="primary"
-        >
+      <DialogActionsBar>
+        <DialogActionButton onClick={onCancel}>Отменить</DialogActionButton>
+        <DialogActionButton tone="primary" onClick={onConfirm}>
           Экспортировать
-        </Button>
-      </DialogActions>
+        </DialogActionButton>
+      </DialogActionsBar>
     </Dialog>
   );
 }

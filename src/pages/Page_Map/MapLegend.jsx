@@ -11,9 +11,8 @@ const ITEMS = [
 
 export default function MapLegend() {
   const theme = useTheme();
-  const isDark = theme.palette.mode === "dark";
-  const bg = isDark ? "rgba(30, 37, 48, 0.6)" : "rgba(255, 255, 255, 0.75)";
-  const fg = isDark ? "#fff" : "#1c1c1e";
+  const bg = theme.palette.glass.surface;
+  const fg = theme.palette.text.primary;
 
   return (
     <Box

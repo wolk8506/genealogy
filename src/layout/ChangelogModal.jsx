@@ -1,26 +1,37 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Dialog, Box, Typography } from "@mui/material";
 import { alpha } from "@mui/material/styles";
 import MarkdownViewer from "../components/MarkdownViewer";
-import AppButton from "../components/AppButton";
+import DialogActionButton from "../components/Dialog/DialogActionButton";
 
 export default function ChangelogModal() {
   const [open, setOpen] = useState(false);
   const [text, setText] = useState("");
   const [version, setVersion] = useState("");
 
-  useEffect(() => {
-    window.changelogAPI.onOpen(async () => {
+  const openChangelog = useCallback(async () => {
+    try {
       const content = await window.changelogAPI.read();
       setText(content);
       setOpen(true);
-    });
+    } catch {
+      // changelog недоступен — молча игнорируем
+    }
+  }, []);
+
+  useEffect(() => {
+    window.changelogAPI.onOpen(openChangelog);
+    window.addEventListener("app:open-changelog", openChangelog);
 
     window.appAPI
       ?.getVersion?.()
       .then((v) => setVersion(v || ""))
       .catch(() => {});
-  }, []);
+
+    return () => {
+      window.removeEventListener("app:open-changelog", openChangelog);
+    };
+  }, [openChangelog]);
 
   return (
     <Dialog
@@ -89,13 +100,13 @@ export default function ChangelogModal() {
             {version ? `Текущая версия ${version}` : "История версий"}
           </Typography>
         </Box>
-        <AppButton
-          preset="primary"
+        <DialogActionButton
+          tone="primary"
           onClick={() => setOpen(false)}
-          sx={{ px: 3, borderRadius: "999px" }}
+          sx={{ width: 110, flex: "0 0 110px" }}
         >
           Готово
-        </AppButton>
+        </DialogActionButton>
       </Box>
     </Dialog>
   );

@@ -1,22 +1,25 @@
 import React from "react";
 import { Button } from "@mui/material";
+import {
+  appButtonBaseSx,
+  appButtonPresetSx,
+} from "./appButtonStyles";
 
 // Единые пресеты кнопок приложения:
 // primary — основное действие, secondary — вторичное,
 // danger — опасное действие, dangerOutlined — опасное вторичное,
 // ghost — текстовая кнопка.
-// Геометрия везде одинаковая: radius 10, без капса, высота small 28 / medium 36.
+// Геометрия: высота 24, radius 12, без капса.
 const PRESETS = {
   primary: { variant: "contained", color: "primary" },
-  secondary: { variant: "outlined", color: "inherit" },
-  danger: { variant: "contained", color: "error" },
-  dangerOutlined: { variant: "outlined", color: "error" },
+  secondary: { variant: "text", color: "inherit" },
+  danger: { variant: "text", color: "error" },
+  dangerOutlined: { variant: "text", color: "error" },
   ghost: { variant: "text", color: "inherit" },
 };
 
 export default function AppButton({
   preset = "primary",
-  size = "small",
   sx,
   ...rest
 }) {
@@ -25,12 +28,9 @@ export default function AppButton({
     <Button
       variant={p.variant}
       color={p.color}
-      size={size}
       sx={{
-        borderRadius: "10px",
-        textTransform: "none",
-        fontWeight: 600,
-        height: size === "small" ? 28 : 36,
+        ...appButtonBaseSx,
+        ...appButtonPresetSx[preset],
         ...sx,
       }}
       {...rest}

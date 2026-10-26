@@ -189,13 +189,10 @@ export default function MapPage({
 }) {
   const navigate = useNavigate();
   const theme = useTheme();
-  const isDark = theme.palette.mode === "dark";
-  const zoomBg = isDark ? "rgba(30, 37, 48, 0.6)" : "rgba(255, 255, 255, 0.75)";
-  const zoomBgHover = isDark
-    ? "rgba(48, 58, 74, 0.8)"
-    : "rgba(255, 255, 255, 0.95)";
-  const zoomFg = isDark ? "#fff" : "#1c1c1e";
-  const zoomDivider = isDark ? "rgba(255, 255, 255, 0.14)" : "rgba(0, 0, 0, 0.1)";
+  const zoomBg = theme.palette.glass.surface;
+  const zoomBgHover = theme.palette.glass.strong;
+  const zoomFg = theme.palette.text.primary;
+  const zoomDivider = theme.palette.glass.border;
   const { thumbs } = usePhotoThumbs();
   const [points, setPoints] = useState(() => getCachedPoints() || []);
   const [allPhotosCache, setAllPhotosCache] = useState([]);
@@ -1026,11 +1023,14 @@ export default function MapPage({
           display: "flex",
           flexDirection: "column",
           gap: 1,
-          bgcolor: "background.paper",
+          bgcolor: zoomBg,
+          color: zoomFg,
           borderRadius: 2,
           px: 1.5,
           py: 1,
-          boxShadow: 2,
+          boxShadow: "0 2px 12px rgba(0,0,0,0.22)",
+          backdropFilter: "blur(8px)",
+          WebkitBackdropFilter: "blur(8px)",
           border: "1px solid",
           borderColor: "divider",
           "&:empty": { display: "none" },
@@ -1039,14 +1039,14 @@ export default function MapPage({
         {loading && (
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
             <CircularProgress size={16} />
-            <Typography variant="caption" color="text.secondary">
+            <Typography variant="caption">
               Загрузка точек…
             </Typography>
           </Box>
         )}
         {progress && (
           <Box>
-            <Typography variant="caption" color="text.secondary">
+            <Typography variant="caption">
               Геокодирование: {progress.done}/{progress.total}
               {etaLabel ? ` · осталось ${etaLabel}` : ""} (карта уже показана)
             </Typography>
@@ -1061,7 +1061,7 @@ export default function MapPage({
           </Box>
         )}
         {!loading && points.length === 0 && (
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant="body2">
             Нет точек: добавьте фото с координатами или укажите места у событий.
             Для подложки и геокодинга нужен интернет.
           </Typography>
@@ -1088,7 +1088,10 @@ export default function MapPage({
             backdropFilter: "blur(8px)",
             WebkitBackdropFilter: "blur(8px)",
             boxShadow: "0 2px 12px rgba(0,0,0,0.22)",
-            "&:hover": { bgcolor: zoomBgHover },
+            "&.MuiIconButton-root:hover:not(.Mui-disabled)": {
+              backgroundColor: `${zoomBg} !important`,
+              backgroundImage: `linear-gradient(${theme.palette.glass.hover}, ${theme.palette.glass.hover}) !important`,
+            },
           }}
         >
           <HelpOutlineIcon sx={{ fontSize: 20 }} />

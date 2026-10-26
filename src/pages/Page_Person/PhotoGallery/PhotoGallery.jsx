@@ -23,7 +23,6 @@ import PhotoFacesDialog from "../../../components/Dialog/PhotoFacesDialog";
 import PhotoPreviewDialog from "../../../components/Dialog/PhotoPreviewDialog";
 import PhotoUploadDialog from "../../../components/Dialog/PhotoUploadDialog";
 import PhotoMetaDialog from "../../../components/Dialog/PhotoMetaDialog";
-import { ButtonScrollTop } from "../../../components/ButtonScrollTop";
 import { buildPhotoAttendeesText } from "../../../utils/photoFaces";
 import { usePhotoInspectorStore } from "../../../store/usePhotoInspectorStore";
 
@@ -76,7 +75,6 @@ export default function PhotoGallery({
   const [previewDialogPhoto, setPreviewDialogPhoto] = useState(null);
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
   const lastTriggerRef = useRef(uploadTrigger);
-  const [scrollTop, setScrollTop] = useState(0);
   const [allExternal, setAllExternal] = useState([]);
 
   // Правая панель-инспектор (общая с глобальной галереей).
@@ -335,7 +333,9 @@ export default function PhotoGallery({
     ipcRenderer.removeAllListeners?.("photo:delete");
     ipcRenderer.removeAllListeners?.("photo:meta-response");
 
-    ipcRenderer.on("photo:open", (_, id) => {
+    ipcRenderer.on("photo:open", (_, payload) => {
+      const id =
+        payload && typeof payload === "object" ? payload.id : payload;
       const p = photosRef.current?.find((x) => x.id === id);
       if (p) selectPhoto(p);
     });
@@ -473,7 +473,6 @@ export default function PhotoGallery({
           ) : (
             <GroupedVirtuoso
               ref={virtuosoRef}
-              onScroll={(e) => setScrollTop(e.target.scrollTop)}
               style={{ height: "100%", width: "100%" }}
               groupCounts={groupCounts}
               groupContent={(idx) => (
@@ -485,9 +484,7 @@ export default function PhotoGallery({
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "space-between",
-                    bgcolor: isDark
-                      ? alpha("#121212", 0.9)
-                      : alpha("#fff", 0.9),
+                    bgcolor: alpha(theme.palette.background.default, 0.9),
                     backdropFilter: "blur(6px)",
                     borderBottom: "1px solid divider",
                     zIndex: 1,
@@ -555,7 +552,6 @@ export default function PhotoGallery({
               }}
             />
           )}
-          <ButtonScrollTop targetRef={virtuosoRef} scrollOffset={scrollTop} />
         </Box>
 
         <PhotoFullscreenViewer

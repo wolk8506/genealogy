@@ -11,8 +11,6 @@ import {
   IconButton,
 } from "@mui/material";
 import { alpha, useTheme } from "@mui/material/styles";
-import PhotoLibraryIcon from "@mui/icons-material/PhotoLibrary";
-import CloseIcon from "@mui/icons-material/Close";
 import FaceRetouchingNaturalIcon from "@mui/icons-material/FaceRetouchingNatural";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import EditIcon from "@mui/icons-material/Edit";
@@ -301,39 +299,6 @@ export default function PhotoInspectorPanel({ allPeople = [] }) {
             flexDirection: "column",
           }}
         >
-          <Box
-            sx={{
-              p: 2,
-              pb: 1.5,
-              borderBottom: "1px solid",
-              borderColor: "divider",
-              display: "flex",
-              alignItems: "center",
-              gap: 1,
-            }}
-          >
-            <PhotoLibraryIcon color="primary" sx={{ fontSize: 20 }} />
-            <Typography variant="subtitle1" fontWeight={800} sx={{ flexGrow: 1 }}>
-              Фото
-            </Typography>
-            {dirty && (
-              <Typography
-                variant="caption"
-                sx={{ color: "warning.main", fontWeight: 700 }}
-              >
-                не сохранено
-              </Typography>
-            )}
-            <IconButton
-              size="small"
-              title="Закрыть"
-              onClick={toggle}
-              sx={{ color: "action.active" }}
-            >
-              <CloseIcon fontSize="small" />
-            </IconButton>
-          </Box>
-
           {!photo || !draft ? (
             <Box sx={{ p: 2, color: "text.secondary" }}>
               <Typography variant="body2">
@@ -597,7 +562,7 @@ export default function PhotoInspectorPanel({ allPeople = [] }) {
                         }
                         actions.openFaces?.(target);
                       }}
-                      sx={{ borderRadius: "10px", textTransform: "none" }}
+                      sx={{ textTransform: "none" }}
                     >
                       {`Лица (${facesCount})`}
                     </Button>
@@ -615,7 +580,7 @@ export default function PhotoInspectorPanel({ allPeople = [] }) {
                         }
                         actions.openPreview?.(target);
                       }}
-                      sx={{ borderRadius: "10px", textTransform: "none" }}
+                      sx={{ textTransform: "none" }}
                     >
                       Превью
                     </Button>

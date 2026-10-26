@@ -12,26 +12,19 @@ import {
 import SortIcon from "@mui/icons-material/Sort";
 import NorthIcon from "@mui/icons-material/North"; // Стрелка вверх
 import SouthIcon from "@mui/icons-material/South"; // Стрелка вниз
+import { toolbarPillBg, toolbarPillSx } from "../toolbarStyles";
 
 const StyledContainer = styled(Box)(({ theme }) => ({
-  WebkitAppRegion: "no-drag",
+  ...toolbarPillSx,
   display: "flex",
   alignItems: "center",
-  borderRadius: 20,
-  height: 34,
   fontSize: 20,
-  border: "1px solid",
-  borderColor: theme.palette.divider,
   transition: "all 0.3s ease",
   width: "auto", // Всегда развернут
   paddingRight: 12,
   overflow: "hidden",
   cursor: "pointer",
-  backgroundColor: "action.hover",
-  "&:hover": {
-    borderColor: theme.palette.primary.main,
-    backgroundColor: "action.selected",
-  },
+  backgroundColor: toolbarPillBg,
 }));
 
 // Направление сортировки внутри текущей группировки —

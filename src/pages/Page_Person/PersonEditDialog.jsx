@@ -3,9 +3,7 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
-  DialogActions,
   TextField,
-  Button,
   MenuItem,
   Stack,
   Autocomplete,
@@ -23,6 +21,9 @@ import AccountTreeIcon from "@mui/icons-material/AccountTree";
 import FemaleIcon from "@mui/icons-material/Female";
 import MaleIcon from "@mui/icons-material/Male";
 import { useNotificationStore } from "../../store/useNotificationStore";
+import DialogActionButton, {
+  DialogActionsBar,
+} from "../../components/Dialog/DialogActionButton";
 import CustomDatePickerDialog from "../../components/CustomDatePickerDialog";
 import NumberField from "../../components/NumberField";
 import useDialogSaveHotkey from "../../hooks/useDialogSaveHotkey";
@@ -565,24 +566,12 @@ export default function PersonEditDialog({
           </Stack>
         </DialogContent>
 
-        <DialogActions sx={{ p: 3, pt: 1 }}>
-          <Button onClick={onClose} sx={{ borderRadius: "10px" }}>
-            Отмена
-          </Button>
-          <Button
-            onClick={handleSubmit}
-            variant="contained"
-            disableElevation
-            sx={{
-              borderRadius: "10px",
-              px: 4,
-              fontWeight: 600,
-              boxShadow: `0 4px 14px 0 ${alpha(theme.palette.primary.main, 0.39)}`,
-            }}
-          >
+        <DialogActionsBar sx={{ px: 3 }}>
+          <DialogActionButton onClick={onClose}>Отмена</DialogActionButton>
+          <DialogActionButton tone="primary" onClick={handleSubmit}>
             Сохранить
-          </Button>
-        </DialogActions>
+          </DialogActionButton>
+        </DialogActionsBar>
       </Dialog>
 
       {/* Твои модалки и снекбар - оставляем как есть */}

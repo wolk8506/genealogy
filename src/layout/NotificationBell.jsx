@@ -28,7 +28,7 @@ import AutoFixHighIcon from "@mui/icons-material/AutoFixHigh";
 import PieChartIcon from "@mui/icons-material/PieChart";
 import PermIdentityIcon from "@mui/icons-material/PermIdentity";
 import FaceRetouchingNaturalIcon from "@mui/icons-material/FaceRetouchingNatural";
-import { useFaceReviewStore } from "../store/useFaceReviewStore";
+import { toolbarPillSx } from "./toolbarStyles";
 
 const notificationIcon = {
   trash: <TrashFillIcon />,
@@ -43,10 +43,10 @@ const notificationIcon = {
 };
 
 const STATUS_CONFIG = {
-  success: { color: "#4caf50" },
-  error: { color: "#f44336" },
-  info: { color: "#2196f3" },
-  warning: { color: "#ff9800" },
+  success: { palette: "success" },
+  error: { palette: "error" },
+  info: { palette: "info" },
+  warning: { palette: "warning" },
 };
 
 export const NotificationBell = () => {
@@ -62,7 +62,6 @@ export const NotificationBell = () => {
 
   const [anchorEl, setAnchorEl] = useState(null);
   const navigate = useNavigate();
-  const openReview = useFaceReviewStore((s) => s.openReview);
 
   const handleOpen = (event) => {
     setAnchorEl(event.currentTarget);
@@ -86,19 +85,16 @@ export const NotificationBell = () => {
     <>
       <Box
         sx={{
-          WebkitAppRegion: "no-drag",
+          ...toolbarPillSx,
           ml: 2,
+          width: 36,
           display: "inline-flex",
           alignItems: "center",
           justifyContent: "center",
-          border: "1px solid",
-          borderColor: "divider",
-          borderRadius: 7,
-          height: 34,
-          color: "text.secondary",
+          color: "text.primary",
         }}
       >
-        <IconButton onClick={handleOpen} sx={{ p: 1 }}>
+        <IconButton onClick={handleOpen} sx={{ p: 0, width: 36, height: 36 }}>
           {hasNew ? (
             <BellBadgeFillIcon
               sx={{
@@ -246,6 +242,7 @@ export const NotificationBell = () => {
             ) : (
               notifications.map((note, index) => {
                 const status = STATUS_CONFIG[note.type] || STATUS_CONFIG.info;
+                const statusColor = theme.palette[status.palette].main;
 
                 return (
                   <motion.div
@@ -272,7 +269,7 @@ export const NotificationBell = () => {
                         bgcolor: lighten(theme.palette.background.paper, 0.1),
                         border: "1px solid",
                         borderColor: note.isNew
-                          ? alpha(status.color, 0.5)
+                          ? alpha(statusColor, 0.5)
                           : "divider",
                         transition:
                           "background-color 0.2s ease, transform 0.2s ease",
@@ -325,14 +322,14 @@ export const NotificationBell = () => {
                           size="small"
                           onClick={() => {
                             if (note.category === "faceReview") {
-                              openReview();
+                              navigate("/settings/faces/review");
                             } else {
                               navigate(note.link);
                             }
                             handleClose();
                           }}
                           sx={{
-                            color: status.color,
+                            color: statusColor,
                             opacity: 0,
                             py: 0,
                             transition: "opacity 0.2s ease",
@@ -384,7 +381,7 @@ export const NotificationBell = () => {
                                 <CircleIcon
                                   sx={{
                                     fontSize: 10,
-                                    color: status.color,
+                                    color: statusColor,
                                     opacity: 0.8,
                                   }}
                                 />
@@ -392,7 +389,7 @@ export const NotificationBell = () => {
                               <Typography
                                 variant="caption"
                                 sx={{
-                                  color: status.color,
+                                  color: statusColor,
                                   fontWeight: 700,
                                   fontSize: "13px",
                                 }}

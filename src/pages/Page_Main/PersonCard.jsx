@@ -307,7 +307,7 @@ export const PersonCard = ({
               startIcon={<TrashFillIcon sx={{ fontSize: 18 }} />}
               sx={{
                 px: isSmall ? 1 : 2,
-                borderRadius: "10px",
+                borderRadius: "12px",
                 fontWeight: 700,
                 opacity: isSmall ? 0.2 : 0.5,
                 "&:hover": {
@@ -331,7 +331,7 @@ export const PersonCard = ({
                 }}
                 startIcon={<TrashSlashFillIcon sx={{ fontSize: 18 }} />}
                 sx={{
-                  borderRadius: "10px",
+                  borderRadius: "12px",
                   fontWeight: 700,
                   bgcolor: alpha(theme.palette.success.main, 0.05),
                   "&:hover": {
@@ -351,7 +351,7 @@ export const PersonCard = ({
                 }}
                 startIcon={<TrashFillIcon sx={{ fontSize: 18 }} />}
                 sx={{
-                  borderRadius: "10px",
+                  borderRadius: "12px",
                   fontWeight: 700,
                   bgcolor: alpha(theme.palette.error.main, 0.05),
                   "&:hover": { bgcolor: alpha(theme.palette.error.main, 0.15) },

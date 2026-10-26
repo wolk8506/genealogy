@@ -10,23 +10,23 @@ import {
 import { indigo } from "@mui/material/colors";
 import GroupIcon from "@mui/icons-material/Group";
 import CloseIcon from "@mui/icons-material/Close";
+import { toolbarPillBg, toolbarPillSx } from "../toolbarStyles";
 
 const SelectContainer = styled(Box, {
   shouldForwardProp: (prop) => prop !== "$expanded",
 })(({ theme, $expanded }) => ({
-  WebkitAppRegion: "no-drag",
+  ...toolbarPillSx,
   display: "flex",
   alignItems: "center",
-  borderRadius: 20,
   transition: theme.transitions.create("width", {
     easing: theme.transitions.easing.sharp,
     duration: theme.transitions.duration.standard,
   }),
   fontSize: 20,
-  height: 34,
-  width: $expanded ? 420 : 34, // Чуть увеличил ширину для чипов
+  width: $expanded ? 420 : 36, // Чуть увеличил ширину для чипов
   overflow: "hidden",
   cursor: "pointer",
+  backgroundColor: toolbarPillBg,
 }));
 
 export default function ExpandingPeopleSelect({
@@ -94,16 +94,8 @@ export default function ExpandingPeopleSelect({
     `${p.firstName || ""} ${p.lastName || p.maidenName || ""}`.trim();
 
   return (
-    <SelectContainer
-      $expanded={isExpanded}
-      onClick={handleContainerClick}
-      sx={{
-        border: "1px solid",
-        borderColor: isMenuOpen ? "primary.main" : "divider",
-        bgcolor: isMenuOpen ? "action.hover" : "transparent",
-      }}
-    >
-      <IconButton size="small" sx={{ color: "text.primary", p: 1 }}>
+    <SelectContainer $expanded={isExpanded} onClick={handleContainerClick}>
+      <IconButton size="small" sx={{ color: "text.primary" }}>
         <GroupIcon fontSize="inherit" />
       </IconButton>
 

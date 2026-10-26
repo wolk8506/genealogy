@@ -32,7 +32,7 @@ import {
   Button,
   CircularProgress,
 } from "@mui/material";
-import { styled, useTheme } from "@mui/material/styles";
+import { alpha, styled, useTheme } from "@mui/material/styles";
 import MuiAppBar from "@mui/material/AppBar";
 // icon
 import InfoIcon from "@mui/icons-material/Info";
@@ -64,6 +64,12 @@ const AboutPage = lazy(() => import("../pages/Page_About/AboutPage"));
 const ArchivedPeoplePage = lazy(
   () => import("../pages/Page_Settings/ArchivedPeoplePage"),
 );
+const FaceReviewQueuePage = lazy(
+  () => import("../pages/Page_Settings/FaceReviewQueuePage"),
+);
+const FaceNoFacesQueuePage = lazy(
+  () => import("../pages/Page_Settings/FaceNoFacesQueuePage"),
+);
 const DeletedPeoplePage = lazy(
   () => import("../pages/Page_Main/DeletedPeoplePage"),
 );
@@ -90,8 +96,6 @@ import LicenseModal from "./LicenseModal";
 import NavigationButtons from "./NavigationButtons";
 import ChangelogModal from "./ChangelogModal";
 import UserGuideModal from "./UserGuideModal";
-import FaceReviewQueueDialog from "../components/Dialog/FaceReviewQueueDialog";
-import FaceNoFacesQueueDialog from "../components/Dialog/FaceNoFacesQueueDialog";
 import { NotificationBell } from "./NotificationBell";
 import InspectorPanel from "./InspectorPanel";
 import ExternalInspectorPanel from "./ExternalInspectorPanel";
@@ -580,7 +584,9 @@ export default function MainLayout() {
   }, [id]);
 
   const currentItem = drawerItems.find((item) =>
-    matchPath({ path: item.path, end: true }, location.pathname),
+    item.path === "/"
+      ? location.pathname === "/"
+      : matchPath({ path: item.path, end: false }, location.pathname),
   );
 
   let pageTitle = "Genealogy";
@@ -604,13 +610,21 @@ export default function MainLayout() {
   } else if (currentItem) {
     pageTitle = (
       <Box sx={{ display: "flex", alignItems: "center" }}>
-        <Box sx={{ display: "flex", alignItems: "center", mr: 2 }}>
+        <Box sx={{ display: "flex", alignItems: "center", mr: 1 }}>
           {React.cloneElement(currentItem.icon, {
             color: isDark ? "primary" : "prymary",
-            sx: { fontSize: 28 },
+            sx: { fontSize: 18 },
           })}
         </Box>
-        <Typography variant="h6" noWrap>
+        <Typography
+          noWrap
+          sx={{
+            fontSize: "0.8125rem",
+            fontWeight: 600,
+            letterSpacing: "-0.01em",
+            lineHeight: 1.2,
+          }}
+        >
           {currentItem.text}
         </Typography>
       </Box>
@@ -679,14 +693,14 @@ export default function MainLayout() {
             height: 50,
             // Полупрозрачный «фростед-гласс»: контент прокручивается под баром
             // и размывается backdrop-filter (как тулбар в Finder/Notes).
-            bgcolor: isDark ? "rgba(18, 18, 18, 0.5)" : "rgba(246, 247, 251, 0.5)",
+            bgcolor: isDark
+              ? "rgba(31, 31, 31, 0.55)"
+              : alpha(theme.palette.background.paper, 0.55),
             color: "text.primary",
-            backdropFilter: "blur(24px) saturate(180%)",
-            WebkitBackdropFilter: "blur(24px) saturate(180%)",
+            backdropFilter: "blur(6px) saturate(140%)",
+            WebkitBackdropFilter: "blur(6px) saturate(140%)",
             borderBottom: "1px solid",
-            borderColor: isDark
-              ? "rgba(255, 255, 255, 0.08)"
-              : "rgba(0, 0, 0, 0.06)",
+            borderColor: theme.palette.glass.border,
           }}
         >
           <Toolbar
@@ -720,7 +734,7 @@ export default function MainLayout() {
                 />
               </IconButton>
             </ButtonConteiner>
-            <Box width={"16px"} />
+            <Box sx={{ width: 16, flexShrink: 0 }} />
 
             <NavigationButtons />
             <NotificationBell />
@@ -881,8 +895,12 @@ export default function MainLayout() {
               />
             )}
 
-            {/* Кнопка правой панели — главная, справочник, карта, галерея */}
-            {(isMainPage || isExternalPage || isMapPage || isGalleryPage) && (
+            {/* Кнопка правой панели — главная, справочник, карта, галереи */}
+            {(isMainPage ||
+              isExternalPage ||
+              isMapPage ||
+              isGalleryPage ||
+              isPersonPhotoPage) && (
               <Box sx={{ ml: "12px", display: "inline-flex" }}>
                 <ButtonConteiner>
                   <IconButton
@@ -890,7 +908,7 @@ export default function MainLayout() {
                     onClick={() => {
                       if (isExternalPage) setExternalPanelOpen((v) => !v);
                       else if (isMapPage) setMapPanelOpen((v) => !v);
-                      else if (isGalleryPage)
+                      else if (isGalleryPage || isPersonPhotoPage)
                         usePhotoInspectorStore.getState().toggle();
                       else setMemoriesOpen((v) => !v);
                     }}
@@ -1037,6 +1055,14 @@ export default function MainLayout() {
               }
             />
             <Route path="/settings" element={<ArchivedPeoplePage />} />
+            <Route
+              path="/settings/faces/review"
+              element={<FaceReviewQueuePage allPeople={allPeople} />}
+            />
+            <Route
+              path="/settings/faces/no-faces"
+              element={<FaceNoFacesQueuePage allPeople={allPeople} />}
+            />
             <Route path="/archive" element={<Navigate to="/settings" replace />} />
 
             {/* <Route path="/photoUploader" element={<PhotoUploader />} /> */}
@@ -1152,8 +1178,6 @@ export default function MainLayout() {
       )}
       <ChangelogModal />
       <UserGuideModal />
-      <FaceReviewQueueDialog allPeople={allPeople} />
-      <FaceNoFacesQueueDialog allPeople={allPeople} />
     </>
   );
 }

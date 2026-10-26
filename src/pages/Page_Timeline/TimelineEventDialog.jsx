@@ -1,6 +1,8 @@
 import React from "react";
 import { Dialog, Stack, Typography, Chip, Box, Divider } from "@mui/material";
-import AppButton from "../../components/AppButton";
+import DialogActionButton, {
+  DialogActionsBar,
+} from "../../components/Dialog/DialogActionButton";
 
 const sectionLabelSx = {
   display: "block",
@@ -136,51 +138,24 @@ export default function TimelineEventDialog({
         </Stack>
       </Box>
 
-      <Box
-        sx={{
-          display: "flex",
-          alignItems: "center",
-          gap: 1,
-          p: 2,
-          pt: 1,
-        }}
-      >
+      <DialogActionsBar sx={{ flexWrap: "wrap" }}>
         {hasPlace && onShowMap && (
-          <AppButton
-            preset="secondary"
-            onClick={() => onShowMap(event)}
-            sx={{ px: 2.5, borderRadius: "999px" }}
-          >
+          <DialogActionButton onClick={() => onShowMap(event)}>
             На карте
-          </AppButton>
+          </DialogActionButton>
         )}
         {isExternal && onOpenExternal && (
-          <AppButton
-            preset="secondary"
-            onClick={() => onOpenExternal(event.externalId)}
-            sx={{ px: 2.5, borderRadius: "999px" }}
-          >
+          <DialogActionButton onClick={() => onOpenExternal(event.externalId)}>
             Справочник
-          </AppButton>
+          </DialogActionButton>
         )}
-        <Box sx={{ flex: 1 }} />
-        <AppButton
-          preset="secondary"
-          onClick={onClose}
-          sx={{ px: 2.5, borderRadius: "999px" }}
-        >
-          Закрыть
-        </AppButton>
+        <DialogActionButton onClick={onClose}>Закрыть</DialogActionButton>
         {!isExternal && onEdit && (
-          <AppButton
-            preset="primary"
-            onClick={() => onEdit(event)}
-            sx={{ px: 3, borderRadius: "999px" }}
-          >
+          <DialogActionButton tone="primary" onClick={() => onEdit(event)}>
             Редактировать
-          </AppButton>
+          </DialogActionButton>
         )}
-      </Box>
+      </DialogActionsBar>
     </Dialog>
   );
 }

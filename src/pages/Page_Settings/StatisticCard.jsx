@@ -3,18 +3,15 @@ import {
   Box,
   Stack,
   Typography,
-  Button,
   List,
   ListItem,
-  CircularProgress,
   Tooltip,
   LinearProgress,
   Grid,
   Card,
-  Divider,
   TextField,
-  Alert,
   Chip,
+  IconButton,
 } from "@mui/material";
 import { useNotificationStore } from "../../store/useNotificationStore";
 import {
@@ -23,7 +20,6 @@ import {
 } from "@mui/icons-material";
 
 import { exportPeopleToZip } from "../utils/exportToZip";
-import { useTheme } from "@mui/material/styles";
 import ErrorIcon from "@mui/icons-material/Error";
 import CameraAltIcon from "@mui/icons-material/CameraAlt";
 import PieChartIcon from "@mui/icons-material/PieChart";
@@ -35,20 +31,21 @@ import StorageIcon from "@mui/icons-material/Storage";
 import FolderOpenIcon from "@mui/icons-material/FolderOpen";
 import SellIcon from "@mui/icons-material/Sell";
 import HistoryIcon from "@mui/icons-material/History";
-import { alpha } from "@mui/material/styles";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import BuildIcon from "@mui/icons-material/Build";
 import { ImportDecisionInline } from "./ImportDecisionInline";
 import CustomSwitch from "../../components/CustomSwitch";
+import AppButton from "../../components/AppButton";
+import {
+  groupSx,
+  sectionLabelSx,
+  RowIcon,
+  RowDivider,
+  SettingsRow,
+  chevron,
+} from "./settingsUi";
 
-import { keyframes } from "@mui/system";
-
-// Анимация блеска
-const shimmer = keyframes`
-  0% { transform: translateX(-150%) skewX(-20deg); }
-  100% { transform: translateX(150%) skewX(-20deg); }
-`;
-
-export const StatisticCard = ({ cardStyle, loadAll }) => {
-  const theme = useTheme();
+export const StatisticCard = ({ cardStyle, loadAll, onSubpageChange }) => {
   const addNotification = useNotificationStore(
     (state) => state.addNotification,
   );
@@ -515,47 +512,48 @@ export const StatisticCard = ({ cardStyle, loadAll }) => {
     return Math.round(archiveProgress.percent || 0);
   })();
 
-  function StatRow({ icon, label, value, detailList, hoverLabel }) {
+  function StatRow({
+    icon,
+    color = "gray",
+    label,
+    value,
+    detailList,
+    hoverLabel,
+  }) {
     const content = (
-      <ListItem disableGutters>
-        <Box
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          gap: 1.5,
+          px: 2,
+          py: 1.4,
+          width: "100%",
+        }}
+      >
+        <RowIcon bg={color}>{icon}</RowIcon>
+        <Box sx={{ minWidth: 0, flexGrow: 1 }}>
+          <Typography
+            variant="body2"
+            fontWeight={400}
+            noWrap
+            sx={{ fontSize: "0.8125rem" }}
+          >
+            {label}
+          </Typography>
+        </Box>
+        <Typography
+          variant="body2"
+          color="text.secondary"
           sx={{
-            display: "flex",
-            alignItems: "center",
-            gap: 1.5,
-            width: "100%",
+            fontSize: "0.8125rem",
+            fontVariantNumeric: "tabular-nums",
+            flexShrink: 0,
           }}
         >
-          <Box
-            sx={{
-              display: "flex",
-              p: 0.5,
-              bgcolor: "action.hover",
-              borderRadius: 1,
-            }}
-          >
-            {icon}
-          </Box>
-          <Box sx={{ flexGrow: 1 }}>
-            <Typography
-              variant="caption"
-              sx={{
-                color: "text.secondary",
-                display: "block",
-                lineHeight: 1.2,
-              }}
-            >
-              {label}
-            </Typography>
-            <Typography
-              variant="body2"
-              sx={{ fontWeight: 700, fontSize: "0.8rem" }}
-            >
-              {value}
-            </Typography>
-          </Box>
-        </Box>
-      </ListItem>
+          {value}
+        </Typography>
+      </Box>
     );
 
     if (!detailList || !detailList.length) return content;
@@ -564,12 +562,19 @@ export const StatisticCard = ({ cardStyle, loadAll }) => {
       <Tooltip
         title={
           <Box sx={{ p: 0.5, minWidth: 220 }}>
-            <Typography variant="caption" sx={{ opacity: 0.8, display: "block", mb: 1 }}>
+            <Typography
+              variant="caption"
+              sx={{ opacity: 0.8, display: "block", mb: 1 }}
+            >
               {hoverLabel || label}
             </Typography>
             <List dense disablePadding sx={{ m: 0 }}>
               {detailList.map((item) => (
-                <ListItem key={item.label} disableGutters sx={{ py: 0.25, px: 0 }}>
+                <ListItem
+                  key={item.label}
+                  disableGutters
+                  sx={{ py: 0.25, px: 0 }}
+                >
                   <Box
                     sx={{
                       display: "flex",
@@ -578,7 +583,10 @@ export const StatisticCard = ({ cardStyle, loadAll }) => {
                       gap: 1,
                     }}
                   >
-                    <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                    <Typography
+                      variant="caption"
+                      sx={{ color: "text.secondary" }}
+                    >
                       {item.label}
                     </Typography>
                     <Typography variant="caption" sx={{ fontWeight: 700 }}>
@@ -623,57 +631,130 @@ export const StatisticCard = ({ cardStyle, loadAll }) => {
   // );
   const progressValue = importProgress.percent || 0;
   const exportPercent = percentValue || 0;
+  const headerTitle = showExportProcess
+    ? "Экспорт данных"
+    : showBackupSetup
+      ? "Параметры бэкапа"
+      : showImportSetup
+        ? "Восстановление из бэкапа"
+        : showImportDecision
+          ? "Подтверждение импорта"
+          : showImportProcess
+            ? "Импорт данных"
+            : "Статистика хранилища";
+
+  const headerSubtitle = showExportProcess
+    ? "Упаковка данных библиотеки"
+    : showBackupSetup
+      ? "Состав и имя архива"
+      : showImportSetup
+        ? "Выбор архива и параметров"
+        : showImportDecision
+          ? "Выберите способ импорта"
+          : showImportProcess
+            ? "Распаковка данных"
+            : "Размеры файлов и обслуживание";
+
+  // Открываем экспорт/импорт как отдельную страницу раздела,
+  // а не блоком внизу статистики.
+  const subpageActive = !showDefaultContent;
+
+  useEffect(() => {
+    onSubpageChange?.(subpageActive);
+  }, [subpageActive, onSubpageChange]);
+
+  useEffect(() => () => onSubpageChange?.(false), [onSubpageChange]);
+
+  const backDisabled =
+    (showExportProcess && isSaving && !saveDone && !exportError) ||
+    (showImportProcess && isImporting);
+
+  const handleSubpageBack = () => {
+    if (showBackupSetup) {
+      closeBackupSetup();
+      return;
+    }
+    if (showImportSetup) {
+      resetImportSetup();
+      return;
+    }
+    if (showImportDecision) {
+      handleImportDecision({ action: "cancel", selected: [] });
+      return;
+    }
+    if (showExportProcess) {
+      if (backDisabled) return;
+      setIsSaving(false);
+      setSaveDone(false);
+      setExportError(false);
+      return;
+    }
+    if (showImportProcess) {
+      if (backDisabled) return;
+      setIsImportingOpen(false);
+      setImportError(false);
+    }
+  };
+
   return (
     <Card
       variant="outlined"
       sx={{
         ...cardStyle,
-        // height: 469,
         display: "flex",
         flexDirection: "column",
         overflow: "hidden",
+        borderRadius: "18px",
+        border: "none",
+        bgcolor: "transparent",
+        boxShadow: "none",
       }}
     >
-      {/* ШАПКА всегда видна */}
       <Box
         sx={{
-          p: 2,
-          bgcolor: "action.hover",
-          borderBottom: "1px solid",
-          borderColor: "divider",
+          px: 2,
+          pt: 2,
+          pb: 1.5,
           display: "flex",
+          alignItems: "center",
           gap: 1.5,
         }}
       >
-        <PieChartIcon color="primary" sx={{ fontSize: 20 }} />
-        <Typography
-          variant="subtitle2"
-          sx={{
-            fontWeight: 800,
-            textTransform: "uppercase",
-            fontSize: "0.7rem",
-            letterSpacing: 1,
-          }}
-        >
-          {showExportProcess
-            ? "Экспорт данных"
-            : showBackupSetup
-              ? "Параметры бэкапа"
-              : showImportSetup
-                ? "Восстановление из бэкапа"
-                : showImportDecision
-                  ? "Подтверждение импорта" // Добавили заголовок
-                  : showImportProcess
-                    ? "Импорт данных"
-                    : "Статистика хранилища"}
-        </Typography>
+        {subpageActive && (
+          <IconButton
+            size="small"
+            onClick={handleSubpageBack}
+            disabled={backDisabled}
+            aria-label="Назад"
+            sx={{ ml: -0.75, mr: -0.5, color: "text.secondary" }}
+          >
+            <ArrowBackIcon sx={{ fontSize: 20 }} />
+          </IconButton>
+        )}
+        <RowIcon bg="indigo">
+          <PieChartIcon sx={{ fontSize: 18 }} />
+        </RowIcon>
+        <Box sx={{ minWidth: 0 }}>
+          <Typography variant="subtitle1" fontWeight={700} noWrap>
+            {headerTitle}
+          </Typography>
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            display="block"
+            noWrap
+          >
+            {headerSubtitle}
+          </Typography>
+        </Box>
       </Box>
 
       <Box
         sx={{
-          p: 2,
+          px: 2,
+          pb: 2,
+          flexGrow: 1,
           minHeight: 0,
-          flex: 1,
           display: "flex",
           flexDirection: "column",
           overflow: "auto",
@@ -681,600 +762,552 @@ export const StatisticCard = ({ cardStyle, loadAll }) => {
       >
         {/* --- ВИД: ПАРАМЕТРЫ БЭКАПА --- */}
         {showBackupSetup && (
-          <Stack spacing={1.25} sx={{ flexGrow: 1, minHeight: 0 }}>
-            <Alert severity="info" sx={{ borderRadius: 2 }}>
-              Настройте имя бэкапа, включаемые папки фото и, при необходимости,
-              обслуживание базы перед упаковкой.
-            </Alert>
-
-            <TextField
-              fullWidth
-              label="Имя бэкапа"
-              value={backupArchiveName}
-              onChange={(e) => setBackupArchiveName(e.target.value)}
-              helperText={`Дата и время: ${new Date().toLocaleString("ru-RU")}`}
-            />
-
-            <Box
-              sx={{
-                p: 1.5,
-                borderRadius: 2,
-                border: "1px solid",
-                borderColor: "divider",
-              }}
+          <Stack spacing={2.5} sx={{ flexGrow: 1, minHeight: 0 }}>
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ display: "block", px: 0.5 }}
             >
-              <Stack spacing={1}>
-                <Typography variant="subtitle2" fontWeight={700}>
-                  Фото в бэкапе
-                </Typography>
-                {[
-                  ["original", "original"],
-                  ["thumbs", "thumbs"],
-                  ["webp", "webp"],
-                ].map(([value, label]) => (
-                  <Stack
-                    key={value}
-                    direction="row"
-                    alignItems="center"
-                    justifyContent="space-between"
-                  >
-                    <Typography variant="body2">{label}</Typography>
-                    <CustomSwitch
-                      checked={Boolean(backupPhotoFolders[value])}
-                      onChange={() =>
-                        setBackupPhotoFolders((prev) => ({
-                          ...prev,
-                          [value]: !prev[value],
-                        }))
+              Настройте имя архива, папки фото и обслуживание базы перед
+              упаковкой.
+            </Typography>
+
+            <Box>
+              <Typography sx={sectionLabelSx}>Архив</Typography>
+              <Box sx={groupSx}>
+                <Box sx={{ px: 2, pt: 2.75, pb: 1.5 }}>
+                  <TextField
+                    fullWidth
+                    size="small"
+                    label="Имя бэкапа"
+                    value={backupArchiveName}
+                    onChange={(e) => setBackupArchiveName(e.target.value)}
+                    helperText={`Дата и время: ${new Date().toLocaleString("ru-RU")}`}
+                    sx={{
+                      "& .MuiOutlinedInput-root": { borderRadius: "12px" },
+                    }}
+                  />
+                </Box>
+              </Box>
+            </Box>
+
+            <Box>
+              <Typography sx={sectionLabelSx}>Фото в бэкапе</Typography>
+              <Box sx={groupSx}>
+                <Stack divider={<RowDivider />}>
+                  {[
+                    ["original", "Оригиналы", "Исходные файлы", "blue"],
+                    ["webp", "WebP", "Сжатые версии", "orange"],
+                    ["thumbs", "Превью", "Миниатюры", "gray"],
+                  ].map(([value, title, subtitle, color]) => (
+                    <SettingsRow
+                      key={value}
+                      icon={
+                        <RowIcon bg={color}>
+                          <PhotoLibraryIcon sx={{ fontSize: 18 }} />
+                        </RowIcon>
+                      }
+                      title={title}
+                      subtitle={subtitle}
+                      trailing={
+                        <CustomSwitch
+                          checked={Boolean(backupPhotoFolders[value])}
+                          onChange={() =>
+                            setBackupPhotoFolders((prev) => ({
+                              ...prev,
+                              [value]: !prev[value],
+                            }))
+                          }
+                        />
                       }
                     />
-                  </Stack>
-                ))}
-
-                <Typography variant="caption" color="text.secondary">
-                  Выберите хотя бы один из вариантов: original или webp.
-                </Typography>
-              </Stack>
-            </Box>
-            <Box
-              sx={{
-                p: 1.5,
-                borderRadius: 2,
-                border: "1px solid",
-                borderColor: "divider",
-              }}
-            >
-              <Stack spacing={1}>
-                <Typography variant="subtitle2" fontWeight={700}>
-                  Дополнительные данные
-                </Typography>
-                <Stack
-                  direction="row"
-                  alignItems="center"
-                  justifyContent="space-between"
-                >
-                  <Stack direction="row" spacing={1} alignItems="center">
-                    <SellIcon sx={{ fontSize: 18, opacity: 0.7 }} />
-                    <Typography variant="body2">Метки (tags.json)</Typography>
-                  </Stack>
-                  <CustomSwitch
-                    checked={backupIncludeTags}
-                    onChange={() => setBackupIncludeTags((prev) => !prev)}
-                  />
+                  ))}
                 </Stack>
-                <Stack
-                  direction="row"
-                  alignItems="center"
-                  justifyContent="space-between"
-                >
-                  <Stack direction="row" spacing={1} alignItems="center">
-                    <HistoryIcon sx={{ fontSize: 18, opacity: 0.7 }} />
-                    <Typography variant="body2">
-                      Журнал действий (history.jsonl)
-                    </Typography>
-                  </Stack>
-                  <CustomSwitch
-                    checked={backupIncludeHistory}
-                    onChange={() => setBackupIncludeHistory((prev) => !prev)}
-                  />
-                </Stack>
-              </Stack>
-            </Box>
-
-            <Box
-              sx={{
-                p: 1.5,
-                borderRadius: 2,
-                border: "1px solid",
-                borderColor: "divider",
-              }}
-            >
-              <Stack
-                direction="row"
-                alignItems="center"
-                justifyContent="space-between"
-                spacing={1}
+              </Box>
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ display: "block", mt: 1, ml: 0.5 }}
               >
-                <Box>
-                  <Typography variant="subtitle2" fontWeight={700}>
-                    Обслуживание базы
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    VACUUM + ANALYZE перед экспортом
-                  </Typography>
-                </Box>
-                <CustomSwitch
-                  checked={backupMaintenance}
-                  onChange={(e) => setBackupMaintenance(e.target.checked)}
-                />
-              </Stack>
+                Выберите хотя бы один из вариантов: оригиналы или WebP.
+              </Typography>
             </Box>
 
-            <Stack direction="row" spacing={1} justifyContent="flex-end">
-              <Button
-                variant="outlined"
+            <Box>
+              <Typography sx={sectionLabelSx}>Дополнительные данные</Typography>
+              <Box sx={groupSx}>
+                <Stack divider={<RowDivider />}>
+                  <SettingsRow
+                    icon={
+                      <RowIcon bg="purple">
+                        <SellIcon sx={{ fontSize: 18 }} />
+                      </RowIcon>
+                    }
+                    title="Метки"
+                    subtitle="tags.json"
+                    trailing={
+                      <CustomSwitch
+                        checked={backupIncludeTags}
+                        onChange={() => setBackupIncludeTags((prev) => !prev)}
+                      />
+                    }
+                  />
+                  <SettingsRow
+                    icon={
+                      <RowIcon bg="indigo">
+                        <HistoryIcon sx={{ fontSize: 18 }} />
+                      </RowIcon>
+                    }
+                    title="Журнал действий"
+                    subtitle="history.jsonl"
+                    trailing={
+                      <CustomSwitch
+                        checked={backupIncludeHistory}
+                        onChange={() =>
+                          setBackupIncludeHistory((prev) => !prev)
+                        }
+                      />
+                    }
+                  />
+                </Stack>
+              </Box>
+            </Box>
+
+            <Box>
+              <Typography sx={sectionLabelSx}>Обслуживание</Typography>
+              <Box sx={groupSx}>
+                <SettingsRow
+                  icon={
+                    <RowIcon bg="green">
+                      <BuildIcon sx={{ fontSize: 18 }} />
+                    </RowIcon>
+                  }
+                  title="Обслуживание базы"
+                  subtitle="VACUUM + ANALYZE перед экспортом"
+                  trailing={
+                    <CustomSwitch
+                      checked={backupMaintenance}
+                      onChange={(e) => setBackupMaintenance(e.target.checked)}
+                    />
+                  }
+                />
+              </Box>
+            </Box>
+
+            <Stack
+              direction="row"
+              spacing={1}
+              justifyContent="flex-end"
+              sx={{ pt: 0.5 }}
+            >
+              <AppButton
+                preset="ghost"
                 onClick={closeBackupSetup}
-                sx={{
-                  height: 24,
-                  borderRadius: "8px",
-                  px: 3,
-                  py: 1,
-                  textTransform: "none",
-                  fontWeight: 600,
-                  boxShadow: "none",
-                }}
+                sx={{ px: 2.5 }}
               >
                 Отмена
-              </Button>
-              <Button
-                variant="contained"
+              </AppButton>
+              <AppButton
+                preset="primary"
                 onClick={handleExportAll}
                 disabled={
                   !backupPhotoFolders.original && !backupPhotoFolders.webp
                 }
                 startIcon={<SaveIcon />}
-                sx={{
-                  height: 24,
-                  borderRadius: "8px",
-                  px: 3,
-                  py: 1,
-                  textTransform: "none",
-                  fontWeight: 600,
-                  boxShadow: "none",
-                }}
+                sx={{ px: 2.5 }}
               >
                 Создать бэкап
-              </Button>
+              </AppButton>
             </Stack>
           </Stack>
         )}
 
         {/* --- ВИД: ПАРАМЕТРЫ ВОССТАНОВЛЕНИЯ --- */}
         {showImportSetup && (
-          <Stack spacing={1.75} sx={{ flexGrow: 1, minHeight: 0 }}>
-            <Alert severity="info" sx={{ borderRadius: 2 }}>
+          <Stack spacing={2.5} sx={{ flexGrow: 1, minHeight: 0 }}>
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ display: "block", px: 0.5 }}
+            >
               Проверьте бэкап, выберите нужные папки фото для восстановления и
               запустите импорт.
-            </Alert>
+            </Typography>
 
-            <Box
-              sx={{
-                p: 1.5,
-                borderRadius: 2,
-                border: "1px solid",
-                borderColor: "divider",
-              }}
-            >
-              <Stack spacing={1}>
-                <Typography variant="subtitle2" fontWeight={700}>
-                  Бэкап
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {importArchiveMeta?.archiveName || "Без имени"}
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  {importArchiveMeta?.createdAt
-                    ? `Создан: ${new Date(importArchiveMeta.createdAt).toLocaleString("ru-RU")}`
-                    : "Дата создания неизвестна"}
-                </Typography>
-                <Stack direction="row" spacing={1} flexWrap="wrap">
-                  {(importArchiveMeta?.availablePhotoFolders || []).map(
-                    (folder) => (
-                      <Chip key={folder} label={folder} size="small" />
-                    ),
-                  )}
-                  {importArchiveMeta?.hasTagsFile && (
-                    <Chip label="tags.json" size="small" />
-                  )}
-                  {importArchiveMeta?.hasHistoryFile && (
-                    <Chip label="history.jsonl" size="small" />
-                  )}
-                </Stack>
-              </Stack>
-            </Box>
-
-            <Box
-              sx={{
-                p: 1.5,
-                borderRadius: 2,
-                border: "1px solid",
-                borderColor: "divider",
-              }}
-            >
-              <Stack spacing={1}>
-                <Typography variant="subtitle2" fontWeight={700}>
-                  Дополнительные данные
-                </Typography>
-                <Stack
-                  direction="row"
-                  alignItems="center"
-                  justifyContent="space-between"
-                >
-                  <Stack direction="row" spacing={1} alignItems="center">
-                    <SellIcon sx={{ fontSize: 18, opacity: 0.7 }} />
-                    <Typography variant="body2">Метки (tags.json)</Typography>
-                  </Stack>
-                  <CustomSwitch
-                    disabled={!importArchiveMeta?.hasTagsFile}
-                    checked={importIncludeTags}
-                    onChange={() => setImportIncludeTags((prev) => !prev)}
-                  />
-                </Stack>
-                <Stack
-                  direction="row"
-                  alignItems="center"
-                  justifyContent="space-between"
-                >
-                  <Stack direction="row" spacing={1} alignItems="center">
-                    <HistoryIcon sx={{ fontSize: 18, opacity: 0.7 }} />
-                    <Typography variant="body2">
-                      Журнал действий (history.jsonl)
-                    </Typography>
-                  </Stack>
-                  <CustomSwitch
-                    disabled={!importArchiveMeta?.hasHistoryFile}
-                    checked={importIncludeHistory}
-                    onChange={() => setImportIncludeHistory((prev) => !prev)}
-                  />
-                </Stack>
-                <Typography variant="caption" color="text.secondary">
-                  Переключатели активны только если файл есть в бэкапе.
-                </Typography>
-              </Stack>
-            </Box>
-
-            <Box
-              sx={{
-                p: 1.5,
-                borderRadius: 2,
-                border: "1px solid",
-                borderColor: "divider",
-              }}
-            >
-              <Stack spacing={1}>
-                <Typography variant="subtitle2" fontWeight={700}>
-                  Восстанавливать папки фото
-                </Typography>
-                {[
-                  ["original", "original"],
-                  ["thumbs", "thumbs"],
-                  ["webp", "webp"],
-                ].map(([value, label]) => (
-                  <Stack
-                    key={value}
-                    direction="row"
-                    alignItems="center"
-                    justifyContent="space-between"
+            <Box>
+              <Typography sx={sectionLabelSx}>Бэкап</Typography>
+              <Box sx={groupSx}>
+                <Box sx={{ px: 2, py: 1.75 }}>
+                  <Typography variant="body2" fontWeight={600} noWrap>
+                    {importArchiveMeta?.archiveName || "Без имени"}
+                  </Typography>
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    display="block"
+                    sx={{ mb: 1 }}
                   >
-                    <Typography variant="body2">{label}</Typography>
-                    <CustomSwitch
-                      disabled={!importArchiveMeta?.availablePhotoFolders?.includes(
-                        value,
-                      )}
-                      checked={importPhotoFolders.includes(value)}
-                      onChange={() =>
-                        setImportPhotoFolders((prev) =>
-                          prev.includes(value)
-                            ? prev.filter((item) => item !== value)
-                            : [...prev, value],
-                        )
+                    {importArchiveMeta?.createdAt
+                      ? `Создан: ${new Date(
+                          importArchiveMeta.createdAt,
+                        ).toLocaleString("ru-RU")}`
+                      : "Дата создания неизвестна"}
+                  </Typography>
+                  <Stack direction="row" spacing={0.75} flexWrap="wrap">
+                    {(importArchiveMeta?.availablePhotoFolders || []).map(
+                      (folder) => (
+                        <Chip
+                          key={folder}
+                          label={folder}
+                          size="small"
+                          sx={{
+                            height: 22,
+                            borderRadius: "7px",
+                            fontSize: "0.7rem",
+                            fontWeight: 600,
+                          }}
+                        />
+                      ),
+                    )}
+                    {importArchiveMeta?.hasTagsFile && (
+                      <Chip
+                        label="tags.json"
+                        size="small"
+                        sx={{
+                          height: 22,
+                          borderRadius: "7px",
+                          fontSize: "0.7rem",
+                          fontWeight: 600,
+                        }}
+                      />
+                    )}
+                    {importArchiveMeta?.hasHistoryFile && (
+                      <Chip
+                        label="history.jsonl"
+                        size="small"
+                        sx={{
+                          height: 22,
+                          borderRadius: "7px",
+                          fontSize: "0.7rem",
+                          fontWeight: 600,
+                        }}
+                      />
+                    )}
+                  </Stack>
+                </Box>
+              </Box>
+            </Box>
+
+            <Box>
+              <Typography sx={sectionLabelSx}>Дополнительные данные</Typography>
+              <Box sx={groupSx}>
+                <Stack divider={<RowDivider />}>
+                  <SettingsRow
+                    icon={
+                      <RowIcon bg="purple">
+                        <SellIcon sx={{ fontSize: 18 }} />
+                      </RowIcon>
+                    }
+                    title="Метки"
+                    subtitle="tags.json"
+                    trailing={
+                      <CustomSwitch
+                        disabled={!importArchiveMeta?.hasTagsFile}
+                        checked={importIncludeTags}
+                        onChange={() => setImportIncludeTags((prev) => !prev)}
+                      />
+                    }
+                  />
+                  <SettingsRow
+                    icon={
+                      <RowIcon bg="indigo">
+                        <HistoryIcon sx={{ fontSize: 18 }} />
+                      </RowIcon>
+                    }
+                    title="Журнал действий"
+                    subtitle="history.jsonl"
+                    trailing={
+                      <CustomSwitch
+                        disabled={!importArchiveMeta?.hasHistoryFile}
+                        checked={importIncludeHistory}
+                        onChange={() =>
+                          setImportIncludeHistory((prev) => !prev)
+                        }
+                      />
+                    }
+                  />
+                </Stack>
+              </Box>
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ display: "block", mt: 1, ml: 0.5 }}
+              >
+                Переключатели активны только если файл есть в бэкапе.
+              </Typography>
+            </Box>
+
+            <Box>
+              <Typography sx={sectionLabelSx}>
+                Восстанавливать папки фото
+              </Typography>
+              <Box sx={groupSx}>
+                <Stack divider={<RowDivider />}>
+                  {[
+                    ["original", "Оригиналы", "Исходные файлы", "blue"],
+                    ["webp", "WebP", "Сжатые версии", "orange"],
+                    ["thumbs", "Превью", "Миниатюры", "gray"],
+                  ].map(([value, title, subtitle, color]) => (
+                    <SettingsRow
+                      key={value}
+                      icon={
+                        <RowIcon bg={color}>
+                          <PhotoLibraryIcon sx={{ fontSize: 18 }} />
+                        </RowIcon>
+                      }
+                      title={title}
+                      subtitle={subtitle}
+                      trailing={
+                        <CustomSwitch
+                          disabled={!importArchiveMeta?.availablePhotoFolders?.includes(
+                            value,
+                          )}
+                          checked={importPhotoFolders.includes(value)}
+                          onChange={() =>
+                            setImportPhotoFolders((prev) =>
+                              prev.includes(value)
+                                ? prev.filter((item) => item !== value)
+                                : [...prev, value],
+                            )
+                          }
+                        />
                       }
                     />
-                  </Stack>
-                ))}
-                <Typography variant="caption" color="text.secondary">
-                  Если какой-то папки нет в бэкапе, она просто будет пропущена.
-                </Typography>
-              </Stack>
+                  ))}
+                </Stack>
+              </Box>
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ display: "block", mt: 1, ml: 0.5 }}
+              >
+                Если какой-то папки нет в бэкапе, она просто будет пропущена.
+              </Typography>
             </Box>
 
-            <Stack direction="row" spacing={1} justifyContent="flex-end">
-              <Button
-                variant="outlined"
+            <Stack
+              direction="row"
+              spacing={1}
+              justifyContent="flex-end"
+              sx={{ pt: 0.5 }}
+            >
+              <AppButton
+                preset="ghost"
                 onClick={resetImportSetup}
-                sx={{
-                  height: 24,
-                  borderRadius: "8px",
-                  px: 3,
-                  py: 1,
-                  textTransform: "none",
-                  fontWeight: 600,
-                  boxShadow: "none",
-                }}
+                sx={{ px: 2.5 }}
               >
                 Отмена
-              </Button>
-              <Button
-                variant="contained"
+              </AppButton>
+              <AppButton
+                preset="primary"
                 onClick={handleRunImport}
                 disabled={importPhotoFolders.length === 0}
                 startIcon={<RestoreIcon />}
-                sx={{
-                  height: 24,
-                  borderRadius: "8px",
-                  px: 3,
-                  py: 1,
-                  textTransform: "none",
-                  fontWeight: 600,
-                  boxShadow: "none",
-                }}
+                sx={{ px: 2.5 }}
               >
                 Восстановить
-              </Button>
+              </AppButton>
             </Stack>
           </Stack>
         )}
 
         {/* --- СТАНДАРТНЫЙ ВИД (Статистика) --- */}
         {showDefaultContent && (
-          <Stack
-            justifyContent="space-between"
-            sx={{ flexGrow: 1, minHeight: 0 }}
-          >
+          <Stack spacing={2.5} sx={{ flexGrow: 1, minHeight: 0 }}>
             <Box>
-              <Stack
-                direction="row"
-                justifyContent="space-between"
-                alignItems="center"
-                sx={{ mb: 1.25 }}
-              >
-                <Stack direction="row" spacing={1} alignItems="center">
-                  <StorageIcon
-                    sx={{ fontSize: 20, color: "text.secondary", opacity: 0.8 }}
-                  />
-                  <Box>
-                    <Typography
-                      variant="caption"
-                      sx={{
-                        color: "text.secondary",
-                        fontWeight: 700,
-                        textTransform: "uppercase",
-                        fontSize: "0.6rem",
-                        letterSpacing: 0.5,
-                      }}
-                    >
-                      Системный том
+              <Typography sx={sectionLabelSx}>Системный том</Typography>
+              <Box sx={groupSx}>
+                <Box sx={{ px: 2, py: 2 }}>
+                  <Stack
+                    direction="row"
+                    justifyContent="space-between"
+                    alignItems="baseline"
+                    sx={{ mb: 1.25 }}
+                  >
+                    <Box>
+                      <Typography variant="body2" fontWeight={600}>
+                        Занято{" "}
+                        {(((total - free) / total) * 100).toFixed(0)}%
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {formatStorage(total - free)} из {formatStorage(total)}
+                      </Typography>
+                    </Box>
+                    <Typography variant="body2" color="text.secondary">
+                      {formatStorage(free)} свободно
                     </Typography>
-                    <Typography
-                      variant="subtitle1"
-                      sx={{ fontWeight: 800, lineHeight: 1 }}
-                    >
-                      {formatStorage(total)}
-                    </Typography>
-                  </Box>
-                </Stack>
-                <Box sx={{ textAlign: "right" }}>
-                  <Typography
-                    variant="caption"
+                  </Stack>
+
+                  <Box
                     sx={{
-                      color: "primary.main",
-                      fontWeight: 800,
-                      bgcolor: alpha(theme.palette.primary.main, 0.1),
-                      px: 1,
-                      py: 0.2,
-                      borderRadius: 1,
+                      height: 10,
+                      width: "100%",
+                      bgcolor: "action.hover",
+                      borderRadius: "5px",
+                      overflow: "hidden",
+                      display: "flex",
+                      mb: 2,
                     }}
                   >
-                    Занято: {(((total - free) / total) * 100).toFixed(0)}%
-                  </Typography>
-                </Box>
-              </Stack>
-
-              <Box
-                sx={{
-                  height: 12,
-                  width: "100%",
-                  bgcolor: alpha(theme.palette.divider, 0.2),
-                  borderRadius: 7,
-                  overflow: "hidden",
-                  display: "flex",
-                  boxShadow: `inset 0 1px 3px ${alpha("#000", 0.1)}`,
-                  mb: 3,
-                }}
-              >
-                <Box
-                  sx={{
-                    width: `${libPct}%`,
-                    bgcolor: "primary.main",
-                    transition: "width 1s",
-                  }}
-                />
-                <Box
-                  sx={{
-                    width: `${otherPct}%`,
-                    bgcolor: alpha(theme.palette.text.disabled, 0.5),
-                    borderLeft: "1px solid rgba(255,255,255,0.2)",
-                  }}
-                />
-              </Box>
-
-              <Grid container spacing={2}>
-                <Grid size={{ xs: 4 }}>
-                  <Stack direction="row" spacing={1}>
                     <Box
                       sx={{
-                        width: 10,
-                        height: 10,
-                        borderRadius: "2px",
+                        width: `${libPct}%`,
                         bgcolor: "primary.main",
-                        mt: 0.5,
+                        transition: "width 1s",
                       }}
                     />
-                    <Box>
-                      <Typography
-                        variant="caption"
-                        sx={{
-                          display: "block",
-                          fontSize: "0.65rem",
-                          fontWeight: 700,
-                          lineHeight: 1.1,
-                          color: "text.secondary",
-                        }}
-                      >
-                        Файлы библиотеки
-                      </Typography>
-                      <Typography variant="body2" sx={{ fontWeight: 800 }}>
-                        {formatStorage(library)}
-                      </Typography>
-                    </Box>
-                  </Stack>
-                </Grid>
-                <Grid size={{ xs: 4 }}>
-                  <Stack direction="row" spacing={1}>
                     <Box
                       sx={{
-                        width: 10,
-                        height: 10,
-                        borderRadius: "2px",
-                        bgcolor: alpha(theme.palette.text.disabled, 0.8),
-                        mt: 0.5,
+                        width: `${otherPct}%`,
+                        bgcolor: "text.disabled",
+                        opacity: 0.55,
                       }}
                     />
-                    <Box>
-                      <Typography
-                        variant="caption"
-                        sx={{
-                          display: "block",
-                          fontSize: "0.65rem",
-                          fontWeight: 700,
-                          lineHeight: 1.1,
-                          color: "text.secondary",
-                        }}
-                      >
-                        Система и кэш
-                      </Typography>
-                      <Typography variant="body2" sx={{ fontWeight: 800 }}>
-                        {formatStorage(total - free - library)}
-                      </Typography>
-                    </Box>
-                  </Stack>
-                </Grid>
-                <Grid size={{ xs: 4 }}>
-                  <Stack direction="row" spacing={1}>
-                    <Box
-                      sx={{
-                        width: 10,
-                        height: 10,
-                        borderRadius: "2px",
-                        bgcolor: alpha(theme.palette.divider, 0.8),
-                        mt: 0.5,
-                        border: "1px solid divider",
-                      }}
-                    />
-                    <Box>
-                      <Typography
-                        variant="caption"
-                        sx={{
-                          display: "block",
-                          fontSize: "0.65rem",
-                          fontWeight: 700,
-                          lineHeight: 1.1,
-                          color: "text.secondary",
-                        }}
-                      >
-                        Доступно (прибл.)
-                      </Typography>
-                      <Typography
-                        variant="body2"
-                        sx={{
-                          fontWeight: 800,
-                          color: free < 10240 ? "error.main" : "inherit",
-                        }}
-                      >
-                        {formatStorage(free)}
-                      </Typography>
-                    </Box>
-                  </Stack>
-                </Grid>
-              </Grid>
+                  </Box>
+
+                  <Grid container spacing={2}>
+                    <Grid size={{ xs: 4 }}>
+                      <Stack direction="row" spacing={1}>
+                        <Box
+                          sx={{
+                            width: 10,
+                            height: 10,
+                            borderRadius: "3px",
+                            bgcolor: "primary.main",
+                            mt: 0.5,
+                            flexShrink: 0,
+                          }}
+                        />
+                        <Box sx={{ minWidth: 0 }}>
+                          <Typography
+                            variant="caption"
+                            color="text.secondary"
+                            display="block"
+                            sx={{ fontSize: "0.65rem", lineHeight: 1.1 }}
+                          >
+                            Файлы библиотеки
+                          </Typography>
+                          <Typography variant="body2" fontWeight={700}>
+                            {formatStorage(library)}
+                          </Typography>
+                        </Box>
+                      </Stack>
+                    </Grid>
+                    <Grid size={{ xs: 4 }}>
+                      <Stack direction="row" spacing={1}>
+                        <Box
+                          sx={{
+                            width: 10,
+                            height: 10,
+                            borderRadius: "3px",
+                            bgcolor: "text.disabled",
+                            opacity: 0.55,
+                            mt: 0.5,
+                            flexShrink: 0,
+                          }}
+                        />
+                        <Box sx={{ minWidth: 0 }}>
+                          <Typography
+                            variant="caption"
+                            color="text.secondary"
+                            display="block"
+                            sx={{ fontSize: "0.65rem", lineHeight: 1.1 }}
+                          >
+                            Система и кэш
+                          </Typography>
+                          <Typography variant="body2" fontWeight={700}>
+                            {formatStorage(total - free - library)}
+                          </Typography>
+                        </Box>
+                      </Stack>
+                    </Grid>
+                    <Grid size={{ xs: 4 }}>
+                      <Stack direction="row" spacing={1}>
+                        <Box
+                          sx={{
+                            width: 10,
+                            height: 10,
+                            borderRadius: "3px",
+                            bgcolor: "action.hover",
+                            border: "1px solid",
+                            borderColor: "divider",
+                            mt: 0.5,
+                            flexShrink: 0,
+                          }}
+                        />
+                        <Box sx={{ minWidth: 0 }}>
+                          <Typography
+                            variant="caption"
+                            color="text.secondary"
+                            display="block"
+                            sx={{ fontSize: "0.65rem", lineHeight: 1.1 }}
+                          >
+                            Доступно (прибл.)
+                          </Typography>
+                          <Typography
+                            variant="body2"
+                            fontWeight={700}
+                            color={free < 10240 ? "error.main" : "inherit"}
+                          >
+                            {formatStorage(free)}
+                          </Typography>
+                        </Box>
+                      </Stack>
+                    </Grid>
+                  </Grid>
+                </Box>
+              </Box>
             </Box>
 
-            <Divider sx={{ borderStyle: "dashed" }} />
-
-            <Grid container spacing={2}>
-              <Grid size={{ xs: 12, sm: 6 }}>
-                <Typography
-                  variant="overline"
-                  sx={{ fontWeight: 900, color: "primary.main", ml: 1 }}
-                >
-                  Медиа файлы
-                </Typography>
-                <List
-                  data-density="compact"
-                  sx={{ "& .MuiListItem-root": { px: 0.75, py: 0.35 } }}
-                >
+            <Box>
+              <Typography sx={sectionLabelSx}>Медиа файлы</Typography>
+              <Box sx={groupSx}>
+                <Stack divider={<RowDivider />}>
                   <StatRow
-                    icon={
-                      <CameraAltIcon sx={{ fontSize: 18 }} color="primary" />
-                    }
+                    color="blue"
+                    icon={<CameraAltIcon sx={{ fontSize: 18 }} />}
                     label="Оригиналы"
                     value={formatSize(storageStats?.original || 0)}
                   />
                   <StatRow
-                    icon={
-                      <PhotoSizeSelectLargeIcon
-                        sx={{ fontSize: 18 }}
-                        color="action"
-                      />
-                    }
+                    color="green"
+                    icon={<PhotoSizeSelectLargeIcon sx={{ fontSize: 18 }} />}
                     label="Сжатые (WebP)"
                     value={formatSize(storageStats?.webp || 0)}
                   />
                   <StatRow
-                    icon={
-                      <PhotoLibraryIcon
-                        sx={{ fontSize: 18 }}
-                        color="disabled"
-                      />
-                    }
+                    color="gray"
+                    icon={<PhotoLibraryIcon sx={{ fontSize: 18 }} />}
                     label="Превью (Thumbs)"
                     value={formatSize(storageStats?.thumbs || 0)}
                   />
-                </List>
-              </Grid>
-              <Grid size={{ xs: 12, sm: 6 }}>
-                <Typography
-                  variant="overline"
-                  sx={{ fontWeight: 900, color: "secondary.main", ml: 1 }}
-                >
-                  Инфо и БД
-                </Typography>
-                <List
-                  data-density="compact"
-                  sx={{ "& .MuiListItem-root": { px: 0.75, py: 0.35 } }}
-                >
+                </Stack>
+              </Box>
+            </Box>
+
+            <Box>
+              <Typography sx={sectionLabelSx}>Инфо и БД</Typography>
+              <Box sx={groupSx}>
+                <Stack divider={<RowDivider />}>
                   <StatRow
-                    icon={
-                      <DescriptionIcon
-                        sx={{ fontSize: 18 }}
-                        color="secondary"
-                      />
-                    }
+                    color="indigo"
+                    icon={<DescriptionIcon sx={{ fontSize: 18 }} />}
                     label="Биографии (BIO)"
                     value={formatSize(storageStats?.bio || 0)}
                   />
                   <StatRow
-                    icon={<StorageIcon sx={{ fontSize: 18 }} color="success" />}
+                    color="green"
+                    icon={<StorageIcon sx={{ fontSize: 18 }} />}
                     label="База данных"
                     value={formatSize(
                       Math.max(
@@ -1301,382 +1334,226 @@ export const StatisticCard = ({ cardStyle, loadAll }) => {
                     ]}
                   />
                   <StatRow
-                    icon={<FolderOpenIcon sx={{ fontSize: 18 }} color="info" />}
+                    color="orange"
+                    icon={<FolderOpenIcon sx={{ fontSize: 18 }} />}
                     label="Папка external"
                     value={formatSize(storageStats?.externalFolder || 0)}
                   />
-                  <Button
-                    fullWidth
-                    variant="text"
-                    size="small"
-                    startIcon={<FolderOpenIcon />}
+                  <SettingsRow
+                    icon={
+                      <RowIcon bg="gray">
+                        <FolderOpenIcon sx={{ fontSize: 18 }} />
+                      </RowIcon>
+                    }
+                    title="Открыть директорию"
                     onClick={() => window.appAPI.openDataFolder()}
-                    sx={{
-                      justifyContent: "flex-start",
-                      mt: 0.5,
-                      fontSize: "0.65rem",
-                      opacity: 0.7,
-                    }}
-                  >
-                    Открыть директорию
-                  </Button>
-                </List>
-              </Grid>
-            </Grid>
-
-            <Divider />
-            <Box
-              sx={{
-                p: 1.5,
-                borderRadius: 2,
-                border: "1px solid",
-                borderColor: "divider",
-              }}
-            >
-              <Stack direction="row" spacing={1.5} flexDirection={"column"}>
-                <Typography variant="subtitle2" fontWeight={700}>
-                  Импорт / экспорт данных
-                </Typography>
-                <Stack
-                  direction="row"
-                  spacing={1.5}
-                  justifyContent={"space-evenly"}
-                  pt={1}
-                >
-                  <Button
-                    fullWidth
-                    variant="contained"
-                    startIcon={<SaveIcon />}
-                    onClick={openBackupSetup}
-                    sx={{
-                      height: 24,
-                      borderRadius: "6px",
-                      px: 2.5,
-                      boxShadow: "none",
-                      fontWeight: "bold",
-                    }}
-                  >
-                    Экспорт
-                  </Button>
-                  <Button
-                    fullWidth
-                    variant="outlined"
-                    startIcon={<RestoreIcon />}
-                    onClick={handleImportAll}
-                    sx={{
-                      height: 24,
-                      borderRadius: "6px",
-                      px: 2.5,
-                      fontWeight: "bold",
-                    }}
-                  >
-                    Импорт
-                  </Button>
+                    trailing={chevron}
+                  />
                 </Stack>
-              </Stack>
+              </Box>
+            </Box>
+
+            <Box>
+              <Typography sx={sectionLabelSx}>Импорт и экспорт</Typography>
+              <Box sx={groupSx}>
+                <Stack divider={<RowDivider />}>
+                  <SettingsRow
+                    icon={
+                      <RowIcon bg="blue">
+                        <SaveIcon sx={{ fontSize: 18 }} />
+                      </RowIcon>
+                    }
+                    title="Экспорт данных"
+                    subtitle="Создать резервную копию библиотеки"
+                    trailing={chevron}
+                    onClick={openBackupSetup}
+                  />
+                  <SettingsRow
+                    icon={
+                      <RowIcon bg="green">
+                        <RestoreIcon sx={{ fontSize: 18 }} />
+                      </RowIcon>
+                    }
+                    title="Импорт данных"
+                    subtitle="Восстановить из ZIP-бэкапа"
+                    trailing={chevron}
+                    onClick={handleImportAll}
+                  />
+                </Stack>
+              </Box>
             </Box>
           </Stack>
         )}
 
         {/* --- ВИД: ПРОЦЕСС ЭКСПОРТА --- */}
         {showExportProcess && (
-          <Box
-            sx={{
-              display: "flex",
-              flexDirection: "column",
-              flexGrow: 1,
-              justifyContent: "center",
-              py: 2,
-              px: 1,
-            }}
-          >
+          <Box sx={{ py: 1 }}>
             {exportError ? (
-              /* --- СОСТОЯНИЕ: ОШИБКА (Красный градиент) --- */
-              <Box
-                sx={{
-                  p: 3,
-                  borderRadius: 4,
-                  background: `linear-gradient(135deg, ${theme.palette.error.main} 0%, ${theme.palette.error.dark} 100%)`,
-                  color: "error.contrastText",
-                  boxShadow: `0 12px 32px ${alpha(theme.palette.error.main, 0.3)}`,
-                  textAlign: "center",
-                  position: "relative",
-                  overflow: "hidden",
-                }}
-              >
-                <ErrorIcon sx={{ fontSize: 64, mb: 2, opacity: 0.9 }} />
-                <Typography variant="h6" fontWeight={900} gutterBottom>
-                  Ошибка экспорта
-                </Typography>
-                <Typography
-                  variant="body2"
-                  sx={{ mb: 3, opacity: 0.8, fontWeight: 500 }}
+              <Box sx={groupSx}>
+                <Stack
+                  spacing={1.5}
+                  alignItems="center"
+                  sx={{ px: 2, py: 3, textAlign: "center" }}
                 >
-                  {exportStatus}
-                </Typography>
-                <Button
-                  variant="contained"
-                  onClick={() => {
-                    setIsSaving(false);
-                    setExportError(false);
-                  }}
-                  sx={{
-                    bgcolor: "common.white",
-                    color: "error.main",
-                    fontWeight: 700,
-                    "&:hover": {
-                      bgcolor: alpha(theme.palette.common.white, 0.9),
-                    },
-                  }}
-                >
-                  Вернуться
-                </Button>
+                  <RowIcon bg="red">
+                    <ErrorIcon sx={{ fontSize: 18 }} />
+                  </RowIcon>
+                  <Typography variant="subtitle1" fontWeight={700}>
+                    Ошибка экспорта
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {exportStatus}
+                  </Typography>
+                  <AppButton
+                    preset="secondary"
+                    onClick={() => {
+                      setIsSaving(false);
+                      setExportError(false);
+                    }}
+                    sx={{ px: 3, mt: 1 }}
+                  >
+                    Вернуться
+                  </AppButton>
+                </Stack>
               </Box>
             ) : saveDone ? (
-              /* --- СОСТОЯНИЕ: УСПЕХ (Зеленый градиент) --- */
-              <Box
-                sx={{
-                  p: 3,
-                  borderRadius: 4,
-                  background: `linear-gradient(135deg, ${theme.palette.success.main} 0%, ${theme.palette.success.dark} 100%)`,
-                  color: "success.contrastText",
-                  boxShadow: `0 12px 32px ${alpha(theme.palette.success.main, 0.3)}`,
-                  textAlign: "center",
-                  position: "relative",
-                  overflow: "hidden",
-                }}
-              >
-                <CheckCircleIcon sx={{ fontSize: 64, mb: 2, opacity: 0.9 }} />
-                <Typography variant="h6" fontWeight={900} gutterBottom>
-                  Бэкап готов
-                </Typography>
-                <Typography
-                  variant="caption"
-                  component="button"
-                  onClick={handleOpenArchivePath}
-                  sx={{
-                    display: "block",
-                    mb: 3,
-                    opacity: 0.8,
-                    wordBreak: "break-all",
-                    fontFamily: "Monospace",
-                    bgcolor: alpha(theme.palette.common.black, 0.1),
-                    p: 1,
-                    borderRadius: 1,
-                    border: 0,
-                    width: "100%",
-                    textAlign: "left",
-                    color: "inherit",
-                    cursor: "pointer",
-                    textDecoration: "underline",
-                  }}
+              <Box sx={groupSx}>
+                <Stack
+                  spacing={1.5}
+                  alignItems="center"
+                  sx={{ px: 2, py: 3, textAlign: "center" }}
                 >
-                  {exportPath}
-                </Typography>
-                <Button
-                  variant="contained"
-                  fullWidth
-                  onClick={() => {
-                    setIsSaving(false);
-                    setSaveDone(false);
-                  }}
-                  sx={{
-                    height: 24,
-                    borderRadius: "6px",
-                    py: 1.2,
-                    bgcolor: "common.white",
-                    color: "success.dark",
-                    fontWeight: 700,
-                    "&:hover": {
-                      bgcolor: alpha(theme.palette.common.white, 0.9),
-                    },
-                  }}
-                >
-                  Готово
-                </Button>
+                  <RowIcon bg="green">
+                    <CheckCircleIcon sx={{ fontSize: 18 }} />
+                  </RowIcon>
+                  <Typography variant="subtitle1" fontWeight={700}>
+                    Бэкап готов
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    Нажмите на путь, чтобы показать файл в Finder.
+                  </Typography>
+                  <Box
+                    component="button"
+                    onClick={handleOpenArchivePath}
+                    sx={{
+                      font: "inherit",
+                      width: "100%",
+                      border: 0,
+                      borderRadius: "10px",
+                      bgcolor: "action.hover",
+                      px: 1.5,
+                      py: 1,
+                      cursor: "pointer",
+                      color: "text.secondary",
+                      fontFamily: "Monospace",
+                      fontSize: "0.72rem",
+                      wordBreak: "break-all",
+                      textAlign: "center",
+                      "&:hover": { bgcolor: "action.selected" },
+                    }}
+                  >
+                    {exportPath}
+                  </Box>
+                  <AppButton
+                    preset="primary"
+                    onClick={() => {
+                      setIsSaving(false);
+                      setSaveDone(false);
+                    }}
+                    sx={{ px: 4, minWidth: 120, mt: 0.5 }}
+                  >
+                    Готово
+                  </AppButton>
+                </Stack>
               </Box>
             ) : (
-              /* --- СОСТОЯНИЕ: ПРОЦЕСС (Твой новый синий стиль) --- */
-              <Box sx={{ width: "100%" }}>
-                {/* Заголовок процесса */}
-                <Box
-                  sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 2,
-                    mb: 3,
-                    px: 1,
-                  }}
-                >
-                  <Box sx={{ position: "relative", display: "flex" }}>
-                    <CircularProgress
-                      size={42}
-                      thickness={3}
-                      sx={{
-                        color: "primary.main",
-                        position: "absolute",
-                        zIndex: 1,
-                      }}
-                    />
-                    <Box
-                      sx={{
-                        width: 42,
-                        height: 42,
-                        borderRadius: "12px",
-                        bgcolor: alpha(theme.palette.primary.main, 0.1),
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}
+              <Box sx={groupSx}>
+                <Box sx={{ px: 2, py: 2 }}>
+                  <Stack
+                    direction="row"
+                    justifyContent="space-between"
+                    alignItems="center"
+                    sx={{ mb: 1.5 }}
+                  >
+                    <Stack
+                      direction="row"
+                      spacing={1.5}
+                      alignItems="center"
+                      sx={{ minWidth: 0 }}
                     >
-                      <SaveIcon color="primary" fontSize="small" />
-                    </Box>
-                  </Box>
-                  <Box>
+                      <RowIcon bg="blue">
+                        <SaveIcon sx={{ fontSize: 18 }} />
+                      </RowIcon>
+                      <Box sx={{ minWidth: 0 }}>
+                        <Typography variant="body2" fontWeight={600} noWrap>
+                          Экспорт данных
+                        </Typography>
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          display="block"
+                          noWrap
+                        >
+                          {exportStatus}
+                        </Typography>
+                      </Box>
+                    </Stack>
                     <Typography
                       variant="subtitle1"
-                      fontWeight={900}
-                      lineHeight={1.1}
+                      fontWeight={700}
+                      sx={{
+                        fontVariantNumeric: "tabular-nums",
+                        flexShrink: 0,
+                        ml: 2,
+                      }}
                     >
-                      Экспорт данных
+                      {exportPercent}%
                     </Typography>
-                    <Typography
-                      variant="caption"
-                      color="text.secondary"
-                      fontWeight={600}
-                    >
-                      {exportStatus}
-                    </Typography>
-                  </Box>
-                </Box>
-                {/* Основная карточка прогресса */}
-                <Box
-                  sx={{
-                    p: 3,
-                    borderRadius: 4,
-                    background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-                    color: "primary.contrastText",
-                    boxShadow: `0 12px 32px ${alpha(theme.palette.primary.main, 0.35)}`,
-                    position: "relative",
-                    overflow: "hidden",
-                    border: `1px solid ${alpha(theme.palette.common.white, 0.1)}`,
-                  }}
-                >
-                  {/* Анимация блика */}
-                  <Box
+                  </Stack>
+
+                  <LinearProgress
+                    variant="determinate"
+                    value={exportPercent}
                     sx={{
-                      position: "absolute",
-                      top: 0,
-                      left: 0,
-                      width: "50%",
-                      height: "100%",
-                      background: `linear-gradient(to right, transparent, ${alpha(theme.palette.common.white, 0.15)}, transparent)`,
-                      animation: `${shimmer} 3s infinite ease-in-out`,
-                      zIndex: 0,
+                      height: 8,
+                      borderRadius: 4,
+                      mb: 1.25,
+                      "& .MuiLinearProgress-bar": { borderRadius: 4 },
                     }}
                   />
 
                   <Stack
                     direction="row"
                     justifyContent="space-between"
-                    alignItems="flex-end"
-                    sx={{ mb: 2, position: "relative", zIndex: 1 }}
+                    spacing={2}
                   >
-                    <Box>
-                      <Typography
-                        variant="caption"
-                        sx={{
-                          opacity: 0.7,
-                          fontWeight: 800,
-                          textTransform: "uppercase",
-                          letterSpacing: 1.5,
-                          fontSize: "0.65rem",
-                        }}
-                      >
-                        {archiveProgress.phase.startsWith("writing")
-                          ? "Сжатие и упаковка"
-                          : "Подготовка файлов"}
-                      </Typography>
-
-                      <Box
-                        sx={{
-                          display: "flex",
-                          alignItems: "baseline",
-                          mt: 0.5,
-                        }}
-                      >
-                        <Typography
-                          variant="h4"
-                          sx={{ fontWeight: 900, lineHeight: 1 }}
-                        >
-                          {(
-                            archiveProgress.processedFiles || 0
-                          ).toLocaleString()}
-                        </Typography>
-                        <Typography
-                          sx={{
-                            fontWeight: 700,
-                            fontSize: "1rem",
-                            opacity: 0.5,
-                            ml: 1,
-                          }}
-                        >
-                          / {(archiveProgress.totalFiles || 0).toLocaleString()}
-                        </Typography>
-                      </Box>
-                    </Box>
-
                     <Typography
-                      variant="h2"
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{ fontVariantNumeric: "tabular-nums", flexShrink: 0 }}
+                    >
+                      {(archiveProgress.processedFiles || 0).toLocaleString()}{" "}
+                      из{" "}
+                      {(archiveProgress.totalFiles || 0).toLocaleString()}{" "}
+                      файлов
+                    </Typography>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      noWrap
                       sx={{
-                        fontWeight: 900,
-                        lineHeight: 0.8,
-                        letterSpacing: -2,
-                        color: "common.white",
-                        textShadow: `0 4px 12px ${alpha(theme.palette.common.black, 0.2)}`,
+                        textAlign: "right",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
                       }}
                     >
-                      {exportPercent}
-                      <span style={{ fontSize: "1.5rem", opacity: 0.8 }}>
-                        %
-                      </span>
+                      {archiveProgress.phase.startsWith("writing")
+                        ? "Сжатие и упаковка"
+                        : archiveProgress.currentFile ||
+                          archiveProgress.currentOwner ||
+                          "Инициализация..."}
                     </Typography>
                   </Stack>
-
-                  <Box sx={{ position: "relative", zIndex: 1, mb: 2 }}>
-                    <LinearProgress
-                      variant="determinate"
-                      value={exportPercent}
-                      sx={{
-                        height: 10,
-                        borderRadius: 5,
-                        bgcolor: alpha(theme.palette.common.black, 0.2),
-                        "& .MuiLinearProgress-bar": {
-                          borderRadius: 5,
-                          bgcolor: "common.white",
-                          boxShadow: `0 0 10px ${alpha(theme.palette.common.white, 0.5)}`,
-                        },
-                      }}
-                    />
-                  </Box>
-
-                  <Typography
-                    variant="caption"
-                    sx={{
-                      display: "block",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
-                      fontWeight: 600,
-                      opacity: 0.7,
-                      position: "relative",
-                      zIndex: 1,
-                    }}
-                  >
-                    {archiveProgress.currentFile ||
-                      archiveProgress.currentOwner ||
-                      "Инициализация..."}
-                  </Typography>
                 </Box>
               </Box>
             )}
@@ -1685,246 +1562,145 @@ export const StatisticCard = ({ cardStyle, loadAll }) => {
 
         {/* --- ВИД: ПРОЦЕСС ИМПОРТА --- */}
         {showImportProcess && (
-          <Box
-            sx={{
-              display: "flex",
-              flexDirection: "column",
-              flexGrow: 1,
-              justifyContent: "center",
-              py: 2,
-              px: 1,
-            }}
-          >
+          <Box sx={{ py: 1 }}>
             {importError ? (
-              <Box sx={{ textAlign: "center" }}>
-                <ErrorIcon sx={{ fontSize: 48, color: "error.main", mb: 2 }} />
-                <Typography variant="subtitle1" fontWeight={700} gutterBottom>
-                  Ошибка импорта
-                </Typography>
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                  sx={{ mb: 3 }}
+              <Box sx={groupSx}>
+                <Stack
+                  spacing={1.5}
+                  alignItems="center"
+                  sx={{ px: 2, py: 3, textAlign: "center" }}
                 >
-                  {importStatus}
-                </Typography>
-                <Button
-                  variant="outlined"
-                  onClick={() => {
-                    setIsImportingOpen(false);
-                    setImportError(false);
-                  }}
-                >
-                  Вернуться
-                </Button>
+                  <RowIcon bg="red">
+                    <ErrorIcon sx={{ fontSize: 18 }} />
+                  </RowIcon>
+                  <Typography variant="subtitle1" fontWeight={700}>
+                    Ошибка импорта
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {importStatus}
+                  </Typography>
+                  <AppButton
+                    preset="secondary"
+                    onClick={() => {
+                      setIsImportingOpen(false);
+                      setImportError(false);
+                    }}
+                    sx={{ px: 3, mt: 1 }}
+                  >
+                    Вернуться
+                  </AppButton>
+                </Stack>
               </Box>
             ) : isImporting ? (
-              <Box sx={{ width: "100%" }}>
-                {/* Иконка и текущий статус */}
-                <Box
-                  sx={{ display: "flex", alignItems: "center", gap: 2, mb: 4 }}
-                >
-                  <Box sx={{ position: "relative", display: "flex" }}>
-                    <CircularProgress
-                      size={48}
-                      thickness={2}
-                      sx={{
-                        color: "success.main",
-                        position: "absolute",
-                        zIndex: 1,
-                      }}
-                    />
-                    <Box
-                      sx={{
-                        width: 48,
-                        height: 48,
-                        borderRadius: 3,
-                        bgcolor: alpha(theme.palette.success.main, 0.1),
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}
+              <Box sx={groupSx}>
+                <Box sx={{ px: 2, py: 2 }}>
+                  <Stack
+                    direction="row"
+                    justifyContent="space-between"
+                    alignItems="center"
+                    sx={{ mb: 1.5 }}
+                  >
+                    <Stack
+                      direction="row"
+                      spacing={1.5}
+                      alignItems="center"
+                      sx={{ minWidth: 0 }}
                     >
-                      <RestoreIcon color="success" />
-                    </Box>
-                  </Box>
-                  <Box>
+                      <RowIcon bg="green">
+                        <RestoreIcon sx={{ fontSize: 18 }} />
+                      </RowIcon>
+                      <Box sx={{ minWidth: 0 }}>
+                        <Typography variant="body2" fontWeight={600} noWrap>
+                          Восстановление данных
+                        </Typography>
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          display="block"
+                          noWrap
+                        >
+                          {importStatus || "Чтение бэкапа..."}
+                        </Typography>
+                      </Box>
+                    </Stack>
                     <Typography
                       variant="subtitle1"
-                      fontWeight={800}
-                      lineHeight={1.2}
+                      fontWeight={700}
+                      sx={{
+                        fontVariantNumeric: "tabular-nums",
+                        flexShrink: 0,
+                        ml: 2,
+                      }}
                     >
-                      Восстановление данных
+                      {progressValue}%
                     </Typography>
-                    <Typography
-                      variant="caption"
-                      color="text.secondary"
-                      sx={{ fontWeight: 600 }}
-                    >
-                      {importStatus || "Чтение бэкапа..."}
-                    </Typography>
-                  </Box>
-                </Box>
-                <Box
-                  sx={{
-                    p: 3,
-                    borderRadius: 4, // Чуть больше скругление для мягкости
-                    background: `linear-gradient(135deg, ${theme.palette.success.main} 0%, ${theme.palette.success.dark} 100%)`,
-                    color: "primary.contrastText",
-                    boxShadow: `0 12px 32px ${alpha(theme.palette.success.main, 0.35)}`,
-                    position: "relative",
-                    overflow: "hidden",
-                    border: `1px solid ${alpha(theme.palette.common.white, 0.1)}`, // Тонкая граница для эффекта стекла
-                  }}
-                >
-                  {/* Улучшенный декоративный блеск */}
-                  <Box
+                  </Stack>
+
+                  <LinearProgress
+                    variant="determinate"
+                    value={progressValue}
                     sx={{
-                      position: "absolute",
-                      top: 0,
-                      left: 0,
-                      width: "50%",
-                      height: "100%",
-                      background: `linear-gradient(to right, transparent, ${alpha(theme.palette.common.white, 0.15)}, transparent)`,
-                      animation: `${shimmer} 4s infinite ease-in-out`,
-                      zIndex: 0,
+                      height: 8,
+                      borderRadius: 4,
+                      mb: 1.25,
+                      "& .MuiLinearProgress-bar": { borderRadius: 4 },
                     }}
                   />
 
                   <Stack
                     direction="row"
                     justifyContent="space-between"
-                    alignItems="flex-end"
-                    sx={{ mb: 2, position: "relative", zIndex: 1 }}
+                    spacing={2}
                   >
-                    <Box>
-                      <Typography
-                        variant="caption"
-                        sx={{
-                          opacity: 0.7,
-                          fontWeight: 800,
-                          textTransform: "uppercase",
-                          letterSpacing: 1.5,
-                          fontSize: "0.65rem",
-                          display: "block",
-                          mb: 0.5,
-                        }}
-                      >
-                        Идёт распаковка бэкапа
-                      </Typography>
-
-                      <Box sx={{ display: "flex", alignItems: "baseline" }}>
-                        <Typography
-                          variant="h4"
-                          sx={{ fontWeight: 900, lineHeight: 1 }}
-                        >
-                          {/* {importProgress.current.toLocaleString()} */}
-                          {(
-                            importProgress.processedFiles || 0
-                          ).toLocaleString()}
-                        </Typography>
-                        <Typography
-                          sx={{
-                            fontWeight: 700,
-                            fontSize: "1rem",
-                            opacity: 0.5,
-                            ml: 1,
-                          }}
-                        >
-                          {/* / {importProgress.total.toLocaleString()} */}/{" "}
-                          {(importProgress.totalFiles || 0).toLocaleString()}
-                        </Typography>
-                      </Box>
-                    </Box>
-
-                    <Box sx={{ textAlign: "right" }}>
-                      <Typography
-                        variant="h2" // Еще крупнее для акцента
-                        sx={{
-                          fontWeight: 900,
-                          lineHeight: 0.8,
-                          letterSpacing: -2,
-                          // Вместо зеленого используем белый с небольшим свечением
-                          color: theme.palette.common.white,
-                          textShadow: `0 4px 12px ${alpha(theme.palette.common.black, 0.2)}`,
-                        }}
-                      >
-                        {progressValue}
-                        <span style={{ fontSize: "1.5rem", opacity: 0.8 }}>
-                          %
-                        </span>
-                      </Typography>
-                    </Box>
-                  </Stack>
-
-                  {/* Кастомный прогресс-бар с внутренним свечением */}
-                  <Box sx={{ position: "relative", zIndex: 1 }}>
-                    <LinearProgress
-                      variant="determinate"
-                      value={progressValue}
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{ fontVariantNumeric: "tabular-nums", flexShrink: 0 }}
+                    >
+                      {(importProgress.processedFiles || 0).toLocaleString()}{" "}
+                      из{" "}
+                      {(importProgress.totalFiles || 0).toLocaleString()}{" "}
+                      файлов
+                    </Typography>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      noWrap
                       sx={{
-                        height: 10,
-                        borderRadius: 5,
-                        bgcolor: alpha(theme.palette.common.black, 0.2), // Темная подложка
-                        "& .MuiLinearProgress-bar": {
-                          borderRadius: 5,
-                          bgcolor: theme.palette.common.white, // Белый бар на синем фоне — классика Apple/macOS
-                          boxShadow: `0 0 10px ${alpha(theme.palette.common.white, 0.5)}`, // Мягкое свечение самого бара
-                        },
+                        textAlign: "right",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
                       }}
-                    />
-                  </Box>
-
-                  {/* Фоновая иконка для контекста (опционально) */}
-                  <Box
-                    sx={{
-                      position: "absolute",
-                      right: -10,
-                      bottom: -10,
-                      opacity: 0.05,
-                      transform: "rotate(-15deg)",
-                      zIndex: 0,
-                    }}
-                  >
-                    <Box sx={{ fontSize: 120, fontWeight: 900 }}>ZIP</Box>
-                  </Box>
+                    >
+                      Распаковка бэкапа
+                    </Typography>
+                  </Stack>
                 </Box>
               </Box>
             ) : (
-              <Box
-                sx={{
-                  p: 3,
-                  borderRadius: 4,
-                  background: `linear-gradient(135deg, ${theme.palette.success.main} 0%, ${theme.palette.success.dark} 100%)`,
-                  color: "success.contrastText",
-                  boxShadow: `0 12px 32px ${alpha(theme.palette.success.main, 0.3)}`,
-                  textAlign: "center",
-                  position: "relative",
-                  overflow: "hidden",
-                }}
-              >
-                <CheckCircleIcon sx={{ fontSize: 64, mb: 2, opacity: 0.9 }} />
-                <Typography variant="h6" fontWeight={900} gutterBottom>
-                  Данные успешно восстановлены!
-                </Typography>
-                <Button
-                  variant="contained"
-                  disableElevation
-                  sx={{
-                    height: 24,
-                    borderRadius: "6px",
-                    py: 1.2,
-                    bgcolor: "common.white",
-                    color: "success.dark",
-                    fontWeight: 700,
-                    "&:hover": {
-                      bgcolor: alpha(theme.palette.common.white, 0.9),
-                    },
-                  }}
-                  onClick={() => setIsImportingOpen(false)}
+              <Box sx={groupSx}>
+                <Stack
+                  spacing={1.5}
+                  alignItems="center"
+                  sx={{ px: 2, py: 3, textAlign: "center" }}
                 >
-                  Готово
-                </Button>
+                  <RowIcon bg="green">
+                    <CheckCircleIcon sx={{ fontSize: 18 }} />
+                  </RowIcon>
+                  <Typography variant="subtitle1" fontWeight={700}>
+                    Данные успешно восстановлены
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    Библиотека обновлена — можно продолжать работу.
+                  </Typography>
+                  <AppButton
+                    preset="primary"
+                    onClick={() => setIsImportingOpen(false)}
+                    sx={{ px: 4, minWidth: 120, mt: 0.5 }}
+                  >
+                    Готово
+                  </AppButton>
+                </Stack>
               </Box>
             )}
           </Box>

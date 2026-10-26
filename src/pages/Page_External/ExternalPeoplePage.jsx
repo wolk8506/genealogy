@@ -1,21 +1,22 @@
 import React, { useEffect, useState, useMemo } from "react";
 import {
+  Avatar,
   Typography,
   CircularProgress,
   Stack,
   Button,
   Grid,
   useTheme,
-  Paper,
   Box,
   alpha,
 } from "@mui/material";
+import AddIcon from "@mui/icons-material/Add";
 import { useSearchParams } from "react-router-dom";
-import { ButtonScrollTop } from "../../components/ButtonScrollTop";
 import { ExternalEntityCard } from "./ExternalEntityCard";
 import { filterActiveExternal } from "../../utils/externalEntities";
 import { usePeopleListStore } from "../../store/usePeopleListStore";
 import AddExternalEntityDialog from "../../components/Dialog/AddExternalEntityDialog";
+import appIcon from "../../img/app_icon.png";
 
 export default function ExternalPeoplePage({
   externalSearch = "",
@@ -27,7 +28,6 @@ export default function ExternalPeoplePage({
   listRefreshKey = 0,
 }) {
   const theme = useTheme();
-  const isDark = theme.palette.mode === "dark";
   const [entities, setEntities] = useState([]);
   const [allPeople, setAllPeople] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -94,6 +94,8 @@ export default function ExternalPeoplePage({
     return list.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
   }, [entities, search, typeFilter]);
 
+  const hasEntities = filterActiveExternal(entities).length > 0;
+
   useEffect(() => {
     if (loading) return;
     if (filtered.length === 0) {
@@ -113,27 +115,104 @@ export default function ExternalPeoplePage({
           <CircularProgress />
         </Stack>
       ) : filtered.length === 0 ? (
-        <Paper
+        <Box
           sx={{
-            p: 6,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            minHeight: "calc(100vh - 130px)",
+            px: 3,
             textAlign: "center",
-            borderRadius: "20px",
-            bgcolor: isDark
-              ? alpha(theme.palette.primary.main, 0.05)
-              : alpha(theme.palette.primary.main, 0.03),
+            animation: "fadeIn 0.8s ease-out",
+            "@keyframes fadeIn": {
+              from: { opacity: 0, transform: "translateY(20px)" },
+              to: { opacity: 1, transform: "translateY(0)" },
+            },
           }}
         >
-          <Typography color="text.secondary" mb={2}>
-            {filterActiveExternal(entities).length === 0
-              ? "Справочник пуст. Добавьте крёстных, друзей или питомцев."
-              : "Ничего не найдено по фильтру."}
-          </Typography>
-          {filterActiveExternal(entities).length === 0 && (
-            <Button variant="outlined" onClick={handleOpenAdd}>
-              Добавить первую запись
-            </Button>
-          )}
-        </Paper>
+          <Box
+            sx={{
+              p: { xs: 4, md: 6 },
+              width: "100%",
+              maxWidth: 500,
+              borderRadius: "24px",
+              bgcolor: alpha(theme.palette.background.paper, 0.4),
+              border: "1px solid",
+              borderColor: "divider",
+              backdropFilter: "blur(10px)",
+              boxShadow: "0 8px 32px rgba(0,0,0,0.1)",
+            }}
+          >
+            <Stack spacing={3} alignItems="center">
+              <Box sx={{ position: "relative" }}>
+                <Box
+                  sx={{
+                    position: "absolute",
+                    inset: 0,
+                    bgcolor: theme.palette.primary.main,
+                    filter: "blur(25px)",
+                    opacity: 0.15,
+                    borderRadius: "50%",
+                  }}
+                />
+                <Avatar
+                  src={appIcon}
+                  sx={{
+                    width: 100,
+                    height: 100,
+                    border: "4px solid",
+                    borderColor: "background.paper",
+                    boxShadow: theme.shadows[4],
+                  }}
+                />
+              </Box>
+
+              <Box>
+                <Typography variant="h4" sx={{ fontWeight: 800, mb: 1 }}>
+                  Справочник
+                </Typography>
+                <Typography
+                  variant="body1"
+                  sx={{ color: "text.secondary", maxWidth: 350, mx: "auto" }}
+                >
+                  {!hasEntities
+                    ? "Справочник пока пуст. Добавьте крёстных, друзей или питомцев."
+                    : "Ничего не найдено по фильтру."}
+                </Typography>
+              </Box>
+
+              {!hasEntities && (
+                <Stack spacing={2} sx={{ width: "100%", mt: 2 }}>
+                  <Button
+                    variant="contained"
+                    size="large"
+                    startIcon={<AddIcon />}
+                    onClick={handleOpenAdd}
+                    sx={{
+                      height: 32,
+                      borderRadius: "999px",
+                      px: 2,
+                      py: 0,
+                      textTransform: "none",
+                      fontSize: "0.8125rem",
+                      lineHeight: 1.2,
+                      fontWeight: 700,
+                      boxShadow: "0 4px 14px 0 rgba(0,118,255,0.39)",
+                      "& .MuiButton-startIcon": {
+                        mr: 0.5,
+                        ml: 0,
+                        "& > *:nth-of-type(1)": { fontSize: 16 },
+                      },
+                    }}
+                  >
+                    Добавить первую запись
+                  </Button>
+                </Stack>
+              )}
+            </Stack>
+          </Box>
+        </Box>
       ) : (
         <Grid container spacing={2} sx={{ width: "100%" }}>
           {filtered.map((entity) => (
@@ -156,7 +235,6 @@ export default function ExternalPeoplePage({
         onSaved={handleSaved}
       />
 
-      <ButtonScrollTop />
     </Box>
   );
 }

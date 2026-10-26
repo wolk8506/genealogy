@@ -426,7 +426,6 @@ export default function Info({
                     size="small"
                     onClick={() => setIsFlipped(false)}
                     startIcon={<ArrowBackIcon />}
-                    sx={{ borderRadius: "10px" }}
                   >
                     Назад
                   </Button>

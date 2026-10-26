@@ -1,34 +1,49 @@
 import React, { useEffect, useState } from "react";
-import {
-  Box,
-  Card,
-  CardContent,
-  Avatar,
-  Typography,
-  Divider,
-  Grid,
-  Button,
-  Stack,
-  Chip,
-  Paper,
-} from "@mui/material";
+import { Avatar, Box, Stack, Typography } from "@mui/material";
+import { useNavigate } from "react-router-dom";
 
 import GitHubIcon from "@mui/icons-material/GitHub";
 import InfoIcon from "@mui/icons-material/Info";
 import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
 import ComputerIcon from "@mui/icons-material/Computer";
-import VerifiedUserIcon from "@mui/icons-material/VerifiedUser";
 import LaunchIcon from "@mui/icons-material/Launch";
+import ChevronRightIcon from "@mui/icons-material/ChevronRight";
+import PeopleIcon from "@mui/icons-material/People";
+import PhotoLibraryIcon from "@mui/icons-material/PhotoLibrary";
+import EventIcon from "@mui/icons-material/Event";
+import ContactsIcon from "@mui/icons-material/Contacts";
+import NewReleasesIcon from "@mui/icons-material/NewReleases";
+import MenuBookIcon from "@mui/icons-material/MenuBook";
 
 import AppDiagnostic from "./AppInfo";
 
 import appIcon from "../../img/app_icon.png";
 import developer from "../../img/developer.png";
+import {
+  groupSx,
+  RowDivider,
+  RowIcon,
+  SettingsRow,
+  sectionLabelSx,
+} from "../Page_Settings/settingsUi";
+
+const valueSx = {
+  fontWeight: 600,
+  fontSize: "0.8125rem",
+  color: "text.secondary",
+  fontFamily: "monospace",
+};
+
+const chevron = (
+  <ChevronRightIcon sx={{ fontSize: 16, color: "text.disabled" }} />
+);
 
 export default function AboutPage() {
+  const navigate = useNavigate();
   const [version, setVersion] = useState("");
   const [platform, setPlatform] = useState("");
   const [buildDate, setBuildDate] = useState("");
+  const [counts, setCounts] = useState(null);
 
   useEffect(() => {
     window.appAPI.getVersion().then(setVersion);
@@ -36,358 +51,294 @@ export default function AboutPage() {
     window.appAPI.getBuildDate?.().then(setBuildDate);
   }, []);
 
-  return (
-    <Box sx={{ display: "flex", justifyContent: "center", pb: 1, mt: 4 }}>
-      <Card
-        sx={{
-          width: "100%",
-          maxWidth: 1839, // <--- Увеличили до целевой ширины
-          borderRadius: 4,
-          boxShadow: "0 8px 40px rgba(0,0,0,0.12)",
-          overflow: "visible",
-          position: "relative",
-        }}
-      >
-        <Chip
-          icon={<VerifiedUserIcon style={{ fontSize: 16, color: "#2e7d32" }} />}
-          label="100% Offline & Private"
-          sx={{
-            position: "absolute",
-            top: -16,
-            right: 32,
-            bgcolor: "background.paper",
-            boxShadow: 2,
-            fontWeight: "bold",
-            px: 1,
-          }}
-          color="success"
-          variant="outlined"
-        />
+  useEffect(() => {
+    let mounted = true;
+    Promise.all([
+      window.peopleAPI?.getAll?.() ?? [],
+      window.photoAPI?.getAllGlobal?.() ?? [],
+      window.externalAPI?.getAll?.() ?? [],
+    ]).then(([people, photos, external]) => {
+      if (!mounted) return;
+      setCounts({
+        people: (people || []).length,
+        photos: (photos || []).length,
+        events: (people || []).reduce(
+          (acc, person) => acc + (person.events?.length || 0),
+          0,
+        ),
+        external: (external || []).length,
+      });
+    });
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
-        <CardContent sx={{ p: { xs: 4, xl: 6 } }}>
-          <Grid container spacing={{ xs: 6, xl: 10 }}>
-            {/* ЛЕВАЯ КОЛОНКА */}
-            {/* На больших экранах делаем её у́же (3 или 4 доли из 12), чтобы текст не растягивался */}
-            <Grid size={{ xs: 12, md: 5, lg: 4, xl: 3 }}>
-              <Stack spacing={4}>
-                <Stack direction="row" spacing={3} alignItems="center">
+  const countValue = (key) =>
+    counts ? String(counts[key]) : "…";
+
+  return (
+    <Box sx={{ maxWidth: 720, mx: "auto", px: 2, py: 3 }}>
+      <Stack spacing={3}>
+        <Stack direction="row" spacing={2.5} alignItems="center">
+          <Box sx={{ position: "relative", flexShrink: 0 }}>
+            <Box
+              sx={{
+                position: "absolute",
+                inset: 0,
+                bgcolor: "primary.main",
+                filter: "blur(25px)",
+                opacity: 0.18,
+                borderRadius: "50%",
+              }}
+            />
+            <Avatar
+              src={appIcon}
+              variant="rounded"
+              sx={{
+                width: 88,
+                height: 88,
+                borderRadius: "20px",
+                boxShadow: 4,
+                position: "relative",
+              }}
+            />
+          </Box>
+          <Box sx={{ minWidth: 0 }}>
+            <Typography
+              variant="h4"
+              sx={{ fontWeight: 800, lineHeight: 1.1 }}
+            >
+              Генеалогия
+            </Typography>
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              sx={{ mt: 0.5 }}
+            >
+              Хранитель вашей семейной истории
+            </Typography>
+          </Box>
+        </Stack>
+
+        <Typography
+          variant="body2"
+          color="text.secondary"
+          sx={{ lineHeight: 1.7 }}
+        >
+          Приложение для хранения семейной истории: люди, события, фотографии
+          и связи. Работает автономно — ваши данные не покидают компьютер.
+        </Typography>
+
+        <Box>
+          <Typography sx={sectionLabelSx}>Ваша библиотека</Typography>
+          <Box sx={groupSx}>
+            <Stack divider={<RowDivider />}>
+              <SettingsRow
+                icon={
+                  <RowIcon bg="blue">
+                    <PeopleIcon sx={{ fontSize: 18 }} />
+                  </RowIcon>
+                }
+                title="Люди"
+                onClick={() => navigate("/")}
+                trailing={
+                  <>
+                    <Typography variant="body2" sx={valueSx}>
+                      {countValue("people")}
+                    </Typography>
+                    {chevron}
+                  </>
+                }
+              />
+              <SettingsRow
+                icon={
+                  <RowIcon bg="purple">
+                    <PhotoLibraryIcon sx={{ fontSize: 18 }} />
+                  </RowIcon>
+                }
+                title="Фотографии"
+                onClick={() => navigate("/globalPhotoGallery")}
+                trailing={
+                  <>
+                    <Typography variant="body2" sx={valueSx}>
+                      {countValue("photos")}
+                    </Typography>
+                    {chevron}
+                  </>
+                }
+              />
+              <SettingsRow
+                icon={
+                  <RowIcon bg="orange">
+                    <EventIcon sx={{ fontSize: 18 }} />
+                  </RowIcon>
+                }
+                title="События"
+                onClick={() => navigate("/timeline")}
+                trailing={
+                  <>
+                    <Typography variant="body2" sx={valueSx}>
+                      {countValue("events")}
+                    </Typography>
+                    {chevron}
+                  </>
+                }
+              />
+              <SettingsRow
+                icon={
+                  <RowIcon bg="green">
+                    <ContactsIcon sx={{ fontSize: 18 }} />
+                  </RowIcon>
+                }
+                title="Справочник"
+                onClick={() => navigate("/external")}
+                trailing={
+                  <>
+                    <Typography variant="body2" sx={valueSx}>
+                      {countValue("external")}
+                    </Typography>
+                    {chevron}
+                  </>
+                }
+              />
+            </Stack>
+          </Box>
+        </Box>
+
+        <Box>
+          <Typography sx={sectionLabelSx}>Приложение</Typography>
+          <Box sx={groupSx}>
+            <Stack divider={<RowDivider />}>
+              <SettingsRow
+                icon={
+                  <RowIcon bg="blue">
+                    <InfoIcon sx={{ fontSize: 18 }} />
+                  </RowIcon>
+                }
+                title="Версия"
+                trailing={
+                  <Typography variant="body2" sx={valueSx}>
+                    {version || "—"}
+                  </Typography>
+                }
+              />
+              <SettingsRow
+                icon={
+                  <RowIcon bg="orange">
+                    <CalendarTodayIcon sx={{ fontSize: 18 }} />
+                  </RowIcon>
+                }
+                title="Сборка"
+                trailing={
+                  <Typography variant="body2" sx={valueSx}>
+                    {buildDate || "—"}
+                  </Typography>
+                }
+              />
+              <SettingsRow
+                icon={
+                  <RowIcon bg="indigo">
+                    <ComputerIcon sx={{ fontSize: 18 }} />
+                  </RowIcon>
+                }
+                title="Платформа"
+                trailing={
+                  <Typography variant="body2" sx={valueSx}>
+                    {platform || "—"}
+                  </Typography>
+                }
+              />
+              <SettingsRow
+                icon={
                   <Avatar
-                    src={appIcon}
-                    sx={{
-                      width: 100,
-                      height: 100,
-                      boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
-                      bgcolor: "transparent",
-                    }}
-                    variant="rounded"
+                    src={developer}
+                    sx={{ width: 30, height: 30, fontSize: "0.75rem" }}
                   />
-                  <Box>
-                    <Typography
-                      variant="h3"
-                      sx={{
-                        fontWeight: 800,
-                        letterSpacing: -0.5,
-                        // fontSize: "2.46rem",
-                        fontSize: "clamp(2.46rem, 2.3vw, 3.5rem)",
-                      }}
-                    >
-                      Генеалогия
-                    </Typography>
-                    <Typography
-                      variant="subtitle1"
-                      color="text.secondary"
-                      sx={{ fontStyle: "italic", mt: 0.5 }}
-                    >
-                      Хранитель вашей семейной истории
-                    </Typography>
-                  </Box>
-                </Stack>
-
-                <Typography
-                  variant="body1"
-                  sx={{
-                    color: "text.primary",
-                    lineHeight: 1.8,
-                    textAlign: "left",
-                  }}
-                >
-                  Это приложение создано для того, чтобы зафиксировать тонкие
-                  нити памяти. Мы верим, что история каждой семьи уникальна,
-                  поэтому сделали упор на
-                  <b> автономность</b>: ваши данные не покидают вашего
-                  компьютера.
-                </Typography>
-
-                <Divider sx={{ borderStyle: "dashed" }} />
-
-                <Box sx={{ width: "100%" }}>
-                  <Grid container spacing={1.5}>
-                    {/* Верхний ряд: Две маленькие карточки */}
-                    <Grid size={{ xs: 6 }}>
-                      <Paper
-                        elevation={0}
-                        sx={{
-                          p: 2,
-                          bgcolor: "action.hover",
-                          borderRadius: 4,
-                          textAlign: "center",
-                          border: "1px solid",
-                          borderColor: "divider",
-                        }}
-                      >
-                        <InfoIcon
-                          sx={{ color: "primary.main", mb: 1, fontSize: 20 }}
-                        />
-                        <Typography
-                          variant="caption"
-                          display="block"
-                          color="text.disabled"
-                          sx={{
-                            fontWeight: 700,
-                            textTransform: "uppercase",
-                            fontSize: 10,
-                          }}
-                        >
-                          Версия
-                        </Typography>
-                        <Typography variant="body2" sx={{ fontWeight: 800 }}>
-                          {version}
-                        </Typography>
-                      </Paper>
-                    </Grid>
-
-                    <Grid size={{ xs: 6 }}>
-                      <Paper
-                        elevation={0}
-                        sx={{
-                          p: 2,
-                          bgcolor: "action.hover",
-                          borderRadius: 4,
-                          textAlign: "center",
-                          border: "1px solid",
-                          borderColor: "divider",
-                        }}
-                      >
-                        <CalendarTodayIcon
-                          sx={{ color: "secondary.main", mb: 1, fontSize: 20 }}
-                        />
-                        <Typography
-                          variant="caption"
-                          display="block"
-                          color="text.disabled"
-                          sx={{
-                            fontWeight: 700,
-                            textTransform: "uppercase",
-                            fontSize: 10,
-                          }}
-                        >
-                          Сборка
-                        </Typography>
-                        <Typography variant="body2" sx={{ fontWeight: 800 }}>
-                          {buildDate}
-                        </Typography>
-                      </Paper>
-                    </Grid>
-
-                    {/* Средний ряд: Разработчик */}
-                    <Grid size={{ xs: 12 }}>
-                      <Paper
-                        elevation={0}
-                        sx={{
-                          p: 1.5,
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 2,
-                          borderRadius: 4,
-                          border: "1px solid",
-                          // В темной теме делаем границу чуть заметнее
-                          borderColor: (theme) =>
-                            theme.palette.mode === "dark"
-                              ? "rgba(255,255,255,0.08)"
-                              : "divider",
-
-                          // ИЗЮМИНКА: Mesh-градиент на фоне
-                          position: "relative",
-                          overflow: "hidden", // Чтобы градиенты не вылезали за скругления
-                          background: (theme) =>
-                            theme.palette.mode === "dark"
-                              ? `
-          linear-gradient(135deg, #1a1a1a 0%, #121212 100%),
-          radial-gradient(at 0% 0%, rgba(33, 150, 243, 0.15) 0px, transparent 50%),
-          radial-gradient(at 100% 100%, rgba(156, 39, 176, 0.15) 0px, transparent 50%)
-        `
-                              : "background.paper", // Для светлой темы оставляем обычный фон
-                        }}
-                      >
-                        {/* Дополнительный блик поверх всего для объема */}
-                        <Box
-                          sx={{
-                            position: "absolute",
-                            top: 0,
-                            left: 0,
-                            right: 0,
-                            height: "50%",
-                            background:
-                              "linear-gradient(180deg, rgba(255,255,255,0.03) 0%, transparent 100%)",
-                            pointerEvents: "none",
-                          }}
-                        />
-
-                        <Avatar
-                          src={developer}
-                          sx={{
-                            width: 42, // Чуть увеличили для веса
-                            height: 42,
-                            boxShadow: "0 4px 12px rgba(0,0,0,0.3)", // Тень глубже
-                            border: "2px solid rgba(255,255,255,0.1)", // Ободок для аватара
-                            zIndex: 1, // Чтобы быть поверх фона
-                          }}
-                        />
-                        <Box sx={{ zIndex: 1 }}>
-                          <Typography
-                            variant="caption"
-                            color="text.disabled"
-                            sx={{
-                              fontWeight: 600,
-                              textTransform: "uppercase",
-                              letterSpacing: 0.5,
-                              fontSize: "0.65rem",
-                            }}
-                          >
-                            Main Developer
-                          </Typography>
-                          <Typography
-                            variant="body1"
-                            sx={{
-                              fontWeight: 800,
-                              lineHeight: 1.2,
-                              fontSize: "1rem",
-                            }}
-                          >
-                            nebula.9371
-                          </Typography>
-                        </Box>
-                      </Paper>
-                    </Grid>
-                    {/* Нижний ряд: Система (на всю ширину) */}
-                    <Grid size={{ xs: 12 }}>
-                      <Paper
-                        elevation={0}
-                        sx={{
-                          p: 2,
-                          borderRadius: 4,
-                          background:
-                            "linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)",
-                          color: "white",
-                          boxShadow: "0 4px 20px rgba(33, 150, 243, 0.3)",
-                        }}
-                      >
-                        <Stack direction="row" spacing={2} alignItems="center">
-                          <ComputerIcon />
-                          <Box sx={{ overflow: "hidden" }}>
-                            <Typography
-                              variant="caption"
-                              sx={{
-                                opacity: 0.8,
-                                fontWeight: 700,
-                                textTransform: "uppercase",
-                              }}
-                            >
-                              Рабочее окружение
-                            </Typography>
-                            <Typography
-                              variant="body2"
-                              sx={{
-                                fontWeight: 700,
-                                fontFamily: "monospace",
-                                whiteSpace: "nowrap",
-                                overflow: "hidden",
-                                textOverflow: "ellipsis",
-                              }}
-                            >
-                              {platform}
-                            </Typography>
-                          </Box>
-                        </Stack>
-                      </Paper>
-                    </Grid>
-                  </Grid>
-                </Box>
-
-                <Box sx={{ pt: 2 }}>
-                  <Button
-                    startIcon={<GitHubIcon />}
-                    endIcon={<LaunchIcon />}
-                    href="https://github.com/wolk8506/genealogy"
-                    target="_blank"
-                    // variant="contained"
-                    disableElevation
-                    fullWidth
-                    sx={{
-                      borderRadius: 3,
-                      py: 1.5,
-                      textTransform: "none",
-                      fontWeight: "bold",
-                      fontSize: "1rem",
-                    }}
+                }
+                title="Разработчик"
+                trailing={
+                  <Typography
+                    variant="body2"
+                    sx={{ fontWeight: 600, fontSize: "0.8125rem" }}
                   >
-                    Исходный код проекта
-                  </Button>
-                </Box>
-              </Stack>
-            </Grid>
+                    nebula.9371
+                  </Typography>
+                }
+              />
+            </Stack>
+          </Box>
+        </Box>
 
-            {/* ПРАВАЯ КОЛОНКА (Остальное пространство) */}
-            <Grid size={{ xs: 12, md: 7, lg: 8, xl: 9 }}>
-              <Box
-                sx={{
-                  height: "100%",
-                  display: "flex",
-                  flexDirection: "column",
-                }}
-              >
-                <AppDiagnostic />
+        <AppDiagnostic />
 
-                <Typography
-                  variant="caption"
-                  sx={{
-                    color: "text.disabled",
-                    textAlign: "right",
-                    mt: "auto",
-                    pt: 4,
-                  }}
-                >
-                  Сделано с уважением к прошлому ради будущего{" "}
-                  <span style={{ fontSize: "1.2rem", marginLeft: "4px" }}>
-                    🌿
-                  </span>
-                </Typography>
-              </Box>
-            </Grid>
-          </Grid>
-        </CardContent>
-      </Card>
-    </Box>
-  );
-}
+        <Box>
+          <Typography sx={sectionLabelSx}>Разделы</Typography>
+          <Box sx={groupSx}>
+            <Stack divider={<RowDivider />}>
+              <SettingsRow
+                icon={
+                  <RowIcon bg="purple">
+                    <NewReleasesIcon sx={{ fontSize: 18 }} />
+                  </RowIcon>
+                }
+                title="Что нового"
+                subtitle="История изменений"
+                onClick={() =>
+                  window.dispatchEvent(new Event("app:open-changelog"))
+                }
+                trailing={chevron}
+              />
+              <SettingsRow
+                icon={
+                  <RowIcon bg="indigo">
+                    <MenuBookIcon sx={{ fontSize: 18 }} />
+                  </RowIcon>
+                }
+                title="Руководство"
+                subtitle="Как пользоваться приложением"
+                onClick={() =>
+                  window.dispatchEvent(new Event("app:open-user-guide"))
+                }
+                trailing={chevron}
+              />
+            </Stack>
+          </Box>
+        </Box>
 
-function DetailItem({ icon, label, value }) {
-  return (
-    <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-      <Box sx={{ color: "action.active", display: "flex" }}>{icon}</Box>
-      <Box>
+        <Box>
+          <Typography sx={sectionLabelSx}>Ссылки</Typography>
+          <Box sx={groupSx}>
+            <SettingsRow
+              icon={
+                <RowIcon bg="gray">
+                  <GitHubIcon sx={{ fontSize: 18 }} />
+                </RowIcon>
+              }
+              title="Исходный код"
+              subtitle="github.com/wolk8506/genealogy"
+              onClick={() =>
+                window.open(
+                  "https://github.com/wolk8506/genealogy",
+                  "_blank",
+                  "noopener,noreferrer",
+                )
+              }
+              trailing={
+                <LaunchIcon sx={{ fontSize: 16, color: "text.disabled" }} />
+              }
+            />
+          </Box>
+        </Box>
+
         <Typography
           variant="caption"
-          display="block"
-          color="text.disabled"
-          sx={{ lineHeight: 1 }}
+          color="text.secondary"
+          sx={{ textAlign: "center", pb: 1 }}
         >
-          {label}
+          Сделано с уважением к прошлому ради будущего
         </Typography>
-        <Typography variant="body2" sx={{ fontWeight: 600 }}>
-          {value || "—"}
-        </Typography>
-      </Box>
+      </Stack>
     </Box>
   );
 }

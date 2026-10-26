@@ -14,11 +14,12 @@ import {
 } from "@mui/material";
 import CustomDatePickerDialog from "../../../components/CustomDatePickerDialog";
 import { EVENT_TYPES } from "./EventTypesList";
-import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import CloseIcon from "@mui/icons-material/Close";
 import MapIcon from "@mui/icons-material/Map";
 import LocationPickerDialog from "../../../components/Dialog/LocationPickerDialog";
-import AppButton from "../../../components/AppButton";
+import DialogActionButton, {
+  DialogActionsBar,
+} from "../../../components/Dialog/DialogActionButton";
 import {
   buildFaceTagOptions,
   splitEventParticipantOptions,
@@ -324,29 +325,14 @@ export default function EventEditorDialog({
           </Stack>
         </Box>
 
-        <Box
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            gap: 1,
-            p: 2,
-            pt: 1,
-          }}
-        >
+        <DialogActionsBar>
           {initialEvent && (
-            <AppButton
-              preset="dangerOutlined"
-              onClick={handleDelete}
-              sx={{ px: 2.5, borderRadius: "999px" }}
-            >
+            <DialogActionButton tone="danger" onClick={handleDelete}>
               Удалить
-            </AppButton>
+            </DialogActionButton>
           )}
           {initialEvent && (
-            <AppButton
-              preset="secondary"
-              startIcon={<ContentCopyIcon />}
-              sx={{ px: 2.5, borderRadius: "999px" }}
+            <DialogActionButton
               onClick={() => {
                 const { participants, externalParticipants } =
                   splitEventParticipantOptions(participantOptions);
@@ -364,24 +350,13 @@ export default function EventEditorDialog({
               }}
             >
               Копия
-            </AppButton>
+            </DialogActionButton>
           )}
-          <AppButton
-            preset="secondary"
-            onClick={onClose}
-            sx={{ px: 2.5, borderRadius: "999px" }}
-          >
-            Отмена
-          </AppButton>
-          <Box sx={{ flex: 1 }} />
-          <AppButton
-            preset="primary"
-            onClick={handleSave}
-            sx={{ px: 3, borderRadius: "999px" }}
-          >
+          <DialogActionButton onClick={onClose}>Отмена</DialogActionButton>
+          <DialogActionButton tone="primary" onClick={handleSave}>
             {initialEvent ? "Обновить" : "Сохранить"}
-          </AppButton>
-        </Box>
+          </DialogActionButton>
+        </DialogActionsBar>
       </Dialog>
 
       {/* Встраиваем кастомный дейтпикер */}
