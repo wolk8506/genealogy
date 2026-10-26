@@ -2,20 +2,19 @@ import React, { useEffect, useRef, useState } from "react";
 import {
   Dialog,
   DialogContent,
-  DialogActions,
   Button,
   TextField,
   Autocomplete,
   Stack,
-  FormControlLabel,
-  Checkbox,
   Typography,
   Box,
   IconButton,
   CircularProgress,
-  Divider,
 } from "@mui/material";
 import { useNotificationStore } from "../../store/useNotificationStore";
+import DialogActionButton, {
+  DialogActionsBar,
+} from "./DialogActionButton";
 import { alpha, useTheme } from "@mui/material/styles";
 import CloseIcon from "@mui/icons-material/Close";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
@@ -24,6 +23,7 @@ import LocationPickerDialog from "./LocationPickerDialog";
 import EditIcon from "@mui/icons-material/Edit";
 import PersonIcon from "@mui/icons-material/Person";
 import CustomDatePickerDialog from "../../components/CustomDatePickerDialog";
+import CustomSwitch from "../../components/CustomSwitch";
 import HashtagInput from "../../components/HashtagInput";
 import PhotoBadgePlusIcon from "../svg/PhotoBadgePlusIcon";
 import ExifReader from "exifreader";
@@ -46,7 +46,7 @@ import {
   syncExternalPeopleFromFaces,
   normalizeFaces,
 } from "../../utils/photoFaces";
-import { getExternalEntityLabel } from "../../utils/externalEntities";
+import { buildFaceTagOptions } from "../../utils/externalEntities";
 import DraggableDialog from "./DraggableDialog";
 import useDialogSaveHotkey from "../../hooks/useDialogSaveHotkey";
 
@@ -63,6 +63,45 @@ export default function PhotoUploadDialog({
     (state) => state.addNotification,
   );
 
+  const fieldSx = {
+    "& .MuiOutlinedInput-root": { borderRadius: "10px" },
+  };
+  const sectionLabelSx = {
+    display: "block",
+    mb: 1,
+    ml: 0.5,
+    fontSize: "0.78rem",
+    fontWeight: 700,
+    color: "text.secondary",
+  };
+  const groupSx = {
+    border: `1px solid ${theme.palette.divider}`,
+    borderRadius: "12px",
+    overflow: "hidden",
+    bgcolor: isDark ? alpha("#fff", 0.02) : alpha("#000", 0.015),
+  };
+
+  const glassButtonSx = {
+    height: 32,
+    minHeight: 32,
+    px: 1.75,
+    borderRadius: "10px",
+    textTransform: "none",
+    fontWeight: 600,
+    fontSize: "0.8125rem",
+    color: "text.primary",
+    bgcolor: `${theme.palette.glass.surface} !important`,
+    border: `1px solid ${theme.palette.glass.border}`,
+    backdropFilter: "blur(8px)",
+    WebkitBackdropFilter: "blur(8px)",
+    boxShadow: "0 2px 12px rgba(0,0,0,0.18)",
+    "& .MuiButton-startIcon": { mr: 0.5 },
+    "&:hover": {
+      bgcolor: `${theme.palette.glass.surface} !important`,
+      backgroundImage: `linear-gradient(${theme.palette.glass.hover}, ${theme.palette.glass.hover}) !important`,
+    },
+  };
+
   const [saving, setSaving] = useState(false);
 
   // Поля формы
@@ -73,6 +112,7 @@ export default function PhotoUploadDialog({
   const [externalPeople, setExternalPeople] = useState([]);
   const [allPeople, setAllPeople] = useState([]);
   const [allExternal, setAllExternal] = useState([]);
+  const photoTagOptions = buildFaceTagOptions(allPeople, allExternal);
   const [datePhoto, setDatePhoto] = useState("");
 
   const [selectedOwner, setSelectedOwner] = useState(null);
@@ -555,16 +595,6 @@ export default function PhotoUploadDialog({
     disabled: isSaveDisabled,
   });
 
-  const macButtonStyle = {
-    height: 24,
-    borderRadius: "8px",
-    px: 3,
-    py: 1,
-    textTransform: "none",
-    fontWeight: 600,
-    boxShadow: "none",
-  };
-
   return (
     <Dialog
       open={open}
@@ -579,10 +609,8 @@ export default function PhotoUploadDialog({
         sx: {
           borderRadius: "24px",
           backgroundImage: "none",
-          bgcolor: isDark ? alpha(theme.palette.background.paper, 0.9) : "#fff",
-          backdropFilter: "blur(15px)",
-          border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
-          boxShadow: theme.shadows[24],
+          bgcolor: "background.paper",
+          maxHeight: "90vh",
           overflow: "hidden",
           display: "flex",
           flexDirection: "column",
@@ -590,7 +618,7 @@ export default function PhotoUploadDialog({
       }}
     >
       <DialogContent sx={{ p: 0 }}>
-        <Stack direction="row" sx={{ height: 630 }}>
+        <Stack direction="row" sx={{ height: "min(720px, 84vh)" }}>
           {/* ЛЕВАЯ КОЛОНКА */}
           <Box
             sx={{
@@ -598,8 +626,7 @@ export default function PhotoUploadDialog({
               flexShrink: 0,
               display: "flex",
               flexDirection: "column",
-              borderRight: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
-              bgcolor: isDark ? alpha("#000", 0.2) : alpha("#000", 0.015),
+              borderRight: `1px solid ${theme.palette.divider}`,
             }}
           >
             <Box
@@ -607,38 +634,47 @@ export default function PhotoUploadDialog({
               sx={{
                 display: "flex",
                 alignItems: "center",
-                justifyContent: "space-between",
-                px: 2.5,
-                py: 2,
-                borderBottom: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
-                bgcolor: isDark ? alpha("#fff", 0.02) : alpha("#000", 0.01),
+                gap: 1.5,
+                px: 2,
+                py: 1.5,
+                borderBottom: `1px solid ${theme.palette.divider}`,
                 cursor: "move",
               }}
             >
-              <IconButton onClick={onClose} size="small" sx={{ borderRadius: "10px" }}>
+              <IconButton
+                onClick={onClose}
+                size="small"
+                sx={{ borderRadius: "10px" }}
+              >
                 <CloseIcon fontSize="small" />
               </IconButton>
-              <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
-                Добавление фотографии
+              <Typography
+                variant="subtitle1"
+                noWrap
+                sx={{ fontWeight: 700, flexGrow: 1, minWidth: 0 }}
+              >
+                Добавить фото
               </Typography>
-              <Stack direction="row" alignItems="center" spacing={1.5}>
-                <Box
-                  sx={{
-                    p: 0.8,
-                    borderRadius: "10px",
-                    bgcolor: alpha(theme.palette.primary.main, 0.1),
-                    color: theme.palette.primary.main,
-                    display: "flex",
-                  }}
-                >
-                  <PhotoBadgePlusIcon sx={{ fontSize: 20 }} />
-                </Box>
-              </Stack>
+              <Box
+                sx={{
+                  width: 28,
+                  height: 28,
+                  borderRadius: "8px",
+                  bgcolor: alpha(theme.palette.primary.main, 0.1),
+                  color: theme.palette.primary.main,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexShrink: 0,
+                }}
+              >
+                <PhotoBadgePlusIcon sx={{ fontSize: 16 }} />
+              </Box>
             </Box>
 
             <Box
               sx={{
-                p: 3,
+                p: 2.5,
                 flexGrow: 1,
                 overflowY: "auto",
                 "&::-webkit-scrollbar": { width: 4 },
@@ -648,230 +684,273 @@ export default function PhotoUploadDialog({
                 },
               }}
             >
-              <Stack spacing={3}>
-                <Stack spacing={2.5}>
-                  <TextField
-                    fullWidth
-                    label="Заголовок"
-                    variant="outlined"
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    InputProps={{ sx: { borderRadius: "12px" } }}
-                  />
-
-                  <HashtagInput
-                    value={description}
-                    onChange={setDescription}
-                    suggestions={uniqueTags}
-                    placeholder="Описание и #теги..."
-                  />
-                </Stack>
-
-                <Divider sx={{ opacity: 0.5 }} />
-
-                <PhotoFaceFormSection
-                  theme={theme}
-                  faces={faces}
-                  allPeople={allPeople}
-                  allExternal={allExternal}
-                  selectedFaceId={selectedFaceId}
-                  onSelectFace={setSelectedFaceId}
-                  onFacesChange={onFacesChange}
-                  onAddFace={() => onFacesChange(handleAddFace())}
-                  onDeleteSelectedFace={() => {
-                    const next = handleDeleteSelectedFace();
-                    if (next) onFacesChange(next);
-                  }}
-                />
-
-                <Divider sx={{ opacity: 0.5 }} />
-
-                <Stack spacing={2.5}>
-                  {!personId && (
-                    <Autocomplete
-                      options={allPeople}
-                      getOptionLabel={getPersonLabel}
-                      value={selectedOwner}
-                      onChange={(e, v) => setSelectedOwner(v)}
-                      renderInput={(params) => (
+              <Stack spacing={2.5}>
+                <Box>
+                  <Typography sx={sectionLabelSx}>Основное</Typography>
+                  <Box sx={groupSx}>
+                    <Box sx={{ p: 2 }}>
+                      <Stack spacing={2}>
                         <TextField
-                          {...params}
-                          label="Владелец (папка)"
+                          fullWidth
+                          label="Заголовок"
                           variant="outlined"
-                          required
-                          error={!selectedOwner}
+                          value={title}
+                          onChange={(e) => setTitle(e.target.value)}
+                          sx={fieldSx}
+                        />
+
+                        <HashtagInput
+                          value={description}
+                          onChange={setDescription}
+                          suggestions={uniqueTags}
+                          placeholder="Описание и #теги..."
+                        />
+                      </Stack>
+                    </Box>
+                  </Box>
+                </Box>
+
+                <Box>
+                  <Typography sx={sectionLabelSx}>Разметка</Typography>
+                  <Box sx={groupSx}>
+                    <Box sx={{ p: 2 }}>
+                      <PhotoFaceFormSection
+                        theme={theme}
+                        faces={faces}
+                        allPeople={allPeople}
+                        allExternal={allExternal}
+                        selectedFaceId={selectedFaceId}
+                        onSelectFace={setSelectedFaceId}
+                        onFacesChange={onFacesChange}
+                        onAddFace={() => onFacesChange(handleAddFace())}
+                        onDeleteSelectedFace={() => {
+                          const next = handleDeleteSelectedFace();
+                          if (next) onFacesChange(next);
+                        }}
+                      />
+                    </Box>
+                  </Box>
+                </Box>
+
+                <Box>
+                  <Typography sx={sectionLabelSx}>Люди и место</Typography>
+                  <Box sx={groupSx}>
+                    <Box sx={{ p: 2 }}>
+                      <Stack spacing={2}>
+                        {!personId && (
+                          <Autocomplete
+                            options={allPeople}
+                            getOptionLabel={getPersonLabel}
+                            value={selectedOwner}
+                            onChange={(e, v) => setSelectedOwner(v)}
+                            renderInput={(params) => (
+                              <TextField
+                                {...params}
+                                label="Владелец (папка)"
+                                variant="outlined"
+                                required
+                                error={!selectedOwner}
+                                sx={fieldSx}
+                                InputProps={{
+                                  ...params.InputProps,
+                                  startAdornment: (
+                                    <>
+                                      <PersonIcon
+                                        sx={{
+                                          color: "action.active",
+                                          ml: 1,
+                                          mr: 0.5,
+                                        }}
+                                      />
+                                      {params.InputProps.startAdornment}
+                                    </>
+                                  ),
+                                }}
+                              />
+                            )}
+                          />
+                        )}
+
+                        <Autocomplete
+                          multiple
+                          options={photoTagOptions}
+                          groupBy={(o) =>
+                            o.kind === "person"
+                              ? "Родственники"
+                              : "Справочник"
+                          }
+                          getOptionLabel={(o) => o.label}
+                          isOptionEqualToValue={(a, b) =>
+                            a?.kind === b?.kind && a?.id === b?.id
+                          }
+                          value={photoTagOptions.filter((o) =>
+                            o.kind === "person"
+                              ? people.some((p) => p.id === o.id)
+                              : externalPeople.includes(o.id),
+                          )}
+                          onChange={(_, v) => {
+                            setPeople(
+                              v
+                                .filter((x) => x.kind === "person")
+                                .map((x) => x.data),
+                            );
+                            setExternalPeople(
+                              v
+                                .filter((x) => x.kind === "external")
+                                .map((x) => x.id),
+                            );
+                          }}
+                          renderInput={(params) => (
+                            <TextField
+                              {...params}
+                              variant="outlined"
+                              label="Кто на фото"
+                              sx={fieldSx}
+                            />
+                          )}
+                          ChipProps={{
+                            sx: { borderRadius: "8px", fontWeight: 500 },
+                          }}
+                        />
+
+                        <TextField
+                          label="Дата снимка"
+                          value={datePhoto || ""}
+                          onClick={() => setDatePickerOpen(true)}
+                          variant="outlined"
+                          fullWidth
+                          sx={fieldSx}
                           InputProps={{
-                            ...params.InputProps,
+                            readOnly: true,
                             startAdornment: (
-                              <>
-                                <PersonIcon
-                                  sx={{ color: "action.active", ml: 1, mr: 0.5 }}
-                                />
-                                {params.InputProps.startAdornment}
-                              </>
+                              <CalendarMonthIcon
+                                sx={{
+                                  mr: 1,
+                                  color: "action.active",
+                                  fontSize: 20,
+                                }}
+                              />
                             ),
                           }}
                         />
-                      )}
-                    />
-                  )}
 
-                  <Autocomplete
-                    multiple
-                    options={allPeople}
-                    getOptionLabel={getPersonLabel}
-                    value={people}
-                    onChange={(e, v) => setPeople(v)}
-                    renderInput={(params) => (
-                      <TextField {...params} variant="outlined" label="Кто на фото" />
-                    )}
-                    ChipProps={{ sx: { borderRadius: "8px", fontWeight: 500 } }}
-                  />
-
-                  <Autocomplete
-                    multiple
-                    options={allExternal}
-                    getOptionLabel={(e) => `${e.id} :: ${getExternalEntityLabel(e)}`}
-                    value={allExternal.filter((e) => externalPeople.includes(e.id))}
-                    onChange={(_, v) => setExternalPeople(v.map((x) => x.id))}
-                    renderInput={(params) => (
-                      <TextField
-                        {...params}
-                        variant="outlined"
-                        label="Из справочника (внешние)"
-                      />
-                    )}
-                    ChipProps={{ sx: { borderRadius: "8px", fontWeight: 500 } }}
-                  />
-                </Stack>
-
-                <Stack spacing={2}>
-                  <TextField
-                    label="Дата снимка"
-                    value={datePhoto || ""}
-                    onClick={() => setDatePickerOpen(true)}
-                    variant="outlined"
-                    fullWidth
-                    InputProps={{
-                      readOnly: true,
-                      sx: { borderRadius: "12px" },
-                      startAdornment: (
-                        <CalendarMonthIcon
-                          sx={{ mr: 1, color: "action.active", fontSize: 20 }}
-                        />
-                      ),
-                    }}
-                  />
-
-                  <Stack direction="row" spacing={1} alignItems="center">
-                    <Button
-                      size="small"
-                      variant="outlined"
-                      startIcon={<MapIcon />}
-                      onClick={() => setLocationPickerOpen(true)}
-                      sx={{ borderRadius: "10px", textTransform: "none" }}
-                    >
-                      {lat != null && lng != null
-                        ? `${Number(lat).toFixed(4)}, ${Number(lng).toFixed(4)} — на карте`
-                        : "Место на карте"}
-                    </Button>
-                    {lat != null && lng != null && (
-                      <Button
-                        size="small"
-                        variant="text"
-                        onClick={() => {
-                          setLat(null);
-                          setLng(null);
-                        }}
-                        sx={{ textTransform: "none" }}
-                      >
-                        Убрать
-                      </Button>
-                    )}
-                  </Stack>
-
-                  <Box
-                    sx={{
-                      p: 1.5,
-                      borderRadius: "14px",
-                      bgcolor: keepOpen
-                        ? alpha(theme.palette.primary.main, 0.05)
-                        : "transparent",
-                      border: `1px solid ${
-                        keepOpen
-                          ? alpha(theme.palette.primary.main, 0.1)
-                          : "transparent"
-                      }`,
-                      transition: "0.3s",
-                    }}
-                  >
-                    <FormControlLabel
-                      control={
-                        <Checkbox
-                          checked={keepOpen}
-                          onChange={(e) => setKeepOpen(e.target.checked)}
-                          size="small"
-                          sx={{ borderRadius: "4px" }}
-                        />
-                      }
-                      label={
-                        <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                          Добавить еще одну
-                        </Typography>
-                      }
-                    />
+                        <Stack
+                          direction="row"
+                          spacing={1}
+                          alignItems="center"
+                          flexWrap="wrap"
+                        >
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            startIcon={<MapIcon sx={{ fontSize: 18 }} />}
+                            onClick={() => setLocationPickerOpen(true)}
+                            sx={{
+                              height: 32,
+                              borderRadius: "10px",
+                              textTransform: "none",
+                              fontWeight: 600,
+                            }}
+                          >
+                            {lat != null && lng != null
+                              ? `${Number(lat).toFixed(4)}, ${Number(lng).toFixed(4)} — на карте`
+                              : "Место на карте"}
+                          </Button>
+                          {lat != null && lng != null && (
+                            <Button
+                              size="small"
+                              variant="text"
+                              onClick={() => {
+                                setLat(null);
+                                setLng(null);
+                              }}
+                              sx={{
+                                textTransform: "none",
+                                fontWeight: 600,
+                              }}
+                            >
+                              Убрать
+                            </Button>
+                          )}
+                        </Stack>
+                      </Stack>
+                    </Box>
                   </Box>
-                </Stack>
+                </Box>
+
+                <Box>
+                  <Typography sx={sectionLabelSx}>При сохранении</Typography>
+                  <Box sx={groupSx}>
+                    <Box
+                      sx={{
+                        px: 2,
+                        py: 1.25,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 1.5,
+                      }}
+                    >
+                      <Box sx={{ flexGrow: 1, minWidth: 0 }}>
+                        <Typography variant="body2" fontWeight={600}>
+                          Добавить ещё одну
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          Окно останется открытым после сохранения
+                        </Typography>
+                      </Box>
+                      <CustomSwitch
+                        checked={keepOpen}
+                        onChange={(e) => setKeepOpen(e.target.checked)}
+                      />
+                    </Box>
+                  </Box>
+                </Box>
               </Stack>
             </Box>
 
-            <DialogActions
+            <DialogActionsBar
               sx={{
-                px: 3,
-                py: 2,
-                borderTop: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
-                bgcolor: isDark ? alpha("#000", 0.2) : alpha("#000", 0.01),
-                justifyContent: "space-around",
+                px: 2.5,
+                py: 1.5,
+                borderTop: `1px solid ${theme.palette.divider}`,
               }}
             >
-              <Button
-                onClick={onClose}
-                size="small"
-                variant="outlined"
-                sx={{ ...macButtonStyle }}
-              >
+              <DialogActionButton onClick={onClose}>
                 Отменить
-              </Button>
-              <Button
-                variant="contained"
+              </DialogActionButton>
+              <DialogActionButton
+                tone="primary"
                 onClick={handleSave}
                 disabled={isSaveDisabled}
-                size="small"
-                sx={{ ...macButtonStyle }}
               >
                 {saving ? (
                   <CircularProgress size={16} color="inherit" />
                 ) : (
                   "Сохранить"
                 )}
-              </Button>
-            </DialogActions>
+              </DialogActionButton>
+            </DialogActionsBar>
           </Box>
 
           {/* ПРАВАЯ КОЛОНКА */}
-          <Stack flex={1} spacing={1.5} sx={{ p: 2, height: "100%" }}>
+          <Stack
+            flex={1}
+            minWidth={0}
+            spacing={1.25}
+            sx={{ p: 1.5, height: "100%" }}
+          >
             <Box
               sx={{
                 position: "relative",
                 flexGrow: 1,
                 width: "100%",
-                bgcolor: isDark ? alpha("#000", 0.4) : alpha("#000", 0.03),
-                borderRadius: "16px",
+                bgcolor: isDark ? alpha("#000", 0.35) : alpha("#000", 0.03),
+                borderRadius: "14px",
                 overflow: "hidden",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+                border: `1px solid ${theme.palette.divider}`,
               }}
             >
               {!preview ? (
@@ -884,46 +963,39 @@ export default function PhotoUploadDialog({
                   sx={{
                     width: "100%",
                     height: "100%",
-                    m: 2,
-                    border: "2px dashed",
-                    borderColor: isDragging
-                      ? "primary.main"
-                      : alpha(theme.palette.divider, 0.2),
-                    bgcolor: isDragging
-                      ? alpha(theme.palette.primary.main, 0.05)
-                      : "transparent",
-                    borderRadius: "16px",
                     display: "flex",
                     flexDirection: "column",
                     alignItems: "center",
                     justifyContent: "center",
-                    transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                    gap: 0.5,
+                    bgcolor: isDragging
+                      ? alpha(theme.palette.primary.main, 0.08)
+                      : "transparent",
+                    transition: "background-color 0.2s ease",
                     cursor: "pointer",
-                    "&:hover": {
-                      bgcolor: alpha(theme.palette.primary.main, 0.02),
-                      borderColor: theme.palette.primary.main,
-                    },
+                    "&:hover": { bgcolor: "action.hover" },
                   }}
                 >
                   <Box
                     sx={{
-                      px: 2,
-                      pt: 1.8,
-                      pb: 1.4,
-                      borderRadius: "50%",
-                      bgcolor: alpha(theme.palette.primary.main, 0.05),
-                      mb: 2,
+                      width: 64,
+                      height: 64,
+                      borderRadius: "18px",
+                      bgcolor: alpha(theme.palette.primary.main, 0.09),
+                      color: theme.palette.primary.main,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      mb: 1,
                     }}
                   >
-                    <PhotoBadgePlusIcon
-                      sx={{ fontSize: 40, color: theme.palette.primary.main }}
-                    />
+                    <PhotoBadgePlusIcon sx={{ fontSize: 30 }} />
                   </Box>
-                  <Typography variant="body1" sx={{ fontWeight: 600, mb: 0.5 }}>
-                    Выберите файл
+                  <Typography variant="body1" sx={{ fontWeight: 600 }}>
+                    Перетащите фото
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    или перетащите его сюда
+                    или нажмите, чтобы выбрать файл
                   </Typography>
                 </Box>
               ) : thumbsEditing ? (
@@ -975,23 +1047,16 @@ export default function PhotoUploadDialog({
                     customThumbReady={customThumbReady}
                   />
                   <Button
-                    variant="contained"
+                    variant="text"
                     size="small"
                     onClick={handleFileSelect}
                     startIcon={<EditIcon sx={{ fontSize: 16 }} />}
                     sx={{
+                      ...glassButtonSx,
                       position: "absolute",
-                      top: 16,
-                      right: 16,
+                      top: 12,
+                      right: 12,
                       zIndex: 4,
-                      backdropFilter: "blur(8px)",
-                      height: 24,
-                      borderRadius: "8px",
-                      px: 3,
-                      py: 1,
-                      textTransform: "none",
-                      fontWeight: 600,
-                      boxShadow: "none",
                     }}
                   >
                     Сменить
@@ -1003,7 +1068,8 @@ export default function PhotoUploadDialog({
             <Typography
               variant="caption"
               color="text.secondary"
-              sx={{ textAlign: "center", fontWeight: 500 }}
+              noWrap
+              sx={{ textAlign: "center", fontWeight: 500, px: 1, pb: 0.5 }}
             >
               {filename || "Файл не выбран"}
               {faces?.length > 0 && ` · Лиц на снимке: ${faces.length}`}

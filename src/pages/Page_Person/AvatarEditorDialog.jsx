@@ -18,6 +18,9 @@ import { Buffer } from "buffer";
 import { alpha, useTheme } from "@mui/material/styles";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import AppButton from "../../components/AppButton";
+import DialogActionButton, {
+  DialogActionsBar,
+} from "../../components/Dialog/DialogActionButton";
 import useDialogSaveHotkey from "../../hooks/useDialogSaveHotkey";
 
 export default function AvatarEditorDialog({
@@ -25,8 +28,10 @@ export default function AvatarEditorDialog({
   onClose,
   personId,
   onSaved,
+  api,
 }) {
   const theme = useTheme();
+  const avatarApi = api || window.avatarAPI;
   const [imageSrc, setImageSrc] = useState(null);
   const [fallback, setFallback] = useState(null);
   const [crop, setCrop] = useState({ x: 0, y: 0 });
@@ -40,7 +45,7 @@ export default function AvatarEditorDialog({
     let isMounted = true;
     if (open && personId) {
       resetState();
-      window.avatarAPI.getPath(personId).then((path) => {
+      avatarApi.getPath(personId).then((path) => {
         if (isMounted) {
           setFallback(path ? `${path}?t=${Date.now()}` : null);
         }
@@ -160,8 +165,8 @@ export default function AvatarEditorDialog({
   const uploadCropped = async () => {
     const blob = await getCroppedImg(imageSrc, croppedAreaPixels);
     const buffer = Buffer.from(await blob.arrayBuffer());
-    await window.avatarAPI.save(personId, buffer);
-    const newPath = await window.avatarAPI.getPath(personId);
+    await avatarApi.save(personId, buffer);
+    const newPath = await avatarApi.getPath(personId);
     const fresh = `${newPath}?v=${Date.now()}`;
     setFallback(fresh);
     setImageSrc(null);
@@ -169,7 +174,7 @@ export default function AvatarEditorDialog({
   };
 
   const handleReset = async () => {
-    await window.avatarAPI.delete(personId);
+    await avatarApi.delete(personId);
     onSaved(null);
     resetState();
     setFallback(null); // или currentAvatarPath, если хочешь сразу показать дефолт
@@ -301,7 +306,7 @@ export default function AvatarEditorDialog({
               <AppButton
                 preset="primary"
                 component="label"
-                sx={{ px: 4, borderRadius: "999px" }}
+                sx={{ px: 4 }}
               >
                 Выбрать файл
                 <input
@@ -384,39 +389,19 @@ export default function AvatarEditorDialog({
         </Stack>
       </Box>
 
-      <Box
-        sx={{
-          display: "flex",
-          alignItems: "center",
-          gap: 1,
-          p: 2,
-          pt: 1,
-        }}
-      >
-        <AppButton
-          preset="dangerOutlined"
-          onClick={handleReset}
-          sx={{ px: 2.5, borderRadius: "999px" }}
-        >
+      <DialogActionsBar>
+        <DialogActionButton tone="danger" onClick={handleReset}>
           Сброс
-        </AppButton>
-        <AppButton
-          preset="secondary"
-          onClick={handleClose}
-          sx={{ px: 2.5, borderRadius: "999px" }}
-        >
-          Отмена
-        </AppButton>
-        <Box sx={{ flex: 1 }} />
-        <AppButton
-          preset="primary"
+        </DialogActionButton>
+        <DialogActionButton onClick={handleClose}>Отмена</DialogActionButton>
+        <DialogActionButton
+          tone="primary"
           onClick={uploadCropped}
           disabled={!imageSrc}
-          sx={{ px: 3, borderRadius: "999px" }}
         >
           Сохранить
-        </AppButton>
-      </Box>
+        </DialogActionButton>
+      </DialogActionsBar>
     </Dialog>
   );
 }

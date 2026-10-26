@@ -2,14 +2,17 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { EVENT_TYPES } from "../Page_Person/Event/EventTypesList";
 import ContactsIcon from "@mui/icons-material/Contacts";
 import EventIcon from "@mui/icons-material/Event";
+import { getAccents } from "../../theme/palette";
+
+const ACCENTS = getAccents("light");
 
 export const norm = (s) => String(s || "").trim().toLowerCase();
 export const GROUP_PRECISION = 4;
 export const KIND_COLOR = {
-  photo: "#1976d2",
-  event: "#9c27b0",
-  external: "#2e7d32",
-  mixed: "#ed6c02",
+  photo: ACCENTS.blue,
+  event: ACCENTS.purple,
+  external: ACCENTS.green,
+  mixed: ACCENTS.orange,
 };
 export const MISS_TTL_MS = 7 * 24 * 3600 * 1000;
 export const GEO_INTERVAL_MS = 1100;

@@ -20,6 +20,7 @@ import { Link as RouterLink, useNavigate } from "react-router-dom";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
+import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import PhotoCameraIcon from "@mui/icons-material/PhotoCamera";
 import PetsIcon from "@mui/icons-material/Pets";
 import PersonOutlineIcon from "@mui/icons-material/PersonOutline";
@@ -37,6 +38,13 @@ import {
   findPersonById,
 } from "../../utils/externalEntities";
 import { btnStyleBlue, btnStyleRed } from "../../components/ButtonStyle";
+import {
+  groupSx,
+  RowDivider,
+  RowIcon,
+  SettingsRow,
+  sectionLabelSx,
+} from "../Page_Settings/settingsUi";
 
 const panelIconBtnSx = {
   border: "1px solid",
@@ -313,55 +321,135 @@ export default function ExternalEntityDetail({
         </Stack>
       )}
 
-      {(entity.notes ||
-        entity.phone ||
-        entity.email ||
-        entity.address ||
-        entity.birthday) && (
-        <>
-          <Divider sx={{ my: 2 }} />
-          <Typography variant="subtitle2" fontWeight={700} gutterBottom>
-            Контакты и информация
-          </Typography>
-          <Stack spacing={1.25}>
-            {entity.notes && (
-              <Typography
-                variant="body2"
-                sx={{ whiteSpace: "pre-wrap", color: "text.secondary" }}
-              >
-                {entity.notes}
-              </Typography>
-            )}
-            {!isPet && entity.phone && (
-              <Stack direction="row" spacing={1} alignItems="center">
-                <PhoneIcon fontSize="small" color="action" />
-                <Typography variant="body2">{entity.phone}</Typography>
-              </Stack>
-            )}
-            {!isPet && entity.email && (
-              <Stack direction="row" spacing={1} alignItems="center">
-                <EmailIcon fontSize="small" color="action" />
-                <Typography variant="body2">{entity.email}</Typography>
-              </Stack>
-            )}
-            {!isPet && entity.address && (
-              <Stack direction="row" spacing={1} alignItems="center">
-                <HomeIcon fontSize="small" color="action" />
-                <Typography variant="body2">{entity.address}</Typography>
-              </Stack>
-            )}
-            {entity.birthday && (
-              <Stack direction="row" spacing={1} alignItems="center">
-                <CakeIcon fontSize="small" color="action" />
-                <Typography variant="body2">{entity.birthday}</Typography>
-              </Stack>
-            )}
-          </Stack>
-        </>
-      )}
+      {!compact &&
+        (entity.notes ||
+          entity.phone ||
+          entity.email ||
+          entity.address ||
+          entity.birthday) && (
+          <>
+            <Divider sx={{ my: 2 }} />
+            <Typography variant="subtitle2" fontWeight={700} gutterBottom>
+              Контакты и информация
+            </Typography>
+            <Stack spacing={1.25}>
+              {entity.notes && (
+                <Typography
+                  variant="body2"
+                  sx={{ whiteSpace: "pre-wrap", color: "text.secondary" }}
+                >
+                  {entity.notes}
+                </Typography>
+              )}
+              {!isPet && entity.phone && (
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <PhoneIcon fontSize="small" color="action" />
+                  <Typography variant="body2">{entity.phone}</Typography>
+                </Stack>
+              )}
+              {!isPet && entity.email && (
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <EmailIcon fontSize="small" color="action" />
+                  <Typography variant="body2">{entity.email}</Typography>
+                </Stack>
+              )}
+              {!isPet && entity.address && (
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <HomeIcon fontSize="small" color="action" />
+                  <Typography variant="body2">{entity.address}</Typography>
+                </Stack>
+              )}
+              {entity.birthday && (
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <CakeIcon fontSize="small" color="action" />
+                  <Typography variant="body2">{entity.birthday}</Typography>
+                </Stack>
+              )}
+            </Stack>
+          </>
+        )}
 
-      <Divider sx={{ my: 2 }} />
+      {compact &&
+        (entity.notes ||
+          entity.phone ||
+          entity.email ||
+          entity.address ||
+          entity.birthday) && (
+          <Box sx={{ mt: 2.5 }}>
+            <Typography sx={sectionLabelSx}>
+              Контакты и информация
+            </Typography>
+            <Box sx={groupSx}>
+              <Stack divider={<RowDivider />}>
+                {!isPet && entity.phone && (
+                  <SettingsRow
+                    icon={
+                      <RowIcon bg="green">
+                        <PhoneIcon sx={{ fontSize: 18 }} />
+                      </RowIcon>
+                    }
+                    title={entity.phone}
+                    subtitle="Телефон"
+                  />
+                )}
+                {!isPet && entity.email && (
+                  <SettingsRow
+                    icon={
+                      <RowIcon bg="blue">
+                        <EmailIcon sx={{ fontSize: 18 }} />
+                      </RowIcon>
+                    }
+                    title={entity.email}
+                    subtitle="Email"
+                  />
+                )}
+                {!isPet && entity.address && (
+                  <SettingsRow
+                    icon={
+                      <RowIcon bg="orange">
+                        <HomeIcon sx={{ fontSize: 18 }} />
+                      </RowIcon>
+                    }
+                    title={entity.address}
+                    subtitle="Адрес"
+                  />
+                )}
+                {entity.birthday && (
+                  <SettingsRow
+                    icon={
+                      <RowIcon bg="pink">
+                        <CakeIcon sx={{ fontSize: 18 }} />
+                      </RowIcon>
+                    }
+                    title={entity.birthday}
+                    subtitle="День рождения"
+                  />
+                )}
+                {entity.notes && (
+                  <Box sx={{ px: 2, py: 1.25 }}>
+                    <Typography
+                      variant="caption"
+                      sx={{ color: "text.secondary" }}
+                    >
+                      Заметки
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      sx={{ whiteSpace: "pre-wrap", mt: 0.25 }}
+                    >
+                      {entity.notes}
+                    </Typography>
+                  </Box>
+                )}
+              </Stack>
+            </Box>
+          </Box>
+        )}
 
+      {!compact && <Divider sx={{ my: 2 }} />}
+
+      {!compact && (
+      <>
       <Stack direction="row" alignItems="center" spacing={1} mb={1.5}>
         <LinkIcon fontSize="small" color="primary" />
         <Typography variant="subtitle2" fontWeight={700}>
@@ -447,6 +535,85 @@ export default function ExternalEntityDetail({
             );
           })}
         </Stack>
+      )}
+
+      </>
+      )}
+
+      {compact && (
+        <Box sx={{ mt: 2.5 }}>
+          <Typography sx={sectionLabelSx}>
+            Связи с родственниками
+          </Typography>
+          <Box sx={groupSx}>
+            {(entity.relations || []).length === 0 ? (
+              <SettingsRow
+                icon={
+                  <RowIcon bg="gray">
+                    <LinkIcon sx={{ fontSize: 18 }} />
+                  </RowIcon>
+                }
+                title="Связи не указаны"
+              />
+            ) : (
+              <Stack divider={<RowDivider />}>
+                {entity.relations.map((rel) => {
+                  const person = findPersonById(
+                    allPeople,
+                    rel.mainPersonId,
+                  );
+                  const external = findExternalById(
+                    allExternal,
+                    rel.mainExternalEntityId,
+                  );
+                  let label;
+                  let onClick;
+                  if (rel.targetKind === "external") {
+                    label = external
+                      ? `${getExternalEntityLabel(external)} (${external.id})`
+                      : `ID ${rel.mainExternalEntityId}`;
+                    onClick = external
+                      ? () => onSelectExternal?.(external.id)
+                      : undefined;
+                  } else {
+                    label = person
+                      ? `${getPersonLabel(person)} (ID ${person.id})`
+                      : `ID ${rel.mainPersonId}`;
+                    onClick = person
+                      ? () => navigate(`/person/${person.id}`)
+                      : undefined;
+                  }
+                  return (
+                    <SettingsRow
+                      key={rel.id}
+                      icon={
+                        <RowIcon bg="indigo">
+                          <LinkIcon sx={{ fontSize: 18 }} />
+                        </RowIcon>
+                      }
+                      title={getRelationTypeLabel(rel.relationType)}
+                      subtitle={[
+                        label,
+                        rel.dates ? `Период: ${rel.dates}` : null,
+                        rel.notes,
+                      ]
+                        .filter(Boolean)
+                        .join(" · ")}
+                      onClick={onClick}
+                      trailing={
+                        onClick ? (
+                          <ChevronRightIcon
+                            sx={{ fontSize: 16, color: "text.disabled" }}
+                          />
+                        ) : undefined
+                      }
+                    />
+                  );
+                })}
+              </Stack>
+            )}
+          </Box>
+        </Box>
       )}
 
       <AvatarPreviewDialog

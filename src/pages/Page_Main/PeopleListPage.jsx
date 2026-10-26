@@ -20,7 +20,6 @@ import SettingsBackupRestoreIcon from "@mui/icons-material/SettingsBackupRestore
 
 import appIcon from "../../img/app_icon.png";
 import { Link } from "react-router-dom";
-import { ButtonScrollTop } from "../../components/ButtonScrollTop";
 import { useNotificationStore } from "../../store/useNotificationStore";
 import { PersonCard } from "./PersonCard";
 import { usePeopleListStore } from "../../store/usePeopleListStore";
@@ -309,12 +308,20 @@ export default function PeopleListPage({ search, filters, sortOrder, onShowRelat
                 size="large"
                 startIcon={<PersonAddAlt1Icon />}
                 sx={{
-                  borderRadius: "12px",
-                  py: 1.5,
+                  height: 32,
+                  borderRadius: "999px",
+                  px: 2,
+                  py: 0,
                   textTransform: "none",
-                  fontSize: "1rem",
+                  fontSize: "0.8125rem",
+                  lineHeight: 1.2,
                   fontWeight: 700,
                   boxShadow: "0 4px 14px 0 rgba(0,118,255,0.39)",
+                  "& .MuiButton-startIcon": {
+                    mr: 0.5,
+                    ml: 0,
+                    "& > *:nth-of-type(1)": { fontSize: 16 },
+                  },
                 }}
               >
                 Добавить первого человека
@@ -327,11 +334,20 @@ export default function PeopleListPage({ search, filters, sortOrder, onShowRelat
                 size="large"
                 startIcon={<SettingsBackupRestoreIcon />}
                 sx={{
-                  borderRadius: "12px",
-                  py: 1.2,
+                  height: 32,
+                  borderRadius: "999px",
+                  px: 2,
+                  py: 0,
                   textTransform: "none",
+                  fontSize: "0.8125rem",
+                  lineHeight: 1.2,
                   borderColor: alpha(theme.palette.divider, 0.5),
                   color: "text.primary",
+                  "& .MuiButton-startIcon": {
+                    mr: 0.5,
+                    ml: 0,
+                    "& > *:nth-of-type(1)": { fontSize: 16 },
+                  },
                   "&:hover": {
                     borderColor: "text.primary",
                     bgcolor: alpha(theme.palette.text.primary, 0.05),
@@ -380,9 +396,7 @@ export default function PeopleListPage({ search, filters, sortOrder, onShowRelat
                   display: "flex",
                   alignItems: "center",
                   gap: 1.5,
-                  bgcolor: isDark
-                    ? alpha("#1a1a1a", 0.9)
-                    : alpha("#fafafa", 0.9),
+                  bgcolor: alpha(theme.palette.background.default, 0.9),
                   backdropFilter: "blur(12px)",
                   mx: -1,
                   px: 2,
@@ -425,7 +439,6 @@ export default function PeopleListPage({ search, filters, sortOrder, onShowRelat
           ))}
       </Stack>
 
-      <ButtonScrollTop />
       <AddPersonModal open={isModalOpen} onClose={handleCloseModal} />
     </>
   );

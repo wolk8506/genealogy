@@ -6,11 +6,11 @@ import {
   Box,
 } from "@mui/material";
 import { keyframes } from "@mui/system";
-import { lighten } from "@mui/material/styles";
 
 import MainLayout from "../layout/MainLayout";
 import { ThemeContext } from "../theme/ThemeContext.cjs";
 import { useSettingsStore } from "../store/useSettingsStore";
+import { getPalette } from "../theme/palette";
 
 const pulse = keyframes`
   0%, 100% { transform: scale(0.96); opacity: 0.7; }
@@ -21,6 +21,20 @@ const orbit = keyframes`
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
 `;
+
+const compactButton = {
+  height: 24,
+  minHeight: 24,
+  padding: "0 18px",
+  fontSize: "0.875rem",
+  fontWeight: 600,
+  lineHeight: 1.2,
+  "& .MuiButton-startIcon": {
+    mr: 0.5,
+    ml: 0,
+    "& > *:nth-of-type(1)": { fontSize: 16 },
+  },
+};
 
 export default function App() {
   const [mode, setMode] = useState("light"); // фактическая тема
@@ -68,16 +82,13 @@ export default function App() {
 
   useEffect(() => {
     if (!themeReady) return;
-    document.body.style.background = mode === "dark" ? "#121212" : "#f6f7fb";
+    document.body.style.background = getPalette(mode).background.default;
   }, [themeReady, mode]);
 
   const theme = useMemo(
     () =>
       createTheme({
-        palette: {
-          mode,
-          primary: { main: "#3b86f3" },
-        },
+        palette: getPalette(mode),
         components: {
           // 1. Глобальные стили (ваши скроллбары)
           MuiCssBaseline: {
@@ -142,28 +153,23 @@ export default function App() {
             },
           },
 
-          // 3. Скругление для кнопок. Ховер contained-кнопок — лёгкое
-          // ОСВЕТЛЕНИЕ собственного цвета, а не тёмный primary.dark.
+          // 3. Единая геометрия обычных кнопок: высота 24, radius 12,
+          // вторичные — с лёгкой нейтральной заливкой вместо рамки.
           MuiButton: {
-            styleOverrides: (theme) => {
-              const containedHover = (c) => ({
+            styleOverrides: {
+              root: {
+                borderRadius: "12px",
+                textTransform: "none", // Убирает капс у кнопок (обычно хорошо смотрится со скруглениями)
+              },
+              sizeSmall: compactButton,
+              sizeMedium: compactButton,
+              outlined: {
+                border: 0,
+                backgroundColor: "rgba(128, 128, 128, 0.12)",
                 "&:hover:not(.Mui-disabled)": {
-                  backgroundColor: lighten(c, 0.12),
+                  backgroundColor: "rgba(128, 128, 128, 0.2) !important",
                 },
-              });
-
-              return {
-                root: {
-                  borderRadius: "10px",
-                  textTransform: "none", // Убирает капс у кнопок (обычно хорошо смотрится со скруглениями)
-                },
-                containedPrimary: containedHover(theme.palette.primary.main),
-                containedSecondary: containedHover(theme.palette.secondary.main),
-                containedError: containedHover(theme.palette.error.main),
-                containedInfo: containedHover(theme.palette.info.main),
-                containedSuccess: containedHover(theme.palette.success.main),
-                containedWarning: containedHover(theme.palette.warning.main),
-              };
+              },
             },
           },
 

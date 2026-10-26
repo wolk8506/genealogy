@@ -3,7 +3,6 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
-  DialogActions,
   Box,
   Button,
   IconButton,
@@ -17,6 +16,9 @@ import {
   TextField,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
+import DialogActionButton, {
+  DialogActionsBar,
+} from "../../../components/Dialog/DialogActionButton";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import EditIcon from "@mui/icons-material/Edit";
@@ -1482,7 +1484,7 @@ export default function BiographySection({
     table { width: 100%; border-collapse: collapse; margin: 16px 0; }
     th, td { border: 1px solid #ccc; padding: 8px; }
     blockquote { border-left: 4px solid #999; padding-left: 16px; color: #444; }
-    a { color: #0062cc; }
+    a { color: #0088FF; }
   </style>
 </head>
 <body>
@@ -2425,10 +2427,12 @@ export default function BiographySection({
             />
           </Stack>
         </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={() => closePrompt(null)}>Отмена</Button>
-          <Button
-            variant="contained"
+        <DialogActionsBar sx={{ px: 3 }}>
+          <DialogActionButton onClick={() => closePrompt(null)}>
+            Отмена
+          </DialogActionButton>
+          <DialogActionButton
+            tone="primary"
             onClick={() =>
               closePrompt(
                 promptState?.type === "link"
@@ -2438,8 +2442,8 @@ export default function BiographySection({
             }
           >
             {promptState?.type === "link" ? "Вставить" : "OK"}
-          </Button>
-        </DialogActions>
+          </DialogActionButton>
+        </DialogActionsBar>
       </Dialog>
 
       <Dialog
@@ -2498,83 +2502,17 @@ export default function BiographySection({
             Это действие нельзя отменить.
           </Typography>
 
-          <Stack gap={1} flexDirection={"row"} sx={{ mt: 1 }}>
-            {/* ДЕСТРУКТИВНАЯ КНОПКА (Secondary/Destructive) */}
-            <Button
-              variant="text"
-              // fullWidth
-              onClick={handleDiscardAndExecute}
-              sx={{
-                height: 24,
-                borderRadius: "6px",
-                py: 1.2,
-                px: 2,
-                mr: "auto",
-                textTransform: "none",
-                fontWeight: 500,
-                fontSize: "0.95rem",
-                color: (theme) =>
-                  theme.palette.mode === "dark" ? "#FF453A" : "#FF3B30", // macOS Red
-                bgcolor: (theme) => alpha(theme.palette.error.main, 0.08), // Легкий тинт вместо рамки
-                "&:hover": {
-                  bgcolor: (theme) => alpha(theme.palette.error.main, 0.15),
-                },
-              }}
-            >
+          <DialogActionsBar sx={{ px: 0, pt: 0, pb: 0, mt: 1 }}>
+            <DialogActionButton tone="danger" onClick={handleDiscardAndExecute}>
               Удалить
-            </Button>
-
-            {/* ОТМЕНА (Cancel) */}
-            <Button
-              variant="text"
-              // fullWidth
-              onClick={() => setConfirmOpen(false)}
-              sx={{
-                height: 24,
-                borderRadius: "6px",
-                py: 1.2,
-                px: 3.6,
-                textTransform: "none",
-                fontWeight: 600,
-                fontSize: "0.95rem",
-                color: "text.primary",
-                bgcolor: (theme) =>
-                  theme.palette.mode === "dark"
-                    ? "rgba(255,255,255,0.05)"
-                    : "rgba(0,0,0,0.05)",
-                "&:hover": {
-                  bgcolor: (theme) =>
-                    theme.palette.mode === "dark"
-                      ? "rgba(255,255,255,0.1)"
-                      : "rgba(0,0,0,0.1)",
-                },
-              }}
-            >
+            </DialogActionButton>
+            <DialogActionButton onClick={() => setConfirmOpen(false)}>
               Отменить
-            </Button>
-
-            {/* ГЛАВНАЯ КНОПКА (Default Action) */}
-            <Button
-              variant="contained"
-              // fullWidth
-              onClick={handleSaveAndExecute}
-              disableElevation
-              sx={{
-                height: 24,
-                borderRadius: "6px", // Системный радиус macOS
-                py: 1.2,
-                textTransform: "none",
-                fontWeight: 600,
-                fontSize: "0.95rem",
-                bgcolor: "#007AFF", // Фирменный Blue
-                "&:hover": {
-                  bgcolor: "#0062CC",
-                },
-              }}
-            >
+            </DialogActionButton>
+            <DialogActionButton tone="primary" onClick={handleSaveAndExecute}>
               Сохранить
-            </Button>
-          </Stack>
+            </DialogActionButton>
+          </DialogActionsBar>
         </Box>
       </Dialog>
 

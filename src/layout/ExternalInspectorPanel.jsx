@@ -19,7 +19,13 @@ export default function ExternalInspectorPanel({
       variant="persistent"
       transitionDuration={0}
       PaperProps={{
-        sx: { top: 50, height: "calc(100% - 50px)" },
+        sx: {
+          top: 50,
+          height: "calc(100% - 50px)",
+          bgcolor: "background.default",
+          borderLeft: "1px solid",
+          borderColor: "divider",
+        },
       }}
     >
       <Box
@@ -34,8 +40,6 @@ export default function ExternalInspectorPanel({
           sx={{
             p: 2,
             pb: 1.5,
-            borderBottom: "1px solid",
-            borderColor: "divider",
             display: "flex",
             alignItems: "center",
             gap: 1,

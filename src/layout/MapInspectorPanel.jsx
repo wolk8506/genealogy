@@ -1,22 +1,23 @@
 import React from "react";
-import {
-  Drawer,
-  Box,
-  Typography,
-  List,
-  ListItemButton,
-  ListItemText,
-} from "@mui/material";
+import { Drawer, Box, Stack, Typography } from "@mui/material";
 import MapIcon from "@mui/icons-material/Map";
 import PhotoLibraryIcon from "@mui/icons-material/PhotoLibrary";
 import EventIcon from "@mui/icons-material/Event";
 import ContactsIcon from "@mui/icons-material/Contacts";
 import { KIND_COLOR } from "../pages/Page_Map/mapHelpers";
+import {
+  groupSx,
+  RowDivider,
+  RowIcon,
+  SettingsRow,
+  CountBadge,
+} from "../pages/Page_Settings/settingsUi";
 
 function kindIcon(kind) {
-  if (kind === "photo") return <PhotoLibraryIcon sx={{ fontSize: 18, color: KIND_COLOR.photo }} />;
-  if (kind === "external") return <ContactsIcon sx={{ fontSize: 18, color: KIND_COLOR.external }} />;
-  return <EventIcon sx={{ fontSize: 18, color: KIND_COLOR.event }} />;
+  if (kind === "photo")
+    return <PhotoLibraryIcon sx={{ fontSize: 18 }} />;
+  if (kind === "external") return <ContactsIcon sx={{ fontSize: 18 }} />;
+  return <EventIcon sx={{ fontSize: 18 }} />;
 }
 
 export default function MapInspectorPanel({
@@ -34,7 +35,13 @@ export default function MapInspectorPanel({
       variant="persistent"
       transitionDuration={0}
       PaperProps={{
-        sx: { top: 50, height: "calc(100% - 50px)" },
+        sx: {
+          top: 50,
+          height: "calc(100% - 50px)",
+          bgcolor: "background.default",
+          borderLeft: "1px solid",
+          borderColor: "divider",
+        },
       }}
     >
       <Box
@@ -49,8 +56,6 @@ export default function MapInspectorPanel({
           sx={{
             p: 2,
             pb: 1.5,
-            borderBottom: "1px solid",
-            borderColor: "divider",
             display: "flex",
             alignItems: "center",
             gap: 1,
@@ -60,47 +65,53 @@ export default function MapInspectorPanel({
           <Typography variant="subtitle1" fontWeight={800}>
             Точки на карте
           </Typography>
-          <Typography variant="caption" color="text.secondary" sx={{ ml: "auto" }}>
-            {points.length}
-          </Typography>
+          <Box sx={{ ml: "auto" }}>
+            <CountBadge value={points.length} />
+          </Box>
         </Box>
 
-        <Box sx={{ flexGrow: 1, overflowY: "auto" }}>
+        <Box sx={{ flexGrow: 1, overflowY: "auto", p: 2, pt: 0 }}>
           {points.length === 0 ? (
-            <Typography variant="body2" color="text.secondary" sx={{ p: 2 }}>
-              Нет точек для отображения. Измените фильтры или добавьте места к
-              фото и событиям.
-            </Typography>
+            <Box sx={groupSx}>
+              <SettingsRow
+                icon={
+                  <RowIcon bg="gray">
+                    <MapIcon sx={{ fontSize: 18 }} />
+                  </RowIcon>
+                }
+                title="Нет точек"
+                subtitle="Измените фильтры или добавьте места к фото и событиям."
+              />
+            </Box>
           ) : (
-            <List dense disablePadding>
-              {points.map((p) => (
-                <ListItemButton
-                  key={p.key}
-                  selected={focusedKey === p.key}
-                  onClick={() => onSelectPoint?.(p)}
-                  sx={{ alignItems: "flex-start", py: 1 }}
-                >
-                  <Box sx={{ mt: 0.25, mr: 1.5 }}>{kindIcon(p.kind)}</Box>
-                  <ListItemText
-                    primary={p.label}
-                    secondary={
-                      p.isPhotoGroup
-                        ? [p.place, p.sub].filter(Boolean).join(" · ")
-                        : [p.sub, p.place].filter(Boolean).join(" · ")
-                    }
-                    primaryTypographyProps={{
-                      variant: "body2",
-                      fontWeight: 600,
-                      noWrap: true,
+            <Box sx={groupSx}>
+              <Stack divider={<RowDivider />}>
+                {points.map((p) => (
+                  <Box
+                    key={p.key}
+                    sx={{
+                      bgcolor:
+                        focusedKey === p.key ? "action.selected" : undefined,
                     }}
-                    secondaryTypographyProps={{
-                      variant: "caption",
-                      noWrap: true,
-                    }}
-                  />
-                </ListItemButton>
-              ))}
-            </List>
+                  >
+                    <SettingsRow
+                      icon={
+                        <RowIcon bg={KIND_COLOR[p.kind] || KIND_COLOR.event}>
+                          {kindIcon(p.kind)}
+                        </RowIcon>
+                      }
+                      title={p.label}
+                      subtitle={
+                        p.isPhotoGroup
+                          ? [p.place, p.sub].filter(Boolean).join(" · ")
+                          : [p.sub, p.place].filter(Boolean).join(" · ")
+                      }
+                      onClick={() => onSelectPoint?.(p)}
+                    />
+                  </Box>
+                ))}
+              </Stack>
+            </Box>
           )}
         </Box>
       </Box>

@@ -16,27 +16,20 @@ import PersonIcon from "@mui/icons-material/Person";
 import EventIcon from "@mui/icons-material/Event";
 import HistoryIcon from "@mui/icons-material/History";
 import LayersClearIcon from "@mui/icons-material/LayersClear";
+import { toolbarPillBg, toolbarPillSx } from "../toolbarStyles";
 
 const StyledContainer = styled(Box, {
   shouldForwardProp: (prop) => prop !== "$expanded",
 })(({ theme, $expanded }) => ({
-  WebkitAppRegion: "no-drag",
+  ...toolbarPillSx,
   display: "flex",
   alignItems: "center",
-  borderRadius: 20,
-  border: "1px solid",
-  borderColor: theme.palette.divider,
   transition: "all 0.3s ease",
-  width: $expanded ? "auto" : 34,
-  height: 34,
+  width: $expanded ? "auto" : 36,
   paddingRight: $expanded ? 12 : 0,
   overflow: "hidden",
   cursor: "pointer",
-  backgroundColor: $expanded ? "action.hover" : "transparent",
-  "&:hover": {
-    borderColor: theme.palette.primary.main,
-    backgroundColor: "action.selected",
-  },
+  backgroundColor: toolbarPillBg,
 }));
 
 const groupOptions = [

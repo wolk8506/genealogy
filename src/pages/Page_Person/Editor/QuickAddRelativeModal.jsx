@@ -12,7 +12,9 @@ import {
 } from "@mui/material";
 import FemaleIcon from "@mui/icons-material/Female";
 import MaleIcon from "@mui/icons-material/Male";
-import AppButton from "../../../components/AppButton";
+import DialogActionButton, {
+  DialogActionsBar,
+} from "../../../components/Dialog/DialogActionButton";
 import useDialogSaveHotkey from "../../../hooks/useDialogSaveHotkey";
 
 const fieldSx = {
@@ -307,31 +309,12 @@ export default function QuickAddRelativeModal({
         </Stack>
       </Box>
 
-      <Box
-        sx={{
-          display: "flex",
-          alignItems: "center",
-          gap: 1,
-          p: 2,
-          pt: 1,
-        }}
-      >
-        <AppButton
-          preset="secondary"
-          onClick={onClose}
-          sx={{ px: 2.5, borderRadius: "999px" }}
-        >
-          Отмена
-        </AppButton>
-        <Box sx={{ flex: 1 }} />
-        <AppButton
-          preset="primary"
-          onClick={handleSave}
-          sx={{ px: 3, borderRadius: "999px" }}
-        >
+      <DialogActionsBar>
+        <DialogActionButton onClick={onClose}>Отмена</DialogActionButton>
+        <DialogActionButton tone="primary" onClick={handleSave}>
           Создать
-        </AppButton>
-      </Box>
+        </DialogActionButton>
+      </DialogActionsBar>
     </Dialog>
   );
 }

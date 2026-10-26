@@ -2,7 +2,9 @@ import React, { useEffect, useRef, useState } from "react";
 import { Dialog, Box, Typography, Stack, IconButton } from "@mui/material";
 import ZoomInIcon from "@mui/icons-material/ZoomIn";
 import ZoomOutIcon from "@mui/icons-material/ZoomOut";
-import AppButton from "../AppButton";
+import DialogActionButton, {
+  DialogActionsBar,
+} from "./DialogActionButton";
 import { PhotoThumbCropPanel } from "../PhotoThumbCropTools";
 import { loadImage, cropToThumbWebp } from "../../utils/thumbCrop";
 
@@ -200,31 +202,16 @@ export default function PhotoPreviewDialog({ open, meta, onClose, setPhotoPaths 
         </Box>
       </Box>
 
-      <Box
-        sx={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          p: 2,
-          pt: 0,
-        }}
-      >
-        <AppButton
-          preset="secondary"
-          onClick={onClose}
-          sx={{ px: 2.5, borderRadius: "999px" }}
-        >
-          Отмена
-        </AppButton>
-        <AppButton
-          preset="primary"
+      <DialogActionsBar>
+        <DialogActionButton onClick={onClose}>Отмена</DialogActionButton>
+        <DialogActionButton
+          tone="primary"
           onClick={handleSave}
           disabled={!pixels || busy}
-          sx={{ px: 3, borderRadius: "999px" }}
         >
           {busy ? "Сохранение…" : "Готово"}
-        </AppButton>
-      </Box>
+        </DialogActionButton>
+      </DialogActionsBar>
     </Dialog>
   );
 }

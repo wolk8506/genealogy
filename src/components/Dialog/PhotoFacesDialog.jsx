@@ -19,7 +19,9 @@ import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import CheckIcon from "@mui/icons-material/Check";
 import PhotoFaceOverlay from "../PhotoFaceOverlay";
-import AppButton from "../AppButton";
+import DialogActionButton, {
+  DialogActionsBar,
+} from "./DialogActionButton";
 import { useNotificationStore } from "../../store/useNotificationStore";
 import { distanceToConfidence } from "../../services/faceRecognition";
 import { detectFacesFromImageUrl } from "../../services/faceDetection";
@@ -56,7 +58,6 @@ export default function PhotoFacesDialog({
   onSaved,
 }) {
   const theme = useTheme();
-  const isDark = theme.palette.mode === "dark";
   const addNotification = useNotificationStore((s) => s.addNotification);
 
   const [allExternal, setAllExternal] = useState([]);
@@ -275,16 +276,19 @@ export default function PhotoFacesDialog({
   useDialogSaveHotkey({ open, onSave: handleSave, disabled: saving });
 
   // Стеклянные контролы как на карте.
+  const glassBg = theme.palette.glass.surface;
+  const glassHover = theme.palette.glass.hover;
   const glassSx = {
-    bgcolor: isDark ? "rgba(30, 37, 48, 0.6)" : "rgba(255, 255, 255, 0.75)",
-    color: isDark ? "#fff" : "#1c1c1e",
+    bgcolor: glassBg,
+    color: theme.palette.text.primary,
     border: "none",
     borderRadius: "12px",
     boxShadow: "0 2px 12px rgba(0,0,0,0.22)",
     backdropFilter: "blur(8px)",
     WebkitBackdropFilter: "blur(8px)",
     "&:hover": {
-      bgcolor: isDark ? "rgba(48, 58, 74, 0.8)" : "rgba(255, 255, 255, 0.95)",
+      backgroundColor: `${glassBg} !important`,
+      backgroundImage: `linear-gradient(${glassHover}, ${glassHover})`,
     },
   };
 
@@ -397,7 +401,21 @@ export default function PhotoFacesDialog({
                 }
                 disabled={detecting || !previewUrl}
                 onClick={handleDetectFaces}
-                sx={glassSx}
+                sx={{
+                  ...glassSx,
+                  height: 36,
+                  minHeight: 36,
+                  borderRadius: "999px",
+                  px: 2,
+                  fontSize: "0.8125rem",
+                  lineHeight: 1.2,
+                  fontWeight: 700,
+                  "& .MuiButton-startIcon": {
+                    mr: 0.5,
+                    ml: 0,
+                    "& > *:nth-of-type(1)": { fontSize: 16 },
+                  },
+                }}
               >
                 Найти
               </Button>
@@ -407,8 +425,9 @@ export default function PhotoFacesDialog({
                 onClick={(e) => setFaceHelpAnchor(e.currentTarget)}
                 sx={{
                   ...glassSx,
-                  width: 34,
-                  height: 34,
+                  width: 36,
+                  height: 36,
+                  borderRadius: "50%",
                 }}
               >
                 <InfoOutlinedIcon fontSize="small" />
@@ -685,27 +704,16 @@ export default function PhotoFacesDialog({
               )}
             </Box>
 
-            <Stack
-              direction="row"
-              spacing={1}
-              sx={{ justifyContent: "flex-end", pt: 1.5 }}
-            >
-              <AppButton
-                preset="secondary"
-                onClick={onClose}
-                sx={{ px: 2.5, borderRadius: "999px" }}
-              >
-                Отмена
-              </AppButton>
-              <AppButton
-                preset="primary"
+            <DialogActionsBar sx={{ px: 0, pb: 0 }}>
+              <DialogActionButton onClick={onClose}>Отмена</DialogActionButton>
+              <DialogActionButton
+                tone="primary"
                 onClick={handleSave}
                 disabled={saving}
-                sx={{ px: 3, borderRadius: "999px" }}
               >
                 {saving ? "Сохранение…" : "Сохранить"}
-              </AppButton>
-            </Stack>
+              </DialogActionButton>
+            </DialogActionsBar>
           </Box>
         </Stack>
       </Box>

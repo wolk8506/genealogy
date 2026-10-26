@@ -17,7 +17,9 @@ import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
 import { DatePicker, TimePicker } from "@mui/x-date-pickers";
 import dayjs from "dayjs";
 import "dayjs/locale/ru";
-import AppButton from "./AppButton";
+import DialogActionButton, {
+  DialogActionsBar,
+} from "./Dialog/DialogActionButton";
 
 dayjs.locale("ru");
 
@@ -308,30 +310,12 @@ export default function CustomDatePickerDialog({
         </Box>
       </Box>
 
-      <Box
-        sx={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          p: 2,
-          pt: 0.5,
-        }}
-      >
-        <AppButton
-          preset="secondary"
-          onClick={onClose}
-          sx={{ px: 2.5, borderRadius: "999px" }}
-        >
-          Отмена
-        </AppButton>
-        <AppButton
-          preset="primary"
-          onClick={handleSave}
-          sx={{ px: 3, borderRadius: "999px" }}
-        >
+      <DialogActionsBar>
+        <DialogActionButton onClick={onClose}>Отмена</DialogActionButton>
+        <DialogActionButton tone="primary" onClick={handleSave}>
           Сохранить
-        </AppButton>
-      </Box>
+        </DialogActionButton>
+      </DialogActionsBar>
     </Dialog>
   );
 }

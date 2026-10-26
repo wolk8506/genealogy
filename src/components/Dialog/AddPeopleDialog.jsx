@@ -16,7 +16,9 @@ import FemaleIcon from "@mui/icons-material/Female";
 import MaleIcon from "@mui/icons-material/Male";
 import CustomDatePickerDialog from "../../components/CustomDatePickerDialog";
 import NumberField from "../NumberField";
-import AppButton from "../AppButton";
+import DialogActionButton, {
+  DialogActionsBar,
+} from "./DialogActionButton";
 import { useNotificationStore } from "../../store/useNotificationStore";
 import useDialogSaveHotkey from "../../hooks/useDialogSaveHotkey";
 
@@ -522,35 +524,20 @@ export default function AddPersonModal({ open, onClose }) {
           </Stack>
         </Box>
 
-        <Box
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            p: 2,
-            pt: 0,
-          }}
-        >
-          <AppButton
-            preset="secondary"
-            onClick={onClose}
-            sx={{ px: 2.5, borderRadius: "999px" }}
-          >
-            Отмена
-          </AppButton>
-          <AppButton
-            preset="primary"
+        <DialogActionsBar>
+          <DialogActionButton onClick={onClose}>Отмена</DialogActionButton>
+          <DialogActionButton
+            tone="primary"
             onClick={handleSave}
             disabled={saving}
-            sx={{ px: 3, borderRadius: "999px" }}
           >
             {saving ? (
               <CircularProgress size={18} color="inherit" />
             ) : (
               "Сохранить"
             )}
-          </AppButton>
-        </Box>
+          </DialogActionButton>
+        </DialogActionsBar>
       </Dialog>
 
       {/* Пикеры дат вынесены из Dialog для корректного отображения слоев */}

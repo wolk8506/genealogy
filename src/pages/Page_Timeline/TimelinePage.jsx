@@ -7,6 +7,7 @@ import React, {
   cloneElement,
 } from "react";
 import {
+  Avatar,
   Box,
   Stack,
   Typography,
@@ -34,6 +35,7 @@ import {
 } from "../../utils/timelineGroups";
 import { KIND_COLOR } from "../Page_Map/mapHelpers";
 import { useNotificationStore } from "../../store/useNotificationStore";
+import appIcon from "../../img/app_icon.png";
 
 const THUMB_SIZE = 120;
 const EVENT_CARD_WIDTH = THUMB_SIZE * 2 + 8; // как 2 фото + разделитель
@@ -771,6 +773,23 @@ export default function TimelinePage({
     [monthsView, showPhotos, showEvents, showExternal, eventCounts.byMonth],
   );
 
+  const isFeedEmpty =
+    level === "years"
+      ? yearsList.length === 0
+      : level === "months"
+        ? monthsList.length === 0
+        : dayGroups.length === 0;
+
+  const hasTimelineContent =
+    timeline.years.length > 0 ||
+    timeline.undatedPhotos.length > 0 ||
+    timeline.eventsByDay.size > 0;
+
+  const onlyUndated =
+    level === "years" &&
+    yearsList.length === 0 &&
+    timeline.undatedPhotos.length > 0;
+
   const editingEventInitial = useMemo(() => {
     if (!editingEventSource) return null;
     const person = (allPeople || []).find(
@@ -796,7 +815,79 @@ export default function TimelinePage({
       }}
     >
       <Box ref={scrollAreaRef} sx={{ flexGrow: 1, mr: 3.5, overflow: "hidden" }}>
-        {level === "years" && (
+        {isFeedEmpty && (
+          <Box
+            sx={{
+              height: "100%",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              px: 3,
+              pb: 2,
+            }}
+          >
+            <Box
+              sx={{
+                p: { xs: 4, md: 6 },
+                width: "100%",
+                maxWidth: 500,
+                borderRadius: "24px",
+                bgcolor: alpha(theme.palette.background.paper, 0.4),
+                border: "1px solid",
+                borderColor: "divider",
+                backdropFilter: "blur(10px)",
+                boxShadow: "0 8px 32px rgba(0,0,0,0.1)",
+                textAlign: "center",
+              }}
+            >
+              <Stack spacing={3} alignItems="center">
+                <Box sx={{ position: "relative" }}>
+                  <Box
+                    sx={{
+                      position: "absolute",
+                      inset: 0,
+                      bgcolor: theme.palette.primary.main,
+                      filter: "blur(25px)",
+                      opacity: 0.15,
+                      borderRadius: "50%",
+                    }}
+                  />
+                  <Avatar
+                    src={appIcon}
+                    sx={{
+                      width: 100,
+                      height: 100,
+                      border: "4px solid",
+                      borderColor: "background.paper",
+                      boxShadow: theme.shadows[4],
+                    }}
+                  />
+                </Box>
+
+                <Box>
+                  <Typography variant="h4" sx={{ fontWeight: 800, mb: 1 }}>
+                    Лента
+                  </Typography>
+                  <Typography
+                    variant="body1"
+                    sx={{
+                      color: "text.secondary",
+                      maxWidth: 350,
+                      mx: "auto",
+                    }}
+                  >
+                    {onlyUndated
+                      ? "Все фотографии без даты — откройте уровень «Дни», чтобы увидеть их."
+                      : hasTimelineContent
+                        ? "Ничего не найдено по выбранным фильтрам."
+                        : "Лента пока пуста. Добавьте фотографии или события, и они появятся здесь."}
+                  </Typography>
+                </Box>
+              </Stack>
+            </Box>
+          </Box>
+        )}
+        {!isFeedEmpty && level === "years" && (
           <Box ref={listRef} sx={{ height: "100%", px: 2, pb: 2 }}>
             {yearsList.length === 0 ? (
               <Typography color="text.secondary" sx={{ pt: 2 }}>
@@ -830,9 +921,7 @@ export default function TimelinePage({
                         borderRadius: 3,
                         border: "1px solid",
                         borderColor: "divider",
-                        bgcolor: isDark
-                          ? alpha("#121212", 0.9)
-                          : alpha("#f5f5f5", 0.9),
+                        bgcolor: alpha(theme.palette.background.default, 0.9),
                         cursor: "pointer",
                         display: "flex",
                         gap: 2,
@@ -886,7 +975,7 @@ export default function TimelinePage({
           </Box>
         )}
 
-        {level === "months" && (
+        {!isFeedEmpty && level === "months" && (
           <Box ref={listRef} sx={{ height: "100%", px: 2, pb: 2 }}>
             <Virtuoso
               style={{ height: "100%" }}
@@ -911,9 +1000,7 @@ export default function TimelinePage({
                       borderRadius: 2.5,
                       border: "1px solid",
                       borderColor: "divider",
-                      bgcolor: isDark
-                        ? alpha("#121212", 0.9)
-                        : alpha("#f5f5f5", 0.9),
+                      bgcolor: alpha(theme.palette.background.default, 0.9),
                       cursor: "pointer",
                       display: "flex",
                       gap: 2,
@@ -967,7 +1054,7 @@ export default function TimelinePage({
           </Box>
         )}
 
-        {level === "days" && (
+        {!isFeedEmpty && level === "days" && (
           <GroupedVirtuoso
             ref={virtuosoRef}
             style={{ height: "100%" }}
@@ -984,9 +1071,7 @@ export default function TimelinePage({
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "space-between",
-                    bgcolor: isDark
-                      ? alpha("#121212", 0.9)
-                      : alpha("#f5f5f5", 0.9),
+                    bgcolor: alpha(theme.palette.background.default, 0.9),
                     backdropFilter: "blur(4px)",
                     borderBottom: "1px solid divider",
                     borderRadius: "12px",
@@ -1058,9 +1143,7 @@ export default function TimelinePage({
                           borderRadius: 2,
                           border: "1px solid",
                           borderColor: "divider",
-                          bgcolor: isDark
-                            ? alpha("#121212", 0.9)
-                            : alpha("#f5f5f5", 0.9),
+                          bgcolor: alpha(theme.palette.background.default, 0.9),
                           position: "relative",
                           overflow: "hidden",
                           p: 1.25,

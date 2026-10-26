@@ -1,34 +1,23 @@
 import React, { useEffect, useState } from "react";
 
-import {
-  Box,
-  Stack,
-  Typography,
-  FormControlLabel,
-  Card,
-  Switch,
-  Slider,
-  Chip,
-} from "@mui/material";
-import { useNotificationStore } from "../../store/useNotificationStore";
-import { useTheme, alpha } from "@mui/material/styles";
+import { Box, Stack, Typography, Card, Slider } from "@mui/material";
 import SettingsIcon from "@mui/icons-material/Settings";
-import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
+import SaveIcon from "@mui/icons-material/Save";
 import CustomSwitch from "../../components/CustomSwitch";
+import {
+  groupSx,
+  sectionLabelSx,
+  RowIcon,
+  SettingsRow,
+} from "./settingsUi";
 
 export const NewPhotoProcessingOptionsCard = ({ cardStyle }) => {
-  const theme = useTheme();
-
-  // 1. Инициализация стейта
   const [importSettings, setImportSettings] = useState({
     keepOriginals: true,
     quality: 80,
   });
 
-  //----------
-  // Загрузка при старте
   useEffect(() => {
-    // Используем window.settings, как указано в вашем preload
     if (window.settings && window.settings.get) {
       window.settings.get("importSettings").then((saved) => {
         if (saved) setImportSettings(saved);
@@ -36,7 +25,6 @@ export const NewPhotoProcessingOptionsCard = ({ cardStyle }) => {
     }
   }, []);
 
-  // Сохранение изменений
   const handleSettingChange = async (changedValue) => {
     const updated = { ...importSettings, ...changedValue };
     setImportSettings(updated);
@@ -51,170 +39,147 @@ export const NewPhotoProcessingOptionsCard = ({ cardStyle }) => {
       variant="outlined"
       sx={{
         ...cardStyle,
+        borderRadius: "18px",
+        border: "none",
+        bgcolor: "transparent",
+        boxShadow: "none",
       }}
     >
-      {/* ШАПКА */}
       <Box
         sx={{
-          p: 2,
-          bgcolor: "action.hover",
-          borderBottom: "1px solid",
-          borderColor: "divider",
+          px: 2,
+          pt: 2,
+          pb: 1.5,
           display: "flex",
-          // alignItems: "center",
+          alignItems: "center",
           gap: 1.5,
         }}
       >
-        <SettingsIcon color="primary" sx={{ fontSize: 20 }} />
-        <Typography
-          variant="subtitle2"
-          sx={{
-            fontWeight: 800,
-            textTransform: "uppercase",
-            fontSize: "0.7rem",
-            letterSpacing: 1,
-          }}
-        >
-          Параметры обработки новых фото
-        </Typography>
+        <RowIcon bg="blue">
+          <SettingsIcon sx={{ fontSize: 18 }} />
+        </RowIcon>
+        <Box sx={{ minWidth: 0 }}>
+          <Typography variant="subtitle1" fontWeight={700} noWrap>
+            Обработка новых фото
+          </Typography>
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            display="block"
+            noWrap
+          >
+            Импорт, сжатие и хранение оригиналов
+          </Typography>
+        </Box>
       </Box>
-      <Box
-        sx={{
-          // display: "flex",
-          p: 3,
-          height: 470,
-          // justifyContent: "space-between",
-        }}
-      >
-        <Stack
-          spacing={5}
-          sx={{
-            height: "100%",
-            // display: "flex",
-            // p: 3,
-            // height: 470,
-            justifyContent: "space-between",
-          }}
-        >
-          {/* Секция: Оригиналы */}
+
+      <Box sx={{ px: 2, pb: 2 }}>
+        <Stack spacing={2.5}>
           <Box>
-            <FormControlLabel
-              sx={{
-                ml: 0,
-                mb: 2,
-                width: "100%",
-                justifyContent: "space-between",
-                flexDirection: "row-reverse",
-              }}
-              control={
-                <CustomSwitch
-                  checked={importSettings.keepOriginals}
-                  onChange={(e) =>
-                    handleSettingChange({
-                      keepOriginals: e.target.checked,
-                    })
-                  }
-                />
-              }
-              label={
-                <Typography variant="body2" sx={{ fontWeight: 700 }}>
-                  Сохранять исходные файлы
-                </Typography>
-              }
-            />
-            <Box
-              sx={{
-                display: "flex",
-                gap: 1.5,
-                p: 2,
-                borderRadius: 2,
-                bgcolor: alpha(theme.palette.info.main, 0.05),
-                border: `1px solid ${alpha(theme.palette.info.main, 0.1)}`,
-              }}
-            >
-              <InfoOutlinedIcon
-                sx={{ fontSize: 18, color: "info.main", mt: 0.3 }}
+            <Typography sx={sectionLabelSx}>Импорт</Typography>
+            <Box sx={groupSx}>
+              <SettingsRow
+                icon={
+                  <RowIcon bg="green">
+                    <SaveIcon sx={{ fontSize: 18 }} />
+                  </RowIcon>
+                }
+                title="Сохранять исходные файлы"
+                subtitle="Копия в папке originals"
+                trailing={
+                  <CustomSwitch
+                    checked={importSettings.keepOriginals}
+                    onChange={(e) =>
+                      handleSettingChange({
+                        keepOriginals: e.target.checked,
+                      })
+                    }
+                  />
+                }
+                onClick={() =>
+                  handleSettingChange({
+                    keepOriginals: !importSettings.keepOriginals,
+                  })
+                }
               />
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                sx={{ lineHeight: 1.4 }}
-              >
-                При включении система создаст копию в папке <b>"originals"</b>.
-                Это гарантирует, что вы всегда сможете вернуться к исходному
-                качеству, но требует в 2-3 раза больше дискового пространства.
-              </Typography>
             </Box>
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ display: "block", mt: 1, ml: 0.5, lineHeight: 1.4 }}
+            >
+              Копия в папке <b>originals</b> позволяет вернуться к исходному
+              качеству, но требует в 2–3 раза больше места на диске.
+            </Typography>
           </Box>
 
-          {/* Секция: Качество WebP */}
           <Box>
-            <Stack
-              direction="row"
-              justifyContent="space-between"
-              alignItems="center"
-              sx={{ mb: 2 }}
-            >
-              <Box>
-                <Typography variant="body2" sx={{ fontWeight: 700 }}>
-                  Степень сжатия WebP
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  Баланс между размером файла и четкостью
-                </Typography>
+            <Typography sx={sectionLabelSx}>Качество WebP</Typography>
+            <Box sx={groupSx}>
+              <Box sx={{ px: 2, py: 1.4 }}>
+                <Stack
+                  direction="row"
+                  alignItems="center"
+                  justifyContent="space-between"
+                  gap={2}
+                >
+                  <Box sx={{ minWidth: 0 }}>
+                    <Typography
+                      variant="body2"
+                      fontWeight={400}
+                      sx={{ fontSize: "0.8125rem" }}
+                    >
+                      Степень сжатия
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      Баланс между размером файла и чёткостью
+                    </Typography>
+                  </Box>
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ fontVariantNumeric: "tabular-nums" }}
+                  >
+                    {importSettings.quality}%
+                  </Typography>
+                </Stack>
+                <Box sx={{ px: 2 }}>
+                  <Slider
+                    value={importSettings.quality}
+                    min={10}
+                    max={100}
+                    step={5}
+                    marks={[
+                      { value: 10, label: "Min" },
+                      { value: 80, label: "Рекомендуется" },
+                      { value: 100, label: "Max" },
+                    ]}
+                    onChange={(_, v) =>
+                      setImportSettings((p) => ({ ...p, quality: v }))
+                    }
+                    onChangeCommitted={(_, v) =>
+                      handleSettingChange({ quality: v })
+                    }
+                    sx={{
+                      mt: 1,
+                      "& .MuiSlider-markLabel": {
+                        fontSize: "0.65rem",
+                        fontWeight: 600,
+                      },
+                    }}
+                  />
+                </Box>
               </Box>
-              <Chip
-                label={`${importSettings.quality}%`}
-                size="small"
-                color="primary"
-                sx={{ fontWeight: 800, borderRadius: "6px" }}
-              />
-            </Stack>
-
-            <Box sx={{ px: 1, mb: 3 }}>
-              <Slider
-                value={importSettings.quality}
-                min={10}
-                max={100}
-                step={5}
-                marks={[
-                  { value: 10, label: "Min" },
-                  { value: 80, label: "Рекомендуется" },
-                  { value: 100, label: "Max" },
-                ]}
-                onChange={(_, v) =>
-                  setImportSettings((p) => ({ ...p, quality: v }))
-                }
-                onChangeCommitted={(_, v) =>
-                  handleSettingChange({ quality: v })
-                }
-                sx={{
-                  "& .MuiSlider-markLabel": {
-                    fontSize: "0.65rem",
-                    fontWeight: 600,
-                  },
-                }}
-              />
             </Box>
-
-            <Box
-              sx={{
-                p: 2,
-                borderRadius: 2,
-                bgcolor: alpha(theme.palette.warning.main, 0.05),
-                border: `1px solid ${alpha(theme.palette.warning.main, 0.1)}`,
-              }}
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ display: "block", mt: 1, ml: 0.5, lineHeight: 1.4 }}
             >
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                sx={{ display: "block", lineHeight: 1.4 }}
-              >
-                <b>80%</b> — золотая середина. Фото визуально неотличимы от
-                оригинала, но весят на 60% меньше. При <b>100%</b> сжатие почти
-                отсутствует, что увеличит нагрузку на сеть.
-              </Typography>
-            </Box>
+              <b>80%</b> — золотая середина: фото визуально неотличимы от
+              оригинала, но весят на 60% меньше. При <b>100%</b> сжатие почти
+              отсутствует, что увеличит нагрузку на сеть.
+            </Typography>
           </Box>
         </Stack>
       </Box>

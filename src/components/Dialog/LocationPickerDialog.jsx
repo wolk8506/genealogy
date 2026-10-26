@@ -23,7 +23,9 @@ import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import { MapContainer, Marker, useMap, useMapEvents } from "react-leaflet";
-import AppButton from "../AppButton";
+import DialogActionButton, {
+  DialogActionsBar,
+} from "./DialogActionButton";
 import MapStyleSwitcher, {
   MapBaseTileLayer,
 } from "../MapStyleSwitcher";
@@ -150,7 +152,6 @@ export default function LocationPickerDialog({
   // Удерживает место в потоке, пока карта «вынута» в fixed.
   const [pinned, setPinned] = useState(false);
   const theme = useTheme();
-  const isDark = theme.palette.mode === "dark";
   const mapBoxRef = useRef(null);
   const compactRectRef = useRef(null);
   // Последняя известная своя позиция — для стартового центрирования карты.
@@ -472,9 +473,9 @@ export default function LocationPickerDialog({
     opacity: expanded ? 0 : 1,
     transition: "opacity 200ms ease",
   };
-  const glassBg = isDark ? "rgba(30, 37, 48, 0.72)" : "rgba(255, 255, 255, 0.86)";
-  const glassFg = isDark ? "#fff" : "#1c1c1e";
-  const hoverBg = isDark ? "rgba(48, 58, 74, 0.85)" : "rgba(255, 255, 255, 0.95)";
+  const glassBg = theme.palette.glass.surface;
+  const glassFg = theme.palette.text.primary;
+  const hoverBg = theme.palette.glass.hover;
 
   return (
     <Dialog
@@ -571,7 +572,9 @@ export default function LocationPickerDialog({
                 transition: "background 0.15s",
                 // Кликабельность поверх невидимой шапки (frameless-окно).
                 WebkitAppRegion: "no-drag",
-                "&:hover": { bgcolor: hoverBg },
+                "&:hover": {
+                  backgroundImage: `linear-gradient(${hoverBg}, ${hoverBg})`,
+                },
               }}
             >
               {expanded ? (
@@ -693,32 +696,16 @@ export default function LocationPickerDialog({
         )}
       </Box>
 
-      <Box
-        sx={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          p: 2,
-          pt: 0,
-          ...hiddenSx,
-        }}
-      >
-        <AppButton
-          preset="secondary"
-          onClick={onClose}
-          sx={{ px: 2.5, borderRadius: "999px" }}
-        >
-          Отмена
-        </AppButton>
-        <AppButton
-          preset="primary"
+      <DialogActionsBar sx={hiddenSx}>
+        <DialogActionButton onClick={onClose}>Отмена</DialogActionButton>
+        <DialogActionButton
+          tone="primary"
           onClick={handleConfirm}
           disabled={!pos || confirming}
-          sx={{ px: 3, borderRadius: "999px" }}
         >
           {confirming ? "Сохранение…" : "Готово"}
-        </AppButton>
-      </Box>
+        </DialogActionButton>
+      </DialogActionsBar>
 
         {view === "saved" && (
           <Box

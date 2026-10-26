@@ -8,6 +8,7 @@ import { useTheme, alpha } from "@mui/material/styles";
 import ExpandingSearch from "../../../components/ExpandingSearch";
 import ExpandingAddPhotoButton from "./ExpandingAddPhotoButton";
 import ExpandingGroupSelect from "./ExpandingGroupSelect";
+import { toolbarPillSx } from "../../toolbarStyles";
 
 export default function PhotoToolbar({
   search,
@@ -30,14 +31,11 @@ export default function PhotoToolbar({
       <Box sx={{ flexGrow: 1 }} />
       <Box
         sx={{
+          ...toolbarPillSx,
           display: "inline-flex",
           alignItems: "center",
           gap: 1,
-          border: "1px solid",
-          borderColor: "divider",
-          borderRadius: 7,
-          height: 34,
-          color: "text.secondary",
+          color: "text.primary",
           fontSize: 20,
         }}
       >

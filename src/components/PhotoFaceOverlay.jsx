@@ -8,6 +8,9 @@ import {
 } from "../utils/photoFaceLayout";
 import { getPersonLabel } from "../utils/photoFaces";
 import { getExternalEntityLabel } from "../utils/externalEntities";
+import { getAccents } from "../theme/palette";
+
+const ACCENTS = getAccents("light");
 
 export default function PhotoFaceOverlay({
   faces = [],
@@ -291,18 +294,18 @@ export default function PhotoFaceOverlay({
           opacity: isDimmed ? 0.42 : 1,
           border: "2px solid",
           borderColor: isHighlighted
-            ? "#ffb74d"
+            ? ACCENTS.orange
             : isSelected
-              ? "#42a5f5"
+              ? ACCENTS.blue
               : "rgba(255,255,255,0.9)",
           bgcolor: isHighlighted
-            ? "rgba(255,183,77,0.2)"
+            ? "rgba(255,141,40,0.2)"
             : isSelected
-              ? "rgba(66,165,245,0.15)"
+              ? "rgba(0,136,255,0.15)"
               : "rgba(255,255,255,0.06)",
           borderRadius: "4px",
           boxShadow: isSelected || isHighlighted || isHovered
-            ? "0 0 0 1px rgba(66,165,245,0.5), 0 8px 18px rgba(0,0,0,0.28)"
+            ? "0 0 0 1px rgba(0,136,255,0.5), 0 8px 18px rgba(0,0,0,0.28)"
             : "0 2px 8px rgba(0,0,0,0.35)",
           pointerEvents: "auto",
           cursor:
@@ -354,7 +357,7 @@ export default function PhotoFaceOverlay({
               bottom: -7,
               width: 14,
               height: 14,
-              bgcolor: "#42a5f5",
+              bgcolor: ACCENTS.blue,
               border: "2px solid #fff",
               borderRadius: "50%",
               cursor: "nwse-resize",
@@ -369,7 +372,7 @@ export default function PhotoFaceOverlay({
             sx={{
               position: "absolute",
               inset: 0,
-              border: "2px dashed rgba(66,165,245,0.9)",
+              border: "2px dashed rgba(0,136,255,0.9)",
               borderRadius: "4px",
             }}
           />

@@ -16,6 +16,7 @@ import ButtonConteiner from "../../components/ButtonConteiner";
 import PersonFillBadgePlusIcon from "../../components/svg/PersonFillBadgePlusIcon";
 import TrashFillIcon from "../../components/svg/TrashFillIcon";
 import { usePeopleListStore } from "../../store/usePeopleListStore";
+import { toolbarPillSx } from "../toolbarStyles";
 
 export default function ExternalToolbar({
   search,
@@ -51,19 +52,19 @@ export default function ExternalToolbar({
           exclusive
           onChange={(_, value) => value && setTypeFilter(value)}
           sx={{
-            height: 34,
-            borderRadius: 7,
-            border: "1px solid",
-            borderColor: "divider",
-            bgcolor: "action.hover",
-            '& .MuiToggleButton-root': {
+            ...toolbarPillSx,
+            p: "3px",
+            gap: 0.5,
+            "& .MuiToggleButton-root": {
               color: "text.primary",
               border: "none",
-              borderRadius: 6,
-              textTransform: "none",
+              borderRadius: "14px",
+              height: 30,
+              py: 0,
               px: 1.2,
-              '&.Mui-selected': {
-                bgcolor: "divider",
+              textTransform: "none",
+              "&.Mui-selected": {
+                bgcolor: "rgba(153, 153, 153, 0.24)",
                 color: "primary.main",
               },
             },

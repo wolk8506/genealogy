@@ -1,12 +1,12 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Box, alpha } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import TuneIcon from "@mui/icons-material/Tune";
 import PhotoLibraryIcon from "@mui/icons-material/PhotoLibrary";
 import FaceRetouchingNaturalIcon from "@mui/icons-material/FaceRetouchingNatural";
 import StorageIcon from "@mui/icons-material/Storage";
+import SystemUpdateAltIcon from "@mui/icons-material/SystemUpdateAlt";
 import WarningAmberIcon from "@mui/icons-material/WarningAmber";
-import { ButtonScrollTop } from "../../components/ButtonScrollTop";
 import { StatisticCard } from "./StatisticCard";
 import { GeneralSettingsCard } from "./GeneralSettingsCard";
 import { StorageCard } from "./StorageCard";
@@ -20,16 +20,26 @@ import SettingsSidebar from "./SettingsSidebar";
 const SECTIONS = [
   {
     id: "general",
-    title: "Общие",
-    keywords: "тема внешний вид обновления лимит метки",
+    title: "Общие параметры",
+    keywords: "тема внешний вид лимит метки общие",
     icon: TuneIcon,
-    cards: ["general", "updates"],
+    color: "gray",
+    cards: ["general"],
+  },
+  {
+    id: "updates",
+    title: "Обновление системы",
+    keywords: "обновление версия апдейт установка",
+    icon: SystemUpdateAltIcon,
+    color: "green",
+    cards: ["updates"],
   },
   {
     id: "photos",
     title: "Фотографии",
     keywords: "обработка конвертация кэш превью оптимизация загрузка",
     icon: PhotoLibraryIcon,
+    color: "orange",
     cards: ["photoProcessing", "optimization"],
   },
   {
@@ -37,6 +47,7 @@ const SECTIONS = [
     title: "Распознавание лиц",
     keywords: "лица сканирование совпадения",
     icon: FaceRetouchingNaturalIcon,
+    color: "purple",
     cards: ["faceScan"],
   },
   {
@@ -44,13 +55,15 @@ const SECTIONS = [
     title: "Хранилище и данные",
     keywords: "папка диск место статистика импорт экспорт бэкап резервная копия",
     icon: StorageIcon,
+    color: "blue",
     cards: ["storage", "stats"],
   },
   {
     id: "danger",
-    title: "Опасная зона",
-    keywords: "удалить сброс очистить",
+    title: "Удаление данных",
+    keywords: "удалить сброс очистить опасная зона",
     icon: WarningAmberIcon,
+    color: "red",
     danger: true,
     cards: ["danger"],
   },
@@ -64,6 +77,12 @@ export default function SettingsPage() {
     () => localStorage.getItem(STORAGE_KEY) || "general",
   );
   const [query, setQuery] = useState("");
+  const [statSubpage, setStatSubpage] = useState(false);
+  const [mediaSubpage, setMediaSubpage] = useState(false);
+
+  useEffect(() => {
+    if (statSubpage || mediaSubpage) window.scrollTo({ top: 0 });
+  }, [statSubpage, mediaSubpage]);
 
   const cardStyle = {
     borderRadius: 5,
@@ -77,10 +96,20 @@ export default function SettingsPage() {
     photoProcessing: (
       <NewPhotoProcessingOptionsCard cardStyle={cardStyle} />
     ),
-    optimization: <OptimizationMasterCard cardStyle={cardStyle} />,
+    optimization: (
+      <OptimizationMasterCard
+        cardStyle={cardStyle}
+        onSubpageChange={setMediaSubpage}
+      />
+    ),
     faceScan: <FaceScanMasterCard cardStyle={cardStyle} />,
     storage: <StorageCard cardStyle={cardStyle} />,
-    stats: <StatisticCard cardStyle={cardStyle} />,
+    stats: (
+      <StatisticCard
+        cardStyle={cardStyle}
+        onSubpageChange={setStatSubpage}
+      />
+    ),
     danger: <DangerZoneCard cardStyle={cardStyle} />,
   };
 
@@ -105,6 +134,13 @@ export default function SettingsPage() {
     }
   };
 
+  let cardKeys = active?.cards || [];
+  if (active?.id === "storage" && statSubpage) {
+    cardKeys = cardKeys.filter((key) => key === "stats");
+  } else if (active?.id === "photos" && mediaSubpage) {
+    cardKeys = cardKeys.filter((key) => key === "optimization");
+  }
+
   return (
     <Box sx={{ p: 1, display: "flex", gap: 2, alignItems: "flex-start" }}>
       <SettingsSidebar
@@ -125,12 +161,11 @@ export default function SettingsPage() {
           maxWidth: 980,
         }}
       >
-        {active?.cards.map((key) => (
+        {cardKeys.map((key) => (
           <Box key={key}>{cards[key]}</Box>
         ))}
       </Box>
 
-      <ButtonScrollTop />
     </Box>
   );
 }

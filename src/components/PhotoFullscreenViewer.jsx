@@ -71,7 +71,7 @@ const PhotoFullscreenViewer = ({
             component="span"
             sx={{
               display: "inline-block",
-              bgcolor: "#0d47a1", // blue.900
+              bgcolor: "primary.main",
               color: "#fff",
               px: 0.7,
               mx: 0.3,

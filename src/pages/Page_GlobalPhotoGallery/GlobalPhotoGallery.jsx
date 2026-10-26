@@ -6,7 +6,9 @@ import React, {
   useCallback,
 } from "react";
 import {
+  Avatar,
   Box,
+  Button,
   Stack,
   Typography,
   CircularProgress,
@@ -17,6 +19,7 @@ import {
 } from "@mui/material";
 import { useTheme, alpha } from "@mui/material/styles";
 import { GroupedVirtuoso } from "react-virtuoso";
+import AddIcon from "@mui/icons-material/Add";
 import ManIcon from "@mui/icons-material/Man";
 import WomanIcon from "@mui/icons-material/Woman";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
@@ -24,19 +27,18 @@ import PhotoLibraryIcon from "@mui/icons-material/PhotoLibrary";
 // import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
 import PhotoFullscreenViewer from "../../components/PhotoFullscreenViewer";
 import TimelineScrubber from "../../components/TimelineScrubber";
-import PhotoMetaUpdateDialog from "../../components/Dialog/PhotoMetaUpdateDialog";
 import PhotoFacesDialog from "../../components/Dialog/PhotoFacesDialog";
 import PhotoPreviewDialog from "../../components/Dialog/PhotoPreviewDialog";
 import PhotoCell from "../../components/PhotoCell";
 import onDownload from "../../utils/onDownload";
 import PhotoMetaDialog from "../../components/Dialog/PhotoMetaDialog";
-import { ButtonScrollTop } from "../../components/ButtonScrollTop";
 import PhotoUploadDialog from "../../components/Dialog/PhotoUploadDialog";
 import { buildPhotoAttendeesText } from "../../utils/photoFaces";
 import { normalizePhotoDate } from "../../utils/photoDates";
 import { useModalStore } from "../../store/useModalStore";
 import { usePhotoInspectorStore } from "../../store/usePhotoInspectorStore";
 import { useLocation } from "react-router-dom";
+import appIcon from "../../img/app_icon.png";
 
 export default function GlobalPhotoGallery({
   search,
@@ -62,8 +64,6 @@ export default function GlobalPhotoGallery({
   const [direction, setDirection] = useState(0);
   const [hideLabels, setHideLabels] = useState(false);
   const [sliderForcedFullscreen, setSliderForcedFullscreen] = useState(false);
-  const [openDialogUpdate, setOpenDialogUpdate] = useState(false);
-  const [editingPhoto, setEditingPhoto] = useState(null);
   const [facesDialogOpen, setFacesDialogOpen] = useState(false);
   const [facesDialogPhoto, setFacesDialogPhoto] = useState(null);
   const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
@@ -75,7 +75,6 @@ export default function GlobalPhotoGallery({
   const [activeGroupIndex, setActiveGroupIndex] = useState(0);
   const scrollAreaRef = useRef(null);
 
-  const [scrollTop, setScrollTop] = useState(0);
   const [allExternal, setAllExternal] = useState([]);
 
   useEffect(() => {
@@ -396,9 +395,11 @@ export default function GlobalPhotoGallery({
     ipcRenderer.removeAllListeners?.("photo:open");
     ipcRenderer.removeAllListeners?.("photo:meta-response");
 
-    ipcRenderer.on("photo:open", (_, id) => {
-      setOpenDialogUpdate(true);
-      setEditingPhoto(id);
+    ipcRenderer.on("photo:open", (_, payload) => {
+      const id =
+        payload && typeof payload === "object" ? payload.id : payload;
+      const photo = displayList.find((p) => p.id === id);
+      if (photo) selectPhoto(photo);
     });
 
     ipcRenderer.on("photo:meta-response", (_, receivedMeta) => {
@@ -410,7 +411,7 @@ export default function GlobalPhotoGallery({
       ipcRenderer.removeAllListeners?.("photo:open");
       ipcRenderer.removeAllListeners?.("photo:meta-response");
     };
-  }, []);
+  }, [displayList, selectPhoto]);
 
   const setPath = useCallback(
     (id, path, ver) =>
@@ -513,22 +514,100 @@ export default function GlobalPhotoGallery({
         ) : displayList.length === 0 ? (
           <Box
             sx={{
-              height: "80vh",
+              height: "100%",
               display: "flex",
-              justifyContent: "center",
-              flexDirection: "column",
               alignItems: "center",
-              gap: 3,
-              color: "text.secondary",
+              justifyContent: "center",
+              px: 3,
+              pb: 2,
             }}
           >
-            <PhotoLibraryIcon sx={{ fontSize: 60, opacity: 0.3 }} />
-            <Typography>Фотографии не найдены</Typography>
+            <Box
+              sx={{
+                p: { xs: 4, md: 6 },
+                width: "100%",
+                maxWidth: 500,
+                borderRadius: "24px",
+                bgcolor: alpha(theme.palette.background.paper, 0.4),
+                border: "1px solid",
+                borderColor: "divider",
+                backdropFilter: "blur(10px)",
+                boxShadow: "0 8px 32px rgba(0,0,0,0.1)",
+                textAlign: "center",
+              }}
+            >
+              <Stack spacing={3} alignItems="center">
+                <Box sx={{ position: "relative" }}>
+                  <Box
+                    sx={{
+                      position: "absolute",
+                      inset: 0,
+                      bgcolor: theme.palette.primary.main,
+                      filter: "blur(25px)",
+                      opacity: 0.15,
+                      borderRadius: "50%",
+                    }}
+                  />
+                  <Avatar
+                    src={appIcon}
+                    sx={{
+                      width: 100,
+                      height: 100,
+                      border: "4px solid",
+                      borderColor: "background.paper",
+                      boxShadow: theme.shadows[4],
+                    }}
+                  />
+                </Box>
+
+                <Box>
+                  <Typography variant="h4" sx={{ fontWeight: 800, mb: 1 }}>
+                    Фотогалерея
+                  </Typography>
+                  <Typography
+                    variant="body1"
+                    sx={{ color: "text.secondary", maxWidth: 350, mx: "auto" }}
+                  >
+                    {(photos || []).length > 0
+                      ? "Ничего не найдено по выбранным фильтрам."
+                      : "Фотогалерея пока пуста. Добавьте первые фотографии, чтобы они появились здесь."}
+                  </Typography>
+                </Box>
+
+                {(photos || []).length === 0 && (
+                  <Stack spacing={2} sx={{ width: "100%", mt: 2 }}>
+                    <Button
+                      variant="contained"
+                      size="large"
+                      startIcon={<AddIcon />}
+                      onClick={openUpload}
+                      sx={{
+                        height: 32,
+                        borderRadius: "999px",
+                        px: 2,
+                        py: 0,
+                        textTransform: "none",
+                        fontSize: "0.8125rem",
+                        lineHeight: 1.2,
+                        fontWeight: 700,
+                        boxShadow: "0 4px 14px 0 rgba(0,118,255,0.39)",
+                        "& .MuiButton-startIcon": {
+                          mr: 0.5,
+                          ml: 0,
+                          "& > *:nth-of-type(1)": { fontSize: 16 },
+                        },
+                      }}
+                    >
+                      Добавить фотографии
+                    </Button>
+                  </Stack>
+                )}
+              </Stack>
+            </Box>
           </Box>
         ) : (
           <GroupedVirtuoso
             ref={virtuosoRef}
-            onScroll={(e) => setScrollTop(e.target.scrollTop)}
             style={{ height: "100%" }}
             groupCounts={groupCounts}
             rangeChanged={handleRangeChanged}
@@ -540,9 +619,13 @@ export default function GlobalPhotoGallery({
                   (p) => getOwnerName(p.id) === label,
                 );
                 if (person?.gender === "male")
-                  Icon = <ManIcon sx={{ color: "#1976d2" }} />;
+                  Icon = (
+                    <ManIcon sx={{ color: theme.palette.accents.blue }} />
+                  );
                 else if (person?.gender === "female")
-                  Icon = <WomanIcon sx={{ color: "#dc004e" }} />;
+                  Icon = (
+                    <WomanIcon sx={{ color: theme.palette.accents.pink }} />
+                  );
               } else if (groupBy === "date" || groupBy === "datePhoto") {
                 Icon = <CalendarMonthIcon sx={{ color: "text.secondary" }} />;
               }
@@ -555,9 +638,7 @@ export default function GlobalPhotoGallery({
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "space-between",
-                    bgcolor: isDark
-                      ? alpha("#121212", 0.9)
-                      : alpha("#f5f5f5", 0.9),
+                    bgcolor: alpha(theme.palette.background.default, 0.9),
                     backdropFilter: "blur(4px)",
                     borderBottom: "1px solid divider",
                   }}
@@ -616,9 +697,6 @@ export default function GlobalPhotoGallery({
             )}
           />
         )}
-        {groupBy !== "datePhoto" && (
-          <ButtonScrollTop targetRef={virtuosoRef} scrollOffset={scrollTop} />
-        )}
       </Box>
 
       {/* ТАЙМЛАЙН-СКРАББЕР в стиле Google Photos */}
@@ -662,17 +740,6 @@ export default function GlobalPhotoGallery({
         openDialog={openInfo}
         meta={metaInfo}
         onClose={() => setOpenInfo(false)}
-      />
-
-      <PhotoMetaUpdateDialog
-        open={openDialogUpdate}
-        meta={editingPhoto}
-        onClose={async () => {
-          setOpenDialogUpdate(false);
-          await refresh();
-        }}
-        allPeople={allPeople}
-        setPhotoPaths={setPhotoPaths}
       />
 
       <PhotoFacesDialog

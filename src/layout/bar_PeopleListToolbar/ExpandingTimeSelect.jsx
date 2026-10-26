@@ -20,23 +20,19 @@ import DateRangeIcon from "@mui/icons-material/DateRange";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import HistoryToggleOffIcon from "@mui/icons-material/HistoryToggleOff";
 import EventNoteIcon from "@mui/icons-material/EventNote";
+import { toolbarPillBg, toolbarPillSx } from "../toolbarStyles";
 
 const StyledContainer = styled(Box, {
   shouldForwardProp: (prop) => prop !== "$expanded",
 })(({ theme, $expanded }) => ({
+  ...toolbarPillSx,
   display: "flex",
   alignItems: "center",
-  borderRadius: 20,
-  border: "1px solid",
-  borderColor: theme.palette.divider,
   transition:
     "transform 0.2s ease-out, box-shadow 0.2s ease-out, background-color 0.2s",
-  height: 34,
   paddingRight: $expanded ? 12 : 0,
   cursor: "pointer",
-  "&:hover": {
-    backgroundColor: "action.hover",
-  },
+  backgroundColor: toolbarPillBg,
 }));
 
 const timeOptions = [
@@ -182,11 +178,15 @@ export default function ExpandingTimeSelect({
                   mx: 1,
                   my: 0.5,
                   borderRadius: "8px",
-                  bgcolor: isSelected ? alpha("#2196f3", 0.15) : "transparent",
+                  bgcolor: (t) =>
+                    isSelected
+                      ? alpha(t.palette.primary.main, 0.15)
+                      : "transparent",
                   "&:hover": {
-                    bgcolor: isSelected
-                      ? alpha("#2196f3", 0.25)
-                      : alpha("#fff", 0.05),
+                    bgcolor: (t) =>
+                      isSelected
+                        ? alpha(t.palette.primary.main, 0.25)
+                        : "action.hover",
                   },
                   transition: "background-color 0.2s",
                 }}

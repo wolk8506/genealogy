@@ -25,7 +25,9 @@ import FaceIcon from "@mui/icons-material/Face";
 
 import nationalities from "./nationalities.json";
 import NumberField from "../../../components/NumberField";
-import AppButton from "../../../components/AppButton";
+import DialogActionButton, {
+  DialogActionsBar,
+} from "../../../components/Dialog/DialogActionButton";
 import useDialogSaveHotkey from "../../../hooks/useDialogSaveHotkey";
 
 const fieldSx = {
@@ -478,40 +480,17 @@ export default function FactsEditorDialog({
         </Stack>
       </Box>
 
-      <Box
-        sx={{
-          display: "flex",
-          alignItems: "center",
-          gap: 1,
-          p: 2,
-          pt: 1,
-        }}
-      >
+      <DialogActionsBar>
         {initialFact && (
-          <AppButton
-            preset="dangerOutlined"
-            onClick={handleDelete}
-            sx={{ px: 2.5, borderRadius: "999px" }}
-          >
+          <DialogActionButton tone="danger" onClick={handleDelete}>
             Удалить
-          </AppButton>
+          </DialogActionButton>
         )}
-        <AppButton
-          preset="secondary"
-          onClick={onClose}
-          sx={{ px: 2.5, borderRadius: "999px" }}
-        >
-          Отмена
-        </AppButton>
-        <Box sx={{ flex: 1 }} />
-        <AppButton
-          preset="primary"
-          onClick={handleSave}
-          sx={{ px: 3, borderRadius: "999px" }}
-        >
+        <DialogActionButton onClick={onClose}>Отмена</DialogActionButton>
+        <DialogActionButton tone="primary" onClick={handleSave}>
           {initialFact ? "Обновить" : "Сохранить"}
-        </AppButton>
-      </Box>
+        </DialogActionButton>
+      </DialogActionsBar>
     </Dialog>
   );
 }

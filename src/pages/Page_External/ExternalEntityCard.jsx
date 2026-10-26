@@ -204,7 +204,7 @@ export function ExternalEntityCard({
                 onClick={() => onRestore?.(entity.id)}
                 startIcon={<TrashSlashFillIcon sx={{ fontSize: 18 }} />}
                 sx={{
-                  borderRadius: "10px",
+                  borderRadius: "12px",
                   fontWeight: 700,
                   bgcolor: alpha(theme.palette.success.main, 0.05),
                   "&:hover": {
@@ -220,7 +220,7 @@ export function ExternalEntityCard({
                 onClick={() => onDeleteForever?.(entity.id)}
                 startIcon={<TrashFillIcon sx={{ fontSize: 18 }} />}
                 sx={{
-                  borderRadius: "10px",
+                  borderRadius: "12px",
                   fontWeight: 700,
                   bgcolor: alpha(theme.palette.error.main, 0.05),
                   "&:hover": { bgcolor: alpha(theme.palette.error.main, 0.15) },

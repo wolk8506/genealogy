@@ -4,19 +4,19 @@ import Switch from "@mui/material/Switch";
 const CustomSwitch = styled((props) => (
   <Switch focusVisibleClassName=".Mui-focusVisible" disableRipple {...props} />
 ))(({ theme }) => ({
-  width: 54,
-  height: 24,
+  width: 36,
+  height: 16,
   padding: 0,
   display: "flex",
   "& .MuiSwitch-switchBase": {
     padding: 0,
-    margin: 2,
+    margin: 1.5,
     transitionDuration: "250ms",
     "&.Mui-checked": {
-      transform: "translateX(18px)",
+      transform: "translateX(12px)",
       color: "#fff",
       "& + .MuiSwitch-track": {
-        backgroundColor: "rgb(57,122,245)",
+        backgroundColor: theme.palette.primary.main,
         opacity: 1,
         border: 0,
       },
@@ -35,15 +35,15 @@ const CustomSwitch = styled((props) => (
   },
   "& .MuiSwitch-thumb": {
     boxSizing: "border-box",
-    width: 32,
-    height: 20,
-    borderRadius: 10,
-    boxShadow: "0 2px 4px 0 rgba(0,0,0,0.2)",
-    opacity: 0.85,
+    width: 21,
+    height: 13,
+    borderRadius: 6.5,
+    backgroundColor: "#fff",
+    boxShadow: "0 1px 2px 0 rgba(0,0,0,0.15)",
   },
   "& .MuiSwitch-track": {
-    borderRadius: 12,
-    backgroundColor: theme.palette.mode === "light" ? "#E9E9EA" : "#39393D",
+    borderRadius: 8,
+    backgroundColor: theme.palette.mode === "light" ? "#DDDDDD" : "#404040",
     opacity: 1,
     transition: theme.transitions.create(["background-color"], {
       duration: 300,

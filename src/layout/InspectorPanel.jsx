@@ -4,11 +4,10 @@ import {
   Box,
   Stack,
   Typography,
-  Chip,
   Avatar,
   IconButton,
 } from "@mui/material";
-import { alpha } from "@mui/material/styles";
+import { useTheme } from "@mui/material/styles";
 import CelebrationIcon from "@mui/icons-material/Celebration";
 import BarChartIcon from "@mui/icons-material/BarChart";
 import GroupsIcon from "@mui/icons-material/Groups";
@@ -24,6 +23,13 @@ import { useNavigate } from "react-router-dom";
 import usePhotoThumbs from "../hooks/usePhotoThumbs";
 import PhotoFullscreenViewer from "../components/PhotoFullscreenViewer";
 import { formatYearsAgo } from "../hooks/useMemories";
+import {
+  groupSx,
+  RowDivider,
+  RowIcon,
+  SettingsRow,
+  sectionLabelSx,
+} from "../pages/Page_Settings/settingsUi";
 
 function PersonHeader({ personId, allPeople, onFocusPerson }) {
   const navigate = useNavigate();
@@ -143,114 +149,143 @@ function MemoriesTab({ groups, allPeople }) {
     <>
       <Box sx={{ flexGrow: 1, overflowY: "auto", p: 2 }}>
         {groups.length === 0 && (
-          <Typography color="text.secondary" variant="body2">
-            В этот день в прошлые годы ничего не отмечено. Загляните
-            завтра — вдруг там свадьба?
-          </Typography>
+          <Box sx={groupSx}>
+            <SettingsRow
+              icon={
+                <RowIcon bg="gray">
+                  <CelebrationIcon sx={{ fontSize: 18 }} />
+                </RowIcon>
+              }
+              title="В этот день пусто"
+              subtitle="Загляните завтра — вдруг там свадьба?"
+            />
+          </Box>
         )}
-        <Stack spacing={2.5}>
+
+        <Stack spacing={2}>
           {groups.map((g) => (
             <Box key={g.year}>
               <Stack
                 direction="row"
+                alignItems="baseline"
                 spacing={1}
-                alignItems="center"
-                sx={{ mb: 1 }}
+                sx={{ mb: 1, ml: 0.5 }}
               >
-                <Typography variant="h6" sx={{ fontWeight: 800 }}>
+                <Typography
+                  sx={{
+                    fontSize: "0.78rem",
+                    fontWeight: 700,
+                    color: "text.secondary",
+                  }}
+                >
                   {formatYearsAgo(g.yearsAgo)}
                 </Typography>
-                <Typography variant="caption" color="text.secondary">
+                <Typography
+                  sx={{ fontSize: "0.7rem", color: "text.disabled" }}
+                >
                   {g.year}
                 </Typography>
-                <Chip
-                  label={`Фото: ${g.photos.length}`}
-                  size="small"
-                  variant="outlined"
-                />
-                {g.events.length > 0 && (
-                  <Chip
-                    label={`События: ${g.events.length}`}
-                    size="small"
-                    variant="outlined"
-                  />
-                )}
+                <Typography
+                  sx={{
+                    ml: "auto",
+                    fontSize: "0.7rem",
+                    color: "text.secondary",
+                  }}
+                >
+                  {[
+                    g.photos.length > 0 ? `Фото ${g.photos.length}` : null,
+                    g.events.length > 0 ? `События ${g.events.length}` : null,
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </Typography>
               </Stack>
 
-              {g.photos.length > 0 && (
-                <Box
-                  sx={{
-                    display: "grid",
-                    gridTemplateColumns: "repeat(3, 1fr)",
-                    gap: 1,
-                    mb: g.events.length > 0 ? 1 : 0,
-                  }}
-                >
-                  {g.photos.map((p) => {
-                    if (!thumbs[p.id]) fetchThumb(p);
-                    return (
-                      <Box
-                        key={p.id}
-                        component="img"
-                        src={thumbs[p.id]}
-                        alt={p.title || ""}
-                        title={p.title || p.filename || ""}
-                        onClick={() => openPhoto(p)}
-                        sx={{
-                          width: "100%",
-                          aspectRatio: "1",
-                          objectFit: "cover",
-                          borderRadius: 2,
-                          bgcolor: "action.hover",
-                          cursor: "pointer",
-                        }}
-                      />
-                    );
-                  })}
-                </Box>
-              )}
+              <Box sx={groupSx}>
+                {g.photos.length > 0 && (
+                  <Box
+                    sx={{
+                      display: "grid",
+                      gridTemplateColumns: "repeat(3, 1fr)",
+                      gap: 1,
+                      p: 1,
+                    }}
+                  >
+                    {g.photos.map((p) => {
+                      if (!thumbs[p.id]) fetchThumb(p);
+                      return (
+                        <Box
+                          key={p.id}
+                          component="img"
+                          src={thumbs[p.id]}
+                          alt={p.title || ""}
+                          title={p.title || p.filename || ""}
+                          onClick={() => openPhoto(p)}
+                          sx={{
+                            width: "100%",
+                            aspectRatio: "1",
+                            objectFit: "cover",
+                            borderRadius: "10px",
+                            bgcolor: "action.hover",
+                            cursor: "pointer",
+                            transition: "opacity 0.15s",
+                            "&:hover": { opacity: 0.9 },
+                          }}
+                        />
+                      );
+                    })}
+                  </Box>
+                )}
 
-              {g.events.map((ev, i) => (
-                <Box
-                  key={i}
-                  onClick={() =>
-                    ev.personId && navigate(`/person/${ev.personId}`)
-                  }
-                  sx={{
-                    p: 1.25,
-                    mb: 1,
-                    borderRadius: 2,
-                    border: "1px solid",
-                    borderColor: "divider",
-                    bgcolor: (t) =>
-                      alpha(t.palette.background.paper, 0.6),
-                    cursor: ev.personId ? "pointer" : "default",
-                    "&:hover": ev.personId
-                      ? { borderColor: "primary.main" }
-                      : undefined,
-                  }}
-                >
-                  <Typography variant="body2" sx={{ fontWeight: 700 }}>
-                    {ev.type || "Событие"}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    {ownerNameOf(allPeople, ev.personId)}
-                    {ev.place ? ` · ${ev.place}` : ""}
-                  </Typography>
-                </Box>
-              ))}
+                {g.photos.length > 0 && g.events.length > 0 && (
+                  <RowDivider inset={0} />
+                )}
+
+                {g.events.length > 0 && (
+                  <Stack divider={<RowDivider />}>
+                    {g.events.map((ev, i) => (
+                      <SettingsRow
+                        key={i}
+                        icon={
+                          <RowIcon bg="orange">
+                            <EventIcon sx={{ fontSize: 18 }} />
+                          </RowIcon>
+                        }
+                        title={ev.type || "Событие"}
+                        subtitle={`${ownerNameOf(allPeople, ev.personId)}${
+                          ev.place ? ` · ${ev.place}` : ""
+                        }`}
+                        onClick={
+                          ev.personId
+                            ? () => navigate(`/person/${ev.personId}`)
+                            : undefined
+                        }
+                        trailing={
+                          ev.personId ? (
+                            <ChevronRightIcon
+                              sx={{ fontSize: 16, color: "text.disabled" }}
+                            />
+                          ) : undefined
+                        }
+                      />
+                    ))}
+                  </Stack>
+                )}
+              </Box>
             </Box>
           ))}
         </Stack>
-      </Box>
 
-      {total > 0 && (
-        <Box sx={{ p: 1.5, borderTop: "1px solid", borderColor: "divider" }}>
-          <Typography variant="caption" color="text.secondary">
+        {total > 0 && (
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{ display: "block", mt: 2, ml: 0.5 }}
+          >
             Всего воспоминаний: {total}
           </Typography>
-        </Box>
-      )}
+        )}
+      </Box>
 
       <PhotoFullscreenViewer
         open={fullscreen}
@@ -312,46 +347,75 @@ function StatsTab({ photos, allPeople }) {
   for (const p of people) eventCount += (p.events || []).length;
 
   const rows = [
-    { label: "всего человек", icon: <PeopleIcon />, iconColor: "primary", value: String(people.length) },
-    { label: "мужчины", icon: <MaleIcon />, iconColor: "info", value: String(men) },
-    { label: "женщины", icon: <FemaleIcon />, iconColor: "secondary", value: String(women) },
-    { label: "биографий заполнено", icon: <DescriptionIcon />, iconColor: "action", value: bioFilled == null ? "…" : String(bioFilled) },
-    { label: "фотографий", icon: <PhotoLibraryIcon />, iconColor: "action", value: String((photos || []).length) },
-    { label: "событий", icon: <EventIcon />, iconColor: "action", value: String(eventCount) },
-    { label: "в справочнике", icon: <ContactsIcon />, iconColor: "action", value: String(externalCount) },
+    {
+      label: "всего человек",
+      icon: <PeopleIcon sx={{ fontSize: 18 }} />,
+      color: "blue",
+      value: String(people.length),
+    },
+    {
+      label: "мужчины",
+      icon: <MaleIcon sx={{ fontSize: 18 }} />,
+      color: "cyan",
+      value: String(men),
+    },
+    {
+      label: "женщины",
+      icon: <FemaleIcon sx={{ fontSize: 18 }} />,
+      color: "pink",
+      value: String(women),
+    },
+    {
+      label: "биографий заполнено",
+      icon: <DescriptionIcon sx={{ fontSize: 18 }} />,
+      color: "indigo",
+      value: bioFilled == null ? "…" : String(bioFilled),
+    },
+    {
+      label: "фотографий",
+      icon: <PhotoLibraryIcon sx={{ fontSize: 18 }} />,
+      color: "purple",
+      value: String((photos || []).length),
+    },
+    {
+      label: "событий",
+      icon: <EventIcon sx={{ fontSize: 18 }} />,
+      color: "orange",
+      value: String(eventCount),
+    },
+    {
+      label: "в справочнике",
+      icon: <ContactsIcon sx={{ fontSize: 18 }} />,
+      color: "green",
+      value: String(externalCount),
+    },
   ];
 
   return (
     <Box sx={{ flexGrow: 1, overflowY: "auto", p: 2 }}>
-      <Stack spacing={1}>
-        {rows.map((r) => (
-          <Box
-            key={r.label}
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              px: 1.5,
-              py: 1,
-              borderRadius: 2,
-              border: "1px solid",
-              borderColor: "divider",
-            }}
-          >
-            <Box sx={{ display: "flex", color: `${r.iconColor}.main` }}>
-              {r.icon}
-            </Box>
-            <Typography variant="body2" sx={{ ml: 0.5 }}>
-              {r.label}:
-            </Typography>
-            <Typography
-              variant="body2"
-              sx={{ fontWeight: 700, ml: "auto", fontSize: "1rem" }}
-            >
-              {r.value}
-            </Typography>
-          </Box>
-        ))}
-      </Stack>
+      <Box sx={groupSx}>
+        <Stack divider={<RowDivider />}>
+          {rows.map((r) => (
+            <SettingsRow
+              key={r.label}
+              icon={<RowIcon bg={r.color}>{r.icon}</RowIcon>}
+              title={r.label}
+              trailing={
+                <Typography
+                  variant="body2"
+                  sx={{
+                    fontWeight: 600,
+                    fontSize: "0.8125rem",
+                    color: "text.primary",
+                  }}
+                >
+                  {r.value}
+                </Typography>
+              }
+            />
+          ))}
+        </Stack>
+      </Box>
     </Box>
   );
 }
@@ -420,51 +484,39 @@ function RelationsTab({ personId, allPeople, onFocusPerson }) {
     }
   }
 
-  const renderPersonRow = (p, sub) => (
-    <Box
-      key={p.id}
-      sx={{
-        display: "flex",
-        alignItems: "center",
-        gap: 1,
-        px: 1,
-        py: 0.75,
-        borderRadius: 2,
-      }}
-    >
-      <PersonRowAvatar personId={p.id} initials={`${p.firstName?.[0] || ""}${p.lastName?.[0] || p.maidenName?.[0] || ""}`} />
-      <Box
-        sx={{ minWidth: 0, flexGrow: 1, cursor: "pointer" }}
-        onClick={() => onFocusPerson?.(p.id)}
-      >
-        <Typography
-          variant="body2"
-          sx={{
-            fontWeight: 600,
-            whiteSpace: "nowrap",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-          }}
-        >
-          {personName(p)}
-        </Typography>
-        {sub && (
-          <Typography variant="caption" color="text.secondary">
-            {sub}
-          </Typography>
-        )}
+  const renderRelationGroup = (title, people) => (
+    <Box>
+      <Typography sx={sectionLabelSx}>{title}</Typography>
+      <Box sx={groupSx}>
+        <Stack divider={<RowDivider />}>
+          {people.map((p) => (
+            <SettingsRow
+              key={p.id}
+              icon={
+                <PersonRowAvatar
+                  personId={p.id}
+                  initials={`${p.firstName?.[0] || ""}${p.lastName?.[0] || p.maidenName?.[0] || ""}`}
+                />
+              }
+              title={personName(p)}
+              onClick={() => onFocusPerson?.(p.id)}
+              trailing={
+                <IconButton
+                  size="small"
+                  title="Открыть страницу человека"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigate(`/person/${p.id}`);
+                  }}
+                  sx={{ color: "text.secondary", p: 0.5 }}
+                >
+                  <ChevronRightIcon sx={{ fontSize: 16 }} />
+                </IconButton>
+              }
+            />
+          ))}
+        </Stack>
       </Box>
-      <IconButton
-        size="small"
-        title="Открыть страницу человека"
-        onClick={(e) => {
-          e.stopPropagation();
-          navigate(`/person/${p.id}`);
-        }}
-        sx={{ color: "text.secondary" }}
-      >
-        <ChevronRightIcon fontSize="small" />
-      </IconButton>
     </Box>
   );
 
@@ -475,85 +527,51 @@ function RelationsTab({ personId, allPeople, onFocusPerson }) {
         allPeople={allPeople}
         onFocusPerson={onFocusPerson}
       />
-      <Box sx={{ display: "flex", justifyContent: "center", my: 1 }}>
-        <Box
-          sx={{
-            width: 48,
-            height: 4,
-            borderRadius: 2,
-            bgcolor: "divider",
-            opacity: 0.7,
-          }}
-        />
-      </Box>
 
-      <Stack spacing={2} sx={{ mt: 1 }}>
-        {sections.map(
-          (s) =>
-            s.people.length > 0 && (
-              <Box key={s.title}>
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  sx={{ fontWeight: 700, display: "block", mb: 0.5 }}
-                >
-                  {s.title.toUpperCase()} · {s.people.length}
-                </Typography>
-                {s.people.map((p) => renderPersonRow(p))}
-              </Box>
-            ),
+      <Stack spacing={2} sx={{ mt: 2 }}>
+        {sections.map((s) =>
+          s.people.length > 0 ? renderRelationGroup(s.title, s.people) : null,
         )}
 
         {extRels.length > 0 && (
           <Box>
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              sx={{ fontWeight: 700, display: "block", mb: 0.5 }}
-            >
-              СПРАВОЧНИК · {extRels.length}
-            </Typography>
-            {extRels.map(({ entity, rel }) => (
-              <Box
-                key={entity.id + rel.id}
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 1.25,
-                  px: 1,
-                  py: 0.75,
-                }}
-              >
-                <Avatar sx={{ width: 32, height: 32, fontSize: "0.8rem" }}>
-                  {(entity.name?.[0] || "E").toUpperCase()}
-                </Avatar>
-                <Box sx={{ minWidth: 0 }}>
-                  <Typography
-                    variant="body2"
-                    sx={{
-                      fontWeight: 600,
-                      whiteSpace: "nowrap",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                    }}
-                  >
-                    {entity.name || entity.id}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    {[rel.relationType, rel.dates].filter(Boolean).join(" · ")}
-                  </Typography>
-                </Box>
-              </Box>
-            ))}
+            <Typography sx={sectionLabelSx}>Справочник</Typography>
+            <Box sx={groupSx}>
+              <Stack divider={<RowDivider />}>
+                {extRels.map(({ entity, rel }) => (
+                  <SettingsRow
+                    key={entity.id + rel.id}
+                    icon={
+                      <Avatar
+                        sx={{ width: 32, height: 32, fontSize: "0.8rem" }}
+                      >
+                        {(entity.name?.[0] || "E").toUpperCase()}
+                      </Avatar>
+                    }
+                    title={entity.name || entity.id}
+                    subtitle={[rel.relationType, rel.dates]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  />
+                ))}
+              </Stack>
+            </Box>
           </Box>
         )}
 
         {sections.every((s) => s.people.length === 0) &&
           extRels.length === 0 && (
-            <Typography variant="caption" color="text.secondary">
-              Связи не указаны. Добавьте родителей, супруга или детей в
-              карточке человека.
-            </Typography>
+            <Box sx={groupSx}>
+              <SettingsRow
+                icon={
+                  <RowIcon bg="gray">
+                    <ContactsIcon sx={{ fontSize: 18 }} />
+                  </RowIcon>
+                }
+                title="Связи не указаны"
+                subtitle="Добавьте родителей, супруга или детей в карточке человека."
+              />
+            </Box>
           )}
       </Stack>
     </Box>
@@ -571,6 +589,8 @@ export default function InspectorPanel({
   relationPersonId,
   onFocusPerson,
 }) {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === "dark";
 
   return (
     <Drawer
@@ -580,7 +600,13 @@ export default function InspectorPanel({
       variant="persistent"
       transitionDuration={0}
       PaperProps={{
-        sx: { top: 50, height: "calc(100% - 50px)" },
+        sx: {
+          top: 50,
+          height: "calc(100% - 50px)",
+          bgcolor: "background.default",
+          borderLeft: "1px solid",
+          borderColor: "divider",
+        },
       }}
     >
       <Box
@@ -595,8 +621,6 @@ export default function InspectorPanel({
           sx={{
             p: 2,
             pb: 1.5,
-            borderBottom: "1px solid",
-            borderColor: "divider",
             display: "flex",
             alignItems: "center",
             gap: 1,
@@ -607,8 +631,13 @@ export default function InspectorPanel({
               flexGrow: 1,
               display: "flex",
               borderRadius: "10px",
-              bgcolor: "action.hover",
-              p: 0.25,
+              bgcolor: isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.05)",
+              border: "1px solid",
+              borderColor: isDark
+                ? "rgba(255,255,255,0.08)"
+                : "rgba(0,0,0,0.06)",
+              p: "3px",
+              gap: "4px",
             }}
           >
             {TABS.map((t) => {
@@ -625,16 +654,40 @@ export default function InspectorPanel({
                     alignItems: "center",
                     justifyContent: "center",
                     gap: 0.75,
-                    py: 0.75,
-                    borderRadius: "8px",
+                    height: 24,
+                    minHeight: 24,
+                    py: 0,
+                    px: 1,
+                    borderRadius: "7px",
                     cursor: "pointer",
-                    color: selected ? "#fff" : "text.secondary",
-                    bgcolor: selected ? "primary.main" : "transparent",
+                    color: selected ? "text.primary" : "text.secondary",
+                    bgcolor: selected
+                      ? isDark
+                        ? "rgba(255,255,255,0.14)"
+                        : "background.paper"
+                      : "transparent",
+                    border: "1px solid",
+                    borderColor: selected
+                      ? isDark
+                        ? "rgba(255,255,255,0.14)"
+                        : "rgba(0,0,0,0.1)"
+                      : isDark
+                        ? "rgba(255,255,255,0.08)"
+                        : "rgba(0,0,0,0.06)",
+                    boxShadow: selected
+                      ? isDark
+                        ? "0 1px 2px rgba(0,0,0,0.35)"
+                        : "0 1px 2px rgba(0,0,0,0.12)"
+                      : "none",
                     fontSize: "0.78rem",
                     fontWeight: selected ? 700 : 500,
                     "&:hover": selected
                       ? undefined
-                      : { bgcolor: "action.selected" },
+                      : {
+                          bgcolor: isDark
+                            ? "rgba(255,255,255,0.06)"
+                            : "rgba(0,0,0,0.04)",
+                        },
                   }}
                 >
                   <Icon sx={{ fontSize: 16 }} />
@@ -645,10 +698,10 @@ export default function InspectorPanel({
                           minWidth: 18,
                           height: 18,
                           borderRadius: 9,
-                          bgcolor: selected
-                            ? "rgba(255,255,255,0.25)"
-                            : "primary.main",
-                          color: "#fff",
+                          bgcolor: isDark
+                            ? "rgba(255,255,255,0.22)"
+                            : "rgba(0,0,0,0.08)",
+                          color: "text.primary",
                           fontSize: "0.65rem",
                           fontWeight: 800,
                           display: "flex",

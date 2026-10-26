@@ -3,18 +3,16 @@ import {
   Box,
   Stack,
   Typography,
-  Button,
   Card,
   Slider,
-  Alert,
   LinearProgress,
-  FormControlLabel,
-  Checkbox,
   Autocomplete,
   TextField,
-  Chip,
+  Divider,
+  CircularProgress,
 } from "@mui/material";
 import { useSnackbar } from "notistack";
+import { useNavigate } from "react-router-dom";
 import FaceRetouchingNaturalIcon from "@mui/icons-material/FaceRetouchingNatural";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import StopIcon from "@mui/icons-material/Stop";
@@ -22,6 +20,7 @@ import PauseIcon from "@mui/icons-material/Pause";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import RateReviewIcon from "@mui/icons-material/RateReview";
 import DeleteSweepIcon from "@mui/icons-material/DeleteSweep";
+import RefreshIcon from "@mui/icons-material/Refresh";
 import { useNotificationStore } from "../../store/useNotificationStore";
 import { useFaceReviewStore } from "../../store/useFaceReviewStore";
 import { DEFAULT_MATCH_THRESHOLD } from "../../services/faceRecognition";
@@ -45,6 +44,17 @@ import {
 } from "../../utils/photoFaces";
 import { syncReferencesAfterPhotoSave } from "../../utils/faceIndex";
 import CustomSwitch from "../../components/CustomSwitch";
+import AppButton from "../../components/AppButton";
+import {
+  groupSx,
+  sectionLabelSx,
+  RowIcon,
+  RowDivider,
+  SettingsRow,
+  SegmentedControl,
+  CountBadge,
+  chevron,
+} from "./settingsUi";
 
 async function persistPhotoFaces(
   currentItem,
@@ -90,11 +100,8 @@ async function persistPhotoFaces(
 
 export const FaceScanMasterCard = ({ cardStyle }) => {
   const { enqueueSnackbar } = useSnackbar();
+  const navigate = useNavigate();
   const addNotification = useNotificationStore((s) => s.addNotification);
-  const openReview = useFaceReviewStore((s) => s.openReview);
-  const openNoFacesReview = useFaceReviewStore((s) => s.openNoFacesReview);
-  const isReviewOpen = useFaceReviewStore((s) => s.open);
-  const isNoFacesOpen = useFaceReviewStore((s) => s.noFacesOpen);
   const setPendingCount = useFaceReviewStore((s) => s.setPendingCount);
   const setNoFacesCount = useFaceReviewStore((s) => s.setNoFacesCount);
 
@@ -141,12 +148,6 @@ export const FaceScanMasterCard = ({ cardStyle }) => {
       .catch(() => {});
     refreshPendingCount();
   }, []);
-
-  useEffect(() => {
-    if (!isReviewOpen && !isNoFacesOpen) {
-      refreshPendingCount();
-    }
-  }, [isReviewOpen, isNoFacesOpen]);
 
   const handleClearQueue = async () => {
     try {
@@ -312,6 +313,20 @@ export const FaceScanMasterCard = ({ cardStyle }) => {
     }
   };
 
+  const title =
+    view === "info"
+      ? "Распознавание лиц"
+      : view === "settings"
+      ? "Настройки сканирования"
+      : "Сканирование…";
+
+  const subtitle =
+    view === "info"
+      ? "Локальный поиск и подписи лиц на фото"
+      : view === "settings"
+      ? "Параметры поиска лиц"
+      : "Идёт обработка фотографий";
+
   return (
     <Card
       variant="outlined"
@@ -320,343 +335,356 @@ export const FaceScanMasterCard = ({ cardStyle }) => {
         display: "flex",
         flexDirection: "column",
         overflow: "hidden",
-        bgcolor: "background.paper",
+        borderRadius: "18px",
+        border: "none",
+        bgcolor: "transparent",
+        boxShadow: "none",
       }}
     >
       <Box
         sx={{
-          p: 2,
+          px: 2,
+          pt: 2,
+          pb: 1.5,
           display: "flex",
           alignItems: "center",
-          borderBottom: "1px solid",
-          borderColor: "divider",
-          bgcolor: "action.hover",
+          gap: 1.5,
         }}
       >
-        <FaceRetouchingNaturalIcon
-          color="primary"
-          sx={{ fontSize: 20, mr: 1.5 }}
-        />
-        <Typography
-          variant="subtitle2"
-          sx={{
-            fontWeight: 800,
-            textTransform: "uppercase",
-            fontSize: "0.7rem",
-            letterSpacing: 1,
-          }}
-        >
-          {view === "info" && "Распознавание лиц"}
-          {view === "settings" && "Настройки сканирования"}
-          {view === "processing" && "Сканирование…"}
-        </Typography>
+        <RowIcon bg="blue">
+          <FaceRetouchingNaturalIcon sx={{ fontSize: 18 }} />
+        </RowIcon>
+        <Box sx={{ minWidth: 0 }}>
+          <Typography variant="subtitle1" fontWeight={700} noWrap>
+            {title}
+          </Typography>
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            display="block"
+            noWrap
+          >
+            {subtitle}
+          </Typography>
+        </Box>
       </Box>
 
-      <Box sx={{ p: 3, flexGrow: 1, overflowY: "auto" }}>
+      <Box sx={{ px: 2, pb: 2, flexGrow: 1, overflowY: "auto" }}>
         {view === "info" && (
-          <Stack spacing={2} sx={{ height: "100%" }}>
-            <Typography variant="body2" color="text.secondary">
-              Локальное пакетное сканирование фото: поиск лиц и предложение
-              подписей. Подтверждение — в очереди проверки.
-            </Typography>
+          <Stack spacing={2.5}>
+            <Box>
+              <Typography sx={sectionLabelSx}>Очереди</Typography>
+              <Box sx={groupSx}>
+                <Stack divider={<RowDivider />}>
+                  <SettingsRow
+                    icon={
+                      <RowIcon bg="blue">
+                        <RateReviewIcon sx={{ fontSize: 18 }} />
+                      </RowIcon>
+                    }
+                    title="Очередь проверки"
+                    subtitle="Лица, ожидающие подтверждения"
+                    trailing={
+                      <Stack
+                        direction="row"
+                        spacing={0.75}
+                        alignItems="center"
+                      >
+                        <CountBadge value={pendingReview} />
+                        {chevron}
+                      </Stack>
+                    }
+                    onClick={() => navigate("/settings/faces/review")}
+                  />
+                  {pendingReview > 0 && (
+                    <SettingsRow
+                      danger
+                      icon={
+                        <RowIcon bg="red">
+                          <DeleteSweepIcon sx={{ fontSize: 18 }} />
+                        </RowIcon>
+                      }
+                      title="Очистить очередь проверки"
+                      onClick={handleClearQueue}
+                    />
+                  )}
+                  <SettingsRow
+                    icon={
+                      <RowIcon bg="orange">
+                        <FaceRetouchingNaturalIcon sx={{ fontSize: 18 }} />
+                      </RowIcon>
+                    }
+                    title="Фото без лиц"
+                    subtitle="Снимки, где лица не найдены"
+                    trailing={
+                      <Stack
+                        direction="row"
+                        spacing={0.75}
+                        alignItems="center"
+                      >
+                        <CountBadge value={noFacePhotos} />
+                        {chevron}
+                      </Stack>
+                    }
+                    onClick={() => navigate("/settings/faces/no-faces")}
+                  />
+                  {noFacePhotos > 0 && (
+                    <SettingsRow
+                      danger
+                      icon={
+                        <RowIcon bg="red">
+                          <DeleteSweepIcon sx={{ fontSize: 18 }} />
+                        </RowIcon>
+                      }
+                      title="Очистить фото без лиц"
+                      onClick={handleClearNoFacesQueue}
+                    />
+                  )}
+                </Stack>
+              </Box>
+            </Box>
 
-            {pendingReview > 0 && (
-              <Alert severity="info">
-                В очереди проверки: {pendingReview} лиц
-              </Alert>
-            )}
-
-            {noFacePhotos > 0 && (
-              <Alert severity="warning">
-                Фото без лиц после сканирования: {noFacePhotos}
-              </Alert>
-            )}
-
-            <Stack spacing={1.5} sx={{ mt: "auto" }}>
-              <Button
-                variant="outlined"
-                startIcon={<DeleteSweepIcon />}
-                onClick={handleRebuildReferences}
-                disabled={rebuildingReferences}
-                sx={{
-                  height: 24,
-                  borderRadius: "6px",
-                  px: 2,
-                  py: 1,
-                  fontWeight: "bold",
-                }}
-              >
-                {rebuildingReferences
-                  ? "Пересборка face references..."
-                  : "Пересобрать face references"}
-              </Button>
-
-              <Button
-                variant="contained"
-                startIcon={<PlayArrowIcon />}
-                onClick={() => setView("settings")}
-                sx={{
-                  height: 24,
-                  borderRadius: "6px",
-                  px: 3,
-                  py: 1,
-                  boxShadow: "none",
-                  fontWeight: "bold",
-                }}
-              >
-                Настроить сканирование
-              </Button>
-
-              <Stack direction="row" spacing={1}>
-                <Button
-                  variant="outlined"
-                  startIcon={<RateReviewIcon />}
-                  disabled={pendingReview === 0}
-                  onClick={openReview}
-                  fullWidth
-                  sx={{
-                    height: 24,
-                    borderRadius: "6px",
-                    px: 2,
-                    py: 1,
-                    boxShadow: "none",
-                    fontWeight: "bold",
-                  }}
-                >
-                  Очередь проверки ({pendingReview})
-                </Button>
-
-                <Button
-                  variant="outlined"
-                  color="warning"
-                  startIcon={<DeleteSweepIcon />}
-                  disabled={pendingReview === 0}
-                  onClick={handleClearQueue}
-                  sx={{
-                    height: 24,
-                    borderRadius: "6px",
-                    px: 2,
-                    py: 1,
-                    boxShadow: "none",
-                    fontWeight: "bold",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  Очистить
-                </Button>
-              </Stack>
-
-              <Stack direction="row" spacing={1}>
-                <Button
-                  variant="outlined"
-                  startIcon={<FaceRetouchingNaturalIcon />}
-                  disabled={noFacePhotos === 0}
-                  onClick={openNoFacesReview}
-                  fullWidth
-                  sx={{
-                    height: 24,
-                    borderRadius: "6px",
-                    px: 2,
-                    py: 1,
-                    boxShadow: "none",
-                    fontWeight: "bold",
-                  }}
-                >
-                  Фото без лиц ({noFacePhotos})
-                </Button>
-
-                <Button
-                  variant="outlined"
-                  color="warning"
-                  startIcon={<DeleteSweepIcon />}
-                  disabled={noFacePhotos === 0}
-                  onClick={handleClearNoFacesQueue}
-                  sx={{
-                    height: 24,
-                    borderRadius: "6px",
-                    px: 2,
-                    py: 1,
-                    boxShadow: "none",
-                    fontWeight: "bold",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  Очистить
-                </Button>
-              </Stack>
-            </Stack>
+            <Box>
+              <Typography sx={sectionLabelSx}>Действия</Typography>
+              <Box sx={groupSx}>
+                <Stack divider={<RowDivider />}>
+                  <SettingsRow
+                    icon={
+                      <RowIcon bg="green">
+                        <PlayArrowIcon sx={{ fontSize: 18 }} />
+                      </RowIcon>
+                    }
+                    title="Настроить сканирование"
+                    subtitle="Режим, порог и область поиска"
+                    trailing={chevron}
+                    onClick={() => setView("settings")}
+                  />
+                  <SettingsRow
+                    icon={
+                      <RowIcon bg="gray">
+                        <RefreshIcon sx={{ fontSize: 18 }} />
+                      </RowIcon>
+                    }
+                    title="Пересобрать face references"
+                    subtitle="Обновить эталонные дескрипторы"
+                    disabled={rebuildingReferences}
+                    onClick={handleRebuildReferences}
+                    trailing={
+                      rebuildingReferences ? (
+                        <CircularProgress size={16} />
+                      ) : (
+                        chevron
+                      )
+                    }
+                  />
+                </Stack>
+              </Box>
+            </Box>
           </Stack>
         )}
 
         {view === "settings" && (
           <Stack spacing={2.5}>
-            <Button
-              size="small"
+            <AppButton
+              preset="ghost"
               startIcon={<ArrowBackIcon />}
               onClick={() => setView("info")}
-              sx={{
-                alignSelf: "flex-start",
-                height: 24,
-                borderRadius: "6px",
-                px: 3,
-                py: 1,
-                boxShadow: "none",
-                fontWeight: "bold",
-              }}
+              sx={{ alignSelf: "flex-start", ml: -0.5, color: "text.secondary" }}
             >
               Назад
-            </Button>
+            </AppButton>
 
-            <Stack direction="row" spacing={1}>
-              <Chip
-                label="Только рамки"
-                color={mode === "detect" ? "primary" : "default"}
-                onClick={() => setMode("detect")}
-                variant={mode === "detect" ? "filled" : "outlined"}
-              />
-              <Chip
-                label="Рамки + подпись"
-                color={mode === "identify" ? "primary" : "default"}
-                onClick={() => setMode("identify")}
-                variant={mode === "identify" ? "filled" : "outlined"}
-              />
-            </Stack>
+            <Box>
+              <Typography sx={sectionLabelSx}>Режим</Typography>
+              <Box sx={groupSx}>
+                <Box sx={{ p: 1 }}>
+                  <SegmentedControl
+                    value={mode}
+                    onChange={setMode}
+                    options={[
+                      { value: "detect", label: "Только рамки" },
+                      { value: "identify", label: "Рамки + подпись" },
+                    ]}
+                  />
+                </Box>
+              </Box>
+            </Box>
 
-             <Stack
-                    direction="row"
-                    alignItems="center"
-                    justifyContent="space-between"
+            <Box>
+              <Typography sx={sectionLabelSx}>Параметры</Typography>
+              <Box sx={groupSx}>
+                <Stack divider={<Divider sx={{ ml: 2 }} />}>
+                  <Box
+                    sx={{
+                      px: 2,
+                      py: 1.4,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 2,
+                    }}
                   >
-                    <Typography variant="body2">
-                      Повторно сканировать только фото с неподтвержденными лицами
+                    <Typography
+                      variant="body2"
+                      fontWeight={600}
+                      sx={{ flexGrow: 1, lineHeight: 1.35 }}
+                    >
+                      Повторно сканировать только фото с неподтвержденными
+                      лицами
                     </Typography>
                     <CustomSwitch
                       checked={skipWithFaces}
-                  onChange={(e) => setSkipWithFaces(e.target.checked)}
+                      onChange={(e) => setSkipWithFaces(e.target.checked)}
                     />
-                  </Stack>
-
-
-
-            {mode === "identify" && (
-              <Box>
-                <Typography variant="caption" color="text.secondary">
-                  Порог совпадения: {matchThreshold.toFixed(2)}
-                </Typography>
-                <Slider
-                  value={matchThreshold}
-                  min={0.3}
-                  max={0.8}
-                  step={0.05}
-                  onChange={(_, v) => setMatchThreshold(v)}
-                />
+                  </Box>
+                  {mode === "identify" && (
+                    <Box sx={{ px: 2, py: 1.4 }}>
+                      <Stack
+                        direction="row"
+                        justifyContent="space-between"
+                        alignItems="baseline"
+                      >
+                        <Typography variant="body2" fontWeight={600}>
+                          Порог совпадения
+                        </Typography>
+                        <Typography
+                          variant="body2"
+                          color="text.secondary"
+                          sx={{ fontVariantNumeric: "tabular-nums" }}
+                        >
+                          {matchThreshold.toFixed(2)}
+                        </Typography>
+                      </Stack>
+                      <Slider
+                        value={matchThreshold}
+                        min={0.3}
+                        max={0.8}
+                        step={0.05}
+                        onChange={(_, v) => setMatchThreshold(v)}
+                        sx={{ mt: 0.5 }}
+                      />
+                    </Box>
+                  )}
+                </Stack>
               </Box>
-            )}
+            </Box>
 
-            <Autocomplete
-              multiple
-              options={allPeople}
-              value={selectedOwners}
-              onChange={(_, v) => setSelectedOwners(v)}
-              getOptionLabel={(p) =>
-                `${p.id} :: ${[p.firstName, p.lastName].filter(Boolean).join(" ")}`
-              }
-              renderInput={(params) => (
-                <TextField
-                  {...params}
-                  label="Только у выбранных людей (необязательно)"
-                  size="small"
-                />
-              )}
-            />
+            <Box>
+              <Typography sx={sectionLabelSx}>Область поиска</Typography>
+              <Box sx={groupSx}>
+                <Box sx={{ p: 1.5 }}>
+                  <Autocomplete
+                    multiple
+                    options={allPeople}
+                    value={selectedOwners}
+                    onChange={(_, v) => setSelectedOwners(v)}
+                    getOptionLabel={(p) =>
+                      `${p.id} :: ${[p.firstName, p.lastName]
+                        .filter(Boolean)
+                        .join(" ")}`
+                    }
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        label="Только у выбранных людей"
+                        size="small"
+                        sx={{
+                          "& .MuiOutlinedInput-root": { borderRadius: "12px" },
+                        }}
+                      />
+                    )}
+                  />
+                </Box>
+              </Box>
+            </Box>
 
-            <Button
-              variant="contained"
+            <AppButton
+              preset="primary"
               startIcon={<PlayArrowIcon />}
               onClick={() => handleStartScan(0)}
-              sx={{
-                height: 24,
-                borderRadius: "6px",
-                px: 3,
-                py: 1,
-                boxShadow: "none",
-                fontWeight: "bold",
-              }}
+              sx={{ fontWeight: 600 }}
             >
-              Запустить
-            </Button>
+              Запустить сканирование
+            </AppButton>
           </Stack>
         )}
 
         {view === "processing" && (
-          <Stack spacing={2}>
-            <LinearProgress
-              variant={progress.total > 0 ? "determinate" : "indeterminate"}
-              value={progress.percent}
-            />
-            <Typography variant="body2">
-              {progress.current} / {progress.total} ({progress.percent}%)
-            </Typography>
-            {progress.currentFile && (
-              <Typography variant="caption" color="text.secondary" noWrap>
-                {progress.currentFile}
-              </Typography>
-            )}
-            <Typography variant="caption">
-              Найдено лиц: {progress.facesFound}
-            </Typography>
+          <Stack spacing={2.5}>
+            <Box>
+              <Typography sx={sectionLabelSx}>Прогресс</Typography>
+              <Box sx={groupSx}>
+                <Box sx={{ p: 2 }}>
+                  <LinearProgress
+                    variant={
+                      progress.total > 0 ? "determinate" : "indeterminate"
+                    }
+                    value={progress.percent}
+                    sx={{ height: 6, borderRadius: 3 }}
+                  />
+                  <Stack
+                    direction="row"
+                    justifyContent="space-between"
+                    sx={{ mt: 1.5 }}
+                  >
+                    <Typography variant="body2" fontWeight={600}>
+                      {progress.current} / {progress.total}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      {progress.percent}%
+                    </Typography>
+                  </Stack>
+                  {progress.currentFile && (
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      noWrap
+                      display="block"
+                      sx={{ mt: 0.5 }}
+                    >
+                      {progress.currentFile}
+                    </Typography>
+                  )}
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    display="block"
+                    sx={{ mt: 1 }}
+                  >
+                    Найдено лиц: {progress.facesFound}
+                  </Typography>
+                </Box>
+              </Box>
+            </Box>
 
             <Stack direction="row" spacing={1}>
               {progress.status === "paused" ? (
-                <Button
-                  variant="contained"
+                <AppButton
+                  preset="primary"
                   startIcon={<PlayArrowIcon />}
                   onClick={handleResume}
-                  sx={{
-                    height: 24,
-                    borderRadius: "6px",
-                    px: 3,
-                    py: 1,
-                    boxShadow: "none",
-                    fontWeight: "bold",
-                  }}
+                  sx={{ flex: 1 }}
                 >
                   Продолжить
-                </Button>
+                </AppButton>
               ) : (
-                <Button
-                  variant="outlined"
+                <AppButton
+                  preset="secondary"
                   startIcon={<PauseIcon />}
                   onClick={requestFaceScanPause}
                   disabled={progress.status !== "running"}
-                  sx={{
-                    height: 24,
-                    borderRadius: "6px",
-                    px: 3,
-                    py: 1,
-                    boxShadow: "none",
-                    fontWeight: "bold",
-                  }}
+                  sx={{ flex: 1 }}
                 >
                   Пауза
-                </Button>
+                </AppButton>
               )}
-              <Button
-                variant="outlined"
-                color="error"
+              <AppButton
+                preset="dangerOutlined"
                 startIcon={<StopIcon />}
                 onClick={requestFaceScanCancel}
-                sx={{
-                  height: 24,
-                  borderRadius: "6px",
-                  px: 3,
-                  py: 1,
-                  boxShadow: "none",
-                  fontWeight: "bold",
-                }}
+                sx={{ flex: 1 }}
               >
                 Стоп
-              </Button>
+              </AppButton>
             </Stack>
           </Stack>
         )}

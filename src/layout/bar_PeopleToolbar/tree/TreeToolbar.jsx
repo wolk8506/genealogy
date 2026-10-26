@@ -14,6 +14,7 @@ import ZoomInIcon from "@mui/icons-material/ZoomIn";
 import ZoomOutIcon from "@mui/icons-material/ZoomOut";
 import CenterFocusStrongIcon from "@mui/icons-material/CenterFocusStrong";
 import ButtonConteiner from "../../../components/ButtonConteiner";
+import { toolbarPillSx } from "../../toolbarStyles";
 
 export default function TreeToolbar({ treeProps }) {
   const { treeMode, setTreeMode, onExport, zoomIn, zoomOut, fitView } =
@@ -35,20 +36,19 @@ export default function TreeToolbar({ treeProps }) {
           onChange={(e, val) => val && setTreeMode(val)}
           size="small"
           sx={{
-            WebkitAppRegion: "no-drag",
-            border: "1px solid",
-            borderRadius: 7,
-            borderColor: "divider",
-            height: 34,
-
-            gap: 1,
+            ...toolbarPillSx,
+            p: "3px",
+            gap: 0.5,
             "& .MuiToggleButton-root": {
               color: "text.primary",
               border: "none",
-              borderRadius: 6,
+              borderRadius: "14px",
+              minWidth: 36,
+              height: 30,
+              p: 0,
               fontSize: 20,
               "&.Mui-selected": {
-                bgcolor: "divider",
+                bgcolor: "rgba(153, 153, 153, 0.24)",
                 color: "primary.main",
               },
             },

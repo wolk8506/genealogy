@@ -1,6 +1,6 @@
 import { Dialog, Box, Typography } from "@mui/material";
 import { alpha } from "@mui/material/styles";
-import AppButton from "../components/AppButton";
+import DialogActionButton from "../components/Dialog/DialogActionButton";
 
 const LICENSE_TEXT = `
 Copyright © 2026 nebula.9371.  
@@ -94,13 +94,13 @@ export default function LicenseModal({ open, onClose }) {
             Copyright © 2026 nebula.9371. Все права защищены.
           </Typography>
         </Box>
-        <AppButton
-          preset="primary"
+        <DialogActionButton
+          tone="primary"
           onClick={onClose}
-          sx={{ px: 3, borderRadius: "999px" }}
+          sx={{ width: 110, flex: "0 0 110px" }}
         >
           Готово
-        </AppButton>
+        </DialogActionButton>
       </Box>
     </Dialog>
   );

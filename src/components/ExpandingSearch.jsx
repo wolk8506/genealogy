@@ -18,6 +18,10 @@ import {
 import SearchIcon from "@mui/icons-material/Search";
 import CloseIcon from "@mui/icons-material/Close";
 import { useSelector, useDispatch } from "react-redux"; // Добавить импорты
+import {
+  toolbarPillBg,
+  toolbarPillHoverBg,
+} from "../layout/toolbarStyles";
 import { setSearchQuery } from "../store/searchSlice"; // Путь к вашему слайсу
 // import { setSearchQuery } from "../../../store/searchSlice"; // Путь к вашему слайсу
 
@@ -26,14 +30,14 @@ const SearchContainer = styled(Box, {
 })(({ theme, $expanded }) => ({
   display: "flex",
   alignItems: "center",
-  borderRadius: 20,
-  height: 34,
+  borderRadius: 18,
+  height: 36,
   padding: 0,
   transition: theme.transitions.create("width", {
     easing: theme.transitions.easing.sharp,
     duration: theme.transitions.duration.shorter,
   }),
-  width: $expanded ? 250 : 34,
+  width: $expanded ? 250 : 36,
   position: "relative",
   zIndex: 2,
 }));
@@ -217,21 +221,17 @@ export default function ExpandingSearch({
             ref={anchorRef}
             $expanded={isExpanded}
             sx={{
-              border: "1px solid",
-              borderColor: isFocused
-                ? "primary.main"
-                : alpha(theme.palette.divider, 0.2),
-              bgcolor: isFocused
-                ? alpha(theme.palette.text.primary, 0.05)
-                : "transparent",
+              border: 0,
+              bgcolor: isFocused ? toolbarPillHoverBg : toolbarPillBg,
+              transition: "background-color 0.2s ease",
             }}
           >
             <IconButton
               size="small"
               onClick={() => inputRef.current?.focus()}
-              sx={{ color: "text.primary", p: 1 }}
+              sx={{ color: "text.secondary", p: 0, width: 36, height: 36 }}
             >
-              <SearchIcon fontSize="small" />
+              <SearchIcon sx={{ fontSize: 18 }} />
             </IconButton>
 
             <Box
@@ -298,7 +298,7 @@ export default function ExpandingSearch({
           style={{
             zIndex: 99999,
             width: anchorRef.current?.clientWidth || 250,
-            height: 34,
+            height: 36,
           }}
           modifiers={[{ name: "offset", options: { offset: [0, 8] } }]}
         >

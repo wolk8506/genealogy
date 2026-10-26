@@ -10,7 +10,9 @@ import {
 import { alpha } from "@mui/material/styles";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import CancelIcon from "@mui/icons-material/Cancel";
-import AppButton from "../AppButton";
+import DialogActionButton, {
+  DialogActionsBar,
+} from "./DialogActionButton";
 
 export default function PhotoMetaDialog({ openDialog, meta, onClose }) {
   if (!meta) return null;
@@ -123,24 +125,9 @@ export default function PhotoMetaDialog({ openDialog, meta, onClose }) {
         </Stack>
       </Box>
 
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "flex-end",
-          alignItems: "center",
-          gap: 1,
-          p: 2,
-          pt: 1,
-        }}
-      >
-        <AppButton
-          preset="secondary"
-          onClick={onClose}
-          sx={{ px: 3, borderRadius: "999px" }}
-        >
-          Закрыть
-        </AppButton>
-      </Box>
+      <DialogActionsBar>
+        <DialogActionButton onClick={onClose}>Закрыть</DialogActionButton>
+      </DialogActionsBar>
     </Dialog>
   );
 }

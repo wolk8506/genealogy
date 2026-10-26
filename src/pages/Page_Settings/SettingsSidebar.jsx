@@ -1,22 +1,19 @@
 import React from "react";
 import {
   Box,
-  Paper,
-  Stack,
-  Typography,
-  TextField,
-  InputAdornment,
   List,
   ListItemButton,
-  ListItemIcon,
   ListItemText,
-  Divider,
+  TextField,
+  InputAdornment,
+  Typography,
   alpha,
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
+import appIcon from "../../img/app_icon.png";
 
-// Сайдбар настроек в духе macOS Settings: поиск + список разделов.
-// Опасная зона отделена разделителем внизу.
+// Сайдбар настроек в духе macOS: поиск и список разделов
+// с цветными плитками иконок и синей пилюлей выбранного пункта.
 export default function SettingsSidebar({
   sections,
   activeId,
@@ -30,37 +27,56 @@ export default function SettingsSidebar({
   const renderItem = (section) => {
     const Icon = section.icon;
     const selected = section.id === activeId;
+    const accent = section.danger ? "error.main" : "primary.main";
+
     return (
       <ListItemButton
         key={section.id}
         selected={selected}
         onClick={() => onSelect(section.id)}
         sx={{
-          borderRadius: 2,
-          mb: 0.25,
-          py: 1,
+          borderRadius: "10px",
+          mb: "2px",
+          minHeight: 32,
+          height: 32,
+          px: "8px",
+          py: 0,
+          color: selected ? "#fff" : "text.primary",
           "&.Mui-selected": {
-            bgcolor: (t) => alpha(t.palette.primary.main, 0.14),
+            bgcolor: accent,
+            color: "#fff",
             "&:hover": {
-              bgcolor: (t) => alpha(t.palette.primary.main, 0.2),
+              bgcolor: accent,
             },
           },
         }}
       >
-        <ListItemIcon sx={{ minWidth: 36 }}>
-          <Icon
-            fontSize="small"
-            color={
-              selected ? "primary" : section.danger ? "error" : "inherit"
-            }
-          />
-        </ListItemIcon>
+        <Box
+          sx={{
+            width: 20,
+            height: 20,
+            borderRadius: "5px",
+            display: "grid",
+            placeItems: "center",
+            flexShrink: 0,
+            mr: 1.25,
+            bgcolor: selected
+              ? "rgba(255,255,255,0.22)"
+              : (t) => t.palette.accents?.[section.color] || section.color,
+            color: "#fff",
+            "& svg": { fontSize: 13 },
+          }}
+        >
+          <Icon />
+        </Box>
         <ListItemText
           primary={section.title}
           primaryTypographyProps={{
-            fontSize: "0.875rem",
-            fontWeight: selected ? 700 : 500,
-            color: section.danger ? "error.main" : "text.primary",
+            fontSize: "0.85rem",
+            lineHeight: 1.1,
+            fontWeight: selected ? 600 : 500,
+            color: "inherit",
+            noWrap: true,
           }}
         />
       </ListItemButton>
@@ -68,20 +84,61 @@ export default function SettingsSidebar({
   };
 
   return (
-    <Paper
-      variant="outlined"
+    <Box
       sx={{
-        width: 250,
+        width: 260,
         flexShrink: 0,
-        borderRadius: 5,
-        p: 1.5,
         position: "sticky",
-        top: 8,
-        maxHeight: "calc(100vh - 120px)",
+        // 50px фиксированный тулбар + 6px отступ, чтобы панель
+        // не уезжала под шапку при прокрутке страницы.
+        top: 56,
+        height: "calc(100vh - 64px)",
+        maxHeight: "calc(100vh - 64px)",
         overflowY: "auto",
-        bgcolor: (t) => alpha(t.palette.background.paper, 0.4),
+        borderRadius: "14px",
+        border: "1px solid",
+        borderColor: "divider",
+        p: 1,
+        bgcolor: (t) => t.palette.glass.surface,
+        backdropFilter: "blur(20px)",
       }}
     >
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          gap: 1.5,
+          px: 1,
+          pt: 1,
+          pb: 1.5,
+        }}
+      >
+        <Box
+          component="img"
+          src={appIcon}
+          alt="Genealogy"
+          sx={{
+            width: 40,
+            height: 40,
+            borderRadius: "50%",
+            objectFit: "cover",
+            flexShrink: 0,
+          }}
+        />
+        <Box sx={{ minWidth: 0 }}>
+          <Typography fontSize="0.95rem" fontWeight={700} lineHeight={1.2} noWrap>
+            Genealogy
+          </Typography>
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            display="block"
+            noWrap
+          >
+            Настройки
+          </Typography>
+        </Box>
+      </Box>
       <TextField
         fullWidth
         size="small"
@@ -91,13 +148,24 @@ export default function SettingsSidebar({
         InputProps={{
           startAdornment: (
             <InputAdornment position="start">
-              <SearchIcon fontSize="small" />
+              <SearchIcon sx={{ fontSize: 17, color: "text.secondary" }} />
             </InputAdornment>
           ),
         }}
         sx={{
           mb: 1,
-          "& .MuiOutlinedInput-root": { borderRadius: "10px" },
+          "& .MuiOutlinedInput-root": {
+            height: 34,
+            fontSize: "0.8rem",
+            borderRadius: "9px",
+            bgcolor: (t) =>
+              alpha(
+                t.palette.mode === "dark" ? "#ffffff" : "#000000",
+                0.05,
+              ),
+            "& fieldset": { border: "none" },
+          },
+          "& .MuiInputBase-input": { py: 0 },
         }}
       />
       {sections.length === 0 && (
@@ -112,12 +180,11 @@ export default function SettingsSidebar({
       <List disablePadding>
         {regular.map(renderItem)}
         {dangerous.length > 0 && (
-          <Box key="danger-sep">
-            <Divider sx={{ my: 1 }} />
+          <Box key="danger-sep" sx={{ mt: 1, pt: 1 }}>
             {dangerous.map(renderItem)}
           </Box>
         )}
       </List>
-    </Paper>
+    </Box>
   );
 }

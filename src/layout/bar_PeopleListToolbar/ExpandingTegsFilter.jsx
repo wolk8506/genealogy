@@ -13,22 +13,17 @@ import {
 } from "@mui/material";
 import SellIcon from "@mui/icons-material/Sell";
 import { useTagsStore } from "../../store/useTagsStore";
+import { toolbarPillSx } from "../toolbarStyles";
 
 const StyledContainer = styled(Box, {
   shouldForwardProp: (prop) => prop !== "$expanded",
 })(({ theme, $expanded }) => ({
+  ...toolbarPillSx,
   display: "flex",
   alignItems: "center",
-  borderRadius: 20,
-  border: "1px solid",
-  borderColor: theme.palette.divider,
   transition: "all 0.3s ease",
-  height: 34,
   paddingRight: $expanded ? 12 : 0,
   cursor: "pointer",
-  "&:hover": {
-    backgroundColor: "action.hover",
-  },
 }));
 
 export default function ExpandingTagsFilter({ selectedTags = [], onChange }) {

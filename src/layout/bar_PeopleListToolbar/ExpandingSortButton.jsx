@@ -3,22 +3,32 @@ import { Box, IconButton, styled, Typography, Tooltip } from "@mui/material";
 import SupervisorAccountIcon from "@mui/icons-material/SupervisorAccount";
 import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
+import { toolbarPillBg, toolbarPillHoverBg, toolbarPillSx } from "../toolbarStyles";
 
 const StyledContainer = styled(Box, {
   shouldForwardProp: (prop) => prop !== "$sortOrder",
 })(({ theme, $sortOrder }) => ({
+  ...toolbarPillSx,
   display: "flex",
   alignItems: "center",
-  borderRadius: 20,
-  border: "1px solid",
-  borderColor: theme.palette.divider,
+  justifyContent: "center",
+  width: 56,
   transition: "all 0.3s ease",
-  height: 34,
   cursor: "pointer",
   overflow: "hidden",
-  backgroundColor: $sortOrder === "desc" ? "action.hover" : "transparent",
+  backgroundColor: $sortOrder === "desc" ? toolbarPillHoverBg : toolbarPillBg,
+  "& > .MuiIconButton-root": {
+    width: "auto",
+    height: 36,
+    p: 0,
+    px: 1,
+    gap: 0.25,
+  },
+  "& .MuiIconButton-root:hover": {
+    backgroundColor: "transparent",
+  },
   "&:hover": {
-    backgroundColor: "action.selected",
+    backgroundColor: toolbarPillHoverBg,
   },
 }));
 

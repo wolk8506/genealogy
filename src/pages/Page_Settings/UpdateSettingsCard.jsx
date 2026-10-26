@@ -4,21 +4,22 @@ import {
   Box,
   Typography,
   Stack,
-  Button,
   LinearProgress,
-  Alert,
-  alpha,
-  useTheme,
-  Chip,
-  Divider,
 } from "@mui/material";
 import InfoIcon from "@mui/icons-material/Info";
 import CloudDownloadIcon from "@mui/icons-material/CloudDownload";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import SystemUpdateAltIcon from "@mui/icons-material/SystemUpdateAlt";
+import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
+import AppButton from "../../components/AppButton";
+import {
+  groupSx,
+  sectionLabelSx,
+  RowIcon,
+  SettingsRow,
+} from "./settingsUi";
 
 export const UpdateSettingsCard = ({ cardStyle }) => {
-  const theme = useTheme();
   const [version, setVersion] = useState("");
   const [platform, setPlatform] = useState("");
   const [updateInfo, setUpdateInfo] = useState(null);
@@ -53,122 +54,193 @@ export const UpdateSettingsCard = ({ cardStyle }) => {
       variant="outlined"
       sx={{
         ...cardStyle,
-        // borderRadius: 3,
-        // width: "100%",
-        // maxWidth: "600px",
-        // bgcolor: alpha(theme.palette.background.paper, 0.4),
+        borderRadius: "18px",
+        border: "none",
+        bgcolor: "transparent",
+        boxShadow: "none",
       }}
     >
       <Box
         sx={{
-          p: 2,
-          bgcolor: "action.hover",
-          borderBottom: "1px solid",
-          borderColor: "divider",
+          px: 2,
+          pt: 2,
+          pb: 1.5,
           display: "flex",
-          // alignItems: "center",
+          alignItems: "center",
           gap: 1.5,
         }}
       >
-        <SystemUpdateAltIcon color="primary" sx={{ fontSize: 20 }} />
-        <Typography
-          variant="subtitle2"
-          sx={{
-            fontWeight: 800,
-            textTransform: "uppercase",
-            fontSize: "0.7rem",
-            letterSpacing: 1,
-          }}
-        >
-          Обновление системы
-        </Typography>
-      </Box>
-      <Box sx={{ p: 3 }}>
-        <Stack spacing={3}>
-          {/* Текущая версия */}
-          <Box
-            sx={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
+        <RowIcon bg="blue">
+          <SystemUpdateAltIcon sx={{ fontSize: 18 }} />
+        </RowIcon>
+        <Box sx={{ minWidth: 0 }}>
+          <Typography variant="subtitle1" fontWeight={700} noWrap>
+            Обновление системы
+          </Typography>
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            display="block"
+            noWrap
           >
-            <Box>
-              <Typography variant="body2" sx={{ fontWeight: 700 }}>
-                Версия ПО: {version || "загрузка..."}
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                Платформа: {platform}
-              </Typography>
+            Проверка и установка новых версий
+          </Typography>
+        </Box>
+      </Box>
+
+      <Box sx={{ px: 2, pb: 2 }}>
+        <Stack spacing={2.5}>
+          <Box>
+            <Typography sx={sectionLabelSx}>Версия</Typography>
+            <Box sx={groupSx}>
+              <SettingsRow
+                icon={
+                  <RowIcon bg="blue">
+                    <InfoIcon sx={{ fontSize: 18 }} />
+                  </RowIcon>
+                }
+                title={`Версия ПО: ${version || "загрузка…"}`}
+                subtitle={`Платформа: ${platform || "—"}`}
+                trailing={
+                  <Box
+                    sx={{
+                      px: 1,
+                      height: 22,
+                      borderRadius: "11px",
+                      bgcolor: "action.hover",
+                      display: "grid",
+                      placeItems: "center",
+                    }}
+                  >
+                    <Typography
+                      variant="caption"
+                      fontWeight={700}
+                      color="text.secondary"
+                    >
+                      Стабильная
+                    </Typography>
+                  </Box>
+                }
+              />
             </Box>
-            <Chip label="Стабильная" size="small" variant="outlined" />
           </Box>
 
-          <Divider />
-
-          {/* Статус обновлений */}
-          {error ? (
-            <Alert
-              severity="error"
-              action={
-                <Button
-                  color="inherit"
-                  size="small"
-                  onClick={() => window.updater.check()}
-                >
-                  Повторить
-                </Button>
-              }
-            >
-              Ошибка: {error}
-            </Alert>
-          ) : !updateInfo ? (
-            <Stack spacing={1}>
-              <Typography variant="caption">Проверка обновлений...</Typography>
-              <LinearProgress />
-            </Stack>
-          ) : updateInfo.version === version ? (
-            <Alert
-              icon={<CheckCircleIcon fontSize="inherit" />}
-              severity="success"
-            >
-              У вас установлена последняя версия
-            </Alert>
-          ) : (
-            <Box
-              sx={{
-                p: 2,
-                borderRadius: 2,
-                bgcolor: alpha(theme.palette.primary.main, 0.05),
-                border: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`,
-              }}
-            >
-              <Typography variant="body2" sx={{ fontWeight: 700, mb: 1 }}>
-                Доступна версия {updateInfo.version}
-              </Typography>
-
-              {progress > 0 && !downloaded ? (
-                <Stack spacing={1}>
-                  <LinearProgress variant="determinate" value={progress} />
-                  <Typography variant="caption">
-                    Загрузка: {progress}%
+          <Box>
+            <Typography sx={sectionLabelSx}>Обновления</Typography>
+            <Box sx={groupSx}>
+              {error ? (
+                <Box sx={{ px: 2, py: 1.6 }}>
+                  <Stack direction="row" spacing={1.5} alignItems="center">
+                    <RowIcon bg="red">
+                      <ErrorOutlineIcon sx={{ fontSize: 18 }} />
+                    </RowIcon>
+                    <Box sx={{ flexGrow: 1, minWidth: 0 }}>
+                      <Typography
+                        variant="body2"
+                        fontWeight={600}
+                        color="error.main"
+                      >
+                        Ошибка обновления
+                      </Typography>
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        display="block"
+                        noWrap
+                      >
+                        {error}
+                      </Typography>
+                    </Box>
+                    <AppButton
+                      preset="secondary"
+                      onClick={() => window.updater.check()}
+                    >
+                      Повторить
+                    </AppButton>
+                  </Stack>
+                </Box>
+              ) : !updateInfo ? (
+                <Box sx={{ px: 2, py: 2 }}>
+                  <LinearProgress sx={{ height: 6, borderRadius: 3 }} />
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    display="block"
+                    sx={{ mt: 1 }}
+                  >
+                    Проверка обновлений…
                   </Typography>
-                </Stack>
-              ) : downloaded ? (
-                <Button variant="contained" fullWidth onClick={handleInstall}>
-                  Установить и перезапустить
-                </Button>
+                </Box>
+              ) : updateInfo.version === version ? (
+                <SettingsRow
+                  icon={
+                    <RowIcon bg="green">
+                      <CheckCircleIcon sx={{ fontSize: 18 }} />
+                    </RowIcon>
+                  }
+                  title="Установлена последняя версия"
+                  subtitle={`Версия ${version}`}
+                />
               ) : (
-                <Button
-                  variant="outlined"
-                  startIcon={<CloudDownloadIcon />}
-                  onClick={() => window.updater.download(updateInfo)}
-                >
-                  Скачать обновление
-                </Button>
+                <Box sx={{ px: 2, py: 2 }}>
+                  <Stack
+                    direction="row"
+                    spacing={1.5}
+                    alignItems="center"
+                    sx={{ mb: 2 }}
+                  >
+                    <RowIcon bg="blue">
+                      <CloudDownloadIcon sx={{ fontSize: 18 }} />
+                    </RowIcon>
+                    <Box sx={{ minWidth: 0 }}>
+                      <Typography variant="body2" fontWeight={600}>
+                        Доступна версия {updateInfo.version}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        Загрузите и перезапустите приложение
+                      </Typography>
+                    </Box>
+                  </Stack>
+
+                  {progress > 0 && !downloaded ? (
+                    <Box>
+                      <LinearProgress
+                        variant="determinate"
+                        value={progress}
+                        sx={{ height: 6, borderRadius: 3 }}
+                      />
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        display="block"
+                        sx={{ mt: 1 }}
+                      >
+                        Загрузка: {progress}%
+                      </Typography>
+                    </Box>
+                  ) : downloaded ? (
+                    <AppButton
+                      preset="primary"
+                      startIcon={<SystemUpdateAltIcon />}
+                      onClick={handleInstall}
+                      sx={{ width: "100%" }}
+                    >
+                      Установить и перезапустить
+                    </AppButton>
+                  ) : (
+                    <AppButton
+                      preset="primary"
+                      startIcon={<CloudDownloadIcon />}
+                      onClick={() => window.updater.download(updateInfo)}
+                      sx={{ width: "100%" }}
+                    >
+                      Скачать обновление
+                    </AppButton>
+                  )}
+                </Box>
               )}
             </Box>
-          )}
+          </Box>
         </Stack>
       </Box>
     </Card>
