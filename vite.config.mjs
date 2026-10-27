@@ -31,6 +31,10 @@ export default defineConfig({
     emptyOutDir: true,
     chunkSizeWarningLimit: 1000,
     rollupOptions: {
+      input: {
+        main: resolve("index.html"),
+        help: resolve("help.html"),
+      },
       output: {
         // Пути строго в нижнем регистре, без переменных — сборка идёт
         // на macOS/Windows/Linux, Linux чувствителен к регистру.

@@ -1,5 +1,6 @@
 // handlers/import.cjs
 const { ipcMain, app, BrowserWindow } = require("electron");
+const { getMainWindow } = require("../mainWindow.cjs");
 const StreamZip = require("node-stream-zip");
 const fs = require("fs");
 const path = require("path");
@@ -157,7 +158,7 @@ ipcMain.handle("import:inspect", async (_, zipPath) => {
 });
 
 ipcMain.handle("import:zip", async (event, zipPath, options = {}) => {
-  const win = BrowserWindow.getAllWindows()[0];
+  const win = getMainWindow();
   if (!zipPath) throw new Error("Путь к ZIP-бэкапу не передан");
 
   // const tmpDir = path.join(os.tmpdir(), `genealogy-import-${Date.now()}`);

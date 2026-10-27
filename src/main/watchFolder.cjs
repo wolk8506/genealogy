@@ -1,4 +1,5 @@
 const { BrowserWindow } = require("electron");
+const { getMainWindow } = require("./mainWindow.cjs");
 const fs = require("fs");
 const { getBaseDir } = require("./config.cjs");
 
@@ -17,7 +18,7 @@ function watchFolder() {
 
   if (watcher) watcher.close();
   watcher = fs.watch(folderPath, { recursive: true }, () => {
-    const win = BrowserWindow.getAllWindows()[0];
+    const win = getMainWindow();
     if (win) win.webContents.send("folder-size-updated");
   });
 }

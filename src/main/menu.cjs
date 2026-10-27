@@ -1,4 +1,5 @@
 const { app, BrowserWindow, shell } = require("electron");
+const { getMainWindow } = require("./mainWindow.cjs");
 
 function buildMenuTemplate() {
   const isMac = process.platform === "darwin";
@@ -42,14 +43,14 @@ function buildMenuTemplate() {
         {
           label: "Добавить человека",
           click: () => {
-            const win = BrowserWindow.getAllWindows()[0];
+            const win = getMainWindow();
             win.webContents.send("navigate", "/?action=add");
           },
         },
         {
           label: "Добавить фотографию",
           click: () => {
-            const win = BrowserWindow.getAllWindows()[0];
+            const win = getMainWindow();
             win.webContents.send("navigate", "/globalPhotoGallery?action=add");
           },
         },
@@ -57,7 +58,7 @@ function buildMenuTemplate() {
         // {
         //   label: "Восстановление архива",
         //   click: () => {
-        //     const win = BrowserWindow.getAllWindows()[0];
+        //     const win = getMainWindow();
         //     win.webContents.send("menu:import-archive");
         //   },
         // },
@@ -86,7 +87,7 @@ function buildMenuTemplate() {
         //       {
         //         label: "О Приложении",
         //         click: () =>
-        //           BrowserWindow.getAllWindows()[0].webContents.send(
+        //           getMainWindow().webContents.send(
         //             "app:open-about"
         //           ),
         //       },
@@ -101,35 +102,33 @@ function buildMenuTemplate() {
         {
           label: "О приложении",
           click: () => {
-            const win = BrowserWindow.getAllWindows()[0];
+            const win = getMainWindow();
             win.webContents.send("navigate", "/about");
           },
         },
         {
           label: "Лицензия",
           click: () => {
-            const win = BrowserWindow.getAllWindows()[0];
+            const win = getMainWindow();
             win.webContents.send("open-license-modal");
           },
         },
         {
           label: "История версий",
           click: () => {
-            const win = BrowserWindow.getAllWindows()[0];
-            win.webContents.send("open-changelog-modal");
+            const win = getMainWindow();
+            win?.webContents.send("open-changelog-modal");
           },
         },
         {
           label: "Руководство пользователя",
-          click: () => {
-            const win = BrowserWindow.getAllWindows()[0];
-            win.webContents.send("open-userGuide-modal");
-          },
+          accelerator: "Shift+CmdOrCtrl+/",
+          click: () => require("./helpWindow.cjs").openHelpWindow(),
         },
         {
           label: "Проверить обновления",
           click: () => {
-            const win = BrowserWindow.getAllWindows()[0];
+            const win = getMainWindow();
             win.webContents.send("check-for-updates");
           },
         },

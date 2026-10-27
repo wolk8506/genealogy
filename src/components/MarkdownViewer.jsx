@@ -92,31 +92,37 @@ const appleHelpSx = {
   "& .milkdown .editor": {
     minHeight: "auto",
     outline: "none",
+    padding: 0,
     color: (theme) => (theme.palette.mode === "dark" ? "#f5f5f7" : "#1d1d1f"),
-    fontSize: "1.03rem",
-    lineHeight: 1.62,
-    letterSpacing: "0.002em",
+    fontSize: "15px",
+    lineHeight: 1.55,
+    letterSpacing: "-0.003em",
     whiteSpace: "pre-wrap",
     wordBreak: "break-word",
     fontFamily:
       '-apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Segoe UI", Roboto, sans-serif',
   },
+  "& .ProseMirror > :first-child": {
+    marginTop: 0,
+  },
   "& .ProseMirror h1, & .ProseMirror h2": {
-    marginTop: "2rem",
-    marginBottom: "0.9rem",
-    fontSize: "1.5rem",
+    marginTop: "2.4rem",
+    marginBottom: "0.8rem",
+    fontSize: "1.45rem",
+    fontWeight: 700,
     lineHeight: 1.25,
     letterSpacing: "-0.02em",
   },
   "& .ProseMirror h3": {
-    marginTop: "1.5rem",
-    marginBottom: "0.7rem",
-    fontSize: "1.12rem",
+    marginTop: "2.2rem",
+    marginBottom: "0.65rem",
+    fontSize: "1.25rem",
+    fontWeight: 700,
     lineHeight: 1.3,
-    letterSpacing: "-0.01em",
+    letterSpacing: "-0.015em",
   },
   "& .ProseMirror p": {
-    marginBottom: "0.72rem",
+    marginBottom: "0.85rem",
     marginTop: 0,
     minHeight: "1.2em",
     textAlign: "left",
@@ -124,8 +130,7 @@ const appleHelpSx = {
   },
   "& .ProseMirror p > em:only-child": {
     display: "block",
-    marginTop: "-0.1rem",
-    marginBottom: "0.15rem",
+    marginTop: "-0.4rem",
     fontSize: "0.86rem",
     lineHeight: 1.35,
     fontStyle: "normal",
@@ -134,19 +139,26 @@ const appleHelpSx = {
         ? "rgba(255,255,255,0.64)"
         : "rgba(29,29,31,0.58)",
   },
-  "& .ProseMirror li p": {
-    marginBottom: "0.22rem",
-  },
   "& .ProseMirror ul, & .ProseMirror ol": {
-    pl: 2.5,
-    my: 1.1,
+    pl: 2.75,
+    my: 1,
   },
   "& .ProseMirror li": {
-    marginBottom: "0.25rem",
+    marginBottom: "0.4rem",
+    "&::marker": {
+      color: (theme) =>
+        theme.palette.mode === "dark"
+          ? "rgba(235,235,245,0.6)"
+          : "rgba(60,60,67,0.62)",
+    },
+  },
+  "& .ProseMirror li p": {
+    marginBottom: 0,
   },
   "& .ProseMirror a": {
     color: (theme) => (theme.palette.mode === "dark" ? "#4da3ff" : "#0066cc"),
     textDecoration: "none",
+    cursor: "pointer",
   },
   "& .ProseMirror a:hover": {
     textDecoration: "underline",
@@ -156,49 +168,59 @@ const appleHelpSx = {
     borderCollapse: "separate",
     borderSpacing: 0,
     my: 2.2,
-    borderRadius: "12px",
+    fontSize: "14px",
+    borderRadius: "10px",
     overflow: "hidden",
     border: "1px solid",
     borderColor: (theme) =>
       theme.palette.mode === "dark"
-        ? "rgba(255,255,255,0.16)"
+        ? "rgba(255,255,255,0.14)"
         : "rgba(29,29,31,0.12)",
     "& th, & td": {
       borderBottom: "1px solid",
       borderColor: (theme) =>
         theme.palette.mode === "dark"
-          ? "rgba(255,255,255,0.12)"
+          ? "rgba(255,255,255,0.1)"
           : "rgba(29,29,31,0.08)",
-      p: "10px 12px",
+      p: "9px 12px",
       textAlign: "left",
+      verticalAlign: "top",
     },
+    "& p": { marginBottom: 0 },
     "& tr:last-child td": {
       borderBottom: "none",
     },
     "& th": {
       bgcolor: (theme) =>
         theme.palette.mode === "dark"
-          ? "rgba(255,255,255,0.08)"
-          : "rgba(29,29,31,0.04)",
+          ? "rgba(255,255,255,0.06)"
+          : "rgba(29,29,31,0.035)",
       fontWeight: 600,
     },
   },
   "& hr": {
-    my: 2.6,
+    my: 3,
+    border: "none",
+    borderTop: "1px solid",
     borderColor: (theme) =>
       theme.palette.mode === "dark"
-        ? "rgba(255,255,255,0.14)"
-        : "rgba(29,29,31,0.14)",
+        ? "rgba(255,255,255,0.12)"
+        : "rgba(29,29,31,0.12)",
   },
   "& blockquote": {
-    margin: "1.2rem 0",
-    borderLeft: "3px solid",
-    borderColor: (theme) =>
-      theme.palette.mode === "dark" ? "rgba(77,163,255,0.65)" : "#0066cc",
-    pl: 1.7,
-    py: 0.4,
-    color: "text.secondary",
+    margin: "1.4rem 0",
+    px: 2,
+    py: 1.5,
+    border: "none",
+    borderRadius: "12px",
+    bgcolor: (theme) =>
+      theme.palette.mode === "dark"
+        ? "rgba(255,255,255,0.06)"
+        : "rgba(29,29,31,0.04)",
+    color: "inherit",
     textIndent: 0,
+    "& p": { marginBottom: "0.4rem" },
+    "& p:last-child": { marginBottom: 0 },
   },
   "& code": {
     fontFamily:
@@ -206,40 +228,39 @@ const appleHelpSx = {
     fontSize: "0.86em",
     bgcolor: (theme) =>
       theme.palette.mode === "dark"
-        ? "rgba(255,255,255,0.12)"
-        : "rgba(29,29,31,0.08)",
+        ? "rgba(255,255,255,0.1)"
+        : "rgba(29,29,31,0.06)",
     px: 0.5,
     py: 0.2,
-    borderRadius: "6px",
+    borderRadius: "5px",
   },
   "& pre": {
     bgcolor: (theme) =>
       theme.palette.mode === "dark"
-        ? "rgba(255,255,255,0.08)"
-        : "rgba(29,29,31,0.05)",
+        ? "rgba(255,255,255,0.06)"
+        : "rgba(29,29,31,0.04)",
     p: 2,
+    my: 2,
     borderRadius: "12px",
     overflowX: "auto",
     textIndent: 0,
-    "& code": { bgcolor: "transparent", p: 0 },
+    fontSize: "13px",
+    lineHeight: 1.5,
+    "& code": { bgcolor: "transparent", p: 0, fontSize: "inherit" },
   },
   "& .ProseMirror img": {
     width: "100%",
-    maxWidth: "94%",
+    maxWidth: "100%",
     display: "block",
-    margin: "1.35rem auto 0.52rem",
-    borderRadius: "12px",
+    margin: "1.2rem 0 1.6rem",
+    borderRadius: "10px",
     border: "1px solid",
     borderColor: (theme) =>
       theme.palette.mode === "dark"
-        ? "rgba(255,255,255,0.15)"
-        : "rgba(29,29,31,0.14)",
+        ? "rgba(255,255,255,0.12)"
+        : "rgba(29,29,31,0.1)",
     backgroundColor: (theme) =>
       theme.palette.mode === "dark" ? "rgba(255,255,255,0.03)" : "#f5f5f7",
-    boxShadow: (theme) =>
-      theme.palette.mode === "dark"
-        ? "0 8px 24px rgba(0,0,0,0.35)"
-        : "0 8px 24px rgba(15,15,20,0.1)",
   },
 };
 

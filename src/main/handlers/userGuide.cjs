@@ -1,6 +1,7 @@
 const { ipcMain } = require("electron");
 const fs = require("fs");
 const path = require("path");
+const { getMainWindow } = require("../mainWindow.cjs");
 
 ipcMain.handle("userGuide:read", async () => {
   // dev: корень проекта
@@ -24,4 +25,16 @@ ipcMain.handle("userGuide:read", async () => {
   } catch (e) {
     return `Файл USER_GUIDE.md не найден по пути ${filePath}`;
   }
+});
+
+ipcMain.handle("userGuide:openWindow", () => {
+  require("../helpWindow.cjs").openHelpWindow();
+});
+
+ipcMain.handle("userGuide:openChangelog", () => {
+  const win = getMainWindow();
+  if (!win) return;
+  if (win.isMinimized()) win.restore();
+  win.focus();
+  win.webContents.send("open-changelog-modal");
 });

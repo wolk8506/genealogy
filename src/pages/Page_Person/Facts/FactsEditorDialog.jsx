@@ -16,12 +16,14 @@ import { alpha } from "@mui/material/styles";
 import BloodtypeIcon from "@mui/icons-material/Bloodtype";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import ColorLensIcon from "@mui/icons-material/ColorLens";
-import ManIcon from "@mui/icons-material/Man";
+import HeightIcon from '@mui/icons-material/Height';
 import InfoIcon from "@mui/icons-material/Info";
 import FlagIcon from "@mui/icons-material/Flag";
 import PhoneIcon from "@mui/icons-material/Phone";
 import EmailIcon from "@mui/icons-material/Email";
 import FaceIcon from "@mui/icons-material/Face";
+import BoyIcon from '@mui/icons-material/Boy';
+
 
 import nationalities from "./nationalities.json";
 import NumberField from "../../../components/NumberField";
@@ -58,7 +60,7 @@ function getIcon(type) {
   // Возвращаем иконку для заданного типа; используем компактный размер
   switch (type) {
     case "Рост":
-      return <ManIcon fontSize="small" />;
+      return <HeightIcon fontSize="small" />;
     case "Группа крови":
       return <BloodtypeIcon fontSize="small" />;
     // case "Народность":
@@ -66,9 +68,9 @@ function getIcon(type) {
     case "Национальность":
       return <FlagIcon fontSize="small" />;
     case "Физическое описание":
-      return <FaceIcon fontSize="small" />;
+      return <BoyIcon fontSize="small" />;
     case "Цвет волос":
-      return <ColorLensIcon fontSize="small" />;
+      return <FaceIcon fontSize="small" />;
     case "Цвет глаз":
       return <VisibilityIcon fontSize="small" />;
     case "Цвет кожи":
