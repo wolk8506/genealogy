@@ -298,7 +298,7 @@ export default function AboutPage() {
                 title="Руководство"
                 subtitle="Как пользоваться приложением"
                 onClick={() =>
-                  window.dispatchEvent(new Event("app:open-user-guide"))
+                  window.userGuideAPI?.openWindow?.()
                 }
                 trailing={chevron}
               />

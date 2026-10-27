@@ -40,8 +40,8 @@ contextBridge.exposeInMainWorld("changelogAPI", {
 });
 contextBridge.exposeInMainWorld("userGuideAPI", {
   read: () => ipcRenderer.invoke("userGuide:read"),
-  onOpen: (callback) =>
-    ipcRenderer.on("open-userGuide-modal", () => callback()),
+  openWindow: () => ipcRenderer.invoke("userGuide:openWindow"),
+  openChangelog: () => ipcRenderer.invoke("userGuide:openChangelog"),
 });
 
 // 👤 Люди ✅

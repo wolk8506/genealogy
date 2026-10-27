@@ -1,4 +1,5 @@
 const { ipcMain, app, shell, BrowserWindow } = require("electron");
+const { getMainWindow } = require("./mainWindow.cjs");
 const log = require("./logger.cjs").createLogger("autoUpdater");
 
 const { autoUpdater } = require("electron-updater");
@@ -194,7 +195,7 @@ function setupAutoUpdater(win) {
 }
 
 ipcMain.on("trigger-update-check", () => {
-  const win = BrowserWindow.getAllWindows()[0]; // Получаем активное окно
+  const win = getMainWindow(); // Получаем активное окно
 
   autoUpdater.once("update-available", (info) => {
     win.webContents.send("update:manual-check-result", {

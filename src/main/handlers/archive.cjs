@@ -1,4 +1,5 @@
 const { ipcMain, BrowserWindow } = require("electron");
+const { getMainWindow } = require("../mainWindow.cjs");
 const fs = require("fs");
 const path = require("path");
 const archiver = require("archiver");
@@ -94,7 +95,7 @@ function toArchiveEntryName(archiveRoot, src) {
 }
 
 ipcMain.handle("archive:create", async (_, filePaths, archivePath) => {
-  const win = BrowserWindow.getAllWindows()[0];
+  const win = getMainWindow();
   if (!filePaths || filePaths.length === 0)
     throw new Error("No files to archive");
   if (!archivePath) return null;

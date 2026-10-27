@@ -11,6 +11,7 @@ session.defaultSession.setPermissionRequestHandler((_wc, permission, callback) =
 // Проверка платформы
 const isMac = process.platform === "darwin";
 const isWin = process.platform === "win32";
+const { setMainWindow } = require("./mainWindow.cjs");
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -59,6 +60,9 @@ function createWindow() {
   // });
 
   // --- КОНЕЦ БЛОКА СЛУШАТЕЛЕЙ ---
+
+  setMainWindow(win);
+  win.on("closed", () => require("./helpWindow.cjs").closeHelpWindow());
 
   if (isDev) {
     win.loadURL("http://localhost:5173");

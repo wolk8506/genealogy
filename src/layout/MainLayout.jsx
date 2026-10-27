@@ -95,7 +95,6 @@ function RouteFallback() {
 import LicenseModal from "./LicenseModal";
 import NavigationButtons from "./NavigationButtons";
 import ChangelogModal from "./ChangelogModal";
-import UserGuideModal from "./UserGuideModal";
 import { NotificationBell } from "./NotificationBell";
 import InspectorPanel from "./InspectorPanel";
 import ExternalInspectorPanel from "./ExternalInspectorPanel";
@@ -1177,7 +1176,6 @@ export default function MainLayout() {
         <PhotoInspectorPanel allPeople={allPeople} />
       )}
       <ChangelogModal />
-      <UserGuideModal />
     </>
   );
 }
