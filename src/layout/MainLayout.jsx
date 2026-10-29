@@ -38,6 +38,7 @@ import MuiAppBar from "@mui/material/AppBar";
 import InfoIcon from "@mui/icons-material/Info";
 import PersonIcon from "@mui/icons-material/Person";
 import GroupIcon from "@mui/icons-material/Group";
+import Diversity3Icon from "@mui/icons-material/Diversity3";
 import CollectionsIcon from "@mui/icons-material/Collections";
 import MapIcon from "@mui/icons-material/Map";
 import TimelineIcon from "@mui/icons-material/Timeline";
@@ -57,6 +58,10 @@ import { UpdateBanner } from "../pages/Page_Settings/UpdateBanner";
 // Тяжёлые страницы — ленивая загрузка отдельными чанками.
 // Пути — статические строки в точном регистре (сборка на Linux чувствительна).
 const PersonPage = lazy(() => import("../pages/Page_Person/PersonPage"));
+const FamiliesPage = lazy(() => import("../pages/Page_Families/FamiliesPage"));
+const FamilyInspector = lazy(
+  () => import("../pages/Page_Families/panel/FamilyInspector"),
+);
 const GlobalPhotoGallery = lazy(
   () => import("../pages/Page_GlobalPhotoGallery/GlobalPhotoGallery"),
 );
@@ -108,6 +113,7 @@ import { usePeopleListStore } from "../store/usePeopleListStore";
 import { usePhotoInspectorStore } from "../store/usePhotoInspectorStore";
 
 import GalleryToolbar from "./bar_GlobalPhotoGallery/GalleryToolbar";
+import FamiliesToolbar from "./bar_Families/FamiliesToolbar";
 import TimelineToolbar from "./bar_Timeline/TimelineToolbar";
 import {
   parseTimelineSearch,
@@ -122,19 +128,37 @@ import ExternalToolbar from "./bar_External/ExternalToolbar";
 import ButtonConteiner from "../components/ButtonConteiner";
 import SidebarLeftIcon from "../components/svg/SidebarLeftIcon";
 import TrashFillIcon from "../components/svg/TrashFillIcon";
+import { buildFamilyViews } from "../utils/families/buildFamilyViews";
+import {
+  buildUnionOptions,
+  findFamily,
+} from "../utils/families/resolveFamily";
+import { toId } from "../utils/families/familyLabels";
 
 const drawerItems = [
-  { text: "Люди", icon: <GroupIcon />, path: "/" },
-  { text: "Справочник", icon: <ContactsIcon />, path: "/external" },
+  { text: "Люди", icon: <GroupIcon />, path: "/", accent: "blue" },
+  {
+    text: "Семьи",
+    icon: <Diversity3Icon />,
+    path: "/families",
+    accent: "green",
+  },
+  {
+    text: "Справочник",
+    icon: <ContactsIcon />,
+    path: "/external",
+    accent: "orange",
+  },
   {
     text: "Фотогалерея",
     icon: <CollectionsIcon />,
     path: "/globalPhotoGallery",
+    accent: "purple",
   },
-  { text: "Карта", icon: <MapIcon />, path: "/map" },
-  { text: "Лента", icon: <TimelineIcon />, path: "/timeline" },
-  { text: "Настройки", icon: <GearIcon />, path: "/settings" },
-  { text: "О приложении", icon: <InfoIcon />, path: "/about" },
+  { text: "Карта", icon: <MapIcon />, path: "/map", accent: "teal" },
+  { text: "Лента", icon: <TimelineIcon />, path: "/timeline", accent: "pink" },
+  { text: "Настройки", icon: <GearIcon />, path: "/settings", accent: "gray" },
+  { text: "О приложении", icon: <InfoIcon />, path: "/about", accent: "indigo" },
 ];
 
 // const drawerWidth = 200;
@@ -223,6 +247,12 @@ export default function MainLayout() {
   const [allPeople, setAllPeople] = useState([]); // Нужно загрузить список людей здесь для Autocomplete
   const [photos, setPhotos] = useState([]); // Добавляем этот стейт
   const [loading, setLoading] = useState(true);
+  const [appDataError, setAppDataError] = useState(false);
+
+  // Страница «Семьи»: поиск, сортировка и панель — в хедере приложения.
+  const [familiesSearch, setFamiliesSearch] = useState("");
+  const [familiesSort, setFamiliesSort] = useState("date");
+  const [familiesPanelOpen, setFamiliesPanelOpen] = useState(true);
 
   const timelineFilterPerson = useMemo(
     () =>
@@ -243,6 +273,85 @@ export default function MainLayout() {
     [allPeople, mapStats.peopleIds],
   );
 
+  // Семьи вычисляются из людей один раз на страницу и переиспользуются
+  // страницей, тулбаром и правой панелью.
+  const isMainPage = location.pathname === "/";
+  const isFamiliesPage =
+    location.pathname === "/families" ||
+    location.pathname.startsWith("/families/");
+  const isFamiliesDetail = location.pathname.startsWith("/families/");
+
+  const familiesView = useMemo(
+    () => (isFamiliesPage ? buildFamilyViews(allPeople) : null),
+    [isFamiliesPage, allPeople],
+  );
+
+  const familiesFamilyKey = useMemo(() => {
+    if (!isFamiliesDetail) return null;
+    const raw = location.pathname.slice("/families/".length);
+    const key = raw.split("/")[0];
+    return key ? decodeURIComponent(key) : null;
+  }, [isFamiliesDetail, location.pathname]);
+
+  const familiesFamily = useMemo(
+    () =>
+      familiesFamilyKey && familiesView
+        ? findFamily(familiesView.families, familiesFamilyKey)
+        : null,
+    [familiesFamilyKey, familiesView],
+  );
+
+  const familiesPersonId = toId(searchParams.get("person"));
+
+  const familiesSelectedPersonId = useMemo(() => {
+    if (!familiesFamily) return null;
+    if (familiesPersonId && familiesView?.byId.has(familiesPersonId)) {
+      return familiesPersonId;
+    }
+    return familiesFamily.partnerIds[0] || null;
+  }, [familiesFamily, familiesPersonId, familiesView]);
+
+  const familiesUnion = useMemo(
+    () => buildUnionOptions(familiesFamily, familiesView?.byPerson),
+    [familiesFamily, familiesView],
+  );
+
+  const handleFamiliesSelectPerson = useCallback(
+    (id) => {
+      const key = toId(id);
+      const next = new URLSearchParams(location.search);
+      if (key) next.set("person", key);
+      else next.delete("person");
+      navigate(
+        { pathname: location.pathname, search: next.toString() },
+        { replace: true },
+      );
+      if (key) setFamiliesPanelOpen(true);
+    },
+    [location.pathname, location.search, navigate],
+  );
+
+  const handleFamiliesOpenFamily = useCallback(
+    (key, personId) => {
+      if (!key) return;
+      const id = toId(personId);
+      navigate(id ? `/families/${key}?person=${id}` : `/families/${key}`);
+    },
+    [navigate],
+  );
+
+  const familiesRouteProps = {
+    view: familiesView,
+    loading,
+    error: appDataError,
+    onRetry: () => refreshAppData(),
+    selectedPersonId: familiesSelectedPersonId,
+    onSelectPerson: handleFamiliesSelectPerson,
+    onOpenFamily: handleFamiliesOpenFamily,
+    search: familiesSearch,
+    sort: familiesSort,
+  };
+
   // «В этот день»: подборка считается из тех же данных, бейдж — суммарно.
   // Строго после объявления photos/allPeople (иначе TDZ).
   const memoryGroups = useMemories(photos, allPeople);
@@ -255,7 +364,6 @@ export default function MainLayout() {
   // Таб инспектора и фокусный человек для связей.
   const [inspectorTab, setInspectorTab] = useState("memories");
   const [relationPersonId, setRelationPersonId] = useState(null);
-  const isMainPage = location.pathname === "/";
   const isExternalPage = location.pathname === "/external";
   const isMapPage = location.pathname === "/map";
   const [externalPanelOpen, setExternalPanelOpen] = useState(true);
@@ -449,7 +557,7 @@ export default function MainLayout() {
 
     // 3. Если правок нет ИЛИ пользователь разрешил уйти — переходим
     navigate(path);
-    setOpen(false); // Закрываем боковое меню
+    // Меню остаётся открытым: пользователь сам решает, когда его свернуть.
     setIsInfoEditing(false);
     setIsBioEditing(false);
   };
@@ -458,6 +566,7 @@ export default function MainLayout() {
   // Оборачиваем в useCallback, чтобы функцию можно было безопасно передавать вниз
   const refreshAppData = useCallback(async () => {
     try {
+      setAppDataError(false);
       const [people, list] = await Promise.all([
         window.peopleAPI.getAll(),
         window.photoAPI.getAllGlobal(),
@@ -469,6 +578,7 @@ export default function MainLayout() {
       setAppDataRevision((r) => r + 1);
     } catch (e) {
       console.error("Ошибка синхронизации данных:", e);
+      setAppDataError(true);
     } finally {
       setLoading(false);
     }
@@ -894,12 +1004,28 @@ export default function MainLayout() {
               />
             )}
 
+            {isFamiliesPage && (
+              <FamiliesToolbar
+                detail={isFamiliesDetail}
+                search={familiesSearch}
+                setSearch={setFamiliesSearch}
+                sort={familiesSort}
+                setSort={setFamiliesSort}
+                unionOptions={familiesUnion.options}
+                activeUnionKey={familiesFamily?.key}
+                onOpenUnion={(key) =>
+                  handleFamiliesOpenFamily(key, familiesUnion.anchorId)
+                }
+              />
+            )}
+
             {/* Кнопка правой панели — главная, справочник, карта, галереи */}
             {(isMainPage ||
               isExternalPage ||
               isMapPage ||
               isGalleryPage ||
-              isPersonPhotoPage) && (
+              isPersonPhotoPage ||
+              isFamiliesDetail) && (
               <Box sx={{ ml: "12px", display: "inline-flex" }}>
                 <ButtonConteiner>
                   <IconButton
@@ -909,6 +1035,8 @@ export default function MainLayout() {
                       else if (isMapPage) setMapPanelOpen((v) => !v);
                       else if (isGalleryPage || isPersonPhotoPage)
                         usePhotoInspectorStore.getState().toggle();
+                      else if (isFamiliesDetail)
+                        setFamiliesPanelOpen((v) => !v);
                       else setMemoriesOpen((v) => !v);
                     }}
                     size="small"
@@ -922,6 +1050,7 @@ export default function MainLayout() {
 
             {/* Заголовок для остальных страниц */}
             {!isGalleryPage &&
+              !isFamiliesPage &&
               !match &&
               location.pathname !== "/" &&
               location.pathname !== "/external" &&
@@ -963,14 +1092,15 @@ export default function MainLayout() {
               (isExternalPage && externalPanelOpen) ||
               (isMapPage && mapPanelOpen) ||
               (isGalleryPage && photoPanelOpen) ||
-              (isPersonPhotoPage && photoPanelOpen)
+              (isPersonPhotoPage && photoPanelOpen) ||
+              (isFamiliesDetail && familiesPanelOpen)
                 ? "340px"
                 : 0,
             transition: "margin-right 0.3s ease",
             // pt: 1,
-            pr: isMapPage ? 0 : 1,
-            pb: isMapPage ? 0 : 1,
-            pl: isMapPage ? 0 : 1,
+            pr: isMapPage || isFamiliesPage ? 0 : 1,
+            pb: isMapPage || isFamiliesPage ? 0 : 1,
+            pl: isMapPage || isFamiliesPage ? 0 : 1,
             // width: "calc(100% - 64px)",
             // height: "100vh",
           }}
@@ -1052,6 +1182,14 @@ export default function MainLayout() {
                   }}
                 />
               }
+            />
+            <Route
+              path="/families"
+              element={<FamiliesPage {...familiesRouteProps} />}
+            />
+            <Route
+              path="/families/:familyKey"
+              element={<FamiliesPage {...familiesRouteProps} />}
             />
             <Route path="/settings" element={<ArchivedPeoplePage />} />
             <Route
@@ -1174,6 +1312,26 @@ export default function MainLayout() {
       )}
       {(isGalleryPage || isPersonPhotoPage) && (
         <PhotoInspectorPanel allPeople={allPeople} />
+      )}
+      {isFamiliesDetail && familiesFamily && familiesView && (
+        <Suspense fallback={null}>
+          <FamilyInspector
+            open={familiesPanelOpen}
+            person={
+              familiesSelectedPersonId
+                ? familiesView.byId.get(String(familiesSelectedPersonId))
+                : null
+            }
+            family={familiesFamily}
+            families={familiesView.families}
+            byId={familiesView.byId}
+            childrenOf={familiesView.childrenOf}
+            byPerson={familiesView.byPerson}
+            onSelectPerson={handleFamiliesSelectPerson}
+            onOpenFamily={handleFamiliesOpenFamily}
+            onClose={() => setFamiliesPanelOpen(false)}
+          />
+        </Suspense>
       )}
       <ChangelogModal />
     </>

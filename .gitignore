@@ -11,3 +11,9 @@
 /tmp_app
 /to-do.md
 .cursor
+/build/dmg/background.svg
+/build/dmg/background.png
+/build/dmg/background@2x.png
+/build/win/installerHeader.png
+/build/win/installerSidebar.png
+/build/win/installerIcon.png

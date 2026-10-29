@@ -1,6 +1,6 @@
 {
   "name": "genealogy-react",
-  "version": "1.12.1",
+  "version": "1.12.2",
   "main": "src/main/index.cjs",
   "type": "module",
   "description": "Генеалогическое приложение",
@@ -11,6 +11,8 @@
     "build:react": "vite build",
     "build:electron": "electron-builder --publish never",
     "dist:mac": "electron-builder --mac --x64 --publish never",
+    "dmg:background": "node build/dmg/make-background.mjs",
+    "win:assets": "node build/win/make-assets.mjs",
     "dist:win": "electron-builder --win --x64 --publish never",
     "dist:linux": "electron-builder --linux --x64 --publish never",
     "build": "npm run build:react && npm run build:electron",
@@ -121,15 +123,40 @@
     },
     "dmg": {
       "icon": "build/icons/dmg-volume.icns",
-      "title": "Установка Genealogy"
+      "title": "Установка Genealogy",
+      "background": "build/dmg/background.tiff",
+      "window": {
+        "width": 600,
+        "height": 693
+      },
+      "iconSize": 96,
+      "contents": [
+        {
+          "x": 172,
+          "y": 305,
+          "type": "file"
+        },
+        {
+          "x": 427,
+          "y": 305,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ]
     },
     "win": {
-      "target": [
-        "nsis",
-        "nsis-web"
-      ],
+      "target": "nsis",
       "artifactName": "Genealogy-Setup-${version}.${ext}",
       "icon": "build/icons/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "installerIcon": "build/win/installerIcon.ico",
+      "uninstallerIcon": "build/win/installerIcon.ico",
+      "installerHeader": "build/win/installerHeader.bmp",
+      "installerSidebar": "build/win/installerSidebar.bmp"
     },
     "linux": {
       "target": "AppImage",

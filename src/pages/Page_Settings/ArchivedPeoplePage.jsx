@@ -5,9 +5,11 @@ import TuneIcon from "@mui/icons-material/Tune";
 import PhotoLibraryIcon from "@mui/icons-material/PhotoLibrary";
 import FaceRetouchingNaturalIcon from "@mui/icons-material/FaceRetouchingNatural";
 import StorageIcon from "@mui/icons-material/Storage";
+import PieChartIcon from "@mui/icons-material/PieChart";
 import SystemUpdateAltIcon from "@mui/icons-material/SystemUpdateAlt";
 import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 import { StatisticCard } from "./StatisticCard";
+import { BackupRestoreCard } from "./BackupRestoreCard";
 import { GeneralSettingsCard } from "./GeneralSettingsCard";
 import { StorageCard } from "./StorageCard";
 import { UpdateSettingsCard } from "./UpdateSettingsCard";
@@ -52,11 +54,19 @@ const SECTIONS = [
   },
   {
     id: "storage",
-    title: "Хранилище и данные",
-    keywords: "папка диск место статистика импорт экспорт бэкап резервная копия",
+    title: "Места хранения данных",
+    keywords: "папка диск место путь библиотека расположение хранилище данные импорт экспорт бэкап резервная копия",
     icon: StorageIcon,
     color: "blue",
-    cards: ["storage", "stats"],
+    cards: ["storage", "backup"],
+  },
+  {
+    id: "statistics",
+    title: "Статистика хранилища",
+    keywords: "статистика размер файлы обслуживание место",
+    icon: PieChartIcon,
+    color: "indigo",
+    cards: ["stats"],
   },
   {
     id: "danger",
@@ -77,12 +87,12 @@ export default function SettingsPage() {
     () => localStorage.getItem(STORAGE_KEY) || "general",
   );
   const [query, setQuery] = useState("");
-  const [statSubpage, setStatSubpage] = useState(false);
+  const [backupSubpage, setBackupSubpage] = useState(false);
   const [mediaSubpage, setMediaSubpage] = useState(false);
 
   useEffect(() => {
-    if (statSubpage || mediaSubpage) window.scrollTo({ top: 0 });
-  }, [statSubpage, mediaSubpage]);
+    if (backupSubpage || mediaSubpage) window.scrollTo({ top: 0 });
+  }, [backupSubpage, mediaSubpage]);
 
   const cardStyle = {
     borderRadius: 5,
@@ -104,12 +114,13 @@ export default function SettingsPage() {
     ),
     faceScan: <FaceScanMasterCard cardStyle={cardStyle} />,
     storage: <StorageCard cardStyle={cardStyle} />,
-    stats: (
-      <StatisticCard
+    backup: (
+      <BackupRestoreCard
         cardStyle={cardStyle}
-        onSubpageChange={setStatSubpage}
+        onSubpageChange={setBackupSubpage}
       />
     ),
+    stats: <StatisticCard cardStyle={cardStyle} />,
     danger: <DangerZoneCard cardStyle={cardStyle} />,
   };
 
@@ -135,8 +146,9 @@ export default function SettingsPage() {
   };
 
   let cardKeys = active?.cards || [];
-  if (active?.id === "storage" && statSubpage) {
-    cardKeys = cardKeys.filter((key) => key === "stats");
+  if (active?.id === "storage" && backupSubpage) {
+    // Во время бэкапа/восстановления оставляем только карточку импорта-экспорта.
+    cardKeys = cardKeys.filter((key) => key === "backup");
   } else if (active?.id === "photos" && mediaSubpage) {
     cardKeys = cardKeys.filter((key) => key === "optimization");
   }
