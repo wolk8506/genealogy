@@ -1,31 +1,37 @@
 import React, { useState } from "react";
 import {
   Dialog,
-  DialogTitle,
-  DialogContent,
-  List,
-  ListItem,
-  ListItemText,
   Checkbox,
   IconButton,
   TextField,
   Box,
   Stack,
   Typography,
+  Tooltip,
   alpha,
   useTheme,
-  CircularProgress,
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
+import AddIcon from "@mui/icons-material/Add";
+import SellIcon from "@mui/icons-material/Sell";
 import DialogActionButton, {
   DialogActionsBar,
 } from "../../components/Dialog/DialogActionButton";
-import AddIcon from "@mui/icons-material/Add";
-import SellIcon from "@mui/icons-material/Sell";
 
 import { useTagsStore, DEFAULT_PALETTE } from "../../store/useTagsStore";
 
 const EMPTY_ARRAY = [];
+
+const fieldSx = {
+  "& .MuiOutlinedInput-root": { borderRadius: "12px" },
+};
+
+const sectionLabelSx = {
+  display: "block",
+  mb: 1,
+  fontWeight: 700,
+  color: "text.secondary",
+};
 
 export default function TagManagementDialog({ personId }) {
   const theme = useTheme();
@@ -54,12 +60,23 @@ export default function TagManagementDialog({ personId }) {
     if (newTagName.trim()) {
       addTag(newTagName.trim(), newTagColor);
       setNewTagName("");
+      setNewTagColor(DEFAULT_PALETTE[0]);
       setIsCreating(false);
     }
   };
 
+  const handleCancelCreate = (e) => {
+    if (e) e.stopPropagation();
+    setNewTagName("");
+    setNewTagColor(DEFAULT_PALETTE[0]);
+    setIsCreating(false);
+  };
+
   const handleClose = (e) => {
     if (e) e.stopPropagation(); // Останавливаем клик при закрытии
+    setNewTagName("");
+    setNewTagColor(DEFAULT_PALETTE[0]);
+    setIsCreating(false);
     setOpenTags(false);
   };
 
@@ -88,121 +105,248 @@ export default function TagManagementDialog({ personId }) {
         onClose={handleClose}
         // ГЛАВНОЕ ТУТ: останавливаем всплытие всех кликов из модалки к карточке
         onClick={(e) => e.stopPropagation()}
-        fullWidth
-        maxWidth="xs"
+        maxWidth={false}
+        transitionDuration={{ enter: 180, exit: 140 }}
+        PaperProps={{
+          sx: {
+            width: 440,
+            maxWidth: "94vw",
+            maxHeight: "calc(100vh - 64px)",
+            borderRadius: "24px",
+            backgroundImage: "none",
+            display: "flex",
+            flexDirection: "column",
+            overflow: "hidden",
+          },
+        }}
       >
-        <DialogTitle sx={{ fontWeight: 800 }}>Метки человека</DialogTitle>
-        <DialogContent sx={{ p: 0 }}>
-          <List sx={{ pt: 0 }}>
-            {tags.map((tag) => {
-              const isChecked = myTagIds.includes(tag.id);
-              return (
-                <ListItem
-                  key={tag.id}
-                  disablePadding
-                  secondaryAction={
-                    <IconButton
-                      edge="end"
-                      color="error"
-                      onClick={(e) => {
-                        e.stopPropagation(); // На всякий случай
-                        deleteTag(tag.id);
-                      }}
-                      size="small"
-                    >
-                      <DeleteIcon fontSize="small" />
-                    </IconButton>
-                  }
-                >
-                  <ListItemText
-                    sx={{ pl: 2, m: 0, cursor: "pointer" }}
-                    onClick={() => togglePersonTag(personId, tag.id)}
-                    primary={
-                      <Box display="flex" alignItems="center" gap={1.5} py={1}>
+        <Box sx={{ p: 3, pb: 2, overflowY: "auto" }}>
+          <Typography
+            variant="h6"
+            sx={{ textAlign: "center", fontWeight: 700, mb: 2.5 }}
+          >
+            Метки человека
+          </Typography>
+
+          {isCreating ? (
+            <Box component="form" onSubmit={handleAddTag}>
+              <Typography variant="overline" sx={sectionLabelSx}>
+                Новая метка
+              </Typography>
+              <TextField
+                size="small"
+                fullWidth
+                autoFocus
+                placeholder="Название метки"
+                value={newTagName}
+                onChange={(e) => setNewTagName(e.target.value)}
+                sx={fieldSx}
+                inputProps={{ maxLength: 24 }}
+              />
+
+              <Typography
+                variant="overline"
+                sx={{ ...sectionLabelSx, mt: 2.5 }}
+              >
+                Цвет
+              </Typography>
+              <Stack
+                direction="row"
+                spacing={1}
+                useFlexGap
+                flexWrap="wrap"
+                sx={{ mt: 0.5 }}
+              >
+                {DEFAULT_PALETTE.map((color) => (
+                  <Box
+                    component="button"
+                    type="button"
+                    key={color}
+                    aria-label={`Выбрать цвет ${color}`}
+                    onClick={() => setNewTagColor(color)}
+                    sx={{
+                      width: 30,
+                      height: 30,
+                      p: 0,
+                      borderRadius: "50%",
+                      bgcolor: color,
+                      cursor: "pointer",
+                      border: "2px solid",
+                      borderColor:
+                        newTagColor === color
+                          ? theme.palette.text.primary
+                          : "transparent",
+                      outline: "none",
+                      transition: "0.2s",
+                      "&:hover": { transform: "scale(1.08)" },
+                    }}
+                  />
+                ))}
+              </Stack>
+
+              <Stack
+                direction="row"
+                alignItems="center"
+                gap={1.5}
+                sx={{
+                  mt: 2.5,
+                  px: 1.5,
+                  py: 1,
+                  borderRadius: "12px",
+                  bgcolor: "action.hover",
+                  minHeight: 40,
+                }}
+              >
+                <SellIcon sx={{ fontSize: 18, color: newTagColor }} />
+                <Typography variant="body2" color="text.secondary" noWrap>
+                  {newTagName.trim() || "Предпросмотр метки"}
+                </Typography>
+              </Stack>
+            </Box>
+          ) : (
+            <>
+              <Box
+                sx={{
+                  border: "1px solid",
+                  borderColor: "divider",
+                  borderRadius: "16px",
+                  overflow: "hidden",
+                }}
+              >
+                {tags.length === 0 ? (
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ textAlign: "center", px: 2, py: 3 }}
+                  >
+                    Меток пока нет
+                  </Typography>
+                ) : (
+                  tags.map((tag, index) => {
+                    const isChecked = myTagIds.includes(tag.id);
+                    return (
+                      <Box
+                        key={tag.id}
+                        onClick={() => togglePersonTag(personId, tag.id)}
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 1.5,
+                          minHeight: 44,
+                          px: 1.5,
+                          py: 0.75,
+                          cursor: "pointer",
+                          borderTop: index === 0 ? "none" : "1px solid",
+                          borderColor: "divider",
+                          "&:hover": { bgcolor: "action.hover" },
+                        }}
+                      >
                         <Checkbox
-                          checked={isChecked}
                           size="small"
+                          checked={isChecked}
+                          onChange={() => togglePersonTag(personId, tag.id)}
+                          onClick={(e) => e.stopPropagation()}
                           sx={{
                             p: 0,
                             color: tag.color,
                             "&.Mui-checked": { color: tag.color },
                           }}
                         />
-                        <SellIcon
+                        <SellIcon sx={{ fontSize: 18, color: tag.color }} />
+                        <Typography
+                          variant="body2"
+                          fontWeight={isChecked ? 600 : 400}
                           sx={{
-                            color: tag.color,
+                            flex: 1,
+                            minWidth: 0,
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
                           }}
-                        />
-                        <Typography variant="body2">{tag.name}</Typography>
+                        >
+                          {tag.name}
+                        </Typography>
+                        <Tooltip
+                          title="Удалить метку у всех людей"
+                          arrow
+                          placement="top"
+                        >
+                          <IconButton
+                            size="small"
+                            aria-label={`Удалить метку «${tag.name}»`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              deleteTag(tag.id);
+                            }}
+                            sx={{
+                              color: "text.secondary",
+                              "&:hover": {
+                                color: "error.main",
+                                bgcolor: alpha(theme.palette.error.main, 0.1),
+                              },
+                            }}
+                          >
+                            <DeleteIcon sx={{ fontSize: 18 }} />
+                          </IconButton>
+                        </Tooltip>
                       </Box>
-                    }
-                  />
-                </ListItem>
-              );
-            })}
-          </List>
+                    );
+                  })
+                )}
+              </Box>
 
-          <Box
-            sx={{
-              p: 2,
-              bgcolor: alpha(theme.palette.divider, 0.05),
-              borderTop: "1px solid",
-              borderColor: "divider",
-            }}
-          >
-            {!isCreating ? (
+              {tags.length > 0 ? (
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ display: "block", mt: 1, px: 0.5 }}
+                >
+                  {canAddNew
+                    ? "Удаление метки убирает её у всех людей."
+                    : "Достигнут лимит: 8 меток."}
+                </Typography>
+              ) : (
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ display: "block", mt: 1, px: 0.5 }}
+                >
+                  Метки помогают отмечать людей в списке.
+                </Typography>
+              )}
+            </>
+          )}
+        </Box>
+
+        <DialogActionsBar>
+          {isCreating ? (
+            <>
+              <DialogActionButton onClick={handleCancelCreate}>
+                Отмена
+              </DialogActionButton>
+              <DialogActionButton
+                tone="primary"
+                onClick={handleAddTag}
+                disabled={!newTagName.trim()}
+              >
+                Добавить
+              </DialogActionButton>
+            </>
+          ) : (
+            <>
               <DialogActionButton
                 startIcon={<AddIcon />}
                 disabled={!canAddNew}
                 onClick={() => setIsCreating(true)}
-                sx={{ width: "100%", maxWidth: "100%" }}
               >
-                {canAddNew
-                  ? "Создать новую метку"
-                  : "Достигнут лимит меток (8)"}
+                Создать метку
               </DialogActionButton>
-            ) : (
-              <Stack spacing={2}>
-                <TextField
-                  size="small"
-                  placeholder="Название метки..."
-                  value={newTagName}
-                  onChange={(e) => setNewTagName(e.target.value)}
-                  autoFocus
-                />
-                <Stack direction="row" spacing={1} justifyContent="center">
-                  {DEFAULT_PALETTE.map((color) => (
-                    <Box
-                      key={color}
-                      onClick={() => setNewTagColor(color)}
-                      sx={{
-                        width: 24,
-                        height: 24,
-                        borderRadius: "50%",
-                        bgcolor: color,
-                        cursor: "pointer",
-                        border: "2px solid",
-                        borderColor:
-                          newTagColor === color
-                            ? theme.palette.text.primary
-                            : "transparent",
-                        transition: "0.2s",
-                      }}
-                    />
-                  ))}
-                </Stack>
-                <DialogActionsBar sx={{ px: 0, pt: 0, pb: 0 }}>
-                  <DialogActionButton onClick={() => setIsCreating(false)}>
-                    Отмена
-                  </DialogActionButton>
-                  <DialogActionButton tone="primary" onClick={handleAddTag}>
-                    Добавить
-                  </DialogActionButton>
-                </DialogActionsBar>
-              </Stack>
-            )}
-          </Box>
-        </DialogContent>
+              <DialogActionButton tone="primary" onClick={handleClose}>
+                Готово
+              </DialogActionButton>
+            </>
+          )}
+        </DialogActionsBar>
       </Dialog>
     </>
   );
