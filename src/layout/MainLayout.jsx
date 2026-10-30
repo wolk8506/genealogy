@@ -105,6 +105,10 @@ import InspectorPanel from "./InspectorPanel";
 import ExternalInspectorPanel from "./ExternalInspectorPanel";
 import MapInspectorPanel from "./MapInspectorPanel";
 import PhotoInspectorPanel from "./PhotoInspectorPanel";
+import {
+  INSPECTOR_TRANSITION_EASING,
+  INSPECTOR_TRANSITION_MS,
+} from "./inspectorPanelTransition";
 import SidebarRightIcon from "../components/svg/SidebarRightIcon";
 import useMemories from "../hooks/useMemories";
 import { countPendingReviewFaces, countNoFacePhotos } from "../utils/photoFaces";
@@ -1096,7 +1100,7 @@ export default function MainLayout() {
               (isFamiliesDetail && familiesPanelOpen)
                 ? "340px"
                 : 0,
-            transition: "margin-right 0.3s ease",
+            transition: `margin-right ${INSPECTOR_TRANSITION_MS}ms ${INSPECTOR_TRANSITION_EASING}`,
             // pt: 1,
             pr: isMapPage || isFamiliesPage ? 0 : 1,
             pb: isMapPage || isFamiliesPage ? 0 : 1,
