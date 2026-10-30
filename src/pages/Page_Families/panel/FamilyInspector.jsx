@@ -9,6 +9,7 @@ import PersonRoundedIcon from "@mui/icons-material/PersonRounded";
 import FamilyRestroomRoundedIcon from "@mui/icons-material/FamilyRestroomRounded";
 import PersonSummary from "./PersonSummary";
 import FamilySummary from "./FamilySummary";
+import { inspectorDrawerTransitionProps } from "../../../layout/inspectorPanelTransition";
 
 const TABS = [
   { id: "person", label: "Человек", icon: PersonRoundedIcon },
@@ -44,7 +45,7 @@ export default function FamilyInspector({
       open={open}
       onClose={onClose}
       variant="persistent"
-      transitionDuration={0}
+      {...inspectorDrawerTransitionProps}
       PaperProps={{
         sx: {
           top: 50,
