@@ -1,5 +1,8 @@
 import React, { useEffect, useState } from "react";
 import {
+  Avatar,
+  Button,
+  IconButton,
   Stack,
   Typography,
   CircularProgress,
@@ -9,9 +12,12 @@ import {
   Tab,
 } from "@mui/material";
 import { useTheme, alpha } from "@mui/material/styles";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import PeopleAltRoundedIcon from "@mui/icons-material/PeopleAltRounded";
 import TrashFillIcon from "../../components/svg/TrashFillIcon";
+import { RowIcon } from "../Page_Settings/settingsUi";
 import { PersonCard } from "./PersonCard";
 import { ExternalEntityCard } from "../Page_External/ExternalEntityCard";
 import { useNotificationStore } from "../../store/useNotificationStore";
@@ -20,7 +26,7 @@ import { getExternalEntityLabel } from "../../utils/externalEntities";
 
 export default function DeletedPeoplePage() {
   const theme = useTheme();
-  const isDark = theme.palette.mode === "dark";
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const tab = searchParams.get("tab") === "external" ? "external" : "people";
 
@@ -207,62 +213,135 @@ export default function DeletedPeoplePage() {
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          py: 10,
+          minHeight: "calc(100vh - 80px)",
           px: 3,
-          borderRadius: 4,
-          bgcolor: isDark ? alpha("#fff", 0.02) : alpha("#000", 0.02),
-          border: "2px dashed",
-          borderColor: "divider",
+          textAlign: "center",
+          animation: "fadeIn 0.8s ease-out",
+          "@keyframes fadeIn": {
+            from: { opacity: 0, transform: "translateY(20px)" },
+            to: { opacity: 1, transform: "translateY(0)" },
+          },
         }}
       >
         <Box
           sx={{
-            p: 2,
-            borderRadius: "50%",
-            bgcolor: alpha(theme.palette.success.main, 0.1),
-            mb: 2,
+            p: { xs: 4, md: 6 },
+            maxWidth: 500,
+            borderRadius: "24px",
+            bgcolor: alpha(theme.palette.background.paper, 0.4),
+            border: "1px solid",
+            borderColor: "divider",
+            backdropFilter: "blur(10px)",
+            boxShadow: "0 8px 32px rgba(0,0,0,0.1)",
           }}
         >
-          <TrashFillIcon
-            sx={{
-              fontSize: 50,
-              width: "100px",
-              height: "92px",
-              color: "success.main",
-              opacity: 0.5,
-            }}
-          />
+          <Stack spacing={3} alignItems="center">
+            <Box sx={{ position: "relative" }}>
+              <Box
+                sx={{
+                  position: "absolute",
+                  inset: 0,
+                  bgcolor: theme.palette.success.main,
+                  filter: "blur(25px)",
+                  opacity: 0.15,
+                  borderRadius: "50%",
+                }}
+              />
+              <Avatar
+                sx={{
+                  width: 100,
+                  height: 100,
+                  border: "4px solid",
+                  borderColor: "background.paper",
+                  boxShadow: theme.shadows[4],
+                  bgcolor: alpha(theme.palette.success.main, 0.12),
+                  color: "success.main",
+                }}
+              >
+                <TrashFillIcon sx={{ fontSize: 48 }} />
+              </Avatar>
+            </Box>
+
+            <Box>
+              <Typography variant="h4" sx={{ fontWeight: 800, mb: 1 }}>
+                Корзина пуста
+              </Typography>
+              <Typography
+                variant="body1"
+                sx={{ color: "text.secondary", maxWidth: 360, mx: "auto" }}
+              >
+                Здесь временно хранятся люди и записи справочника, которые вы
+                переместили из основных списков.
+              </Typography>
+            </Box>
+
+            <Button
+              onClick={() => navigate("/")}
+              variant="contained"
+              size="large"
+              startIcon={<PeopleAltRoundedIcon />}
+              sx={{
+                height: 32,
+                borderRadius: "999px",
+                px: 2,
+                py: 0,
+                textTransform: "none",
+                fontSize: "0.8125rem",
+                lineHeight: 1.2,
+                fontWeight: 700,
+                boxShadow: "0 4px 14px 0 rgba(0,118,255,0.39)",
+                "& .MuiButton-startIcon": {
+                  mr: 0.5,
+                  ml: 0,
+                  "& > *:nth-of-type(1)": { fontSize: 16 },
+                },
+              }}
+            >
+              К людям
+            </Button>
+          </Stack>
         </Box>
-        <Typography
-          variant="h6"
-          sx={{ fontWeight: 700, color: "text.secondary" }}
-        >
-          Корзина пуста
-        </Typography>
-        <Typography
-          variant="body2"
-          sx={{
-            color: "text.disabled",
-            mt: 1,
-            textAlign: "center",
-            maxWidth: 360,
-          }}
-        >
-          Здесь временно хранятся люди и записи справочника, которые вы
-          переместили из основных списков.
-        </Typography>
       </Box>
     );
   }
 
   return (
     <Box sx={{ p: { xs: 1, md: 3 } }}>
-      <Typography
-        variant="h5"
-        sx={{ mb: 2, fontWeight: 800, color: "error.main" }}
+      <Box
+        sx={{
+          px: 2,
+          pt: 2,
+          pb: 1.5,
+          display: "flex",
+          alignItems: "center",
+          gap: 1.5,
+        }}
       >
-        Корзина ({totalCount})
-      </Typography>
+        <IconButton
+          size="small"
+          onClick={() => navigate("/")}
+          aria-label="Назад"
+          sx={{ ml: -0.75, mr: -0.5, color: "text.secondary" }}
+        >
+          <ArrowBackIcon sx={{ fontSize: 20 }} />
+        </IconButton>
+        <RowIcon bg="red">
+          <TrashFillIcon sx={{ fontSize: 18 }} />
+        </RowIcon>
+        <Box sx={{ minWidth: 0 }}>
+          <Typography variant="subtitle1" fontWeight={700} noWrap>
+            Корзина ({totalCount})
+          </Typography>
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            display="block"
+            noWrap
+          >
+            Удалённые люди и записи справочника
+          </Typography>
+        </Box>
+      </Box>
 
       <Tabs
         value={tab}

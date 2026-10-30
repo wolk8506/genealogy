@@ -206,6 +206,8 @@ contextBridge.exposeInMainWorld("storageAPI", {
   switch: (dirPath) => ipcRenderer.invoke("storage:switch", dirPath),
   add: (dirPath, options) => ipcRenderer.invoke("storage:add", dirPath, options),
   remove: (dirPath) => ipcRenderer.invoke("storage:remove", dirPath),
+  consumeStartupNotice: () =>
+    ipcRenderer.invoke("storage:consume-startup-notice"),
   onFallback: (callback) => {
     const subscription = (_, info) => callback(info);
     ipcRenderer.on("storage:fallback", subscription);

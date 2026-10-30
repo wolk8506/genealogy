@@ -28,6 +28,10 @@ import {
 } from "../utils/photoFaces";
 import { getExternalEntityLabel } from "../utils/externalEntities";
 import { syncReferencesAfterPhotoSave } from "../utils/faceIndex";
+import {
+  inspectorDrawerTransitionProps,
+  inspectorPaperSx,
+} from "./inspectorPanelTransition";
 
 function FieldLabel({ children }) {
   return (
@@ -286,9 +290,9 @@ export default function PhotoInspectorPanel({ allPeople = [] }) {
         open={open}
         onClose={toggle}
         variant="persistent"
-        transitionDuration={0}
+        {...inspectorDrawerTransitionProps}
         PaperProps={{
-          sx: { top: 50, height: "calc(100% - 50px)" },
+          sx: { top: 50, height: "calc(100% - 50px)", ...inspectorPaperSx },
         }}
       >
         <Box

@@ -50,6 +50,7 @@ import PetsIcon from "@mui/icons-material/Pets";
 import PersonOutlineIcon from "@mui/icons-material/PersonOutline";
 
 import AppDrawer, { DrawerHeader } from "./AppDrawer";
+import PageBackground from "./PageBackground";
 import useAppHotkeys from "../hooks/useAppHotkeys";
 
 import PeopleListPage from "../pages/Page_Main/PeopleListPage";
@@ -105,6 +106,10 @@ import InspectorPanel from "./InspectorPanel";
 import ExternalInspectorPanel from "./ExternalInspectorPanel";
 import MapInspectorPanel from "./MapInspectorPanel";
 import PhotoInspectorPanel from "./PhotoInspectorPanel";
+import {
+  INSPECTOR_TRANSITION_EASING,
+  INSPECTOR_TRANSITION_MS,
+} from "./inspectorPanelTransition";
 import SidebarRightIcon from "../components/svg/SidebarRightIcon";
 import useMemories from "../hooks/useMemories";
 import { countPendingReviewFaces, countNoFacePhotos } from "../utils/photoFaces";
@@ -114,6 +119,7 @@ import { usePhotoInspectorStore } from "../store/usePhotoInspectorStore";
 
 import GalleryToolbar from "./bar_GlobalPhotoGallery/GalleryToolbar";
 import FamiliesToolbar from "./bar_Families/FamiliesToolbar";
+import FamiliesCountPill from "./bar_Families/FamiliesCountPill";
 import TimelineToolbar from "./bar_Timeline/TimelineToolbar";
 import {
   parseTimelineSearch,
@@ -366,6 +372,16 @@ export default function MainLayout() {
   const [relationPersonId, setRelationPersonId] = useState(null);
   const isExternalPage = location.pathname === "/external";
   const isMapPage = location.pathname === "/map";
+
+  // Фон страницы в оттенке иконки раздела: «Люди», «Семьи», «Справочник».
+  const pageAccent =
+    isMainPage || location.pathname === "/people"
+      ? "blue"
+      : isFamiliesPage
+        ? "green"
+        : isExternalPage
+          ? "orange"
+          : null;
   const [externalPanelOpen, setExternalPanelOpen] = useState(true);
   const [selectedExternalId, setSelectedExternalId] = useState(null);
   const [externalListRefreshKey, setExternalListRefreshKey] = useState(0);
@@ -741,10 +757,21 @@ export default function MainLayout() {
   } else if (location.pathname === "/trash") {
     pageTitle = (
       <Box sx={{ display: "flex", alignItems: "center" }}>
-        <Box sx={{ display: "flex", alignItems: "center", mr: 2 }}>
-          <TrashFillIcon color={isDark ? "primary" : "prymary"} />
+        <Box sx={{ display: "flex", alignItems: "center", mr: 1 }}>
+          <TrashFillIcon
+            color={isDark ? "primary" : "prymary"}
+            sx={{ fontSize: 18 }}
+          />
         </Box>
-        <Typography variant="h6" noWrap>
+        <Typography
+          noWrap
+          sx={{
+            fontSize: "0.8125rem",
+            fontWeight: 600,
+            letterSpacing: "-0.01em",
+            lineHeight: 1.2,
+          }}
+        >
           Корзина
         </Typography>
       </Box>
@@ -847,6 +874,12 @@ export default function MainLayout() {
 
             <NavigationButtons />
             <NotificationBell />
+
+            {isFamiliesPage && !loading && familiesView && (
+              <Box sx={{ ml: "12px", display: "inline-flex" }}>
+                <FamiliesCountPill count={familiesView.families.length} />
+              </Box>
+            )}
 
             {match && (
               <Box sx={{ flex: 1, minWidth: 0, display: "flex" }}>
@@ -1096,7 +1129,7 @@ export default function MainLayout() {
               (isFamiliesDetail && familiesPanelOpen)
                 ? "340px"
                 : 0,
-            transition: "margin-right 0.3s ease",
+            transition: `margin-right ${INSPECTOR_TRANSITION_MS}ms ${INSPECTOR_TRANSITION_EASING}`,
             // pt: 1,
             pr: isMapPage || isFamiliesPage ? 0 : 1,
             pb: isMapPage || isFamiliesPage ? 0 : 1,
@@ -1107,158 +1140,160 @@ export default function MainLayout() {
         >
           <DrawerHeader />
           <UpdateBanner onOpenSettings={() => navigate("/settings")} />
-          <Suspense fallback={<RouteFallback />}>
-          <Routes>
-            <Route
-              path="/"
-              element={
-                <PeopleListPage
-                  search={peopleSearch} // Используем стейт людей
-                  filters={filters}
-                  sortOrder={sortOrder}
-                  filterOpen={filterOpen}
-                  setFilterOpen={setFilterOpen}
-                  setFilters={setFilters}
-                  onShowRelations={(id) => {
-                    setRelationPersonId(id);
-                    setInspectorTab("relations");
-                    setMemoriesOpen(true);
-                  }}
+          <PageBackground accent={pageAccent}>
+            <Suspense fallback={<RouteFallback />}>
+              <Routes>
+                <Route
+                  path="/"
+                  element={
+                    <PeopleListPage
+                      search={peopleSearch} // Используем стейт людей
+                      filters={filters}
+                      sortOrder={sortOrder}
+                      filterOpen={filterOpen}
+                      setFilterOpen={setFilterOpen}
+                      setFilters={setFilters}
+                      onShowRelations={(id) => {
+                        setRelationPersonId(id);
+                        setInspectorTab("relations");
+                        setMemoriesOpen(true);
+                      }}
+                    />
+                  }
                 />
-              }
-            />
-            {/* <Route path="/add" element={<AddPersonPage />} /> */}
-            <Route
-              path="/globalPhotoGallery"
-              element={
-                <GlobalPhotoGallery
-                  search={gallerySearch} // Используем стейт галереи
-                  selectedPeople={selectedPeople}
-                  groupBy={groupBy}
-                  sortDir={sortDir}
-                  initialPhotos={photos} // Данные
-                  initialPeople={allPeople} // Данные
-                  setPhotos={setPhotos} // Функция обновления
-                  setAllPeople={setAllPeople} // Функция обновления
-                  isLoading={loading}
-                  allPeople={allPeople}
-                  photos={photos}
-                  refresh={refreshAppData} // Чтобы галерея могла сама обновить шапку
+                {/* <Route path="/add" element={<AddPersonPage />} /> */}
+                <Route
+                  path="/globalPhotoGallery"
+                  element={
+                    <GlobalPhotoGallery
+                      search={gallerySearch} // Используем стейт галереи
+                      selectedPeople={selectedPeople}
+                      groupBy={groupBy}
+                      sortDir={sortDir}
+                      initialPhotos={photos} // Данные
+                      initialPeople={allPeople} // Данные
+                      setPhotos={setPhotos} // Функция обновления
+                      setAllPeople={setAllPeople} // Функция обновления
+                      isLoading={loading}
+                      allPeople={allPeople}
+                      photos={photos}
+                      refresh={refreshAppData} // Чтобы галерея могла сама обновить шапку
+                    />
+                  }
                 />
-              }
-            />
-            <Route path="/people" element={<PeopleListPage />} />
-            <Route
-              path="/person/:id"
-              element={
-                <PersonPage
-                  ref={personPageRef}
-                  infoProps={{
-                    isEditing: isInfoEditing,
-                    setIsEditing: setIsInfoEditing,
-                    requestToggleRef: infoRequestToggleRef, // Реф для связи с тулбаром
-                  }}
-                  activeElement={activeElement}
-                  galleryProps={{
-                    search: galleryPersonSearch,
-                    groupBy: galleryGroupBy,
-                    sortDir: gallerySortDir,
-                    uploadTrigger: uploadTrigger,
-                  }}
-                  bioProps={{
-                    isEditing: isBioEditing,
-                    setIsEditing: setIsBioEditing,
-                    execRef: bioExecRef,
-                    requestToggleRef: bioRequestToggleRef,
-                    isNavVisible: isBioNavVisible,
-                    onDirtyChange: setIsBioDirty,
-                    searchQuery: bioSearchQuery,
-                    searchMatchIndex: bioSearchMatchIndex,
-                    onSearchMatchCountChange: setBioSearchMatchCount,
-                  }}
-                  treeProps={{
-                    mode: treeMode,
-                    treePageRef: treePageRef, // Передаем реф
-                  }}
+                <Route path="/people" element={<PeopleListPage />} />
+                <Route
+                  path="/person/:id"
+                  element={
+                    <PersonPage
+                      ref={personPageRef}
+                      infoProps={{
+                        isEditing: isInfoEditing,
+                        setIsEditing: setIsInfoEditing,
+                        requestToggleRef: infoRequestToggleRef, // Реф для связи с тулбаром
+                      }}
+                      activeElement={activeElement}
+                      galleryProps={{
+                        search: galleryPersonSearch,
+                        groupBy: galleryGroupBy,
+                        sortDir: gallerySortDir,
+                        uploadTrigger: uploadTrigger,
+                      }}
+                      bioProps={{
+                        isEditing: isBioEditing,
+                        setIsEditing: setIsBioEditing,
+                        execRef: bioExecRef,
+                        requestToggleRef: bioRequestToggleRef,
+                        isNavVisible: isBioNavVisible,
+                        onDirtyChange: setIsBioDirty,
+                        searchQuery: bioSearchQuery,
+                        searchMatchIndex: bioSearchMatchIndex,
+                        onSearchMatchCountChange: setBioSearchMatchCount,
+                      }}
+                      treeProps={{
+                        mode: treeMode,
+                        treePageRef: treePageRef, // Передаем реф
+                      }}
+                    />
+                  }
                 />
-              }
-            />
-            <Route
-              path="/families"
-              element={<FamiliesPage {...familiesRouteProps} />}
-            />
-            <Route
-              path="/families/:familyKey"
-              element={<FamiliesPage {...familiesRouteProps} />}
-            />
-            <Route path="/settings" element={<ArchivedPeoplePage />} />
-            <Route
-              path="/settings/faces/review"
-              element={<FaceReviewQueuePage allPeople={allPeople} />}
-            />
-            <Route
-              path="/settings/faces/no-faces"
-              element={<FaceNoFacesQueuePage allPeople={allPeople} />}
-            />
-            <Route path="/archive" element={<Navigate to="/settings" replace />} />
+                <Route
+                  path="/families"
+                  element={<FamiliesPage {...familiesRouteProps} />}
+                />
+                <Route
+                  path="/families/:familyKey"
+                  element={<FamiliesPage {...familiesRouteProps} />}
+                />
+                <Route path="/settings" element={<ArchivedPeoplePage />} />
+                <Route
+                  path="/settings/faces/review"
+                  element={<FaceReviewQueuePage allPeople={allPeople} />}
+                />
+                <Route
+                  path="/settings/faces/no-faces"
+                  element={<FaceNoFacesQueuePage allPeople={allPeople} />}
+                />
+                <Route path="/archive" element={<Navigate to="/settings" replace />} />
 
-            {/* <Route path="/photoUploader" element={<PhotoUploader />} /> */}
-            <Route path="/about" element={<AboutPage />} />
-            <Route path="/trash" element={<DeletedPeoplePage />} />
-            <Route
-              path="/external"
-              element={
-                <ExternalPeoplePage
-                  externalSearch={externalSearch}
-                  setExternalSearch={setExternalSearch}
-                  externalTypeFilter={externalTypeFilter}
-                  setExternalTypeFilter={setExternalTypeFilter}
-                  selectedId={selectedExternalId}
-                  onSelect={handleSelectExternal}
-                  listRefreshKey={externalListRefreshKey}
+                {/* <Route path="/photoUploader" element={<PhotoUploader />} /> */}
+                <Route path="/about" element={<AboutPage />} />
+                <Route path="/trash" element={<DeletedPeoplePage />} />
+                <Route
+                  path="/external"
+                  element={
+                    <ExternalPeoplePage
+                      externalSearch={externalSearch}
+                      setExternalSearch={setExternalSearch}
+                      externalTypeFilter={externalTypeFilter}
+                      setExternalTypeFilter={setExternalTypeFilter}
+                      selectedId={selectedExternalId}
+                      onSelect={handleSelectExternal}
+                      listRefreshKey={externalListRefreshKey}
+                    />
+                  }
                 />
-              }
-            />
-            <Route path="/external/:id" element={<ExternalEntityPage />} />
-            <Route
-              path="/map"
-              element={
-                <MapPage
-                  showPhotos={mapShowPhotos}
-                  showEvents={mapShowEvents}
-                  showExternal={mapShowExternal}
-                  refreshKey={mapRefreshKey}
-                  clearGeocodeKey={mapClearGeocodeKey}
-                  dataRevision={appDataRevision}
-                  fitBoundsKey={mapFitBoundsKey}
-                  selectedPeopleIds={mapSelectedPeopleIds}
-                  focusPointKey={mapFocusKey}
-                  focusTrigger={mapFocusTrigger}
-                  allPeople={allPeople}
-                  onStatsChange={setMapStats}
+                <Route path="/external/:id" element={<ExternalEntityPage />} />
+                <Route
+                  path="/map"
+                  element={
+                    <MapPage
+                      showPhotos={mapShowPhotos}
+                      showEvents={mapShowEvents}
+                      showExternal={mapShowExternal}
+                      refreshKey={mapRefreshKey}
+                      clearGeocodeKey={mapClearGeocodeKey}
+                      dataRevision={appDataRevision}
+                      fitBoundsKey={mapFitBoundsKey}
+                      selectedPeopleIds={mapSelectedPeopleIds}
+                      focusPointKey={mapFocusKey}
+                      focusTrigger={mapFocusTrigger}
+                      allPeople={allPeople}
+                      onStatsChange={setMapStats}
+                    />
+                  }
                 />
-              }
-            />
-            <Route
-              path="/timeline"
-              element={
-                <TimelinePage
-                  photos={photos}
-                  allPeople={allPeople}
-                  level={timelineLevel}
-                  year={timelineYear}
-                  month={timelineMonth}
-                  onNavigate={navigateTimeline}
-                  showPhotos={timelineShowPhotos}
-                  showEvents={timelineShowEvents}
-                  showExternal={timelineShowExternal}
-                  filterPersonId={timelinePersonId}
-                  refresh={refreshAppData}
+                <Route
+                  path="/timeline"
+                  element={
+                    <TimelinePage
+                      photos={photos}
+                      allPeople={allPeople}
+                      level={timelineLevel}
+                      year={timelineYear}
+                      month={timelineMonth}
+                      onNavigate={navigateTimeline}
+                      showPhotos={timelineShowPhotos}
+                      showEvents={timelineShowEvents}
+                      showExternal={timelineShowExternal}
+                      filterPersonId={timelinePersonId}
+                      refresh={refreshAppData}
+                    />
+                  }
                 />
-              }
-            />
-          </Routes>
-          </Suspense>
+              </Routes>
+            </Suspense>
+          </PageBackground>
         </Box>
       </Box>
       <LicenseModal

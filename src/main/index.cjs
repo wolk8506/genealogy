@@ -33,7 +33,7 @@ const log = require("./logger.cjs").createLogger("main");
   require("./handlers/dataStore.cjs");
   require("./handlers/geocode.cjs");
   require("./handlers/clipboard.cjs");
-  const { resolveStartupRoot } = require("./handlers/storage.cjs");
+  const { resolveStartupRoot, notifyStartupProblem } = require("./handlers/storage.cjs");
   require("./handlers/photoConversion.cjs"); // для конвертера фотографий нв странице архив
   require("./handlers/serviceScript.cjs"); // для конвертера фотографий нв странице архив
   require("./handlers/face.cjs");
@@ -41,11 +41,19 @@ const log = require("./logger.cjs").createLogger("main");
 
   // чтобы не дергать whenReady() дважды — делаем один раз:
   app.whenReady().then(async () => {
-    // Стартовый корень: стандартный создаём при отсутствии,
-    // недоступный внешний — через диалог действий (см. storage.cjs).
-    const startup = resolveStartupRoot();
-    if (!startup) return; // пользователь вышел или критическая ошибка
-    const storageFallback = startup.fellBack;
+    // Стартовый корень: недоступная папка больше не блокирует запуск
+    // синхронным диалогом (см. storage.cjs).
+    let startup;
+    try {
+      startup = resolveStartupRoot();
+    } catch (error) {
+      log.error("Не удалось определить папку данных:", error.message);
+      startup = {
+        root: null,
+        fellBack: null,
+        problem: { activeRoot: "", defaultRoot: "", isDefault: false },
+      };
+    }
 
     const { initializeFaceDb } = require("./db/faceDb.cjs");
     try {
@@ -56,31 +64,57 @@ const log = require("./logger.cjs").createLogger("main");
 
     // Меню
     const { buildMenuTemplate } = require("./menu.cjs");
-    Menu.setApplicationMenu(Menu.buildFromTemplate(buildMenuTemplate()));
-    // 1) стартуем watcher
-    const { watchFolder } = require("./watchFolder.cjs");
-    watchFolder();
+    try {
+      Menu.setApplicationMenu(Menu.buildFromTemplate(buildMenuTemplate()));
+    } catch (error) {
+      log.error("Не удалось собрать меню приложения:", error.message);
+    }
 
-    // 2) создаём окно
+    // Окно создаём до любых необязательных операций: watcher, автообновление
+    // и проверка папок не должны оставлять пользователя без окна.
     const { createWindow } = require("./window.cjs");
     const win = createWindow();
 
-    if (storageFallback) {
+    if (startup.fellBack) {
       win.webContents.once("did-finish-load", () => {
-        win.webContents.send("storage:fallback", storageFallback);
+        win.webContents.send("storage:fallback", startup.fellBack);
       });
     }
 
-    // 3) подключаем ваш автоапдейтер-модуль
-    const { setupAutoUpdater } = require("./autoUpdater.cjs");
-    setupAutoUpdater(win);
+    if (startup.problem) {
+      win.webContents.once("did-finish-load", () => {
+        // Небольшая задержка, чтобы рендерер успел подписаться на navigate.
+        setTimeout(() => {
+          if (!win.isDestroyed()) {
+            notifyStartupProblem(win, startup.problem);
+          }
+        }, 600);
+      });
+    }
 
-    // 4) и тут же — проверяем апдейт и пушим нотификацию
+    // Наблюдение за папкой — необязательная функция, ошибки только логируем.
+    try {
+      const { watchFolder } = require("./watchFolder.cjs");
+      watchFolder();
+    } catch (error) {
+      log.warn("Не удалось запустить наблюдение за папкой:", error.message);
+    }
+
+    // Автоапдейтер не должен мешать загрузке окна.
+    try {
+      const { setupAutoUpdater } = require("./autoUpdater.cjs");
+      setupAutoUpdater(win);
+    } catch (error) {
+      log.warn("Не удалось инициализировать автообновление:", error.message);
+    }
+
     try {
       const { updateInfo } = await autoUpdater.checkForUpdates();
       if (updateInfo && updateInfo.version !== app.getVersion()) {
         // пришло что-то новое — шлём в рендер баннер
-        win.webContents.send("app:update-available", updateInfo);
+        if (!win.isDestroyed()) {
+          win.webContents.send("app:update-available", updateInfo);
+        }
 
         // и системная нотификация
         new Notification({

@@ -4,15 +4,18 @@
 import React, { useDeferredValue, useMemo } from "react";
 import {
   Alert,
+  Avatar,
   Box,
   Button,
   Skeleton,
   Stack,
   Typography,
+  alpha,
+  useTheme,
 } from "@mui/material";
 import FamilyRestroomRoundedIcon from "@mui/icons-material/FamilyRestroomRounded";
+import PersonAddAlt1Icon from "@mui/icons-material/PersonAddAlt1";
 import FamilyCard from "./FamilyCard";
-import { CountBadge } from "../../Page_Settings/settingsUi";
 import { familyGlassSx, RADII, titleSx } from "../familyTheme";
 import { visibleFamilies } from "../../../utils/families/sortFamilies";
 
@@ -50,6 +53,7 @@ export default function FamiliesCatalog({
   onGoPeople,
 }) {
   const deferredQuery = useDeferredValue(search);
+  const theme = useTheme();
 
   const visible = useMemo(
     () => visibleFamilies(families, deferredQuery, sort),
@@ -60,24 +64,7 @@ export default function FamiliesCatalog({
 
   return (
     <Box>
-      <Stack
-        direction="row"
-        alignItems="flex-end"
-        justifyContent="space-between"
-        sx={{ mb: 2.5, gap: 2, flexWrap: "wrap" }}
-      >
-        <Box>
-          <Stack direction="row" alignItems="center" spacing={1.25}>
-            <Typography sx={titleSx}>Семьи</Typography>
-            <CountBadge value={families.length} />
-          </Stack>
-          <Typography
-            sx={{ fontSize: 12.5, color: "text.secondary", mt: 0.5 }}
-          >
-            Собираются автоматически из связей и событий людей
-          </Typography>
-        </Box>
-      </Stack>
+      {/* <Typography sx={[titleSx, { mb: 2.5 }]}>Семьи</Typography> */}
 
       {notice && (
         <Alert
@@ -91,46 +78,103 @@ export default function FamiliesCatalog({
 
       {isEmptyBase ? (
         <Box
-          sx={[
-            familyGlassSx,
-            {
-              borderRadius: `${RADII.section}px`,
-              p: 6,
-              textAlign: "center",
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            minHeight: "calc(100vh - 110px)",
+            px: 3,
+            textAlign: "center",
+            animation: "fadeIn 0.8s ease-out",
+            "@keyframes fadeIn": {
+              from: { opacity: 0, transform: "translateY(20px)" },
+              to: { opacity: 1, transform: "translateY(0)" },
             },
-          ]}
+          }}
         >
-          <FamilyRestroomRoundedIcon
-            sx={{ fontSize: 44, color: "text.disabled" }}
-          />
-          <Typography sx={{ fontSize: 15, fontWeight: 600, mt: 1 }}>
-            Семей пока нет
-          </Typography>
-          <Typography
+          <Box
             sx={{
-              fontSize: 12.5,
-              color: "text.secondary",
-              mt: 0.5,
-              maxWidth: 460,
-              mx: "auto",
+              p: { xs: 4, md: 6 },
+              maxWidth: 500,
+              borderRadius: "24px",
+              bgcolor: alpha(theme.palette.background.paper, 0.4),
+              border: "1px solid",
+              borderColor: "divider",
+              backdropFilter: "blur(10px)",
+              boxShadow: "0 8px 32px rgba(0,0,0,0.1)",
             }}
           >
-            Семьи появятся автоматически, когда у людей будут указаны супруги
-            или общие дети. Отдельно заводить семью не нужно.
-          </Typography>
-          <Button
-            onClick={onGoPeople}
-            variant="contained"
-            disableElevation
-            sx={{
-              mt: 2,
-              textTransform: "none",
-              borderRadius: "10px",
-              fontSize: 12.5,
-            }}
-          >
-            К людям
-          </Button>
+            <Stack spacing={3} alignItems="center">
+              <Box sx={{ position: "relative" }}>
+                <Box
+                  sx={{
+                    position: "absolute",
+                    inset: 0,
+                    bgcolor: theme.palette.primary.main,
+                    filter: "blur(25px)",
+                    opacity: 0.15,
+                    borderRadius: "50%",
+                  }}
+                />
+                <Avatar
+                  sx={{
+                    width: 100,
+                    height: 100,
+                    border: "4px solid",
+                    borderColor: "background.paper",
+                    boxShadow: theme.shadows[4],
+                    bgcolor: alpha(theme.palette.primary.main, 0.12),
+                    color: "primary.main",
+                  }}
+                >
+                  <FamilyRestroomRoundedIcon sx={{ fontSize: 48 }} />
+                </Avatar>
+              </Box>
+
+              <Box>
+                <Typography variant="h4" sx={{ fontWeight: 800, mb: 1 }}>
+                  Семей пока нет
+                </Typography>
+                <Typography
+                  variant="body1"
+                  sx={{
+                    color: "text.secondary",
+                    maxWidth: 360,
+                    mx: "auto",
+                  }}
+                >
+                  Семьи появятся автоматически, когда у людей будут указаны
+                  супруги или общие дети. Отдельно заводить семью не нужно.
+                </Typography>
+              </Box>
+
+              <Button
+                onClick={onGoPeople}
+                variant="contained"
+                size="large"
+                startIcon={<PersonAddAlt1Icon />}
+                sx={{
+                  height: 32,
+                  borderRadius: "999px",
+                  px: 2,
+                  py: 0,
+                  textTransform: "none",
+                  fontSize: "0.8125rem",
+                  lineHeight: 1.2,
+                  fontWeight: 700,
+                  boxShadow: "0 4px 14px 0 rgba(0,118,255,0.39)",
+                  "& .MuiButton-startIcon": {
+                    mr: 0.5,
+                    ml: 0,
+                    "& > *:nth-of-type(1)": { fontSize: 16 },
+                  },
+                }}
+              >
+                К людям
+              </Button>
+            </Stack>
+          </Box>
         </Box>
       ) : visible.length === 0 ? (
         <Box

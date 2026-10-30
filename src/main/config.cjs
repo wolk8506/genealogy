@@ -111,9 +111,9 @@ function addRoot(dirPath) {
     throw new Error("Папка не найдена: " + normalized);
   }
   try {
-    fs.accessSync(normalized, fs.constants.R_OK | fs.constants.W_OK);
+    checkDirUsable(normalized);
   } catch {
-    throw new Error("Папка недоступна для записи: " + normalized);
+    throw new Error("Папка недоступна для работы: " + normalized);
   }
   const stored = readStorage();
   if (stored.roots.some((r) => samePath(r.path, normalized))) return getRoots();
@@ -156,6 +156,30 @@ function ensureBaseDir(dir = getBaseDir()) {
     fs.mkdirSync(dir, { recursive: true });
   }
   return dir;
+}
+
+// Настоящая проверка папки: accessSync не отражает read-only тома, ACL и
+// ограничения macOS (TCC). Приложению нужны и чтение содержимого, и запись,
+// поэтому проверяем листинг каталога и пробную запись с чтением обратно.
+function checkDirUsable(dir) {
+  fs.readdirSync(dir);
+
+  const probe = path.join(
+    dir,
+    `.genealogy-write-test-${process.pid}-${Date.now()}`,
+  );
+  try {
+    fs.writeFileSync(probe, "ok");
+    if (fs.readFileSync(probe, "utf8") !== "ok") {
+      throw new Error("не удалось прочитать пробный файл");
+    }
+  } finally {
+    try {
+      fs.unlinkSync(probe);
+    } catch {
+      // файл мог не создаться — удалять нечего
+    }
+  }
 }
 
 function peopleDir(personId) {
@@ -271,6 +295,7 @@ module.exports = {
   getDataPath,
   getPeopleRoot,
   ensureBaseDir,
+  checkDirUsable,
   peopleDir,
   photosDir,
   photosMetaPath,

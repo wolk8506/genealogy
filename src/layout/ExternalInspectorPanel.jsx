@@ -2,6 +2,10 @@ import React from "react";
 import { Drawer, Box, Typography } from "@mui/material";
 import ContactsIcon from "@mui/icons-material/Contacts";
 import ExternalEntityDetail from "../pages/Page_External/ExternalEntityDetail";
+import {
+  inspectorDrawerTransitionProps,
+  inspectorPaperSx,
+} from "./inspectorPanelTransition";
 
 export default function ExternalInspectorPanel({
   open,
@@ -17,12 +21,12 @@ export default function ExternalInspectorPanel({
       open={open}
       onClose={onClose}
       variant="persistent"
-      transitionDuration={0}
+      {...inspectorDrawerTransitionProps}
       PaperProps={{
         sx: {
           top: 50,
           height: "calc(100% - 50px)",
-          bgcolor: "background.default",
+          ...inspectorPaperSx,
           borderLeft: "1px solid",
           borderColor: "divider",
         },

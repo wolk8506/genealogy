@@ -140,6 +140,12 @@ export default function AppDrawer({ open, onClose, items }) {
               onClick={onClick}
               aria-current={isActive ? "page" : undefined}
               sx={(theme) => {
+                // Активный раздел в раскрытом меню подсвечиваем цветом его
+                // иконки, а не общим цветом приложения.
+                const accentColor =
+                  theme.palette.accents?.[accent] ||
+                  theme.palette.primary.main;
+
                 return {
                   position: "absolute",
                   // Раскрытое меню — сетка 2×N, свёрнутое — вертикальный рейл.
@@ -159,24 +165,30 @@ export default function AppDrawer({ open, onClose, items }) {
                   textAlign: "left",
                   backgroundColor: isActive
                     ? open
-                      ? theme.palette.primary.main
+                      ? accentColor
                       : theme.palette.action.selected
                     : open
                       ? theme.palette.action.hover
                       : "transparent",
                   color: isActive
                     ? open
-                      ? theme.palette.primary.contrastText
-                      : theme.palette.primary.main
+                      ? "#fff"
+                      : accentColor
                     : theme.palette.text.primary,
                   transition: tileTransition(theme),
 
                   "&:hover": {
                     backgroundColor: isActive
                       ? open
-                        ? theme.palette.primary.dark
+                        ? accentColor
                         : theme.palette.action.selected
                       : theme.palette.action.selected,
+                    // Лёгкое затемнение активной плитки: цвет остаётся
+                    // цветом раздела, но появляется отклик на наведение.
+                    backgroundImage:
+                      isActive && open
+                        ? "linear-gradient(rgba(0,0,0,0.08), rgba(0,0,0,0.08))"
+                        : "none",
                   },
                 };
               }}
@@ -204,7 +216,7 @@ export default function AppDrawer({ open, onClose, items }) {
                         ? accentColor
                         : "transparent",
                     color: isActive
-                      ? theme.palette.primary.main
+                      ? accentColor
                       : open
                         ? "#fff"
                         : theme.palette.text.primary,

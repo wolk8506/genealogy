@@ -1,6 +1,7 @@
 // src/main/window.cjs
 const { BrowserWindow, session } = require("electron");
 const path = require("path");
+const log = require("./logger.cjs").createLogger("window");
 const isDev = process.env.NODE_ENV === "development";
 
 // Разрешаем запросы геолокации из рендерера (локатор «Моё местоположение»).
@@ -60,6 +61,54 @@ function createWindow() {
   // });
 
   // --- КОНЕЦ БЛОКА СЛУШАТЕЛЕЙ ---
+
+  // Диагностика падений рендерера. Без этих обработчиков при крахе
+  // рендерера окно просто становится пустым, а main-процесс продолжает
+  // жить — снаружи это выглядит как «зависшее» приложение.
+  let crashReloads = 0;
+  let responsiveTimer = null;
+
+  win.webContents.on("render-process-gone", (_event, details) => {
+    log.error(
+      `Рендерер завершился: reason=${details.reason} exitCode=${details.exitCode}`,
+    );
+    if (details.reason === "clean-exit") return;
+    if (win.isDestroyed()) return;
+    if (crashReloads >= 2) {
+      log.error("Рендерер падает повторно — автоперезагрузка остановлена");
+      return;
+    }
+    crashReloads += 1;
+    setTimeout(() => {
+      if (win.isDestroyed()) return;
+      log.warn(`Перезагружаю окно после падения рендерера (#${crashReloads})`);
+      win.webContents.reload();
+    }, 300);
+  });
+
+  win.webContents.on("unresponsive", () => {
+    log.warn("Окно не отвечает");
+    // Если рендерер завис навсегда, перезагружаем его, чтобы не оставлять
+    // пользователя с мёртвым окном. Даём 15 секунд на восстановление.
+    if (responsiveTimer) clearTimeout(responsiveTimer);
+    responsiveTimer = setTimeout(() => {
+      if (win.isDestroyed()) return;
+      log.warn("Окно не отвечает 15 секунд — перезагружаю");
+      win.webContents.reload();
+    }, 15000);
+  });
+
+  win.webContents.on("responsive", () => {
+    log.info("Окно снова отвечает");
+    if (responsiveTimer) {
+      clearTimeout(responsiveTimer);
+      responsiveTimer = null;
+    }
+  });
+
+  win.webContents.on("did-fail-load", (_event, code, description, url) => {
+    log.error(`Не удалось загрузить страницу ${url}: ${code} ${description}`);
+  });
 
   setMainWindow(win);
   win.on("closed", () => require("./helpWindow.cjs").closeHelpWindow());

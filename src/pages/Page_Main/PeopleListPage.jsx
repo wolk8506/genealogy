@@ -367,7 +367,7 @@ export default function PeopleListPage({ search, filters, sortOrder, onShowRelat
 
   return (
     <>
-      <Stack spacing={3} sx={{ width: "100%" }}>
+      <Stack spacing={3} sx={{ width: "100%", pt: 1 }}>
         {gens.map((g) => (
             <Paper
               key={g}
@@ -389,14 +389,14 @@ export default function PeopleListPage({ search, filters, sortOrder, onShowRelat
               <Box
                 sx={{
                   position: "sticky",
-                  top: 50,
+                  top: 58,
                   zIndex: 20,
                   py: 1.5,
                   mb: 2,
                   display: "flex",
                   alignItems: "center",
                   gap: 1.5,
-                  bgcolor: alpha(theme.palette.background.default, 0.9),
+                  bgcolor: alpha(theme.palette.background.default, 0.4),
                   backdropFilter: "blur(12px)",
                   mx: -1,
                   px: 2,

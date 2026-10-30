@@ -30,6 +30,10 @@ import {
   SettingsRow,
   sectionLabelSx,
 } from "../pages/Page_Settings/settingsUi";
+import {
+  inspectorDrawerTransitionProps,
+  inspectorPaperSx,
+} from "./inspectorPanelTransition";
 
 function PersonHeader({ personId, allPeople, onFocusPerson }) {
   const navigate = useNavigate();
@@ -598,12 +602,12 @@ export default function InspectorPanel({
       open={open}
       onClose={onClose}
       variant="persistent"
-      transitionDuration={0}
+      {...inspectorDrawerTransitionProps}
       PaperProps={{
         sx: {
           top: 50,
           height: "calc(100% - 50px)",
-          bgcolor: "background.default",
+          ...inspectorPaperSx,
           borderLeft: "1px solid",
           borderColor: "divider",
         },

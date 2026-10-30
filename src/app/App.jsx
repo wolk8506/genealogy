@@ -6,6 +6,7 @@ import {
   Box,
 } from "@mui/material";
 import { keyframes } from "@mui/system";
+import { useSnackbar } from "notistack";
 
 import MainLayout from "../layout/MainLayout";
 import { ThemeContext } from "../theme/ThemeContext.cjs";
@@ -42,10 +43,41 @@ export default function App() {
   const [userPref, setUserPref] = useState("light"); // ручной выбор
   const [themeReady, setThemeReady] = useState(false);
   const loadSettings = useSettingsStore((state) => state.loadSettings);
+  const { enqueueSnackbar } = useSnackbar();
 
   useEffect(() => {
     loadSettings(); // Загружаем настройки из БД в память при старте
   }, []);
+
+  // Старт мог произойти не с той папкой данных (внешний диск отключён,
+  // нет прав доступа). Показываем это один раз после загрузки окна.
+  useEffect(() => {
+    let cancelled = false;
+    const api = window.storageAPI;
+    if (!api?.consumeStartupNotice) return undefined;
+
+    api
+      .consumeStartupNotice()
+      .then((notice) => {
+        if (cancelled || !notice) return;
+        if (notice.kind === "fallback") {
+          enqueueSnackbar(
+            `Папка «${notice.from}» недоступна. Включена стандартная: ${notice.to}. Прежнюю папку можно вернуть в настройках.`,
+            { variant: "warning", autoHideDuration: 12000 },
+          );
+        } else if (notice.kind === "unavailable") {
+          enqueueSnackbar(
+            "Нет доступа к папке данных. Выберите другое место хранения в настройках.",
+            { variant: "error", autoHideDuration: 12000 },
+          );
+        }
+      })
+      .catch(() => {});
+
+    return () => {
+      cancelled = true;
+    };
+  }, [enqueueSnackbar]);
 
   // начальная загрузка
   useEffect(() => {
