@@ -25,6 +25,7 @@ export const UpdateSettingsCard = ({ cardStyle }) => {
   const [updateInfo, setUpdateInfo] = useState(null);
   const [progress, setProgress] = useState(0);
   const [downloaded, setDownloaded] = useState(false);
+  const [installing, setInstalling] = useState(false);
   const [filePath, setFilePath] = useState("");
   const [error, setError] = useState(null);
 
@@ -39,14 +40,19 @@ export const UpdateSettingsCard = ({ cardStyle }) => {
       setDownloaded(true);
       setFilePath(path);
     });
-    window.updater.onError((msg) => setError(msg));
+    window.updater.onError((msg) => {
+      setError(msg);
+      setInstalling(false);
+    });
 
     return () => window.updater.removeAll();
   }, []);
 
   const handleInstall = () => {
+    setError(null);
+    setInstalling(true);
+    // Приложение закроется из main-процесса после запуска установщика.
     window.updater.install(filePath);
-    window.electronAPI.quitApp();
   };
 
   return (
@@ -153,7 +159,10 @@ export const UpdateSettingsCard = ({ cardStyle }) => {
                     </Box>
                     <AppButton
                       preset="secondary"
-                      onClick={() => window.updater.check()}
+                      onClick={() => {
+                        setError(null);
+                        window.updater.check();
+                      }}
                     >
                       Повторить
                     </AppButton>
@@ -223,9 +232,12 @@ export const UpdateSettingsCard = ({ cardStyle }) => {
                       preset="primary"
                       startIcon={<SystemUpdateAltIcon />}
                       onClick={handleInstall}
+                      disabled={installing}
                       sx={{ width: "100%" }}
                     >
-                      Установить и перезапустить
+                      {installing
+                        ? "Запуск установщика…"
+                        : "Установить и перезапустить"}
                     </AppButton>
                   ) : (
                     <AppButton

@@ -104,6 +104,20 @@ export const usePhotoInspectorStore = create((set, get) => ({
   // Переинициализировать черновик свежими данными фото (когда нет правок).
   resetDraft: (photo) => set({ draft: draftFromPhoto(photo), dirty: false }),
 
+  // Клик по пустому месту галереи снимает выделение.
+  // Несохранённые правки не теряем: пока черновик dirty, выделение остаётся.
+  clearSelection: () => {
+    if (get().dirty) return;
+    set({
+      selectedId: null,
+      draft: null,
+      dirty: false,
+      pendingFrom: null,
+      pendingPhoto: null,
+      pendingOpen: false,
+    });
+  },
+
   markSaved: () => set({ dirty: false }),
 
   toggle: () => set((s) => ({ open: !s.open })),

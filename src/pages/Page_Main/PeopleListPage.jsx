@@ -16,7 +16,9 @@ import AddPersonModal from "../../components/Dialog/AddPeopleDialog";
 import { useSearchParams } from "react-router-dom";
 
 import PersonAddAlt1Icon from "@mui/icons-material/PersonAddAlt1";
+import SearchOffIcon from "@mui/icons-material/SearchOff";
 import SettingsBackupRestoreIcon from "@mui/icons-material/SettingsBackupRestore";
+import RestoreFromTrashIcon from "@mui/icons-material/RestoreFromTrash";
 
 import appIcon from "../../img/app_icon.png";
 import { Link } from "react-router-dom";
@@ -24,6 +26,89 @@ import { useNotificationStore } from "../../store/useNotificationStore";
 import { PersonCard } from "./PersonCard";
 import { usePeopleListStore } from "../../store/usePeopleListStore";
 import { useTagsStore } from "../../store/useTagsStore";
+
+const pillButtonSx = {
+  height: 32,
+  borderRadius: "999px",
+  px: 2,
+  py: 0,
+  textTransform: "none",
+  fontSize: "0.8125rem",
+  lineHeight: 1.2,
+  fontWeight: 700,
+  boxShadow: "0 4px 14px 0 rgba(0,118,255,0.39)",
+  "& .MuiButton-startIcon": {
+    mr: 0.5,
+    ml: 0,
+    "& > *:nth-of-type(1)": { fontSize: 16 },
+  },
+};
+
+// Заглушка в стиле пустых состояний остальных разделов:
+// свечение, крупный заголовок, описание и действия.
+function ListEmpty({ avatar, glow, title, text, actions }) {
+  const theme = useTheme();
+
+  return (
+    <Box
+      sx={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        minHeight: "calc(100vh - 80px)",
+        px: 3,
+        textAlign: "center",
+        animation: "fadeIn 0.8s ease-out",
+        "@keyframes fadeIn": {
+          from: { opacity: 0, transform: "translateY(20px)" },
+          to: { opacity: 1, transform: "translateY(0)" },
+        },
+      }}
+    >
+      <Box
+        sx={{
+          p: { xs: 4, md: 6 },
+          maxWidth: 500,
+          borderRadius: "24px",
+          bgcolor: alpha(theme.palette.background.paper, 0.4),
+          border: "1px solid",
+          borderColor: "divider",
+          backdropFilter: "blur(10px)",
+          boxShadow: "0 8px 32px rgba(0,0,0,0.1)",
+        }}
+      >
+        <Stack spacing={3} alignItems="center">
+          <Box sx={{ position: "relative" }}>
+            <Box
+              sx={{
+                position: "absolute",
+                inset: 0,
+                bgcolor: glow || theme.palette.primary.main,
+                filter: "blur(25px)",
+                opacity: 0.15,
+                borderRadius: "50%",
+              }}
+            />
+            {avatar}
+          </Box>
+          <Box>
+            <Typography variant="h4" sx={{ fontWeight: 800, mb: 1 }}>
+              {title}
+            </Typography>
+            <Typography
+              variant="body1"
+              sx={{ color: "text.secondary", maxWidth: 360, mx: "auto" }}
+            >
+              {text}
+            </Typography>
+          </Box>
+          {actions}
+        </Stack>
+      </Box>
+    </Box>
+  );
+}
 
 /* Проверка диапазонов дат */
 function checkDateFilter(dateStr, filter) {
@@ -60,7 +145,15 @@ function checkDateFilter(dateStr, filter) {
   }
 }
 
-export default function PeopleListPage({ search, filters, sortOrder, onShowRelations }) {
+export default function PeopleListPage({
+  search,
+  filters,
+  sortOrder,
+  setSearch,
+  setFilters,
+  setFilterOpen,
+  onShowRelations,
+}) {
   const refreshArchiveStatus = usePeopleListStore(
     (state) => state.refreshArchiveStatus,
   );
@@ -230,76 +323,23 @@ export default function PeopleListPage({ search, filters, sortOrder, onShowRelat
 
   if (!people.length) {
     return (
-      <Box
-        sx={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          minHeight: "calc(100vh - 80px)", // Центрируем относительно экрана
-          px: 3,
-          textAlign: "center",
-          animation: "fadeIn 0.8s ease-out", // Простая анимация появления
-          "@keyframes fadeIn": {
-            from: { opacity: 0, transform: "translateY(20px)" },
-            to: { opacity: 1, transform: "translateY(0)" },
-          },
-        }}
-      >
-        {/* Центральная карточка */}
-        <Box
-          sx={{
-            p: { xs: 4, md: 6 },
-            maxWidth: 500,
-            borderRadius: "24px",
-            bgcolor: alpha(theme.palette.background.paper, 0.4),
-            border: "1px solid",
-            borderColor: "divider",
-            backdropFilter: "blur(10px)",
-            boxShadow: "0 8px 32px rgba(0,0,0,0.1)",
-          }}
-        >
-          <Stack spacing={3} alignItems="center">
-            {/* Иконка с эффектом свечения */}
-            <Box sx={{ position: "relative" }}>
-              <Box
-                sx={{
-                  position: "absolute",
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  bgcolor: theme.palette.primary.main,
-                  filter: "blur(25px)",
-                  opacity: 0.15,
-                  borderRadius: "50%",
-                }}
-              />
-              <Avatar
-                src={appIcon}
-                sx={{
-                  width: 100,
-                  height: 100,
-                  border: "4px solid",
-                  borderColor: "background.paper",
-                  boxShadow: theme.shadows[4],
-                }}
-              />
-            </Box>
-
-            <Box>
-              <Typography variant="h4" sx={{ fontWeight: 800, mb: 1 }}>
-                Генеалогия
-              </Typography>
-              <Typography
-                variant="body1"
-                sx={{ color: "text.secondary", maxWidth: 350, mx: "auto" }}
-              >
-                Ваше семейное древо пока пустует. Начните историю с первого
-                предка.
-              </Typography>
-            </Box>
-
+      <>
+        <ListEmpty
+          avatar={
+            <Avatar
+              src={appIcon}
+              sx={{
+                width: 100,
+                height: 100,
+                border: "4px solid",
+                borderColor: "background.paper",
+                boxShadow: theme.shadows[4],
+              }}
+            />
+          }
+          title="Генеалогия"
+          text="Ваше семейное древо пока пустует. Начните историю с первого предка."
+          actions={
             <Stack spacing={2} sx={{ width: "100%", mt: 2 }}>
               <Button
                 variant="contained"
@@ -307,22 +347,7 @@ export default function PeopleListPage({ search, filters, sortOrder, onShowRelat
                 to="/?action=add"
                 size="large"
                 startIcon={<PersonAddAlt1Icon />}
-                sx={{
-                  height: 32,
-                  borderRadius: "999px",
-                  px: 2,
-                  py: 0,
-                  textTransform: "none",
-                  fontSize: "0.8125rem",
-                  lineHeight: 1.2,
-                  fontWeight: 700,
-                  boxShadow: "0 4px 14px 0 rgba(0,118,255,0.39)",
-                  "& .MuiButton-startIcon": {
-                    mr: 0.5,
-                    ml: 0,
-                    "& > *:nth-of-type(1)": { fontSize: 16 },
-                  },
-                }}
+                sx={pillButtonSx}
               >
                 Добавить первого человека
               </Button>
@@ -334,20 +359,10 @@ export default function PeopleListPage({ search, filters, sortOrder, onShowRelat
                 size="large"
                 startIcon={<SettingsBackupRestoreIcon />}
                 sx={{
-                  height: 32,
-                  borderRadius: "999px",
-                  px: 2,
-                  py: 0,
-                  textTransform: "none",
-                  fontSize: "0.8125rem",
-                  lineHeight: 1.2,
+                  ...pillButtonSx,
+                  boxShadow: "none",
                   borderColor: alpha(theme.palette.divider, 0.5),
                   color: "text.primary",
-                  "& .MuiButton-startIcon": {
-                    mr: 0.5,
-                    ml: 0,
-                    "& > *:nth-of-type(1)": { fontSize: 16 },
-                  },
                   "&:hover": {
                     borderColor: "text.primary",
                     bgcolor: alpha(theme.palette.text.primary, 0.05),
@@ -357,11 +372,96 @@ export default function PeopleListPage({ search, filters, sortOrder, onShowRelat
                 Восстановить из бэкапа
               </Button>
             </Stack>
-          </Stack>
-        </Box>
+          }
+        />
 
         <AddPersonModal open={isModalOpen} onClose={handleCloseModal} />
-      </Box>
+      </>
+    );
+  }
+
+  // Все записи в корзине — в списке пусто, но библиотека не пустая.
+  if (!active.length) {
+    return (
+      <>
+        <ListEmpty
+          glow={theme.palette.warning.main}
+          avatar={
+            <Avatar
+              sx={{
+                width: 100,
+                height: 100,
+                border: "4px solid",
+                borderColor: "background.paper",
+                boxShadow: theme.shadows[4],
+                bgcolor: alpha(theme.palette.warning.main, 0.12),
+                color: "warning.main",
+              }}
+            >
+              <RestoreFromTrashIcon sx={{ fontSize: 48 }} />
+            </Avatar>
+          }
+          title="Все люди в корзине"
+          text="В списке никого нет: все записи перемещены в корзину. Восстановите нужных людей, чтобы они снова появились здесь."
+          actions={
+            <Button
+              variant="contained"
+              component={Link}
+              to="/trash"
+              size="large"
+              startIcon={<RestoreFromTrashIcon />}
+              sx={pillButtonSx}
+            >
+              Открыть корзину
+            </Button>
+          }
+        />
+
+        <AddPersonModal open={isModalOpen} onClose={handleCloseModal} />
+      </>
+    );
+  }
+
+  // Поиск или фильтры не дали результатов.
+  if (!filtered.length) {
+    return (
+      <>
+        <ListEmpty
+          avatar={
+            <Avatar
+              sx={{
+                width: 100,
+                height: 100,
+                border: "4px solid",
+                borderColor: "background.paper",
+                boxShadow: theme.shadows[4],
+                bgcolor: alpha(theme.palette.primary.main, 0.12),
+                color: "primary.main",
+              }}
+            >
+              <SearchOffIcon sx={{ fontSize: 48 }} />
+            </Avatar>
+          }
+          title="Ничего не найдено"
+          text="Измените запрос или сбросьте фильтры — поиск идёт по имени и ID, а фильтры ограничивают поколения, даты и метки."
+          actions={
+            <Button
+              variant="contained"
+              size="large"
+              onClick={() => {
+                setSearch?.("");
+                setFilters?.({ created: "", edited: "", gens: [], tags: [] });
+                setFilterOpen?.(false);
+              }}
+              sx={pillButtonSx}
+            >
+              Сбросить поиск и фильтры
+            </Button>
+          }
+        />
+
+        <AddPersonModal open={isModalOpen} onClose={handleCloseModal} />
+      </>
     );
   }
 

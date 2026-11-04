@@ -1,10 +1,11 @@
-const { ipcMain, app, shell, BrowserWindow } = require("electron");
+const { ipcMain, app, shell } = require("electron");
 const { getMainWindow } = require("./mainWindow.cjs");
 const log = require("./logger.cjs").createLogger("autoUpdater");
 
 const { autoUpdater } = require("electron-updater");
 const path = require("path");
 const fs = require("fs");
+const { spawn } = require("child_process");
 const { https } = require("follow-redirects");
 
 // отключаем авто-скачивание внутри electron-updater
@@ -125,6 +126,25 @@ async function downloadWithRetry(url, outputPath, win, attempts = 3) {
   }
 }
 
+// Запускает установщик отдельным процессом. На Windows используем spawn:
+// shell.openPath не даёт гарантии, что процесс стартовал до выхода приложения.
+function launchInstaller(filePath) {
+  if (process.platform !== "win32") {
+    return shell.openPath(filePath).then((error) => {
+      if (error) throw new Error(error);
+    });
+  }
+
+  return new Promise((resolve, reject) => {
+    const child = spawn(filePath, [], { detached: true, stdio: "ignore" });
+    child.once("error", reject);
+    child.once("spawn", () => {
+      child.unref();
+      resolve();
+    });
+  });
+}
+
 function setupAutoUpdater(win) {
   log.info("🛠 setupAutoUpdater инициализирован");
   let updateInfo = null;
@@ -181,16 +201,47 @@ function setupAutoUpdater(win) {
     }
   });
 
-  // 3) Установка (открыть инсталлятор)
-  ipcMain.on("update:install", (_evt, filePath) => {
-    shell.openPath(filePath);
+  // 3) Установка: сначала убеждаемся, что инсталлятор реально запущен,
+  // и только потом выходим. Иначе окно закрывается раньше, чем система
+  // успевает запустить скачанный установщик (актуально для Windows).
+  ipcMain.on("update:install", async (_evt, filePath) => {
+    const fail = (message) => {
+      log.error("❌ не удалось запустить установщик:", message);
+      if (win && !win.isDestroyed()) {
+        win.webContents.send("update:error", message);
+      }
+    };
+
+    if (!filePath || !fs.existsSync(filePath)) {
+      fail("Файл установщика не найден — скачайте обновление заново");
+      return;
+    }
+
+    try {
+      log.info("🚀 запуск установщика:", filePath);
+      await launchInstaller(filePath);
+    } catch (err) {
+      fail(err.message);
+      return;
+    }
+
+    // Небольшая пауза, чтобы процесс установщика отцепился от приложения.
+    setTimeout(() => app.quit(), 500);
   });
 
-  // 4) Очистка старых загрузок
+  // 4) Старые загрузки чистим, свежие оставляем: если установщик не
+  // запустился, пользователь может открыть его вручную даже после перезапуска.
   const tempDir = path.join(app.getPath("downloads"), "GenealogyUpdater");
-  fs.rm(tempDir, { recursive: true, force: true }, (err) => {
-    if (err) log.warn("⚠️ не удалось очистить:", err.message);
-    else log.info("🧼 старые загрузки удалены");
+  const WEEK = 7 * 24 * 60 * 60 * 1000;
+  fs.readdir(tempDir, { withFileTypes: true }, (err, entries) => {
+    if (err) return;
+    entries.forEach((entry) => {
+      const filePath = path.join(tempDir, entry.name);
+      fs.stat(filePath, (statErr, stats) => {
+        if (statErr || Date.now() - stats.mtimeMs < WEEK) return;
+        safeUnlink(filePath);
+      });
+    });
   });
 }
 

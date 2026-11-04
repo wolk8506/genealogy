@@ -1,5 +1,5 @@
 // src/main/window.cjs
-const { BrowserWindow, session } = require("electron");
+const { BrowserWindow, Menu, session } = require("electron");
 const path = require("path");
 const log = require("./logger.cjs").createLogger("window");
 const isDev = process.env.NODE_ENV === "development";
@@ -8,6 +8,12 @@ const isDev = process.env.NODE_ENV === "development";
 session.defaultSession.setPermissionRequestHandler((_wc, permission, callback) => {
   callback(permission === "geolocation");
 });
+
+// На Windows/Linux языки проверки задаются явно, иначе русские слова
+// остаются без вариантов замены. На macOS язык выбирает сама система.
+if (process.platform !== "darwin") {
+  session.defaultSession.setSpellCheckerLanguages(["ru", "en-US"]);
+}
 
 // Проверка платформы
 const isMac = process.platform === "darwin";
@@ -35,6 +41,46 @@ function createWindow() {
       //   webSecurity: false, // ← подумать о безопасной замене
       webSecurity: !isDev, // ✅ true в продакшене, false только в dev
     },
+  });
+
+  // Подсказки орфографии. Проверку выполняет системный спеллчекер
+  // (в редакторе биографии включён contenteditable), а варианты замены
+  // показываем в нативном контекстном меню.
+  win.webContents.on("context-menu", (_event, params) => {
+    const word = (params.misspelledWord || "").trim();
+    if (!word || !params.isEditable) return;
+
+    const suggestions = (params.dictionarySuggestions || []).slice(0, 6);
+    log.debug(`Орфография: «${word}», вариантов: ${suggestions.length}`);
+    const template = suggestions.length
+      ? suggestions.map((suggestion) => ({
+          label: suggestion,
+          click: () => win.webContents.replaceMisspelling(suggestion),
+        }))
+      : [
+          { label: "Нет вариантов", enabled: false },
+          // На macOS при «Правописании: автоматически по языку» Electron
+          // не получает подсказки — подсказываем, где включить язык явно.
+          ...(process.platform === "darwin"
+            ? [
+                {
+                  label: "Включите «Русский» в Правописании macOS",
+                  enabled: false,
+                },
+              ]
+            : []),
+        ];
+
+    template.push(
+      { type: "separator" },
+      {
+        label: `Добавить «${word}» в словарь`,
+        click: () =>
+          win.webContents.session.addWordToSpellCheckerDictionary(word),
+      },
+    );
+
+    Menu.buildFromTemplate(template).popup({ window: win });
   });
 
   // --- ДОБАВЛЯЕМ СЛУШАТЕЛИ СОСТОЯНИЯ ОКНА ЗДЕСЬ ---

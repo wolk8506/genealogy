@@ -15,11 +15,17 @@ import FaceRetouchingNaturalIcon from "@mui/icons-material/FaceRetouchingNatural
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import EditIcon from "@mui/icons-material/Edit";
 import CropIcon from "@mui/icons-material/Crop";
+import PhotoLibraryIcon from "@mui/icons-material/PhotoLibrary";
 import HashtagInput from "../components/HashtagInput";
 import CustomDatePickerDialog from "../components/CustomDatePickerDialog";
 import LocationPickerDialog from "../components/Dialog/LocationPickerDialog";
 import { usePhotoInspectorStore } from "../store/usePhotoInspectorStore";
 import { useNotificationStore } from "../store/useNotificationStore";
+import {
+  groupSx,
+  RowIcon,
+  SettingsRow,
+} from "../pages/Page_Settings/settingsUi";
 import {
   getPersonLabel,
   syncPeopleFromFaces,
@@ -304,10 +310,19 @@ export default function PhotoInspectorPanel({ allPeople = [] }) {
           }}
         >
           {!photo || !draft ? (
-            <Box sx={{ p: 2, color: "text.secondary" }}>
-              <Typography variant="body2">
-                Выберите фото в галерее, чтобы редактировать сведения.
-              </Typography>
+            <Box sx={{ p: 2 }}>
+              <Box sx={groupSx}>
+                <SettingsRow
+                  icon={
+                    <RowIcon bg="gray">
+                      <PhotoLibraryIcon sx={{ fontSize: 18 }} />
+                    </RowIcon>
+                  }
+                  title="Фото не выбрано"
+                  subtitle="Выберите фото в галерее, чтобы посмотреть сведения."
+                  multiline
+                />
+              </Box>
             </Box>
           ) : (
             <>

@@ -9,6 +9,23 @@ contextBridge.exposeInMainWorld("settings", {
   set: (key, value) => ipcRenderer.invoke("settings:set", key, value),
 });
 
+// 📝 Орфография в редакторе биографии
+contextBridge.exposeInMainWorld("spellcheckAPI", {
+  getState: () => ipcRenderer.invoke("spellcheck:getState"),
+  setEnabled: (enabled) =>
+    ipcRenderer.invoke("spellcheck:setEnabled", enabled),
+  setLanguage: (code) => ipcRenderer.invoke("spellcheck:setLanguage", code),
+  download: (code) => ipcRenderer.invoke("spellcheck:download", code),
+  check: (words) => ipcRenderer.invoke("spellcheck:check", words),
+  suggest: (word) => ipcRenderer.invoke("spellcheck:suggest", word),
+  addWord: (word) => ipcRenderer.invoke("spellcheck:addWord", word),
+  onChange: (callback) => {
+    const subscription = () => callback();
+    ipcRenderer.on("spellcheck:changed", subscription);
+    return () => ipcRenderer.removeListener("spellcheck:changed", subscription);
+  },
+});
+
 // 🎚️ Тема
 contextBridge.exposeInMainWorld("themeAPI", {
   get: () => ipcRenderer.invoke("get-system-theme"),
@@ -405,9 +422,7 @@ contextBridge.exposeInMainWorld("clipboardAPI", {
   writeText: (text) => ipcRenderer.invoke("clipboard:writeText", text),
 });
 
-//🚪 Выход из приложения
 contextBridge.exposeInMainWorld("electronAPI", {
-  quitApp: () => ipcRenderer.send("app:quit"),
   getDiskUsage: () => ipcRenderer.invoke("get-disk-usage"),
   getDetailedStorageStats: () =>
     ipcRenderer.invoke("get-detailed-storage-stats"),

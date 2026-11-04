@@ -12,12 +12,11 @@ import { useNotificationStore } from "../../store/useNotificationStore";
 import Info from "./info/Info";
 import PhotoGallery from "./PhotoGallery/PhotoGallery";
 import BiographySection from "./Bio/BiographySection";
-import Component_FamilyTree from "./FamilyTree/Component_FamilyTree";
 import Editor from "./Editor/Editor";
 import PersonFilesTab from "./File/PersonFilesTab";
 
 const PersonPage = forwardRef(
-  ({ activeElement, galleryProps, bioProps, treeProps, infoProps }, ref) => {
+  ({ activeElement, galleryProps, bioProps, infoProps }, ref) => {
     const { id } = useParams();
     const addNotification = useNotificationStore(
       (state) => state.addNotification,
@@ -127,8 +126,6 @@ const PersonPage = forwardRef(
     //     document.title = `Genealogy :: Персональная страница [ id:${id} ] - Фотоальбом`;
     //   if (activeElement === "bio")
     //     document.title = `Genealogy :: Персональная страница [ id:${id} ] - Биография`;
-    //   if (activeElement === "tree")
-    //     document.title = `Genealogy :: Персональная страница [ id:${id} ] - Древо`;
     //   if (activeElement === "files")
     //     document.title = `Genealogy :: Персональная страница [ id:${id} ] – Файлы`;
 
@@ -508,18 +505,6 @@ const PersonPage = forwardRef(
               searchQuery={bioProps.searchQuery}
               searchMatchIndex={bioProps.searchMatchIndex}
               onSearchMatchCountChange={bioProps.onSearchMatchCountChange}
-            />
-          </Box>
-        </Fade>
-
-        {/* Секция древо */}
-        <Fade in={activeElement === "tree"} unmountOnExit timeout={500}>
-          <Box>
-            <Component_FamilyTree
-              allPeople={allPeople}
-              person_id={person.id}
-              treeMode={treeProps.mode}
-              ref={treeProps.treePageRef}
             />
           </Box>
         </Fade>

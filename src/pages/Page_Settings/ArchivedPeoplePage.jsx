@@ -1,16 +1,22 @@
 import React, { useEffect, useState } from "react";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { Box, alpha } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import TuneIcon from "@mui/icons-material/Tune";
+import PersonPinCircleIcon from "@mui/icons-material/PersonPinCircle";
 import PhotoLibraryIcon from "@mui/icons-material/PhotoLibrary";
 import FaceRetouchingNaturalIcon from "@mui/icons-material/FaceRetouchingNatural";
 import StorageIcon from "@mui/icons-material/Storage";
 import PieChartIcon from "@mui/icons-material/PieChart";
 import SystemUpdateAltIcon from "@mui/icons-material/SystemUpdateAlt";
 import WarningAmberIcon from "@mui/icons-material/WarningAmber";
+import InfoIcon from "@mui/icons-material/Info";
+import SpellcheckIcon from "@mui/icons-material/Spellcheck";
 import { StatisticCard } from "./StatisticCard";
 import { BackupRestoreCard } from "./BackupRestoreCard";
 import { GeneralSettingsCard } from "./GeneralSettingsCard";
+import { SpellcheckCard } from "./SpellcheckCard";
+import { HomePersonCard } from "./HomePersonCard";
 import { StorageCard } from "./StorageCard";
 import { UpdateSettingsCard } from "./UpdateSettingsCard";
 import { NewPhotoProcessingOptionsCard } from "./NewPhotoProcessingOptionsCard";
@@ -18,6 +24,7 @@ import { OptimizationMasterCard } from "./OptimizationMasterCard";
 import { FaceScanMasterCard } from "./FaceScanMasterCard";
 import { DangerZoneCard } from "./DangerZoneCard";
 import SettingsSidebar from "./SettingsSidebar";
+import AboutPage from "../Page_About/AboutPage";
 
 const SECTIONS = [
   {
@@ -27,6 +34,23 @@ const SECTIONS = [
     icon: TuneIcon,
     color: "gray",
     cards: ["general"],
+  },
+  {
+    id: "spelling",
+    title: "Орфография",
+    keywords:
+      "орфография правописание словарь язык проверка подчёркивание ошибки",
+    icon: SpellcheckIcon,
+    color: "teal",
+    cards: ["spelling"],
+  },
+  {
+    id: "home",
+    title: "Это я",
+    keywords: "это я домашний человек кто я пользователь корень дерево моя карточка",
+    icon: PersonPinCircleIcon,
+    color: "indigo",
+    cards: ["home"],
   },
   {
     id: "updates",
@@ -77,18 +101,38 @@ const SECTIONS = [
     danger: true,
     cards: ["danger"],
   },
+  {
+    id: "about",
+    title: "О приложении",
+    keywords:
+      "о приложении версия сборка разработчик руководство ссылки исходный код что нового",
+    icon: InfoIcon,
+    color: "blue",
+    separate: true,
+    cards: ["about"],
+  },
 ];
 
 const STORAGE_KEY = "settings-active-section";
 
 export default function SettingsPage() {
   const theme = useTheme();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
+  const sectionParam = searchParams.get("section");
   const [activeId, setActiveId] = useState(
-    () => localStorage.getItem(STORAGE_KEY) || "general",
+    () => sectionParam || localStorage.getItem(STORAGE_KEY) || "general",
   );
   const [query, setQuery] = useState("");
   const [backupSubpage, setBackupSubpage] = useState(false);
   const [mediaSubpage, setMediaSubpage] = useState(false);
+
+  // Прямая ссылка на раздел, например из стартового уведомления:
+  // /settings?section=home.
+  useEffect(() => {
+    if (sectionParam) setActiveId(sectionParam);
+  }, [sectionParam]);
 
   useEffect(() => {
     if (backupSubpage || mediaSubpage) window.scrollTo({ top: 0 });
@@ -102,6 +146,8 @@ export default function SettingsPage() {
 
   const cards = {
     general: <GeneralSettingsCard cardStyle={cardStyle} />,
+    spelling: <SpellcheckCard cardStyle={cardStyle} />,
+    home: <HomePersonCard cardStyle={cardStyle} />,
     updates: <UpdateSettingsCard cardStyle={cardStyle} />,
     photoProcessing: (
       <NewPhotoProcessingOptionsCard cardStyle={cardStyle} />
@@ -121,6 +167,7 @@ export default function SettingsPage() {
       />
     ),
     stats: <StatisticCard cardStyle={cardStyle} />,
+    about: <AboutPage cardStyle={cardStyle} />,
     danger: <DangerZoneCard cardStyle={cardStyle} />,
   };
 
@@ -142,6 +189,16 @@ export default function SettingsPage() {
       localStorage.setItem(STORAGE_KEY, id);
     } catch {
       // приватный режим — игнорируем
+    }
+    // Убираем ?section=, чтобы после ручного выбора ссылка снова вела
+    // на сохранённый раздел.
+    if (sectionParam) {
+      const next = new URLSearchParams(searchParams);
+      next.delete("section");
+      navigate(
+        { pathname: location.pathname, search: next.toString() },
+        { replace: true },
+      );
     }
   };
 

@@ -10,10 +10,13 @@ import * as d3 from "d3";
 import * as htmlToImage from "html-to-image";
 import ExportableAvatar from "../../utils/ExportableAvatar";
 import { useNavigate } from "react-router-dom";
-import { Paper } from "@mui/material";
+import { Paper, Menu, MenuItem, ListItemIcon, ListItemText } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
+import InfoIcon from "@mui/icons-material/Info";
+import AccountTreeIcon from "@mui/icons-material/AccountTree";
+import VisibilityIcon from "@mui/icons-material/Visibility";
 
-const FamilyTree = forwardRef(({ data, mode, people, personId }, ref) => {
+const FamilyTree = forwardRef(({ data, mode, people, personId, onCardClick, onPersonSelect }, ref) => {
   const containerRef = useRef(null);
   const svgWrapperRef = useRef(null);
   const treeInstanceRef = useRef(null); // Для доступа к методам react-d3-tree
@@ -22,6 +25,50 @@ const FamilyTree = forwardRef(({ data, mode, people, personId }, ref) => {
   const theme = useTheme();
   const isDark = theme.palette.mode === "dark";
   const navigate = useNavigate();
+
+  // Контекстное меню
+  const [contextMenu, setContextMenu] = useState(null);
+  const [selectedPersonForMenu, setSelectedPersonForMenu] = useState(null);
+
+  const handleContextMenu = (event, personId) => {
+    event.preventDefault();
+    event.stopPropagation();
+    
+    const person = people?.find((p) => String(p.id) === String(personId));
+    if (person) {
+      setSelectedPersonForMenu(person);
+      setContextMenu({
+        mouseX: event.clientX,
+        mouseY: event.clientY,
+      });
+    }
+  };
+
+  const handleCloseContextMenu = () => {
+    setContextMenu(null);
+    setSelectedPersonForMenu(null);
+  };
+
+  const handleShowInfo = () => {
+    if (selectedPersonForMenu && onCardClick) {
+      onCardClick(selectedPersonForMenu.id);
+    }
+    handleCloseContextMenu();
+  };
+
+  const handleBuildTreeFrom = () => {
+    if (selectedPersonForMenu && onPersonSelect) {
+      onPersonSelect(selectedPersonForMenu.id);
+    }
+    handleCloseContextMenu();
+  };
+
+  const handleOpenCard = () => {
+    if (selectedPersonForMenu) {
+      navigate(`/person/${selectedPersonForMenu.id}#familyTree`);
+    }
+    handleCloseContextMenu();
+  };
 
   // Рефы для D3 зума (радиальный режим)
   const d3ZoomRef = useRef(null);
@@ -246,7 +293,15 @@ const FamilyTree = forwardRef(({ data, mode, people, personId }, ref) => {
     return (
       <foreignObject width={190} height={88} x={-95} y={-44}>
         <div
-          onClick={() => id && navigate(`/person/${id}#familyTree`)}
+          onClick={() => {
+            if (id) {
+              if (onCardClick) {
+                onCardClick(id);
+              } else {
+                navigate(`/person/${id}#familyTree`);
+              }
+            }
+          }}
           style={{
             position: "relative",
             display: "flex",

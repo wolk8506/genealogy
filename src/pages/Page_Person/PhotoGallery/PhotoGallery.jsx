@@ -80,6 +80,7 @@ export default function PhotoGallery({
   // Правая панель-инспектор (общая с глобальной галереей).
   const selectedId = usePhotoInspectorStore((s) => s.selectedId);
   const selectPhoto = usePhotoInspectorStore((s) => s.select);
+  const clearSelection = usePhotoInspectorStore((s) => s.clearSelection);
   const setInspectorActions = usePhotoInspectorStore((s) => s.setActions);
   const registerSource = usePhotoInspectorStore((s) => s.registerSource);
   const photosRef = useRef(photos);
@@ -150,7 +151,14 @@ export default function PhotoGallery({
     columnsCount,
   } = useMemo(() => {
     const groupsMap = new Map();
-    const cols = windowWidth < 1200 ? 3 : windowWidth < 1600 ? 4 : 5;
+    const cols =
+      windowWidth < 1200
+        ? 3
+        : windowWidth < 1600
+          ? 4
+          : windowWidth < 2000
+            ? 5
+            : 6;
 
     sortedBase.forEach((p) => {
       let key = "Без даты";
@@ -449,7 +457,13 @@ export default function PhotoGallery({
         }}
       >
         <Box
-          sx={{ flex: 1, bgcolor: "background.default", position: "relative" }}
+          onClick={(event) => {
+            // Клик по пустому месту галереи снимает выделение,
+            // клики по самим фото и их кнопкам — нет.
+            if (event.target.closest("[data-photo-cell]")) return;
+            clearSelection();
+          }}
+          sx={{ flex: 1, bgcolor: "transparent", position: "relative" }}
         >
           {isLoading ? (
             <Box sx={{ display: "flex", justifyContent: "center", mt: 10 }}>
@@ -518,6 +532,7 @@ export default function PhotoGallery({
                       return (
                         <Box
                           key={item.id}
+                          data-photo-cell
                           sx={{
                             width: `${100 / columnsCount}%`,
                             height: rowHeight,

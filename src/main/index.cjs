@@ -13,6 +13,7 @@ const log = require("./logger.cjs").createLogger("main");
 
   // Передаём Store в модуль настроек
   require("./handlers/settings.cjs")(settingsStore);
+  require("./handlers/spellcheck.cjs")(settingsStore);
 
   // Остальные хендлеры
   require("./handlers/avatar.cjs");

@@ -48,6 +48,7 @@ export default function FamiliesCatalog({
   search = "",
   sort = "date",
   notice = null,
+  homePersonId = null,
   onDismissNotice,
   onOpenFamily,
   onGoPeople,
@@ -56,9 +57,14 @@ export default function FamiliesCatalog({
   const theme = useTheme();
 
   const visible = useMemo(
-    () => visibleFamilies(families, deferredQuery, sort),
-    [families, deferredQuery, sort],
+    () => visibleFamilies(families, deferredQuery, sort, homePersonId),
+    [families, deferredQuery, sort, homePersonId],
   );
+
+  const mineId = homePersonId == null ? null : String(homePersonId);
+  const isMine = (family) =>
+    mineId != null &&
+    (family.partnerIds || []).some((id) => String(id) === mineId);
 
   const isEmptyBase = families.length === 0;
 
@@ -201,6 +207,7 @@ export default function FamiliesCatalog({
             <FamilyCard
               key={family.key}
               family={family}
+              isMine={isMine(family)}
               onOpen={onOpenFamily}
             />
           ))}

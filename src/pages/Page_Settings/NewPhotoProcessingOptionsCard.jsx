@@ -9,6 +9,7 @@ import {
   sectionLabelSx,
   RowIcon,
   SettingsRow,
+  sliderSx,
 } from "./settingsUi";
 
 export const NewPhotoProcessingOptionsCard = ({ cardStyle }) => {
@@ -116,12 +117,21 @@ export const NewPhotoProcessingOptionsCard = ({ cardStyle }) => {
           <Box>
             <Typography sx={sectionLabelSx}>Качество WebP</Typography>
             <Box sx={groupSx}>
-              <Box sx={{ px: 2, py: 1.4 }}>
+              <Box
+                sx={{
+                  px: 2,
+                  py: 1.4,
+                  display: "flex",
+                  alignItems: "center",
+                  flexWrap: "wrap",
+                  gap: 2,
+                }}
+              >
                 <Stack
                   direction="row"
                   alignItems="center"
-                  justifyContent="space-between"
-                  gap={2}
+                  spacing={1.5}
+                  sx={{ flex: "1 1 220px", minWidth: 0 }}
                 >
                   <Box sx={{ minWidth: 0 }}>
                     <Typography
@@ -138,12 +148,23 @@ export const NewPhotoProcessingOptionsCard = ({ cardStyle }) => {
                   <Typography
                     variant="body2"
                     color="text.secondary"
-                    sx={{ fontVariantNumeric: "tabular-nums" }}
+                    sx={{
+                      flexShrink: 0,
+                      pr: 1,
+                      fontVariantNumeric: "tabular-nums",
+                    }}
                   >
                     {importSettings.quality}%
                   </Typography>
                 </Stack>
-                <Box sx={{ px: 2 }}>
+                <Box
+                  sx={{
+                    flex: "1 1 240px",
+                    minWidth: 200,
+                    maxWidth: 380,
+                    px: 1.25,
+                  }}
+                >
                   <Slider
                     value={importSettings.quality}
                     min={10}
@@ -161,7 +182,7 @@ export const NewPhotoProcessingOptionsCard = ({ cardStyle }) => {
                       handleSettingChange({ quality: v })
                     }
                     sx={{
-                      mt: 1,
+                      ...sliderSx,
                       "& .MuiSlider-markLabel": {
                         fontSize: "0.65rem",
                         fontWeight: 600,

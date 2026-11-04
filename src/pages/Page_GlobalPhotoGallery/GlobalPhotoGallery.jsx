@@ -90,6 +90,9 @@ export default function GlobalPhotoGallery({
     (state) => state.setActions,
   );
   const registerSource = usePhotoInspectorStore((state) => state.registerSource);
+  const clearSelection = usePhotoInspectorStore(
+    (state) => state.clearSelection,
+  );
 
   // При входе в галерею — чистим состояние панели, затем регистрируем список.
   useEffect(() => {
@@ -156,7 +159,14 @@ export default function GlobalPhotoGallery({
         groupOffsets: [],
       };
 
-    const cols = windowWidth < 1200 ? 3 : windowWidth < 1600 ? 4 : 5;
+    const cols =
+      windowWidth < 1200
+        ? 3
+        : windowWidth < 1600
+          ? 4
+          : windowWidth < 2000
+            ? 5
+            : 6;
 
     // Сравнение фото по ключу текущей группировки.
     // Порядок групп задаётся sortedKeys, порядок внутри групп — тем же sortDir.
@@ -481,11 +491,18 @@ export default function GlobalPhotoGallery({
 
   return (
     <Box
+      onClick={(event) => {
+        // Клик по пустому месту галереи снимает выделение.
+        // Клики по фото и элементам управления его не снимают, а шапка
+        // и боковое меню лежат вне этого контейнера и сюда не попадают.
+        if (event.target.closest("[data-photo-cell]")) return;
+        clearSelection();
+      }}
       sx={{
         display: "flex",
         flexDirection: "column",
         height: "calc(100vh - 60px)",
-        bgcolor: "background.default",
+        bgcolor: "transparent",
         position: "relative",
       }}
     >
@@ -665,6 +682,7 @@ export default function GlobalPhotoGallery({
                   return (
                     <Box
                       key={item.id}
+                      data-photo-cell
                       sx={{
                         width: `${100 / columnsCount}%`,
                         height: Math.floor((windowWidth * 0.9) / columnsCount),

@@ -8,14 +8,11 @@ import BioToolbar from "./bio/BioToolbar";
 import PersonFillIcon from "../../components/svg/PersonFillIcon";
 import TextDocumentFillIcon from "../../components/svg/TextDocumentFillIcon";
 import PhotoOnRectangleAngledIcon from "../../components/svg/PhotoOnRectangleAngledIcon";
-import AccountTreeIcon from "@mui/icons-material/AccountTree";
 import PhotoToolbar from "./photo/PhotoToolbar";
-import TreeToolbar from "./tree/TreeToolbar";
 import InfoToolbar from "./info/InfoToolbar";
 import FileCopyIcon from "@mui/icons-material/FileCopy";
 import FileToolbar from "./file/FileToolbar";
 import { toolbarPillSx } from "../toolbarStyles";
-// import TreeToolbar
 
 export default function ToolbarGroup({
   activeElement,
@@ -23,7 +20,6 @@ export default function ToolbarGroup({
   infoProps,
   photoProps,
   bioProps,
-  treeProps,
 }) {
   const theme = useTheme();
   const isDark = theme.palette.mode === "dark";
@@ -34,7 +30,7 @@ export default function ToolbarGroup({
       spacing={2}
       sx={{ alignItems: "center", width: "100%", flex: 1, minWidth: 0 }}
     >
-      {/* Вкладки: Анкета, Фото, Био, Древо, Файлы */}
+      {/* Вкладки: Анкета, Фото, Био, Файлы */}
       <Box
         sx={{
           ...toolbarPillSx,
@@ -85,11 +81,6 @@ export default function ToolbarGroup({
             </ToggleButton>
           </Tooltip>
 
-          <Tooltip title="Древо">
-            <ToggleButton value="tree">
-              <AccountTreeIcon sx={{ fontSize: 18 }} />
-            </ToggleButton>
-          </Tooltip>
           <Tooltip title="Файлы">
             <ToggleButton value="files">
               <FileCopyIcon sx={{ fontSize: 18 }} />
@@ -135,8 +126,6 @@ export default function ToolbarGroup({
           searchMatchCount={bioProps.searchMatchCount}
         />
       )}
-
-      {activeElement === "tree" && <TreeToolbar treeProps={treeProps} />}
     </Stack>
   );
 }

@@ -770,7 +770,7 @@ const Editor = forwardRef(
           width: "100%",
           display: "flex",
           justifyContent: "center",
-          bgcolor: "background.default",
+          bgcolor: "transparent",
           minWidth: "1134px", // Electron limit // ! 1300
           containerType: "inline-size", // ДОБАВИТЬ ЭТО
           pt: 1,
