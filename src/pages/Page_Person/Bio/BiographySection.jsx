@@ -14,6 +14,7 @@ import {
   Tooltip,
   Paper,
   TextField,
+  CircularProgress,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import DialogActionButton, {
@@ -48,6 +49,10 @@ import { nord } from "@milkdown/theme-nord";
 import { commonmark } from "@milkdown/preset-commonmark";
 import { history } from "@milkdown/plugin-history";
 import { ButtonScrollTop } from "../../../components/ButtonScrollTop";
+import {
+  createBioSpellController,
+  createBioSpellPlugin,
+} from "./bioSpellcheck";
 import { gfm } from "@milkdown/kit/preset/gfm";
 import { block } from "@milkdown/plugin-block";
 import AddColumnRowRightIcon from "../../../components/svg/AddColumnRowRightIcon";
@@ -153,6 +158,13 @@ const MilkdownEditor = ({
   const isEditingRef = useRef(isEditing);
   const containerRef = useRef(null);
 
+  const spellControllerRef = useRef(null);
+  if (!spellControllerRef.current) {
+    spellControllerRef.current = createBioSpellController({
+      isEditing: () => isEditingRef.current,
+    });
+  }
+
   // Синхронизация режима редактирования без пересоздания редактора
   useEffect(() => {
     isEditingRef.current = isEditing;
@@ -174,6 +186,9 @@ const MilkdownEditor = ({
           ctx.set(defaultValueCtx, content || " ");
           ctx.set(editorViewOptionsCtx, {
             editable: () => isEditingRef.current,
+            // Системный спеллчекер отключаем: в биографии работает свой словарь,
+            // иначе macOS подчёркивает русские слова украинским словарём.
+            attributes: { spellcheck: "false" },
           });
           ctx.update(prosePluginsCtx, (prev) => [
             ...prev,
@@ -183,6 +198,7 @@ const MilkdownEditor = ({
               },
             }),
             createBioImagePlugin(),
+            createBioSpellPlugin(spellControllerRef.current),
           ]);
         })
         .config(nord)
@@ -284,6 +300,11 @@ const MilkdownEditor = ({
         editorRef.current?.action((ctx) =>
           ctx.get(commandsCtx).call(key, payload),
         ),
+      getSpellWordAt: (x, y) =>
+        spellControllerRef.current?.getWordAtCoords(x, y) || null,
+      replaceSpellWord: (from, to, word) =>
+        spellControllerRef.current?.replaceWord(from, to, word),
+      addSpellWord: (word) => spellControllerRef.current?.addWord(word),
       wrapInTag: (tag) =>
         editorRef.current?.action((ctx) => {
           const view = ctx.get(editorViewCtx);
@@ -996,6 +1017,13 @@ const MilkdownEditor = ({
           // ДОБАВЛЯЕМ ОТСТУП ПЕРВОЙ СТРОКИ
           textIndent: "2rem", // Можно в px (например, 25px) или rem
         },
+        "& .ProseMirror .bio-spell-error": {
+          textDecorationLine: "underline",
+          textDecorationStyle: "wavy",
+          textDecorationColor: "#FF453A",
+          textDecorationThickness: "1px",
+          textUnderlineOffset: "3px",
+        },
         // КРАСИВЫЕ И УМЕНЬШЕННЫЕ СТИЛИ ДЛЯ РИСУНКА
         "& .ProseMirror p:has(img)": {
           textIndent: 0, // <--- ОБЯЗАТЕЛЬНО ОБНУЛЯЕМ ТУТ
@@ -1195,6 +1223,7 @@ export default function BiographySection({
   const menuScrollYRef = useRef(0);
   const [contextMenu, setContextMenu] = React.useState(null);
   const [imageMenu, setImageMenu] = useState(null);
+  const [spellMenu, setSpellMenu] = useState(null);
   const [promptState, setPromptState] = useState(null);
   const [promptValues, setPromptValues] = useState({ text: "", url: "" });
 
@@ -1274,6 +1303,7 @@ export default function BiographySection({
       menuScrollYRef.current = window.scrollY;
       const info = execRef.current?.getImageInfoAtDom?.(img);
       if (info) {
+        setSpellMenu(null);
         setContextMenu(null);
         setImageMenu({
           mouseX: event.clientX + 2,
@@ -1284,6 +1314,44 @@ export default function BiographySection({
       return;
     }
 
+    const spellHit = isEditing
+      ? execRef.current?.getSpellWordAt?.(event.clientX, event.clientY)
+      : null;
+    if (spellHit) {
+      event.preventDefault();
+      menuScrollYRef.current = window.scrollY;
+      const { word, from, to } = spellHit;
+      setImageMenu(null);
+      setContextMenu(null);
+      setSpellMenu({
+        mouseX: event.clientX + 2,
+        mouseY: event.clientY - 6,
+        word,
+        from,
+        to,
+        suggestions: null,
+      });
+      window.spellcheckAPI
+        ?.suggest?.(word)
+        .then((suggestions) => {
+          setSpellMenu((prev) =>
+            prev && prev.from === from && prev.to === to
+              ? {
+                  ...prev,
+                  suggestions: Array.isArray(suggestions) ? suggestions : [],
+                }
+              : prev,
+          );
+        })
+        .catch(() => {
+          setSpellMenu((prev) =>
+            prev ? { ...prev, suggestions: [] } : prev,
+          );
+        });
+      return;
+    }
+
+    setSpellMenu(null);
     setImageMenu(null);
     const table = event.target.closest("table");
     if (table && isEditing) {
@@ -1319,6 +1387,8 @@ export default function BiographySection({
     preserveViewportScroll(() => setContextMenu(null));
   const handleCloseImageMenu = () =>
     preserveViewportScroll(() => setImageMenu(null));
+  const handleCloseSpellMenu = () =>
+    preserveViewportScroll(() => setSpellMenu(null));
 
   const runTableMenuAction = (action) =>
     preserveViewportScroll(() => {
@@ -1802,7 +1872,7 @@ export default function BiographySection({
       <Box
         sx={{
           display: "flex",
-          bgcolor: "background.default",
+          bgcolor: "transparent",
           gap: { xs: 0, lg: 2 },
           alignItems: "flex-start",
         }}
@@ -1915,7 +1985,7 @@ export default function BiographySection({
             transform: { lg: isNavVisible ? "translateX(0)" : "translateX(-8px)" },
             transition: "transform 260ms ease",
             // Используем стандартный фон темы для подложки
-            bgcolor: "background.default",
+            bgcolor: "transparent",
             py: { xs: 2, md: 4 },
             px: { xs: 2, md: 0 },
           }}
@@ -2051,6 +2121,92 @@ export default function BiographySection({
                     Клик по фото — увеличить
                   </Typography>
                 )}
+
+                <Menu
+                  open={spellMenu !== null}
+                  onClose={handleCloseSpellMenu}
+                  anchorReference="anchorPosition"
+                  anchorPosition={
+                    spellMenu !== null
+                      ? { top: spellMenu.mouseY, left: spellMenu.mouseX }
+                      : undefined
+                  }
+                  {...bioContextMenuProps}
+                  PaperProps={{
+                    sx: {
+                      bgcolor: "transparent",
+                      backgroundImage: "none",
+                      boxShadow: 24,
+                      borderRadius: "12px",
+                      minWidth: 200,
+                      fontSize: "13px",
+                      px: "6px",
+                      border: "1px solid",
+                      borderColor: "divider",
+                      backdropFilter: "blur(6px)",
+                    },
+                  }}
+                >
+                  {spellMenu?.suggestions === null && (
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 1,
+                        px: 1.5,
+                        py: 1,
+                      }}
+                    >
+                      <CircularProgress size={14} />
+                      <Typography
+                        variant="body2"
+                        sx={{ fontSize: "13px", color: "text.secondary" }}
+                      >
+                        Поиск вариантов…
+                      </Typography>
+                    </Box>
+                  )}
+                  {spellMenu?.suggestions?.length === 0 && (
+                    <MenuItem disabled sx={{ px: 1, borderRadius: "8px" }}>
+                      <ListItemText
+                        primary="Нет вариантов"
+                        primaryTypographyProps={{ fontSize: "13px" }}
+                      />
+                    </MenuItem>
+                  )}
+                  {spellMenu?.suggestions?.map((suggestion) => (
+                    <MenuItem
+                      key={suggestion}
+                      onClick={() => {
+                        execRef.current?.replaceSpellWord?.(
+                          spellMenu.from,
+                          spellMenu.to,
+                          suggestion,
+                        );
+                        handleCloseSpellMenu();
+                      }}
+                      sx={{ px: 1, borderRadius: "8px" }}
+                    >
+                      <ListItemText
+                        primary={suggestion}
+                        primaryTypographyProps={{ fontSize: "13px" }}
+                      />
+                    </MenuItem>
+                  ))}
+                  <Divider sx={{ my: 0.5 }} />
+                  <MenuItem
+                    onClick={async () => {
+                      await execRef.current?.addSpellWord?.(spellMenu.word);
+                      handleCloseSpellMenu();
+                    }}
+                    sx={{ px: 1, borderRadius: "8px" }}
+                  >
+                    <ListItemText
+                      primary={`Добавить «${spellMenu?.word || ""}» в словарь`}
+                      primaryTypographyProps={{ fontSize: "13px" }}
+                    />
+                  </MenuItem>
+                </Menu>
 
                 <Menu
                   open={contextMenu !== null}

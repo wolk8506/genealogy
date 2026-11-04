@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Avatar, Box, Stack, Typography } from "@mui/material";
+import { Avatar, Box, Card, Stack, Typography } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 
 import GitHubIcon from "@mui/icons-material/GitHub";
@@ -38,7 +38,7 @@ const chevron = (
   <ChevronRightIcon sx={{ fontSize: 16, color: "text.disabled" }} />
 );
 
-export default function AboutPage() {
+export default function AboutPage({ cardStyle }) {
   const navigate = useNavigate();
   const [version, setVersion] = useState("");
   const [platform, setPlatform] = useState("");
@@ -78,7 +78,18 @@ export default function AboutPage() {
     counts ? String(counts[key]) : "…";
 
   return (
-    <Box sx={{ maxWidth: 720, mx: "auto", px: 2, py: 3 }}>
+    <Card
+      variant="outlined"
+      sx={{
+        ...cardStyle,
+        borderRadius: "18px",
+        border: "none",
+        bgcolor: "transparent",
+        boxShadow: "none",
+        px: 2,
+        py: 2,
+      }}
+    >
       <Stack spacing={3}>
         <Stack direction="row" spacing={2.5} alignItems="center">
           <Box sx={{ position: "relative", flexShrink: 0 }}>
@@ -339,6 +350,6 @@ export default function AboutPage() {
           Сделано с уважением к прошлому ради будущего
         </Typography>
       </Stack>
-    </Box>
+    </Card>
   );
 }

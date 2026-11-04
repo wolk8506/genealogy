@@ -213,10 +213,6 @@ ipcMain.handle("path:getTempDir", () => {
   return getTempDir();
 });
 
-ipcMain.on("app:quit", () => {
-  app.quit();
-});
-
 ipcMain.handle("get-detailed-storage-stats", async () => {
   const basePath = getBaseDir();
   const peoplePath = path.join(basePath, "people");

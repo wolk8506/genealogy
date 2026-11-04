@@ -12,6 +12,7 @@ const {
   addRoot,
   removeRoot,
   ensureBaseDir,
+  checkDirUsable,
   getVolumeFreeBytes,
   formatBytes,
   isLibraryDir,
@@ -19,10 +20,7 @@ const {
 } = require("../config.cjs");
 const { closeFaceDb, initializeFaceDb } = require("../db/faceDb.cjs");
 const { stopWatching, watchFolder } = require("../watchFolder.cjs");
-
-function checkWritable(dir) {
-  fs.accessSync(dir, fs.constants.R_OK | fs.constants.W_OK);
-}
+const log = require("../logger.cjs").createLogger("storage");
 
 // Минимум свободного места на томе данных (фото и индекс растут быстро,
 // особенно на съёмных дисках).
@@ -31,96 +29,121 @@ const MIN_STORAGE_FREE_BYTES = 500 * 1024 * 1024;
 function isUsableRoot(dir) {
   try {
     ensureBaseDir(dir);
-    checkWritable(dir);
+    checkDirUsable(dir);
     return true;
   } catch {
     return false;
   }
 }
 
+// Сообщение для рендерера о том, что старт прошёл не с той папкой.
+// Забирается один раз через storage:consume-startup-notice.
+let startupNotice = null;
+
 // Стартовое разрешение корня. Вызывать после app.whenReady().
-// Стандартный путь: создать при отсутствии, иначе — критическая ошибка и выход.
-// Нестандартный (часто съёмный диск): диалог действий.
+//
+// Здесь нельзя показывать синхронные диалоги: функция выполняется до
+// создания первого окна, а showMessageBoxSync блокирует main-процесс.
+// В результате приложение выглядит зависшим — окно не появляется,
+// DevTools не открывается, «Перезагрузить» в меню не срабатывает.
+// Поэтому недоступная папка заменяется стандартной, а пользователь
+// узнаёт об этом уже в готовом окне.
 function resolveStartupRoot() {
   const def = getDefaultRoot();
-  let active = getActiveRoot();
+  const active = getActiveRoot();
 
-  if (isUsableRoot(active)) return { root: active, fellBack: null };
-
-  if (samePath(active, def)) {
-    dialog.showMessageBoxSync({
-      type: "error",
-      title: "Нет доступа к папке данных",
-      message: `Не удалось создать стандартную папку:\n${def}`,
-      buttons: ["Выйти"],
-    });
-    app.quit();
-    return null;
+  if (isUsableRoot(active)) {
+    return { root: active, fellBack: null, problem: null };
   }
 
-  for (;;) {
-    const choice = dialog.showMessageBoxSync({
-      type: "warning",
-      title: "Место хранения недоступно",
-      message:
-        `Папка данных недоступна:\n${active}\n\n` +
-        "Возможно, отключён внешний диск.",
-      buttons: ["Повторить", "Выбрать другую…", "Стандартная папка", "Выйти"],
-      defaultId: 0,
-      cancelId: 3,
-    });
+  const isDefaultActive = samePath(active, def);
 
-    if (choice === 0) {
-      // Диск могли подключить — перечитываем и проверяем заново.
-      active = getActiveRoot();
-      if (isUsableRoot(active)) return { root: active, fellBack: null };
-      continue;
-    }
-
-    if (choice === 1) {
-      const picked = dialog.showOpenDialogSync({
-        title: "Выберите папку данных Genealogy",
-        defaultPath: active,
-        properties: ["openDirectory", "createDirectory"],
-      });
-      if (!picked || !picked[0]) continue;
-      try {
-        const normalized = setActiveRoot(picked[0]);
-        if (isUsableRoot(normalized)) {
-          return { root: normalized, fellBack: null };
-        }
-        active = normalized;
-      } catch {
-        active = picked[0];
+  if (!isDefaultActive) {
+    try {
+      if (isUsableRoot(def)) {
+        setActiveRoot(def);
+        startupNotice = { kind: "fallback", from: active, to: def };
+        log.warn(
+          `Папка данных недоступна, включена стандартная: ${active} → ${def}`,
+        );
+        return { root: def, fellBack: startupNotice, problem: null };
       }
-      continue;
+    } catch (error) {
+      log.warn(
+        "Не удалось переключиться на стандартную папку:",
+        error.message,
+      );
     }
-
-    if (choice === 2) {
-      setActiveRoot(def);
-      return { root: def, fellBack: { from: active, to: def } };
-    }
-
-    app.quit();
-    return null;
   }
+
+  // Недоступны и выбранная, и стандартная папки (например, macOS не дала
+  // доступ к Documents). Окно всё равно создаём: из настроек можно выбрать
+  // рабочее место хранения.
+  startupNotice = {
+    kind: "unavailable",
+    activeRoot: active,
+    defaultRoot: def,
+  };
+  log.error(
+    `Нет доступной папки данных. Активная: ${active}, стандартная: ${def}`,
+  );
+  return {
+    root: active,
+    fellBack: null,
+    problem: { activeRoot: active, defaultRoot: def, isDefault: isDefaultActive },
+  };
 }
 
-module.exports = { resolveStartupRoot, isUsableRoot };
+// Показать проблему после создания окна. Асинхронный диалог не блокирует
+// main-процесс, поэтому настройки и DevTools остаются доступны.
+async function notifyStartupProblem(win, problem) {
+  if (!problem) return undefined;
+
+  const detail = problem.isDefault
+    ? `Не удалось получить доступ к стандартной папке:\n${problem.defaultRoot}\n\n` +
+      "Проверьте права доступа к папке или выберите другое место хранения в настройках."
+    : `Папка данных недоступна:\n${problem.activeRoot}\n\n` +
+      "Возможно, отключён внешний диск. Выберите другое место хранения в настройках.";
+
+  try {
+    const { response } = await dialog.showMessageBox(win, {
+      type: "warning",
+      title: "Место хранения недоступно",
+      message: "Приложение запущено без доступа к папке данных",
+      detail,
+      buttons: ["Открыть настройки", "Продолжить"],
+      defaultId: 0,
+      cancelId: 1,
+      noLink: true,
+    });
+
+    if (response === 0 && win && !win.isDestroyed()) {
+      win.webContents.send("navigate", "/settings");
+    }
+  } catch (error) {
+    log.warn(
+      "Не удалось показать предупреждение о хранилище:",
+      error.message,
+    );
+  }
+
+  return undefined;
+}
+
+module.exports = {
+  resolveStartupRoot,
+  notifyStartupProblem,
+  isUsableRoot,
+};
 
 function getStorageInfo() {
   const activeRoot = getActiveRoot();
   const defaultRoot = getDefaultRoot();
   let exists = false;
   let writable = false;
-  try {
-    exists = fs.existsSync(activeRoot);
-    if (exists) {
-      checkWritable(activeRoot);
-      writable = true;
-    }
-  } catch {
-    writable = false;
+  exists = fs.existsSync(activeRoot);
+  if (exists) {
+    writable = isUsableRoot(activeRoot);
   }
   return {
     activeRoot,
@@ -134,6 +157,13 @@ function getStorageInfo() {
 }
 
 ipcMain.handle("storage:get", async () => getStorageInfo());
+
+// Одноразовое уведомление о том, что при старте пришлось сменить папку.
+ipcMain.handle("storage:consume-startup-notice", async () => {
+  const notice = startupNotice;
+  startupNotice = null;
+  return notice;
+});
 
 ipcMain.handle("storage:choose", async () => {
   const result = await dialog.showOpenDialog({
@@ -161,9 +191,9 @@ ipcMain.handle("storage:switch", async (event, dirPath) => {
 
   fs.mkdirSync(target, { recursive: true });
   try {
-    checkWritable(target);
+    checkDirUsable(target);
   } catch {
-    throw new Error("Папка недоступна для записи: " + target);
+    throw new Error("Папка недоступна для работы: " + target);
   }
 
   // На съёмном диске место может закончиться раньше, чем данные:
@@ -199,9 +229,14 @@ ipcMain.handle("storage:switch", async (event, dirPath) => {
   watchFolder();
 
   // Свежий старт main-процесса (хэштеги, кэши) — перезапуск после ответа.
+  // Важно: app.exit(), а не app.quit(). quit() закрывает окна и может
+  // затянуться, из-за чего новый экземпляр стартует, пока старый ещё держит
+  // профиль Chromium (userData). В упакованном приложении это приводило к
+  // падению рендерера сразу после смены папки. exit(0) завершает процесс
+  // сразу, и relaunch запускает чистый экземпляр.
   setTimeout(() => {
     app.relaunch();
-    app.quit();
+    app.exit(0);
   }, 300);
 
   return { success: true, activeRoot: target, restart: true };
@@ -259,7 +294,7 @@ ipcMain.handle("storage:remove", async (event, dirPath) => {
 
   setTimeout(() => {
     app.relaunch();
-    app.quit();
+    app.exit(0);
   }, 300);
 
   return { success: true, roots, activeRoot: fallback, restart: true };

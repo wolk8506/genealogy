@@ -38,6 +38,7 @@ export default function FamiliesPage({
   onOpenFamily,
   search = "",
   sort = "date",
+  homePersonId = null,
 }) {
   const { familyKey } = useParams();
   const navigate = useNavigate();
@@ -119,6 +120,7 @@ export default function FamiliesPage({
         search={search}
         sort={sort}
         notice={notice}
+        homePersonId={homePersonId}
         onDismissNotice={() => setNotice(null)}
         onOpenFamily={onOpenFamily}
         onGoPeople={() => navigate("/")}

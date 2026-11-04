@@ -21,8 +21,8 @@ export default function SettingsSidebar({
   onQueryChange,
   onSelect,
 }) {
-  const regular = sections.filter((s) => !s.danger);
-  const dangerous = sections.filter((s) => s.danger);
+  const regular = sections.filter((s) => !s.danger && !s.separate);
+  const separated = sections.filter((s) => s.danger || s.separate);
 
   const renderItem = (section) => {
     const Icon = section.icon;
@@ -179,11 +179,11 @@ export default function SettingsSidebar({
       )}
       <List disablePadding>
         {regular.map(renderItem)}
-        {dangerous.length > 0 && (
-          <Box key="danger-sep" sx={{ mt: 1, pt: 1 }}>
-            {dangerous.map(renderItem)}
+        {separated.map((section) => (
+          <Box key={`separated-${section.id}`} sx={{ mt: 1, pt: 1 }}>
+            {renderItem(section)}
           </Box>
-        )}
+        ))}
       </List>
     </Box>
   );

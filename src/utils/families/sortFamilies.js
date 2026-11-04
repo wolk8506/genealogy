@@ -2,7 +2,7 @@
 // Поиск и сортировка семей для каталога.
 // Живут отдельно от UI: каталог и тулбар используют одни и те же правила.
 
-import { cleanMaiden } from "./familyLabels";
+import { cleanMaiden, toId } from "./familyLabels";
 
 export const FAMILY_SORT_OPTIONS = [
   { value: "date", label: "По дате брака", short: "По дате" },
@@ -70,6 +70,15 @@ export function sortFamilies(families, sort) {
   );
 }
 
-export function visibleFamilies(families, query, sort) {
-  return sortFamilies(filterFamilies(families, query), sort);
+export function visibleFamilies(families, query, sort, homePersonId) {
+  const list = sortFamilies(filterFamilies(families, query), sort);
+  const mine = toId(homePersonId);
+  if (!mine) return list;
+
+  // «Это я» из настроек: своя семья всегда первой, остальной порядок не меняем.
+  const index = list.findIndex((family) =>
+    (family.partnerIds || []).some((id) => String(id) === mine),
+  );
+  if (index > 0) list.unshift(...list.splice(index, 1));
+  return list;
 }

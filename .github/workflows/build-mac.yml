@@ -1,0 +1,50 @@
+name: Build macOS
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version (e.g. 1.13.1)"
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build macOS .dmg
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: "npm"
+
+      - name: Install deps
+        run: npm ci --legacy-peer-deps
+
+      - name: Build React
+        run: npm run build:react
+
+      - name: Generate DMG background
+        run: npm run dmg:background
+
+      - name: Build DMG (ARM64)
+        run: npx electron-builder --mac --arm64 --publish never
+
+      - name: Create Release and Upload DMG
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.version }}
+          name: "Release ${{ inputs.version }}"
+          draft: false
+          prerelease: false
+          files: |
+            dist_electron/*.dmg
+            dist_electron/*.blockmap
+            dist_electron/latest-mac.yml
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

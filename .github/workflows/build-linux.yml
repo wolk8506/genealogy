@@ -1,0 +1,46 @@
+name: Build Linux
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version (e.g. 1.13.1)"
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build Linux AppImage
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: "npm"
+
+      - name: Install deps
+        run: npm ci --legacy-peer-deps
+
+      - name: Build React
+        run: npm run build:react
+
+      - name: Build AppImage
+        run: npm run dist:linux
+
+      - name: Create Release and Upload AppImage
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.version }}
+          name: "Release ${{ inputs.version }}"
+          draft: false
+          prerelease: false
+          files: |
+            dist_electron/*.AppImage
+            dist_electron/latest-linux.yml
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

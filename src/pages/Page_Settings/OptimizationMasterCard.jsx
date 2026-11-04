@@ -37,6 +37,7 @@ import {
   RowDivider,
   SettingsRow,
   chevron,
+  sliderSx,
 } from "./settingsUi";
 
 const maintenanceTasks = [
@@ -433,12 +434,21 @@ export const OptimizationMasterCard = ({ cardStyle, onSubpageChange }) => {
                 <Typography sx={sectionLabelSx}>Параметры</Typography>
                 <Box sx={groupSx}>
                   <Stack divider={<Divider sx={{ ml: 2 }} />}>
-                    <Box sx={{ px: 2, py: 1.4 }}>
+                    <Box
+                      sx={{
+                        px: 2,
+                        py: 1.4,
+                        display: "flex",
+                        alignItems: "center",
+                        flexWrap: "wrap",
+                        gap: 2,
+                      }}
+                    >
                       <Stack
                         direction="row"
                         alignItems="center"
-                        justifyContent="space-between"
-                        gap={2}
+                        spacing={1.5}
+                        sx={{ flex: "1 1 220px", minWidth: 0 }}
                       >
                         <Box sx={{ minWidth: 0 }}>
                           <Typography variant="body2" fontWeight={600}>
@@ -454,12 +464,23 @@ export const OptimizationMasterCard = ({ cardStyle, onSubpageChange }) => {
                         <Typography
                           variant="body2"
                           color="text.secondary"
-                          sx={{ fontVariantNumeric: "tabular-nums" }}
+                          sx={{
+                            flexShrink: 0,
+                            pr: 1,
+                            fontVariantNumeric: "tabular-nums",
+                          }}
                         >
                           {quality}%
                         </Typography>
                       </Stack>
-                      <Box sx={{ px: 2 }}>
+                      <Box
+                        sx={{
+                          flex: "1 1 240px",
+                          minWidth: 200,
+                          maxWidth: 380,
+                          px: 1.25,
+                        }}
+                      >
                         <Slider
                           value={quality}
                           onChange={(e, v) => setQuality(v)}
@@ -472,7 +493,7 @@ export const OptimizationMasterCard = ({ cardStyle, onSubpageChange }) => {
                             { value: 95, label: "Макс" },
                           ]}
                           sx={{
-                            mt: 1,
+                            ...sliderSx,
                             "& .MuiSlider-markLabel": {
                               fontSize: "0.65rem",
                               fontWeight: 600,

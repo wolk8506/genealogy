@@ -12,8 +12,10 @@ import {
 import PersonIcon from "@mui/icons-material/Person";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import PeopleAltIcon from "@mui/icons-material/PeopleAlt";
+import PersonPinCircleIcon from "@mui/icons-material/PersonPinCircle";
 
 import FingerprintIcon from "@mui/icons-material/Fingerprint"; // Или Fingerprint, или Dna
+import { useSettingsStore } from "../../../store/useSettingsStore";
 import PersonAvatar from "../../../components/PersonAvatar";
 import AvatarPreviewDialog from "../../../components/Dialog/AvatarPreviewDialog";
 import AvatarEditorDialog from "../AvatarEditorDialog";
@@ -64,6 +66,10 @@ export default function Info({
   setEditOpen,
 }) {
   const [refreshPhotos, setRefreshPhotos] = useState(0);
+  const homePersonId = useSettingsStore(
+    (state) => state.appSettings.homePersonId,
+  );
+  const isHome = String(homePersonId) === String(person.id);
   const [avatarOpen, setAvatarOpen] = useState(false);
   const [avatarEditorOpen, setAvatarEditorOpen] = useState(false);
   const [avatarPreviewUrl, setAvatarPreviewUrl] = useState(null);
@@ -159,7 +165,7 @@ export default function Info({
         width: "100%",
         display: "flex",
         justifyContent: "center",
-        bgcolor: "background.default",
+        bgcolor: "transparent",
         minWidth: "1134px", // Electron limit // ! 1300
         containerType: "inline-size", // ДОБАВИТЬ ЭТО
         pt: 1,
@@ -216,6 +222,30 @@ export default function Info({
               minHeight: 380, // Фиксируем высоту, чтобы при перевороте не прыгало
             }}
           >
+            {isHome && (
+              <Box
+                sx={{
+                  position: "absolute",
+                  top: -11,
+                  right: 25,
+                  zIndex: 1,
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 0.5,
+                  px: 2,
+                  py: 0.3,
+                  borderRadius: "16px",
+                  bgcolor: "primary.main",
+                  color: "primary.contrastText",
+                  boxShadow: 2,
+                }}
+              >
+                <PersonPinCircleIcon sx={{ fontSize: 14 }} />
+                <Typography variant="caption" fontWeight={700}>
+                  Это я
+                </Typography>
+              </Box>
+            )}
             <Box
               sx={{
                 position: "relative",
@@ -292,14 +322,16 @@ export default function Info({
 
                   <Stack spacing={2} flex={1}>
                     <Stack spacing={0.5}>
-                      <Typography
-                        variant="h4"
-                        sx={{ fontWeight: 800, letterSpacing: "-0.5px" }}
-                      >
-                        {[person.firstName, person.lastName]
-                          .filter(Boolean)
-                          .join(" ") || "Без имени"}
-                      </Typography>
+                      <Stack direction="row" spacing={1.5} alignItems="center">
+                        <Typography
+                          variant="h4"
+                          sx={{ fontWeight: 800, letterSpacing: "-0.5px" }}
+                        >
+                          {[person.firstName, person.lastName]
+                            .filter(Boolean)
+                            .join(" ") || "Без имени"}
+                        </Typography>
+                      </Stack>
                       <Stack direction="row" flexDirection={"column"}>
                         {person.patronymic && (
                           <Typography

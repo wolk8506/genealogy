@@ -1,12 +1,19 @@
 // src/main/window.cjs
-const { BrowserWindow, session } = require("electron");
+const { BrowserWindow, Menu, session } = require("electron");
 const path = require("path");
+const log = require("./logger.cjs").createLogger("window");
 const isDev = process.env.NODE_ENV === "development";
 
 // Разрешаем запросы геолокации из рендерера (локатор «Моё местоположение»).
 session.defaultSession.setPermissionRequestHandler((_wc, permission, callback) => {
   callback(permission === "geolocation");
 });
+
+// На Windows/Linux языки проверки задаются явно, иначе русские слова
+// остаются без вариантов замены. На macOS язык выбирает сама система.
+if (process.platform !== "darwin") {
+  session.defaultSession.setSpellCheckerLanguages(["ru", "en-US"]);
+}
 
 // Проверка платформы
 const isMac = process.platform === "darwin";
@@ -36,6 +43,46 @@ function createWindow() {
     },
   });
 
+  // Подсказки орфографии. Проверку выполняет системный спеллчекер
+  // (в редакторе биографии включён contenteditable), а варианты замены
+  // показываем в нативном контекстном меню.
+  win.webContents.on("context-menu", (_event, params) => {
+    const word = (params.misspelledWord || "").trim();
+    if (!word || !params.isEditable) return;
+
+    const suggestions = (params.dictionarySuggestions || []).slice(0, 6);
+    log.debug(`Орфография: «${word}», вариантов: ${suggestions.length}`);
+    const template = suggestions.length
+      ? suggestions.map((suggestion) => ({
+          label: suggestion,
+          click: () => win.webContents.replaceMisspelling(suggestion),
+        }))
+      : [
+          { label: "Нет вариантов", enabled: false },
+          // На macOS при «Правописании: автоматически по языку» Electron
+          // не получает подсказки — подсказываем, где включить язык явно.
+          ...(process.platform === "darwin"
+            ? [
+                {
+                  label: "Включите «Русский» в Правописании macOS",
+                  enabled: false,
+                },
+              ]
+            : []),
+        ];
+
+    template.push(
+      { type: "separator" },
+      {
+        label: `Добавить «${word}» в словарь`,
+        click: () =>
+          win.webContents.session.addWordToSpellCheckerDictionary(word),
+      },
+    );
+
+    Menu.buildFromTemplate(template).popup({ window: win });
+  });
+
   // --- ДОБАВЛЯЕМ СЛУШАТЕЛИ СОСТОЯНИЯ ОКНА ЗДЕСЬ ---
 
   // win.on("maximize", () => {
@@ -60,6 +107,54 @@ function createWindow() {
   // });
 
   // --- КОНЕЦ БЛОКА СЛУШАТЕЛЕЙ ---
+
+  // Диагностика падений рендерера. Без этих обработчиков при крахе
+  // рендерера окно просто становится пустым, а main-процесс продолжает
+  // жить — снаружи это выглядит как «зависшее» приложение.
+  let crashReloads = 0;
+  let responsiveTimer = null;
+
+  win.webContents.on("render-process-gone", (_event, details) => {
+    log.error(
+      `Рендерер завершился: reason=${details.reason} exitCode=${details.exitCode}`,
+    );
+    if (details.reason === "clean-exit") return;
+    if (win.isDestroyed()) return;
+    if (crashReloads >= 2) {
+      log.error("Рендерер падает повторно — автоперезагрузка остановлена");
+      return;
+    }
+    crashReloads += 1;
+    setTimeout(() => {
+      if (win.isDestroyed()) return;
+      log.warn(`Перезагружаю окно после падения рендерера (#${crashReloads})`);
+      win.webContents.reload();
+    }, 300);
+  });
+
+  win.webContents.on("unresponsive", () => {
+    log.warn("Окно не отвечает");
+    // Если рендерер завис навсегда, перезагружаем его, чтобы не оставлять
+    // пользователя с мёртвым окном. Даём 15 секунд на восстановление.
+    if (responsiveTimer) clearTimeout(responsiveTimer);
+    responsiveTimer = setTimeout(() => {
+      if (win.isDestroyed()) return;
+      log.warn("Окно не отвечает 15 секунд — перезагружаю");
+      win.webContents.reload();
+    }, 15000);
+  });
+
+  win.webContents.on("responsive", () => {
+    log.info("Окно снова отвечает");
+    if (responsiveTimer) {
+      clearTimeout(responsiveTimer);
+      responsiveTimer = null;
+    }
+  });
+
+  win.webContents.on("did-fail-load", (_event, code, description, url) => {
+    log.error(`Не удалось загрузить страницу ${url}: ${code} ${description}`);
+  });
 
   setMainWindow(win);
   win.on("closed", () => require("./helpWindow.cjs").closeHelpWindow());

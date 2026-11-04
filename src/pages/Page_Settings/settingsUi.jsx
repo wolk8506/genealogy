@@ -10,6 +10,60 @@ export const groupSx = {
   bgcolor: "background.paper",
 };
 
+export const sliderSx = {
+  "& .MuiSlider-rail": {
+    opacity: 1,
+    height: 4,
+    borderRadius: 2,
+    bgcolor: (t) =>
+      t.palette.mode === "dark" ? "rgba(255,255,255,0.16)" : "rgba(0,0,0,0.12)",
+  },
+  "& .MuiSlider-track": {
+    height: 4,
+    border: "none",
+    borderRadius: 2,
+  },
+  "& .MuiSlider-thumb": {
+    width: 20,
+    height: 16,
+    borderRadius: "8px",
+    bgcolor: "#FFFFFF",
+    boxShadow: "0 1px 3px rgba(0,0,0,0.3)",
+    "&:hover, &.Mui-focusVisible": {
+      boxShadow: "0 1px 3px rgba(0,0,0,0.3)",
+    },
+    "&.Mui-active": {
+      width: 22,
+      height: 18,
+      borderRadius: "8px",
+      bgcolor: (t) =>
+        t.palette.mode === "dark"
+          ? "rgba(255,255,255,0.14)"
+          : "rgba(0,0,0,0.08)",
+      boxShadow: (t) =>
+        `0 0 0 1px ${
+          t.palette.mode === "dark"
+            ? "rgba(0,0,0,0.45)"
+            : "rgba(0,0,0,0.12)"
+        }`,
+    },
+  },
+  "& .MuiSlider-mark": {
+    width: 3,
+    height: 3,
+    borderRadius: "50%",
+    opacity: 0.55,
+    top: "calc(50% + 12px)",
+    bgcolor: "text.primary",
+  },
+  "& .MuiSlider-markLabel[data-index='0']": {
+    transform: "translateX(0)",
+  },
+  "& .MuiSlider-markLabel[data-index='2']": {
+    transform: "translateX(-100%)",
+  },
+};
+
 export const sectionLabelSx = {
   display: "block",
   mb: 1,
@@ -57,6 +111,7 @@ export function SettingsRow({
   onClick,
   disabled,
   danger,
+  multiline,
 }) {
   return (
     <Box
@@ -79,11 +134,15 @@ export function SettingsRow({
         <Typography
           variant="body2"
           fontWeight={400}
-          noWrap
+          noWrap={!multiline}
           sx={{
             fontSize: "0.8125rem",
             lineHeight: 1.4,
             color: danger ? "error.main" : "text.primary",
+            ...(multiline && {
+              whiteSpace: "normal",
+              overflowWrap: "anywhere",
+            }),
           }}
         >
           {title}
@@ -92,11 +151,15 @@ export function SettingsRow({
           <Typography
             variant="caption"
             display="block"
-            noWrap
+            noWrap={!multiline}
             sx={{
               fontSize: "0.7rem",
               lineHeight: 1.45,
               color: "text.secondary",
+              ...(multiline && {
+                whiteSpace: "normal",
+                overflowWrap: "anywhere",
+              }),
             }}
           >
             {subtitle}

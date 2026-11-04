@@ -35,7 +35,6 @@ import {
 import { alpha, styled, useTheme } from "@mui/material/styles";
 import MuiAppBar from "@mui/material/AppBar";
 // icon
-import InfoIcon from "@mui/icons-material/Info";
 import PersonIcon from "@mui/icons-material/Person";
 import GroupIcon from "@mui/icons-material/Group";
 import Diversity3Icon from "@mui/icons-material/Diversity3";
@@ -43,6 +42,7 @@ import CollectionsIcon from "@mui/icons-material/Collections";
 import MapIcon from "@mui/icons-material/Map";
 import TimelineIcon from "@mui/icons-material/Timeline";
 import ContactsIcon from "@mui/icons-material/Contacts";
+import AccountTreeIcon from "@mui/icons-material/AccountTree";
 import GearIcon from "../components/svg/GearIcon";
 import PersonAddAlt1Icon from "@mui/icons-material/PersonAddAlt1";
 import SearchIcon from "@mui/icons-material/Search";
@@ -50,10 +50,12 @@ import PetsIcon from "@mui/icons-material/Pets";
 import PersonOutlineIcon from "@mui/icons-material/PersonOutline";
 
 import AppDrawer, { DrawerHeader } from "./AppDrawer";
+import PageBackground from "./PageBackground";
 import useAppHotkeys from "../hooks/useAppHotkeys";
 
 import PeopleListPage from "../pages/Page_Main/PeopleListPage";
 import { UpdateBanner } from "../pages/Page_Settings/UpdateBanner";
+import { HomePersonBanner } from "../pages/Page_Settings/HomePersonBanner";
 
 // Тяжёлые страницы — ленивая загрузка отдельными чанками.
 // Пути — статические строки в точном регистре (сборка на Linux чувствительна).
@@ -65,7 +67,6 @@ const FamilyInspector = lazy(
 const GlobalPhotoGallery = lazy(
   () => import("../pages/Page_GlobalPhotoGallery/GlobalPhotoGallery"),
 );
-const AboutPage = lazy(() => import("../pages/Page_About/AboutPage"));
 const ArchivedPeoplePage = lazy(
   () => import("../pages/Page_Settings/ArchivedPeoplePage"),
 );
@@ -88,6 +89,9 @@ const MapPage = lazy(() => import("../pages/Page_Map/MapPage"));
 const TimelinePage = lazy(
   () => import("../pages/Page_Timeline/TimelinePage"),
 );
+const GenealogyTreePage = lazy(
+  () => import("../pages/Page_GenealogyTree/GenealogyTreePage"),
+);
 
 function RouteFallback() {
   return (
@@ -105,15 +109,22 @@ import InspectorPanel from "./InspectorPanel";
 import ExternalInspectorPanel from "./ExternalInspectorPanel";
 import MapInspectorPanel from "./MapInspectorPanel";
 import PhotoInspectorPanel from "./PhotoInspectorPanel";
+import GenealogyTreeInspector from "./GenealogyTreeInspector";
+import {
+  INSPECTOR_TRANSITION_EASING,
+  INSPECTOR_TRANSITION_MS,
+} from "./inspectorPanelTransition";
 import SidebarRightIcon from "../components/svg/SidebarRightIcon";
 import useMemories from "../hooks/useMemories";
 import { countPendingReviewFaces, countNoFacePhotos } from "../utils/photoFaces";
 import { useFaceReviewStore } from "../store/useFaceReviewStore";
 import { usePeopleListStore } from "../store/usePeopleListStore";
 import { usePhotoInspectorStore } from "../store/usePhotoInspectorStore";
+import { useSettingsStore } from "../store/useSettingsStore";
 
 import GalleryToolbar from "./bar_GlobalPhotoGallery/GalleryToolbar";
 import FamiliesToolbar from "./bar_Families/FamiliesToolbar";
+import FamiliesCountPill from "./bar_Families/FamiliesCountPill";
 import TimelineToolbar from "./bar_Timeline/TimelineToolbar";
 import {
   parseTimelineSearch,
@@ -124,6 +135,8 @@ import MapToolbar from "./bar_Map/MapToolbar";
 import PeopleListToolbar from "./bar_PeopleListToolbar/PeopleListToolbar";
 import PersonToolbar from "./bar_PeopleToolbar/PersonToolbar";
 import ExternalToolbar from "./bar_External/ExternalToolbar";
+import GenealogyTreeToolbar from "./bar_GenealogyTree/GenealogyTreeToolbar";
+import { normalizeTreeMode } from "../pages/Page_GenealogyTree/treeModes";
 
 import ButtonConteiner from "../components/ButtonConteiner";
 import SidebarLeftIcon from "../components/svg/SidebarLeftIcon";
@@ -157,8 +170,13 @@ const drawerItems = [
   },
   { text: "Карта", icon: <MapIcon />, path: "/map", accent: "teal" },
   { text: "Лента", icon: <TimelineIcon />, path: "/timeline", accent: "pink" },
+  {
+    text: "Генеалогическое дерево",
+    icon: <AccountTreeIcon />,
+    path: "/genealogy-tree",
+    accent: "indigo",
+  },
   { text: "Настройки", icon: <GearIcon />, path: "/settings", accent: "gray" },
-  { text: "О приложении", icon: <InfoIcon />, path: "/about", accent: "indigo" },
 ];
 
 // const drawerWidth = 200;
@@ -244,6 +262,10 @@ export default function MainLayout() {
     listPoints: [],
   });
 
+  // Генеалогическое дерево: режим, выбранный человек и центр дерева живут
+  // в URL (?person=&root=&mode=), чтобы работали перезагрузка и «назад».
+  const [genealogyTreePanelOpen, setGenealogyTreePanelOpen] = useState(true);
+
   const [allPeople, setAllPeople] = useState([]); // Нужно загрузить список людей здесь для Autocomplete
   const [photos, setPhotos] = useState([]); // Добавляем этот стейт
   const [loading, setLoading] = useState(true);
@@ -280,6 +302,13 @@ export default function MainLayout() {
     location.pathname === "/families" ||
     location.pathname.startsWith("/families/");
   const isFamiliesDetail = location.pathname.startsWith("/families/");
+
+  // «Это я» из настроек: от него дерево строится по умолчанию,
+  // а на странице семей его семья идёт первой.
+  const homePersonId = useSettingsStore(
+    (state) => state.appSettings.homePersonId,
+  );
+  const settingsLoaded = useSettingsStore((state) => state.settingsLoaded);
 
   const familiesView = useMemo(
     () => (isFamiliesPage ? buildFamilyViews(allPeople) : null),
@@ -350,6 +379,7 @@ export default function MainLayout() {
     onOpenFamily: handleFamiliesOpenFamily,
     search: familiesSearch,
     sort: familiesSort,
+    homePersonId,
   };
 
   // «В этот день»: подборка считается из тех же данных, бейдж — суммарно.
@@ -366,6 +396,128 @@ export default function MainLayout() {
   const [relationPersonId, setRelationPersonId] = useState(null);
   const isExternalPage = location.pathname === "/external";
   const isMapPage = location.pathname === "/map";
+  const isGenealogyTreePage = location.pathname === "/genealogy-tree";
+  const isSettingsPage =
+    location.pathname === "/settings" ||
+    location.pathname.startsWith("/settings/");
+  const isTimelinePage = location.pathname === "/timeline";
+  const isFullBleedPage = isMapPage || isFamiliesPage || isGenealogyTreePage;
+
+  // Состояние дерева — в URL. person — кого показываем в панели,
+  // root — от кого построено дерево (меняется правым кликом).
+  const genealogyTreeMode = normalizeTreeMode(searchParams.get("mode"));
+  const genealogyTreePersonId = toId(searchParams.get("person"));
+  const genealogyTreeRootId =
+    toId(searchParams.get("root")) || genealogyTreePersonId;
+
+  // «Это я» из настроек: от него дерево строится по умолчанию.
+  const updateTreeParams = useCallback(
+    (patch, { replace = false } = {}) => {
+      const next = new URLSearchParams(location.search);
+      Object.entries(patch).forEach(([key, value]) => {
+        if (
+          value === null ||
+          value === undefined ||
+          value === ""
+        ) {
+          next.delete(key);
+        } else {
+          next.set(key, String(value));
+        }
+      });
+      navigate(
+        { pathname: "/genealogy-tree", search: next.toString() },
+        { replace },
+      );
+    },
+    [location.search, navigate],
+  );
+
+  const handleTreeSelect = useCallback(
+    (personId, { root = false } = {}) => {
+      const key = toId(personId);
+      if (!key) return;
+      setGenealogyTreePanelOpen(true);
+      updateTreeParams(
+        root
+          ? { person: key, root: key }
+          : { person: key, root: genealogyTreeRootId || key },
+        { replace: !root },
+      );
+    },
+    [updateTreeParams, genealogyTreeRootId],
+  );
+
+  // Первый заход в раздел: выбираем домашнего человека («Это я»), а если он
+  // не задан — первого доступного. Ждём загрузки настроек, иначе успели бы
+  // записать в URL первого человека и домашний уже не применился бы.
+  // Если в URL устаревший/архивный id — возвращаемся к тому же выбору.
+  useEffect(() => {
+    if (!isGenealogyTreePage || loading || !allPeople?.length) return;
+    if (!settingsLoaded) return;
+    const first = allPeople.find((person) => person && !person.archived);
+    if (!first) return;
+
+    const available = new Set(
+      allPeople
+        .filter((person) => person && !person.archived)
+        .map((person) => String(person.id)),
+    );
+    const homeKey = toId(homePersonId);
+    const fallbackId =
+      homeKey && available.has(homeKey) ? homeKey : String(first.id);
+    const personValid =
+      genealogyTreePersonId && available.has(genealogyTreePersonId);
+    const rootValid =
+      genealogyTreeRootId && available.has(genealogyTreeRootId);
+
+    if (!personValid) {
+      updateTreeParams(
+        { person: fallbackId, root: null },
+        { replace: true },
+      );
+      return;
+    }
+
+    if (!rootValid) {
+      updateTreeParams({ root: null }, { replace: true });
+    }
+  }, [
+    isGenealogyTreePage,
+    loading,
+    settingsLoaded,
+    homePersonId,
+    genealogyTreePersonId,
+    genealogyTreeRootId,
+    allPeople,
+    updateTreeParams,
+  ]);
+
+  // Фильтр по поколениям убран: старые ссылки с ?depth= чистим.
+  useEffect(() => {
+    if (!isGenealogyTreePage || !searchParams.has("depth")) return;
+    updateTreeParams({ depth: null }, { replace: true });
+  }, [isGenealogyTreePage, searchParams, updateTreeParams]);
+
+  // Фон страницы в оттенке иконки раздела.
+  const pageAccent =
+    isMainPage || location.pathname === "/people"
+      ? "blue"
+      : isFamiliesPage
+        ? "green"
+        : isExternalPage
+          ? "orange"
+          : location.pathname === "/globalPhotoGallery"
+            ? "purple"
+            : isTimelinePage
+              ? "pink"
+              : isGenealogyTreePage
+                ? "indigo"
+                : location.pathname.startsWith("/person/")
+                  ? "blue"
+                  : isSettingsPage
+                    ? "gray"
+                    : null;
   const [externalPanelOpen, setExternalPanelOpen] = useState(true);
   const [selectedExternalId, setSelectedExternalId] = useState(null);
   const [externalListRefreshKey, setExternalListRefreshKey] = useState(0);
@@ -440,9 +592,6 @@ export default function MainLayout() {
   // --- 1. Новые стейты и рефы ---
   const [isInfoEditing, setIsInfoEditing] = useState(false);
   const infoRequestToggleRef = useRef(null); // Ссылка на методы InfoSection (toggle, checkDirty, save, cancel)
-  // tree
-  const [treeMode, setTreeMode] = useState("descendants");
-  const treePageRef = useRef(null); // Для вызова handleExport
   // photo
   const [activeElement, setActiveElement] = useState("info"); // "info" - анкета, "photo" - фотографии
   const [galleryPersonSearch, setGalleryPersonSearch] = useState("");
@@ -741,10 +890,21 @@ export default function MainLayout() {
   } else if (location.pathname === "/trash") {
     pageTitle = (
       <Box sx={{ display: "flex", alignItems: "center" }}>
-        <Box sx={{ display: "flex", alignItems: "center", mr: 2 }}>
-          <TrashFillIcon color={isDark ? "primary" : "prymary"} />
+        <Box sx={{ display: "flex", alignItems: "center", mr: 1 }}>
+          <TrashFillIcon
+            color={isDark ? "primary" : "prymary"}
+            sx={{ fontSize: 18 }}
+          />
         </Box>
-        <Typography variant="h6" noWrap>
+        <Typography
+          noWrap
+          sx={{
+            fontSize: "0.8125rem",
+            fontWeight: 600,
+            letterSpacing: "-0.01em",
+            lineHeight: 1.2,
+          }}
+        >
           Корзина
         </Typography>
       </Box>
@@ -757,6 +917,17 @@ export default function MainLayout() {
         </Box>
         <Typography variant="h6" noWrap>
           Справочник
+        </Typography>
+      </Box>
+    );
+  } else if (location.pathname === "/genealogy-tree") {
+    pageTitle = (
+      <Box sx={{ display: "flex", alignItems: "center" }}>
+        <Box sx={{ display: "flex", alignItems: "center", mr: 2 }}>
+          <AccountTreeIcon color={isDark ? "primary" : "prymary"} />
+        </Box>
+        <Typography variant="h6" noWrap>
+          Генеалогическое дерево
         </Typography>
       </Box>
     );
@@ -848,6 +1019,12 @@ export default function MainLayout() {
             <NavigationButtons />
             <NotificationBell />
 
+            {isFamiliesPage && !loading && familiesView && (
+              <Box sx={{ ml: "12px", display: "inline-flex" }}>
+                <FamiliesCountPill count={familiesView.families.length} />
+              </Box>
+            )}
+
             {match && (
               <Box sx={{ flex: 1, minWidth: 0, display: "flex" }}>
               <PersonToolbar
@@ -890,22 +1067,6 @@ export default function MainLayout() {
                   searchMatchIndex: bioSearchMatchIndex,
                   onSearchMatchIndexChange: setBioSearchMatchIndex,
                   searchMatchCount: bioSearchMatchCount,
-                }}
-                treeProps={{
-                  treeMode: treeMode,
-                  setTreeMode: setTreeMode,
-                  onExport: () => {
-                    if (treePageRef.current) {
-                      treePageRef.current.handleExport();
-                    } else {
-                      console.warn("Древо еще не загружено или не в фокусе");
-                    }
-                  },
-                  zoomIn: () => {
-                    treePageRef.current?.zoomIn(); // Убедись, что имя рефа совпадает!
-                  },
-                  zoomOut: () => treePageRef.current?.zoomOut(),
-                  fitView: () => treePageRef.current?.fitView(),
                 }}
               />
               </Box>
@@ -1019,13 +1180,21 @@ export default function MainLayout() {
               />
             )}
 
+            {isGenealogyTreePage && (
+              <GenealogyTreeToolbar
+                mode={genealogyTreeMode}
+                onModeChange={(value) => updateTreeParams({ mode: value })}
+              />
+            )}
+
             {/* Кнопка правой панели — главная, справочник, карта, галереи */}
             {(isMainPage ||
               isExternalPage ||
               isMapPage ||
               isGalleryPage ||
               isPersonPhotoPage ||
-              isFamiliesDetail) && (
+              isFamiliesDetail ||
+              isGenealogyTreePage) && (
               <Box sx={{ ml: "12px", display: "inline-flex" }}>
                 <ButtonConteiner>
                   <IconButton
@@ -1037,6 +1206,8 @@ export default function MainLayout() {
                         usePhotoInspectorStore.getState().toggle();
                       else if (isFamiliesDetail)
                         setFamiliesPanelOpen((v) => !v);
+                      else if (isGenealogyTreePage)
+                        setGenealogyTreePanelOpen((v) => !v);
                       else setMemoriesOpen((v) => !v);
                     }}
                     size="small"
@@ -1055,7 +1226,8 @@ export default function MainLayout() {
               location.pathname !== "/" &&
               location.pathname !== "/external" &&
               location.pathname !== "/timeline" &&
-              location.pathname !== "/map" && (
+              location.pathname !== "/map" &&
+              location.pathname !== "/genealogy-tree" && (
                 <Box
                   sx={{
                     display: "flex",
@@ -1093,172 +1265,197 @@ export default function MainLayout() {
               (isMapPage && mapPanelOpen) ||
               (isGalleryPage && photoPanelOpen) ||
               (isPersonPhotoPage && photoPanelOpen) ||
-              (isFamiliesDetail && familiesPanelOpen)
+              (isFamiliesDetail && familiesPanelOpen) ||
+              (isGenealogyTreePage && genealogyTreePanelOpen)
                 ? "340px"
                 : 0,
-            transition: "margin-right 0.3s ease",
+            transition: `margin-right ${INSPECTOR_TRANSITION_MS}ms ${INSPECTOR_TRANSITION_EASING}`,
             // pt: 1,
-            pr: isMapPage || isFamiliesPage ? 0 : 1,
-            pb: isMapPage || isFamiliesPage ? 0 : 1,
-            pl: isMapPage || isFamiliesPage ? 0 : 1,
+            pr: isFullBleedPage ? 0 : 1,
+            pb: isFullBleedPage ? 0 : 1,
+            pl: isFullBleedPage ? 0 : 1,
             // width: "calc(100% - 64px)",
             // height: "100vh",
           }}
         >
           <DrawerHeader />
           <UpdateBanner onOpenSettings={() => navigate("/settings")} />
-          <Suspense fallback={<RouteFallback />}>
-          <Routes>
-            <Route
-              path="/"
-              element={
-                <PeopleListPage
-                  search={peopleSearch} // Используем стейт людей
-                  filters={filters}
-                  sortOrder={sortOrder}
-                  filterOpen={filterOpen}
-                  setFilterOpen={setFilterOpen}
-                  setFilters={setFilters}
-                  onShowRelations={(id) => {
-                    setRelationPersonId(id);
-                    setInspectorTab("relations");
-                    setMemoriesOpen(true);
-                  }}
+          <HomePersonBanner
+            hasPeople={allPeople.length > 0}
+            onOpenSettings={() => navigate("/settings?section=home")}
+          />
+          <PageBackground accent={pageAccent}>
+            <Suspense fallback={<RouteFallback />}>
+              <Routes>
+                <Route
+                  path="/"
+                  element={
+                    <PeopleListPage
+                      search={peopleSearch} // Используем стейт людей
+                      setSearch={setPeopleSearch}
+                      filters={filters}
+                      sortOrder={sortOrder}
+                      filterOpen={filterOpen}
+                      setFilterOpen={setFilterOpen}
+                      setFilters={setFilters}
+                      onShowRelations={(id) => {
+                        setRelationPersonId(id);
+                        setInspectorTab("relations");
+                        setMemoriesOpen(true);
+                      }}
+                    />
+                  }
                 />
-              }
-            />
-            {/* <Route path="/add" element={<AddPersonPage />} /> */}
-            <Route
-              path="/globalPhotoGallery"
-              element={
-                <GlobalPhotoGallery
-                  search={gallerySearch} // Используем стейт галереи
-                  selectedPeople={selectedPeople}
-                  groupBy={groupBy}
-                  sortDir={sortDir}
-                  initialPhotos={photos} // Данные
-                  initialPeople={allPeople} // Данные
-                  setPhotos={setPhotos} // Функция обновления
-                  setAllPeople={setAllPeople} // Функция обновления
-                  isLoading={loading}
-                  allPeople={allPeople}
-                  photos={photos}
-                  refresh={refreshAppData} // Чтобы галерея могла сама обновить шапку
+                {/* <Route path="/add" element={<AddPersonPage />} /> */}
+                <Route
+                  path="/globalPhotoGallery"
+                  element={
+                    <GlobalPhotoGallery
+                      search={gallerySearch} // Используем стейт галереи
+                      selectedPeople={selectedPeople}
+                      groupBy={groupBy}
+                      sortDir={sortDir}
+                      initialPhotos={photos} // Данные
+                      initialPeople={allPeople} // Данные
+                      setPhotos={setPhotos} // Функция обновления
+                      setAllPeople={setAllPeople} // Функция обновления
+                      isLoading={loading}
+                      allPeople={allPeople}
+                      photos={photos}
+                      refresh={refreshAppData} // Чтобы галерея могла сама обновить шапку
+                    />
+                  }
                 />
-              }
-            />
-            <Route path="/people" element={<PeopleListPage />} />
-            <Route
-              path="/person/:id"
-              element={
-                <PersonPage
-                  ref={personPageRef}
-                  infoProps={{
-                    isEditing: isInfoEditing,
-                    setIsEditing: setIsInfoEditing,
-                    requestToggleRef: infoRequestToggleRef, // Реф для связи с тулбаром
-                  }}
-                  activeElement={activeElement}
-                  galleryProps={{
-                    search: galleryPersonSearch,
-                    groupBy: galleryGroupBy,
-                    sortDir: gallerySortDir,
-                    uploadTrigger: uploadTrigger,
-                  }}
-                  bioProps={{
-                    isEditing: isBioEditing,
-                    setIsEditing: setIsBioEditing,
-                    execRef: bioExecRef,
-                    requestToggleRef: bioRequestToggleRef,
-                    isNavVisible: isBioNavVisible,
-                    onDirtyChange: setIsBioDirty,
-                    searchQuery: bioSearchQuery,
-                    searchMatchIndex: bioSearchMatchIndex,
-                    onSearchMatchCountChange: setBioSearchMatchCount,
-                  }}
-                  treeProps={{
-                    mode: treeMode,
-                    treePageRef: treePageRef, // Передаем реф
-                  }}
+                <Route path="/people" element={<PeopleListPage />} />
+                <Route
+                  path="/person/:id"
+                  element={
+                    <PersonPage
+                      ref={personPageRef}
+                      infoProps={{
+                        isEditing: isInfoEditing,
+                        setIsEditing: setIsInfoEditing,
+                        requestToggleRef: infoRequestToggleRef, // Реф для связи с тулбаром
+                      }}
+                      activeElement={activeElement}
+                      galleryProps={{
+                        search: galleryPersonSearch,
+                        groupBy: galleryGroupBy,
+                        sortDir: gallerySortDir,
+                        uploadTrigger: uploadTrigger,
+                      }}
+                      bioProps={{
+                        isEditing: isBioEditing,
+                        setIsEditing: setIsBioEditing,
+                        execRef: bioExecRef,
+                        requestToggleRef: bioRequestToggleRef,
+                        isNavVisible: isBioNavVisible,
+                        onDirtyChange: setIsBioDirty,
+                        searchQuery: bioSearchQuery,
+                        searchMatchIndex: bioSearchMatchIndex,
+                        onSearchMatchCountChange: setBioSearchMatchCount,
+                      }}
+                    />
+                  }
                 />
-              }
-            />
-            <Route
-              path="/families"
-              element={<FamiliesPage {...familiesRouteProps} />}
-            />
-            <Route
-              path="/families/:familyKey"
-              element={<FamiliesPage {...familiesRouteProps} />}
-            />
-            <Route path="/settings" element={<ArchivedPeoplePage />} />
-            <Route
-              path="/settings/faces/review"
-              element={<FaceReviewQueuePage allPeople={allPeople} />}
-            />
-            <Route
-              path="/settings/faces/no-faces"
-              element={<FaceNoFacesQueuePage allPeople={allPeople} />}
-            />
-            <Route path="/archive" element={<Navigate to="/settings" replace />} />
+                <Route
+                  path="/families"
+                  element={<FamiliesPage {...familiesRouteProps} />}
+                />
+                <Route
+                  path="/families/:familyKey"
+                  element={<FamiliesPage {...familiesRouteProps} />}
+                />
+                <Route path="/settings" element={<ArchivedPeoplePage />} />
+                <Route
+                  path="/settings/faces/review"
+                  element={<FaceReviewQueuePage allPeople={allPeople} />}
+                />
+                <Route
+                  path="/settings/faces/no-faces"
+                  element={<FaceNoFacesQueuePage allPeople={allPeople} />}
+                />
+                <Route path="/archive" element={<Navigate to="/settings" replace />} />
 
-            {/* <Route path="/photoUploader" element={<PhotoUploader />} /> */}
-            <Route path="/about" element={<AboutPage />} />
-            <Route path="/trash" element={<DeletedPeoplePage />} />
-            <Route
-              path="/external"
-              element={
-                <ExternalPeoplePage
-                  externalSearch={externalSearch}
-                  setExternalSearch={setExternalSearch}
-                  externalTypeFilter={externalTypeFilter}
-                  setExternalTypeFilter={setExternalTypeFilter}
-                  selectedId={selectedExternalId}
-                  onSelect={handleSelectExternal}
-                  listRefreshKey={externalListRefreshKey}
+                {/* <Route path="/photoUploader" element={<PhotoUploader />} /> */}
+                <Route
+                  path="/about"
+                  element={<Navigate to="/settings" replace />}
                 />
-              }
-            />
-            <Route path="/external/:id" element={<ExternalEntityPage />} />
-            <Route
-              path="/map"
-              element={
-                <MapPage
-                  showPhotos={mapShowPhotos}
-                  showEvents={mapShowEvents}
-                  showExternal={mapShowExternal}
-                  refreshKey={mapRefreshKey}
-                  clearGeocodeKey={mapClearGeocodeKey}
-                  dataRevision={appDataRevision}
-                  fitBoundsKey={mapFitBoundsKey}
-                  selectedPeopleIds={mapSelectedPeopleIds}
-                  focusPointKey={mapFocusKey}
-                  focusTrigger={mapFocusTrigger}
-                  allPeople={allPeople}
-                  onStatsChange={setMapStats}
+                <Route path="/trash" element={<DeletedPeoplePage />} />
+                <Route
+                  path="/external"
+                  element={
+                    <ExternalPeoplePage
+                      externalSearch={externalSearch}
+                      setExternalSearch={setExternalSearch}
+                      externalTypeFilter={externalTypeFilter}
+                      setExternalTypeFilter={setExternalTypeFilter}
+                      selectedId={selectedExternalId}
+                      onSelect={handleSelectExternal}
+                      listRefreshKey={externalListRefreshKey}
+                    />
+                  }
                 />
-              }
-            />
-            <Route
-              path="/timeline"
-              element={
-                <TimelinePage
-                  photos={photos}
-                  allPeople={allPeople}
-                  level={timelineLevel}
-                  year={timelineYear}
-                  month={timelineMonth}
-                  onNavigate={navigateTimeline}
-                  showPhotos={timelineShowPhotos}
-                  showEvents={timelineShowEvents}
-                  showExternal={timelineShowExternal}
-                  filterPersonId={timelinePersonId}
-                  refresh={refreshAppData}
+                <Route path="/external/:id" element={<ExternalEntityPage />} />
+                <Route
+                  path="/map"
+                  element={
+                    <MapPage
+                      showPhotos={mapShowPhotos}
+                      showEvents={mapShowEvents}
+                      showExternal={mapShowExternal}
+                      refreshKey={mapRefreshKey}
+                      clearGeocodeKey={mapClearGeocodeKey}
+                      dataRevision={appDataRevision}
+                      fitBoundsKey={mapFitBoundsKey}
+                      selectedPeopleIds={mapSelectedPeopleIds}
+                      focusPointKey={mapFocusKey}
+                      focusTrigger={mapFocusTrigger}
+                      allPeople={allPeople}
+                      onStatsChange={setMapStats}
+                    />
+                  }
                 />
-              }
-            />
-          </Routes>
-          </Suspense>
+                <Route
+                  path="/timeline"
+                  element={
+                    <TimelinePage
+                      photos={photos}
+                      allPeople={allPeople}
+                      level={timelineLevel}
+                      year={timelineYear}
+                      month={timelineMonth}
+                      onNavigate={navigateTimeline}
+                      showPhotos={timelineShowPhotos}
+                      showEvents={timelineShowEvents}
+                      showExternal={timelineShowExternal}
+                      filterPersonId={timelinePersonId}
+                      refresh={refreshAppData}
+                    />
+                  }
+                />
+                <Route
+                  path="/genealogy-tree"
+                  element={
+                    <GenealogyTreePage
+                      allPeople={allPeople}
+                      loading={loading}
+                      error={appDataError}
+                      onRetry={refreshAppData}
+                      mode={genealogyTreeMode}
+                      personId={genealogyTreePersonId}
+                      rootPersonId={genealogyTreeRootId}
+                      onSelectPerson={(id) => handleTreeSelect(id)}
+                      onChooseRoot={(id) =>
+                        handleTreeSelect(id, { root: true })
+                      }
+                    />
+                  }
+                />
+              </Routes>
+            </Suspense>
+          </PageBackground>
         </Box>
       </Box>
       <LicenseModal
@@ -1332,6 +1529,15 @@ export default function MainLayout() {
             onClose={() => setFamiliesPanelOpen(false)}
           />
         </Suspense>
+      )}
+      {isGenealogyTreePage && (
+        <GenealogyTreeInspector
+          open={genealogyTreePanelOpen}
+          onClose={() => setGenealogyTreePanelOpen(false)}
+          personId={genealogyTreePersonId}
+          allPeople={allPeople}
+          onFocusPerson={(id) => handleTreeSelect(id, { root: true })}
+        />
       )}
       <ChangelogModal />
     </>

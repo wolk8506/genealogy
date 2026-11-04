@@ -810,7 +810,7 @@ export default function TimelinePage({
         display: "flex",
         flexDirection: "column",
         height: "calc(100vh - 60px)",
-        bgcolor: "background.default",
+        bgcolor: "transparent",
         position: "relative",
       }}
     >

@@ -13,7 +13,7 @@ import {
   unionTitle,
 } from "../../../utils/families/familyLabels";
 
-export default function FamilyCard({ family, onOpen }) {
+export default function FamilyCard({ family, isMine = false, onOpen }) {
   const theme = useTheme();
   const status = unionStatusMeta(family.status);
   const archived = (family.partners || []).some((person) => person.archived);
@@ -99,12 +99,27 @@ export default function FamilyCard({ family, onOpen }) {
         />
       </Stack>
 
-      {(status || family.isSingle || archived || fromEventOnly) && (
+      {(isMine || status || family.isSingle || archived || fromEventOnly) && (
         <Stack
           direction="row"
           spacing={0.5}
           sx={{ mt: 1.25, flexWrap: "wrap", gap: 0.5 }}
         >
+          {isMine && (
+            <Chip
+              size="small"
+              label="моя семья"
+              sx={{
+                height: 19,
+                fontSize: "0.66rem",
+                fontWeight: 700,
+                color: "primary.main",
+                backgroundColor: alpha(theme.palette.primary.main, 0.14),
+                "& .MuiChip-label": { px: 0.8 },
+              }}
+            />
+          )}
+
           {status && family.status !== "married" && (
             <Chip
               size="small"

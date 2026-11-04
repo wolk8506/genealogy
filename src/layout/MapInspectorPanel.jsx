@@ -12,6 +12,10 @@ import {
   SettingsRow,
   CountBadge,
 } from "../pages/Page_Settings/settingsUi";
+import {
+  inspectorDrawerTransitionProps,
+  inspectorPaperSx,
+} from "./inspectorPanelTransition";
 
 function kindIcon(kind) {
   if (kind === "photo")
@@ -33,12 +37,12 @@ export default function MapInspectorPanel({
       open={open}
       onClose={onClose}
       variant="persistent"
-      transitionDuration={0}
+      {...inspectorDrawerTransitionProps}
       PaperProps={{
         sx: {
           top: 50,
           height: "calc(100% - 50px)",
-          bgcolor: "background.default",
+          ...inspectorPaperSx,
           borderLeft: "1px solid",
           borderColor: "divider",
         },

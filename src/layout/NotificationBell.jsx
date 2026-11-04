@@ -87,6 +87,7 @@ export const NotificationBell = () => {
         sx={{
           ...toolbarPillSx,
           ml: 2,
+          mr: 2,
           width: 36,
           display: "inline-flex",
           alignItems: "center",

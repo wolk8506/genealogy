@@ -48,22 +48,13 @@ function accentsOf(theme) {
   };
 }
 
-/** Фон страницы: мягкий ambient-градиент, на котором читается стекло. */
-export const familyPageSx = (theme) => {
-  const dark = theme.palette.mode === "dark";
-  const accents = accentsOf(theme);
-
+/** Страница «Семьи». Ambient-градиент рисует PageBackground в MainLayout. */
+export const familyPageSx = () => {
   return {
     fontFamily: FAMILY_FONT,
     "& .MuiTypography-root": { fontFamily: "inherit" },
     "& .MuiButton-root": { fontFamily: "inherit" },
     minHeight: "100%",
-    backgroundColor: dark ? "#0B0B0D" : "#F4F4F7",
-    backgroundImage: [
-      `radial-gradient(920px 540px at 6% -10%, ${alpha(accents.blue, dark ? 0.22 : 0.13)}, transparent 62%)`,
-      `radial-gradient(800px 500px at 98% -6%, ${alpha(accents.indigo, dark ? 0.2 : 0.11)}, transparent 60%)`,
-      `radial-gradient(980px 600px at 50% 114%, ${alpha(accents.mint, dark ? 0.12 : 0.07)}, transparent 64%)`,
-    ].join(", "),
   };
 };
 

@@ -1,0 +1,50 @@
+name: Build Windows
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version (e.g. 1.13.1)"
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build Windows installer
+    runs-on: windows-2022
+    env:
+      GYP_MSVS_VERSION: 2022
+      npm_config_msvs_version: 2022
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: "npm"
+
+      - name: Install deps
+        run: npm ci --legacy-peer-deps
+
+      - name: Build React
+        run: npm run build:react
+
+      - name: Build Windows installer
+        run: npm run dist:win
+
+      - name: Create Release and Upload Installer
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.version }}
+          name: "Release ${{ inputs.version }}"
+          draft: false
+          prerelease: false
+          files: |
+            dist_electron/*.exe
+            dist_electron/*.blockmap
+            dist_electron/latest.yml
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

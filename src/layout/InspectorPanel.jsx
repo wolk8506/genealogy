@@ -30,6 +30,10 @@ import {
   SettingsRow,
   sectionLabelSx,
 } from "../pages/Page_Settings/settingsUi";
+import {
+  inspectorDrawerTransitionProps,
+  inspectorPaperSx,
+} from "./inspectorPanelTransition";
 
 function PersonHeader({ personId, allPeople, onFocusPerson }) {
   const navigate = useNavigate();
@@ -446,10 +450,18 @@ function RelationsTab({ personId, allPeople, onFocusPerson }) {
   if (!person) {
     return (
       <Box sx={{ flexGrow: 1, overflowY: "auto", p: 2 }}>
-        <Typography color="text.secondary" variant="body2">
-          Нажмите кнопку «Связи» на карточке человека в списке — здесь
-          появятся его описание и родственники.
-        </Typography>
+        <Box sx={groupSx}>
+          <SettingsRow
+            icon={
+              <RowIcon bg="gray">
+                <GroupsIcon sx={{ fontSize: 18 }} />
+              </RowIcon>
+            }
+            title="Человек не выбран"
+            subtitle="Нажмите «Связи» на карточке человека в списке — здесь появятся его описание и родственники."
+            multiline
+          />
+        </Box>
       </Box>
     );
   }
@@ -570,6 +582,7 @@ function RelationsTab({ personId, allPeople, onFocusPerson }) {
                 }
                 title="Связи не указаны"
                 subtitle="Добавьте родителей, супруга или детей в карточке человека."
+                multiline
               />
             </Box>
           )}
@@ -598,12 +611,12 @@ export default function InspectorPanel({
       open={open}
       onClose={onClose}
       variant="persistent"
-      transitionDuration={0}
+      {...inspectorDrawerTransitionProps}
       PaperProps={{
         sx: {
           top: 50,
           height: "calc(100% - 50px)",
-          bgcolor: "background.default",
+          ...inspectorPaperSx,
           borderLeft: "1px solid",
           borderColor: "divider",
         },
