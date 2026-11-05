@@ -7,13 +7,19 @@ import React, {
 } from "react";
 import { useParams } from "react-router-dom";
 
-import { Typography, Stack, Box, Fade } from "@mui/material";
+import { Typography, Stack, Box, CircularProgress } from "@mui/material";
 import { useNotificationStore } from "../../store/useNotificationStore";
 import Info from "./info/Info";
 import PhotoGallery from "./PhotoGallery/PhotoGallery";
 import BiographySection from "./Bio/BiographySection";
 import Editor from "./Editor/Editor";
 import PersonFilesTab from "./File/PersonFilesTab";
+
+// Вкладки скрываются через display, а не размонтируются: фото, биография
+// и файлы не перезагружаются при каждом переключении.
+const TabPanel = ({ visible, children }) => (
+  <Box sx={{ display: visible ? "block" : "none" }}>{children}</Box>
+);
 
 const PersonPage = forwardRef(
   ({ activeElement, galleryProps, bioProps, infoProps }, ref) => {
@@ -23,7 +29,21 @@ const PersonPage = forwardRef(
     );
     const [person, setPerson] = useState(null);
     const [allPeople, setAllPeople] = useState([]);
+    const [loadState, setLoadState] = useState("loading");
     const [editOpen, setEditOpen] = useState(false);
+
+    // Каждая вкладка монтируется при первом открытии и остаётся в дереве.
+    const [mountedTabs, setMountedTabs] = useState(() => new Set(["info"]));
+    const activeTabKey =
+      activeElement === "info" && infoProps.isEditing
+        ? "info-editor"
+        : activeElement;
+
+    useEffect(() => {
+      setMountedTabs((prev) =>
+        prev.has(activeTabKey) ? prev : new Set(prev).add(activeTabKey),
+      );
+    }, [activeTabKey]);
 
     // Реф для самого компонента Editor, чтобы спросить у него, изменились ли данные
     const editorRef = useRef(null);
@@ -139,24 +159,73 @@ const PersonPage = forwardRef(
 
     useEffect(() => {
       let isMounted = true;
+      setPerson(null);
+      setLoadState("loading");
+
       const numericId = parseInt(id, 10);
+      if (!Number.isFinite(numericId)) {
+        setLoadState("missing");
+        return () => {
+          isMounted = false;
+        };
+      }
+
       Promise.all([
         window.peopleAPI.getById(numericId),
         window.peopleAPI.getAll(),
-      ]).then(([personData, people]) => {
-        if (!isMounted) return;
-        // Нормализация массивов, чтобы избежать ошибок .map()
-        const normalized = {
-          ...personData,
-          facts: Array.isArray(personData?.facts) ? personData.facts : [],
-          events: Array.isArray(personData?.events) ? personData.events : [], // 👈
-        };
-        setPerson(normalized);
-        setAllPeople(people || []);
-      });
+      ])
+        .then(([personData, people]) => {
+          if (!isMounted) return;
+          setAllPeople(people || []);
+          if (!personData) {
+            setLoadState("missing");
+            return;
+          }
+          // Нормализация массивов, чтобы избежать ошибок .map()
+          const normalized = {
+            ...personData,
+            facts: Array.isArray(personData?.facts) ? personData.facts : [],
+            events: Array.isArray(personData?.events) ? personData.events : [],
+          };
+          setPerson(normalized);
+          setLoadState("ready");
+        })
+        .catch(() => {
+          if (isMounted) setLoadState("error");
+        });
+
+      return () => {
+        isMounted = false;
+      };
     }, [id]);
 
-    if (!person) return <Typography>Человек не найден</Typography>;
+    if (loadState === "loading") {
+      return (
+        <Box
+          sx={{
+            minHeight: "calc(100vh - 120px)",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 2,
+          }}
+        >
+          <CircularProgress size={28} />
+          <Typography variant="body2" color="text.secondary">
+            Загрузка…
+          </Typography>
+        </Box>
+      );
+    }
+
+    if (loadState === "error") {
+      return <Typography>Не удалось загрузить данные человека</Typography>;
+    }
+
+    if (loadState === "missing" || !person) {
+      return <Typography>Человек не найден</Typography>;
+    }
     const safeFacts = Array.isArray(person?.facts) ? person.facts : [];
     const safeEvents = Array.isArray(person?.events) ? person.events : [];
 
@@ -413,19 +482,15 @@ const PersonPage = forwardRef(
         link: `/person/${target.id}`,
         category: "event",
       });
-
-      alert(`Событие успешно скопировано для ${target.firstName}`);
     };
 
     return (
-      <Stack spacing={2}>
+      // Без spacing: видима только одна вкладка, а скрытые соседи
+      // всё равно получали бы margin-top и сдвигали страницу.
+      <Stack>
         {/* Секция Инфо */}
-        <Fade
-          in={activeElement === "info" && !infoProps.isEditing}
-          unmountOnExit
-          timeout={500}
-        >
-          <Box>
+        {mountedTabs.has("info") && (
+          <TabPanel visible={activeTabKey === "info"}>
             <Info
               person={person}
               editOpen={editOpen}
@@ -452,15 +517,11 @@ const PersonPage = forwardRef(
               setEventToCopy={setEventToCopy}
               setEditOpen={setEditOpen}
             />
-          </Box>
-        </Fade>
-        {/* Секция Инфо */}
-        <Fade
-          in={activeElement === "info" && infoProps.isEditing}
-          unmountOnExit
-          timeout={500}
-        >
-          <Box>
+          </TabPanel>
+        )}
+        {/* Редактор анкеты */}
+        {mountedTabs.has("info-editor") && (
+          <TabPanel visible={activeTabKey === "info-editor"}>
             <Editor
               ref={editorRef}
               person={person}
@@ -470,12 +531,12 @@ const PersonPage = forwardRef(
               setEditOpen={infoProps.setIsEditing}
               // ---
             />
-          </Box>
-        </Fade>
+          </TabPanel>
+        )}
 
         {/* Секция Фото */}
-        <Fade in={activeElement === "photo"} unmountOnExit timeout={500}>
-          <Box>
+        {mountedTabs.has("photo") && (
+          <TabPanel visible={activeTabKey === "photo"}>
             <PhotoGallery
               personId={person.id}
               allPeople={allPeople}
@@ -484,12 +545,12 @@ const PersonPage = forwardRef(
               sortDir={galleryProps.sortDir}
               uploadTrigger={galleryProps.uploadTrigger}
             />
-          </Box>
-        </Fade>
+          </TabPanel>
+        )}
 
         {/* Секция биографии */}
-        <Fade in={activeElement === "bio"} unmountOnExit timeout={500}>
-          <Box>
+        {mountedTabs.has("bio") && (
+          <TabPanel visible={activeTabKey === "bio"}>
             <BiographySection
               personId={person.id}
               personName={[person.lastName, person.firstName, person.middleName]
@@ -506,15 +567,20 @@ const PersonPage = forwardRef(
               searchMatchIndex={bioProps.searchMatchIndex}
               onSearchMatchCountChange={bioProps.onSearchMatchCountChange}
             />
-          </Box>
-        </Fade>
+          </TabPanel>
+        )}
 
         {/* Секция файлы */}
-        <Fade in={activeElement === "files"} unmountOnExit timeout={500}>
-          <Box>
-            <PersonFilesTab personId={person.id} />
-          </Box>
-        </Fade>
+        {mountedTabs.has("files") && (
+          <TabPanel visible={activeTabKey === "files"}>
+            <PersonFilesTab
+              personId={person.id}
+              personName={[person.lastName, person.firstName, person.middleName]
+                .filter(Boolean)
+                .join(" ")}
+            />
+          </TabPanel>
+        )}
       </Stack>
     );
   },

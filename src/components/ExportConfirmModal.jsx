@@ -28,7 +28,7 @@ export default function ExportConfirmModal({
       fullWidth
       PaperProps={{
         sx: {
-          borderRadius: "15px",
+          borderRadius: "24px",
         },
       }}
     >

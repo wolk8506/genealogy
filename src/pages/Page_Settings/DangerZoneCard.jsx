@@ -51,7 +51,7 @@ export const DangerZoneCard = ({ cardStyle }) => {
         });
         addNotification({
           timestamp: new Date().toISOString(),
-          title: "⚠️ Удаление данных",
+          title: "Удаление данных",
           message: `Данные (${label}) успешно удалены`,
           type: "success",
           category: "dangerZone",
@@ -62,7 +62,7 @@ export const DangerZoneCard = ({ cardStyle }) => {
         });
         addNotification({
           timestamp: new Date().toISOString(),
-          title: "⚠️ Удаление данных",
+          title: "Удаление данных",
           message: `Не удалось удалить ${label}`,
           type: "error",
           category: "dangerZone",
@@ -75,7 +75,7 @@ export const DangerZoneCard = ({ cardStyle }) => {
       });
       addNotification({
         timestamp: new Date().toISOString(),
-        title: "⚠️ Удаление данных",
+        title: "Удаление данных",
         message: "Произошла системная ошибка при удалении",
         type: "error",
         category: "dangerZone",
@@ -104,7 +104,7 @@ export const DangerZoneCard = ({ cardStyle }) => {
         });
         addNotification({
           timestamp: new Date().toISOString(),
-          title: "⚠️ Удаление данных",
+          title: "Удаление данных",
           message: `Все данные (база и фото) полностью удалены`,
           type: "success",
           category: "dangerZone",
@@ -118,7 +118,7 @@ export const DangerZoneCard = ({ cardStyle }) => {
       });
       addNotification({
         timestamp: new Date().toISOString(),
-        title: "⚠️ Удаление данных",
+        title: "Удаление данных",
         message: "Ошибка при очистке: " + err.message,
         type: "error",
         category: "dangerZone",
@@ -130,7 +130,7 @@ export const DangerZoneCard = ({ cardStyle }) => {
       variant="outlined"
       sx={{
         ...cardStyle,
-        borderRadius: "18px",
+        borderRadius: "16px",
         border: "none",
         bgcolor: "transparent",
         boxShadow: "none",
@@ -294,7 +294,7 @@ export const DangerZoneCard = ({ cardStyle }) => {
         fullWidth
         transitionDuration={{ enter: 180, exit: 140 }}
         PaperProps={{
-          sx: { borderRadius: "20px", backgroundImage: "none" },
+          sx: { borderRadius: "24px", backgroundImage: "none" },
         }}
       >
         <Box sx={{ px: 3, pt: 3, pb: 1 }}>

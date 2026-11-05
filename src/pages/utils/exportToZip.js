@@ -699,7 +699,7 @@ export const exportPeopleToZip = async ({
       percent: 100,
       processedFiles: totalFilesEstimated,
       totalFiles: totalFilesEstimated,
-      message: "✅ Готово",
+      message: "Готово",
     });
 
     if (!archivePath) {
@@ -707,7 +707,7 @@ export const exportPeopleToZip = async ({
       return null;
     }
 
-    onStatus("✅ Бэкап сохранён");
+    onStatus("Бэкап сохранён");
     return archivePath;
   } catch (err) {
     console.error("exportPeopleToZip error:", err);

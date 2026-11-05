@@ -55,10 +55,10 @@ function getValue(type, value, person) {
     case "Рост":
       return value + " см";
 
-    case "Национальность":
-      return (
-        nationalities.find((n) => n.country === value)[person.gender] || null
-      );
+    case "Национальность": {
+      const entry = nationalities.find((n) => n.country === value);
+      return entry?.[person.gender] ?? value ?? null;
+    }
 
     default:
       return value;
@@ -71,7 +71,7 @@ export default function PersonFacts({ person, facts = [], onAdd, onEdit }) {
       sx={{
         border: "solid 1px",
         borderColor: "divider",
-        borderRadius: "15px",
+        borderRadius: "16px",
         height: "100%",
         display: "flex",
         flexDirection: "column",
@@ -151,10 +151,15 @@ export default function PersonFacts({ person, facts = [], onAdd, onEdit }) {
                 sx={{
                   "&:hover .edit-fact-button": {
                     opacity: 1,
-                    visibility: "visible",
+                    pointerEvents: "auto",
+                  },
+                  // Кнопка должна появляться и при переходе с клавиатуры.
+                  "&:focus-within .edit-fact-button": {
+                    opacity: 1,
+                    pointerEvents: "auto",
                   },
                   "&:hover": { bgcolor: "action.hover" },
-                  transition: "background 0.2s",
+                  transition: "background-color 160ms ease-out",
                 }}
               >
                 <Box
@@ -216,8 +221,9 @@ export default function PersonFacts({ person, facts = [], onAdd, onEdit }) {
                       position: "absolute",
                       right: 8,
                       opacity: 0,
-                      visibility: "hidden",
-                      transition: "all 0.2s",
+                      pointerEvents: "none",
+                      transition:
+                        "opacity 160ms ease-out, background-color 160ms ease-out",
                       bgcolor: "background.paper",
                       boxShadow: 1,
                       "&:hover": { bgcolor: "secondary.main", color: "white" },

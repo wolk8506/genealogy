@@ -12,11 +12,16 @@ import MainLayout from "../layout/MainLayout";
 import { ThemeContext } from "../theme/ThemeContext.cjs";
 import { useSettingsStore } from "../store/useSettingsStore";
 import { getPalette } from "../theme/palette";
+import { MOTION, RADIUS } from "../theme/designTokens";
 
 const pulse = keyframes`
   0%, 100% { transform: scale(0.96); opacity: 0.7; }
   50% { transform: scale(1.04); opacity: 1; }
 `;
+
+// Системный шрифт: SF Pro на macOS, Segoe UI на Windows.
+const SYSTEM_FONT =
+  '-apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Segoe UI", Roboto, "Helvetica Neue", sans-serif';
 
 const orbit = keyframes`
   from { transform: rotate(0deg); }
@@ -121,6 +126,16 @@ export default function App() {
     () =>
       createTheme({
         palette: getPalette(mode),
+        transitions: {
+          easing: {
+            // Встроенные кривые MUI слабые: вход должен начинаться сразу.
+            easeOut: MOTION.easeOut,
+            easeInOut: MOTION.easeInOut,
+          },
+        },
+        typography: {
+          fontFamily: SYSTEM_FONT,
+        },
         components: {
           // 1. Глобальные стили (ваши скроллбары)
           MuiCssBaseline: {
@@ -160,6 +175,23 @@ export default function App() {
                 scrollbarColor: `${themeParam.palette.divider} transparent`,
               },
 
+              /* Уважаем системную настройку «Уменьшить движение»: анимации
+                 и переходы становятся мгновенными, а не исчезают совсем. */
+              "@media (prefers-reduced-motion: reduce)": {
+                "*": {
+                  animationDuration: "0.01ms !important",
+                  animationIterationCount: "1 !important",
+                  transitionDuration: "0.01ms !important",
+                  scrollBehavior: "auto !important",
+                },
+              },
+
+              /* Видимый фокус для клавиатуры: мышь его не показывает. */
+              ".MuiButtonBase-root:focus-visible": {
+                outline: `2px solid ${themeParam.palette.primary.main}`,
+                outlineOffset: 2,
+              },
+
               /* Ховер кнопок — лёгкий оттенок их собственного (активного)
                  цвета, а не серый action.hover. Включены только «плоские»
                  варианты (outlined/text) и иконко-кнопки; у contained
@@ -176,7 +208,7 @@ export default function App() {
           MuiOutlinedInput: {
             styleOverrides: {
               root: {
-                borderRadius: "12px", // Установите нужное значение (например, 12px или 16px)
+                borderRadius: `${RADIUS.control}px`, // Установите нужное значение (например, 12px или 16px)
                 // Можно также сразу задать стили для рамок, если нужно
                 "& .MuiOutlinedInput-notchedOutline": {
                   transition: "border-color 0.2s ease-in-out",
@@ -190,7 +222,7 @@ export default function App() {
           MuiButton: {
             styleOverrides: {
               root: {
-                borderRadius: "12px",
+                borderRadius: `${RADIUS.control}px`,
                 textTransform: "none", // Убирает капс у кнопок (обычно хорошо смотрится со скруглениями)
               },
               sizeSmall: compactButton,
@@ -209,7 +241,17 @@ export default function App() {
           MuiPaper: {
             styleOverrides: {
               rounded: {
-                borderRadius: "16px",
+                borderRadius: `${RADIUS.card}px`,
+              },
+            },
+          },
+
+          // Диалоги — единое скругление и без градиентной заливки Paper.
+          MuiDialog: {
+            styleOverrides: {
+              paper: {
+                borderRadius: `${RADIUS.dialog}px`,
+                backgroundImage: "none",
               },
             },
           },
@@ -223,7 +265,7 @@ export default function App() {
               root: {
                 // Гарантируем, что радиус из OutlinedInput применится здесь
                 "& .MuiOutlinedInput-root": {
-                  borderRadius: "12px",
+                  borderRadius: `${RADIUS.control}px`,
                 },
               },
             },
@@ -233,7 +275,7 @@ export default function App() {
           MuiInputBase: {
             styleOverrides: {
               root: {
-                borderRadius: "12px",
+                borderRadius: `${RADIUS.control}px`,
               },
             },
           },
@@ -242,7 +284,7 @@ export default function App() {
           MuiPickersOutlinedInput: {
             styleOverrides: {
               root: {
-                borderRadius: "12px", // Тот же радиус, что и везде
+                borderRadius: `${RADIUS.control}px`, // Тот же радиус, что и везде
                 "& .MuiOutlinedInput-notchedOutline": {
                   transition: "border-color 0.2s ease-in-out",
                 },
@@ -254,7 +296,7 @@ export default function App() {
           MuiPickersInputBase: {
             styleOverrides: {
               root: {
-                borderRadius: "12px",
+                borderRadius: `${RADIUS.control}px`,
               },
             },
           },

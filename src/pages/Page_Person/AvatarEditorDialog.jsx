@@ -110,7 +110,7 @@ export default function AvatarEditorDialog({
           ab instanceof Blob ? ab : new Blob([ab], { type: "image/jpeg" });
         setImageSrc(await toDataURL(blob));
       } catch {
-        return alert("❌ Ошибка конвертации HEIC");
+        return alert("Ошибка конвертации HEIC");
       }
     } else {
       setImageSrc(await toDataURL(file));
@@ -137,7 +137,7 @@ export default function AvatarEditorDialog({
     const ext = file.name.split(".").pop().toLowerCase();
     const allowed = ["jpg", "jpeg", "png", "webp", "heic"];
     if (!allowed.includes(ext)) {
-      return alert("❌ Неподдерживаемый формат");
+      return alert("Неподдерживаемый формат");
     }
 
     if (ext === "heic") {
@@ -147,7 +147,7 @@ export default function AvatarEditorDialog({
           ab instanceof Blob ? ab : new Blob([ab], { type: "image/jpeg" });
         setImageSrc(await toDataURL(blob));
       } catch {
-        return alert("❌ Ошибка конвертации HEIC");
+        return alert("Ошибка конвертации HEIC");
       }
     } else {
       setImageSrc(await toDataURL(file));
@@ -279,10 +279,10 @@ export default function AvatarEditorDialog({
                 bgcolor: isDragging
                   ? alpha(theme.palette.primary.main, 0.05)
                   : alpha(theme.palette.action.hover, 0.03),
-                borderRadius: "20px",
+                borderRadius: "16px",
                 p: 5,
                 textAlign: "center",
-                transition: "all 0.3s ease",
+                transition: "border-color 200ms ease, background-color 200ms ease",
                 cursor: "pointer",
                 "&:hover": {
                   borderColor: "primary.main",

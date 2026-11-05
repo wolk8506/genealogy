@@ -19,7 +19,6 @@ const StyledContainer = styled(Box)(({ theme }) => ({
   display: "flex",
   alignItems: "center",
   fontSize: 20,
-  transition: "all 0.3s ease",
   width: "auto", // Всегда развернут
   paddingRight: 12,
   overflow: "hidden",

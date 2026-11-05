@@ -15,6 +15,8 @@ import PeopleAltIcon from "@mui/icons-material/PeopleAlt";
 import PersonPinCircleIcon from "@mui/icons-material/PersonPinCircle";
 
 import FingerprintIcon from "@mui/icons-material/Fingerprint"; // Или Fingerprint, или Dna
+import CakeOutlinedIcon from "@mui/icons-material/CakeOutlined";
+import ChurchOutlinedIcon from "@mui/icons-material/ChurchOutlined";
 import { useSettingsStore } from "../../../store/useSettingsStore";
 import PersonAvatar from "../../../components/PersonAvatar";
 import AvatarPreviewDialog from "../../../components/Dialog/AvatarPreviewDialog";
@@ -183,7 +185,7 @@ export default function Info({
           // px: 2, // Минимальный внутренний отступ
           boxSizing: "border-box",
           overflow: "hidden",
-          transition: "all 0.3s ease", // Плавное сжатие при открытии меню
+          transition: "width 240ms ease", // Плавное сжатие при открытии меню
         }}
       >
         {/* ЛЕВЫЙ БЛОК (Инфо) - Фиксированный 802px */}
@@ -205,7 +207,7 @@ export default function Info({
             "&::-webkit-scrollbar-track": { background: "transparent" },
             "&::-webkit-scrollbar-thumb": {
               background: (theme) => theme.palette.divider,
-              borderRadius: "10px",
+              borderRadius: "6px",
             },
             scrollbarWidth: "thin", // Для Firefox
           }}
@@ -251,7 +253,7 @@ export default function Info({
                 position: "relative",
                 width: "100%",
                 height: "100%",
-                transition: "transform 0.6s cubic-bezier(0.4, 0, 0.2, 1)",
+                transition: "transform 600ms cubic-bezier(0.77, 0, 0.175, 1)",
                 transformStyle: "preserve-3d",
                 transform: isFlipped ? "rotateY(180deg)" : "rotateY(0deg)",
               }}
@@ -359,9 +361,45 @@ export default function Info({
                       <Box
                         sx={{ display: "flex", alignItems: "center", gap: 1.5 }}
                       >
-                        <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                          {person.birthday ? `📅 ${person.birthday}` : ""}
-                          {person.died ? ` – ✝ ${person.died}` : ""}
+                        <Typography
+                          variant="body1"
+                          sx={{
+                            fontWeight: 500,
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 1,
+                          }}
+                        >
+                          {person.birthday && (
+                            <Box
+                              component="span"
+                              sx={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: 0.5,
+                              }}
+                            >
+                              <CakeOutlinedIcon
+                                sx={{ fontSize: 16, color: "text.secondary" }}
+                              />
+                              {person.birthday}
+                            </Box>
+                          )}
+                          {person.died && (
+                            <Box
+                              component="span"
+                              sx={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: 0.5,
+                              }}
+                            >
+                              <ChurchOutlinedIcon
+                                sx={{ fontSize: 16, color: "text.secondary" }}
+                              />
+                              {person.died}
+                            </Box>
+                          )}
                         </Typography>
                         {person.birthday && (
                           <Typography
@@ -475,7 +513,7 @@ export default function Info({
                     "&::-webkit-scrollbar": { width: "5px" },
                     "&::-webkit-scrollbar-thumb": {
                       bgcolor: "divider",
-                      borderRadius: "10px",
+                      borderRadius: "6px",
                     },
                   }}
                 >
@@ -491,6 +529,7 @@ export default function Info({
 
           <Stack spacing={1} alignItems={"center"} sx={{ width: 736 }}>
             <RenderSectionFamilies
+              key={person.id}
               title={person.gender === "male" ? "Супруга" : "Супруг"}
               people={families}
               soloChildren={soloChildren}
@@ -511,13 +550,13 @@ export default function Info({
             height: "100%",
             border: "1px solid",
             borderColor: "divider",
-            borderRadius: "20px",
+            borderRadius: "16px",
             ml: 1,
             bgcolor: (theme) =>
               theme.palette.mode === "dark"
                 ? "rgba(255,255,255,0.01)"
                 : "rgba(0,0,0,0.01)",
-            transition: "width 0.3s ease", // Плавный ресайз
+            transition: "width 240ms ease", // Плавный ресайз
           }}
         >
           <Box

@@ -27,6 +27,8 @@ import FemaleIcon from "@mui/icons-material/Female";
 import MaleIcon from "@mui/icons-material/Male";
 import PersonIcon from "@mui/icons-material/Person";
 import EditIcon from "@mui/icons-material/Edit";
+import CakeOutlinedIcon from "@mui/icons-material/CakeOutlined";
+import ChurchOutlinedIcon from "@mui/icons-material/ChurchOutlined";
 import FingerprintIcon from "@mui/icons-material/Fingerprint"; // Или Fingerprint, или Dna
 import PersonAvatar from "../../../components/PersonAvatar";
 import AvatarEditorDialog from "../AvatarEditorDialog";
@@ -37,6 +39,7 @@ import { RenderSectionFamilies } from "./RenderSectionFamilies";
 
 // Function
 import { buildFamiliesForPerson } from "../function/Function_buildFamiliesForPerson";
+import { formatAge } from "../function/HowOldIsThePerson";
 import { RenderPersonItem } from "../info/RenderPersonItem";
 
 import { alpha, useTheme } from "@mui/material/styles";
@@ -46,6 +49,51 @@ import { ClearIcon } from "@mui/x-date-pickers";
 
 import PersonAddIcon from "@mui/icons-material/PersonAdd"; // Если еще не импортирован
 import QuickAddRelativeModal from "./QuickAddRelativeModal"; // Проверьте путь
+
+// Поля-строки выглядят как текст из режима просмотра:
+// пунктир появляется только при наведении и фокусе.
+const inlineFieldSx = {
+  borderBottom: "1px dashed transparent",
+  transition: "border-color 160ms ease",
+  "&:hover": { borderBottomColor: "divider" },
+  "&:focus-within": { borderBottomColor: "primary.main" },
+};
+const nameFieldSx = {
+  ...inlineFieldSx,
+  flex: "0 0 auto",
+  minWidth: 0,
+  // Поле сжимается по содержимому, поэтому имя и фамилия стоят
+  // подряд, как одна строка в просмотре.
+  "& input": { fieldSizing: "content" },
+};
+const nameInputSx = {
+  fontSize: "2.125rem",
+  fontWeight: 800,
+  letterSpacing: "-0.5px",
+  lineHeight: 1.235,
+  height: 42,
+  px: 0,
+  "& input": {
+    px: 0,
+    py: 0,
+    height: "42px",
+    boxSizing: "border-box",
+    width: "auto",
+    minWidth: "1ch",
+  },
+};
+const inlineInputSx = {
+  fontSize: "1rem",
+  lineHeight: 1.75,
+  color: "text.secondary",
+  px: 0,
+  "& input": {
+    px: 0,
+    py: 0,
+    height: "28px",
+    boxSizing: "border-box",
+  },
+};
 
 // Вспомогательный компонент для Drag
 const DraggablePersonItem = React.memo(
@@ -788,7 +836,7 @@ const Editor = forwardRef(
             // px: 2, // Минимальный внутренний отступ
             boxSizing: "border-box",
             overflow: "hidden",
-            transition: "all 0.3s ease", // Плавное сжатие при открытии меню
+            transition: "width 300ms cubic-bezier(0.23, 1, 0.32, 1)", // Плавное сжатие при открытии меню
           }}
         >
           {/* ЛЕВЫЙ БЛОК (Инфо) - Фиксированный 802px */}
@@ -809,7 +857,7 @@ const Editor = forwardRef(
               "&::-webkit-scrollbar-track": { background: "transparent" },
               "&::-webkit-scrollbar-thumb": {
                 background: (theme) => theme.palette.divider,
-                borderRadius: "10px",
+                borderRadius: "6px",
               },
               scrollbarWidth: "thin", // Для Firefox
             }}
@@ -871,7 +919,7 @@ const Editor = forwardRef(
                   position: "relative",
                   width: "100%",
                   height: "100%",
-                  transition: "transform 0.6s cubic-bezier(0.4, 0, 0.2, 1)",
+                  transition: "transform 600ms cubic-bezier(0.77, 0, 0.175, 1)",
                   transformStyle: "preserve-3d",
                   // transform: isFlipped ? "rotateY(180deg)" : "rotateY(0deg)",
                 }}
@@ -917,11 +965,11 @@ const Editor = forwardRef(
                   <Stack
                     direction="row"
                     spacing={5}
-                    alignItems="center"
-                    sx={{ px: 1, zIndex: 1 }}
+                    alignItems="flex-start"
+                    sx={{ px: 2, zIndex: 1 }}
                   >
-                    {/* ЛЕВАЯ КОЛОНКА: Аватар и технические поля */}
-                    <Stack spacing={2} height={230} alignItems="center">
+                    {/* ЛЕВАЯ КОЛОНКА: Аватар */}
+                    <Box sx={{ flexShrink: 0 }}>
                       <Box
                         onClick={() => setAvatarEditorOpen(true)}
                         sx={{
@@ -952,148 +1000,168 @@ const Editor = forwardRef(
                           <PersonIcon sx={{ color: "#fff", fontSize: 16 }} />
                         </Box>
                       </Box>
-                    </Stack>
+                    </Box>
 
-                    {/* ПРАВАЯ КОЛОНКА: Инпуты данных */}
-                    <Stack spacing={1} flex={1}>
+                    {/* ПРАВАЯ КОЛОНКА: данные человека — та же сетка, что в просмотре */}
+                    <Stack spacing={2} flex={1} sx={{ maxWidth: 468, minWidth: 0 }}>
                       <Box
                         display={"flex"}
-                        width={468}
                         flexDirection={"column"}
-                        gap={2}
+                        gap={0.5}
                       >
-                        <Box display={"flex"} gap={2}>
+                        <Box display={"flex"} gap={1} alignItems={"flex-end"}>
                           <TextField
-                            label="Имя"
                             variant="standard"
-                            // size="medium"
-                            fullWidth
+                            placeholder="Имя"
                             value={form.firstName || ""}
                             onChange={handleChange("firstName")}
+                            inputProps={{ "aria-label": "Имя" }}
+                            sx={nameFieldSx}
                             InputProps={{
-                              sx: {
-                                fontSize: "2.1rem",
-                                fontWeight: 700,
-
-                                "&.MuiInput-root::before ": {
-                                  borderColor: "rgb(255 255 255 / 19%)",
-                                },
-                              },
+                              disableUnderline: true,
+                              sx: nameInputSx,
                             }}
                           />
                           <TextField
-                            label="Фамилия"
                             variant="standard"
-                            fullWidth
+                            placeholder="Фамилия"
                             value={form.lastName || ""}
                             onChange={handleChange("lastName")}
+                            inputProps={{ "aria-label": "Фамилия" }}
+                            sx={nameFieldSx}
                             InputProps={{
-                              sx: {
-                                fontSize: "2.1rem",
-                                fontWeight: 700,
-                                "&.MuiInput-root::before ": {
-                                  borderColor: "rgb(255 255 255 / 19%)",
-                                },
-                              },
+                              disableUnderline: true,
+                              sx: nameInputSx,
                             }}
                           />
                         </Box>
                         <Stack direction="row" flexDirection={"column"}>
-                          <Box display={"flex"} gap={1}>
+                          <Box display={"flex"} gap={1} alignItems={"baseline"}>
                             <Typography
                               variant="subtitle1"
                               color="text.secondary"
+                              sx={{ whiteSpace: "nowrap", flexShrink: 0 }}
                             >
                               Отчество:
                             </Typography>
                             <TextField
                               variant="standard"
-                              size="small"
+                              placeholder="не указано"
                               fullWidth
                               value={form.patronymic || ""}
                               onChange={handleChange("patronymic")}
+                              inputProps={{ "aria-label": "Отчество" }}
+                              sx={inlineFieldSx}
                               InputProps={{
-                                sx: {
-                                  fontSize: "0.9rem",
-                                  fontWeight: 700,
-                                  "&.MuiInput-root::before ": {
-                                    borderColor: "rgb(255 255 255 / 19%)",
-                                  },
-                                },
+                                disableUnderline: true,
+                                sx: inlineInputSx,
                               }}
                             />
                           </Box>
 
                           {form.gender === "female" && (
-                            <Box display={"flex"} gap={1}>
+                            <Box
+                              display={"flex"}
+                              gap={1}
+                              alignItems={"baseline"}
+                            >
                               <Typography
                                 variant="subtitle1"
                                 color="text.secondary"
+                                sx={{ whiteSpace: "nowrap", flexShrink: 0 }}
                               >
                                 Девичья фамилия:
                               </Typography>
                               <TextField
-                                sx={{
-                                  // opacity: form.gender === "male" ? 0 : 1,
-                                  width: "315px",
-                                }}
-                                // label="Девичья фамилия"
                                 variant="standard"
-                                size="small"
+                                placeholder="не указана"
                                 fullWidth
-                                disabled={form.gender === "male"}
                                 value={form.maidenName || ""}
                                 onChange={handleChange("maidenName")}
+                                inputProps={{ "aria-label": "Девичья фамилия" }}
+                                sx={inlineFieldSx}
                                 InputProps={{
-                                  sx: {
-                                    fontSize: "0.9rem",
-                                    fontWeight: 700,
-                                    "&.MuiInput-root::before ": {
-                                      borderColor: "rgb(255 255 255 / 19%)",
-                                    },
-                                  },
+                                  disableUnderline: true,
+                                  sx: inlineInputSx,
                                 }}
                               />
                             </Box>
                           )}
                         </Stack>
-
-                        <Box display={"flex"} gap={2}></Box>
                       </Box>
 
                       <Divider sx={{ borderStyle: "dashed" }} />
 
-                      {/* Даты */}
-                      <Stack
-                        width={340}
-                        direction="row"
-                        spacing={1}
-                        alignItems="center"
-                      >
-                        <TextField
-                          label="Рождение"
-                          size="small"
-                          fullWidth
-                          value={form.birthday || ""}
+                      {/* Даты — те же иконки и подписи, что в просмотре */}
+                      <Box display={"flex"} alignItems={"center"} gap={1.5}>
+                        <Box
                           onClick={() => setBirthdayPickerOpen(true)}
-                          InputProps={{
-                            readOnly: true,
-                            sx: { borderRadius: "10px" },
+                          sx={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: 0.5,
+                            cursor: "pointer",
+                            ...inlineFieldSx,
                           }}
-                        />
-                        <Typography color="text.disabled">—</Typography>
-                        <TextField
-                          label="Смерть"
-                          size="small"
-                          fullWidth
-                          value={form.died || ""}
+                        >
+                          <CakeOutlinedIcon
+                            sx={{ fontSize: 16, color: "text.secondary" }}
+                          />
+                          <Typography
+                            variant="body1"
+                            sx={{
+                              fontWeight: 500,
+                              color: form.birthday
+                                ? "text.primary"
+                                : "text.disabled",
+                            }}
+                          >
+                            {form.birthday || "Дата рождения"}
+                          </Typography>
+                        </Box>
+                        <Box
                           onClick={() => setDiedPickerOpen(true)}
-                          InputProps={{
-                            readOnly: true,
-                            sx: { borderRadius: "10px" },
+                          sx={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: 0.5,
+                            cursor: "pointer",
+                            ...inlineFieldSx,
                           }}
-                        />
-                      </Stack>
+                        >
+                          <ChurchOutlinedIcon
+                            sx={{ fontSize: 16, color: "text.secondary" }}
+                          />
+                          <Typography
+                            variant="body1"
+                            sx={{
+                              fontWeight: 500,
+                              color: form.died ? "text.primary" : "text.disabled",
+                            }}
+                          >
+                            {form.died || "Дата смерти"}
+                          </Typography>
+                        </Box>
+                        {form.birthday && (
+                          <Typography
+                            variant="caption"
+                            sx={{
+                              px: 1,
+                              py: 0.3,
+                              borderRadius: "6px",
+                              bgcolor: "action.hover",
+                              color: "text.secondary",
+                              fontWeight: 600,
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            {form.died &&
+                            form.died.trim().toLowerCase() !== "неизвестно"
+                              ? `${form.gender === "male" ? "прожил" : "прожила"} ${formatAge(form.birthday, form.died)}`
+                              : `${formatAge(form.birthday, null)}`}
+                          </Typography>
+                        )}
+                      </Box>
                       <Stack direction="row" spacing={3}>
                         <Typography variant="caption" color="text.disabled">
                           <b>ID:</b> {person.id}
@@ -1102,58 +1170,45 @@ const Editor = forwardRef(
                           <b>Поколение:</b> {person.generation}
                         </Typography>
                       </Stack>
-
-                      {/* Кнопки управления */}
-                      <Stack
-                        direction="row"
-                        spacing={2}
-                        justifyContent="flex-end"
-                        alignItems="center"
-                      >
-                        {/* <TextField
-                          select
-                          label="Пол"
-                          value={form.gender || ""}
-                          onChange={handleChange("gender")}
-                          size="small"
-                          variant="standard"
-                          sx={{ minWidth: 100 }}
-                        >
-                          <MenuItem value="male">Мужской</MenuItem>
-                          <MenuItem value="female">Женский</MenuItem>
-                        </TextField> */}
-                        <TextField
-                          label="Пол"
-                          select
-                          size="small"
-                          fullWidth
-                          sx={{ width: "150px" }}
-                          value={form.gender || ""}
-                          onChange={handleChange("gender")}
-                          InputProps={{
-                            startAdornment: form.gender && (
-                              <Box
-                                sx={{
-                                  mr: 1,
-                                  display: "flex",
-                                  color: "action.active",
-                                }}
-                              >
-                                {form.gender === "male" ? (
-                                  <MaleIcon fontSize="small" />
-                                ) : (
-                                  <FemaleIcon fontSize="small" />
-                                )}
-                              </Box>
-                            ),
-                          }}
-                        >
-                          <MenuItem value="male">Мужской</MenuItem>
-                          <MenuItem value="female">Женский</MenuItem>
-                        </TextField>
-                      </Stack>
                     </Stack>
                   </Stack>
+
+                  {/* Пол — служебный контрол, стоит в углу как подпись */}
+                  <TextField
+                    select
+                    size="small"
+                    label="Пол"
+                    variant="standard"
+                    value={form.gender || ""}
+                    onChange={handleChange("gender")}
+                    sx={{
+                      position: "absolute",
+                      right: 24,
+                      bottom: 16,
+                      width: 132,
+                      zIndex: 1,
+                    }}
+                    InputProps={{
+                      startAdornment: form.gender && (
+                        <Box
+                          sx={{
+                            mr: 1,
+                            display: "flex",
+                            color: "action.active",
+                          }}
+                        >
+                          {form.gender === "male" ? (
+                            <MaleIcon fontSize="small" />
+                          ) : (
+                            <FemaleIcon fontSize="small" />
+                          )}
+                        </Box>
+                      ),
+                    }}
+                  >
+                    <MenuItem value="male">Мужской</MenuItem>
+                    <MenuItem value="female">Женский</MenuItem>
+                  </TextField>
                 </Paper>
 
                 {/* --- ОБРАТНАЯ СТОРОНА (СИБЛИНГИ) --- */}
@@ -1193,7 +1248,7 @@ const Editor = forwardRef(
               height: "100%",
               border: "1px solid",
               borderColor: "divider",
-              borderRadius: "20px",
+              borderRadius: "16px",
               bgcolor: theme.palette.background.paper,
               overflow: "hidden",
               ml: 1.3,
@@ -1212,7 +1267,7 @@ const Editor = forwardRef(
                 onChange={(e) => setSearchQuery(e.target.value)}
                 sx={{
                   mb: 2,
-                  "& .MuiOutlinedInput-root": { borderRadius: "10px" },
+                  "& .MuiOutlinedInput-root": { borderRadius: "12px" },
                 }}
                 InputProps={{
                   // Иконка поиска слева

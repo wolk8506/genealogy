@@ -13,6 +13,7 @@ import {
 import { alpha, useTheme } from "@mui/material/styles";
 import FaceRetouchingNaturalIcon from "@mui/icons-material/FaceRetouchingNatural";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
+import PlaceOutlinedIcon from "@mui/icons-material/PlaceOutlined";
 import EditIcon from "@mui/icons-material/Edit";
 import CropIcon from "@mui/icons-material/Crop";
 import PhotoLibraryIcon from "@mui/icons-material/PhotoLibrary";
@@ -495,6 +496,13 @@ export default function PhotoInspectorPanel({ allPeople = [] }) {
                       "&:hover": { bgcolor: "action.hover" },
                     }}
                   >
+                    <PlaceOutlinedIcon
+                      sx={{
+                        fontSize: 16,
+                        mt: "2px",
+                        color: locationText ? "text.secondary" : "text.disabled",
+                      }}
+                    />
                     <Typography
                       variant="body2"
                       sx={{
@@ -504,7 +512,7 @@ export default function PhotoInspectorPanel({ allPeople = [] }) {
                         color: locationText ? "text.primary" : "text.secondary",
                       }}
                     >
-                      {locationText ? `📍 ${locationText}` : "Назначить геопозицию"}
+                      {locationText || "Назначить геопозицию"}
                     </Typography>
                   </Box>
 

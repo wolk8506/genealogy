@@ -10,6 +10,9 @@ import {
 import { alpha } from "@mui/material/styles";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import CancelIcon from "@mui/icons-material/Cancel";
+import CropOriginalIcon from "@mui/icons-material/CropOriginal";
+import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
+import FolderOpenOutlinedIcon from "@mui/icons-material/FolderOpenOutlined";
 import DialogActionButton, {
   DialogActionsBar,
 } from "./DialogActionButton";
@@ -100,24 +103,36 @@ export default function PhotoMetaDialog({ openDialog, meta, onClose }) {
                     opacity: 0.8,
                   }}
                 >
-                  <Typography variant="caption" display="block">
-                    📏 Разрешение: <b>{file.res}</b>
-                  </Typography>
-                  <Typography variant="caption" display="block">
-                    📅 Создан: {file.date}
-                  </Typography>
-                  <Typography
-                    variant="caption"
-                    display="block"
-                    sx={{
-                      wordBreak: "break-all",
-                      color: "text.secondary",
-                      mt: 0.5,
-                      fontSize: "10px",
-                    }}
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                    <CropOriginalIcon sx={{ fontSize: 14, opacity: 0.7 }} />
+                    <Typography variant="caption" display="block">
+                      Разрешение: <b>{file.res}</b>
+                    </Typography>
+                  </Box>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                    <CalendarTodayIcon sx={{ fontSize: 14, opacity: 0.7 }} />
+                    <Typography variant="caption" display="block">
+                      Создан: {file.date}
+                    </Typography>
+                  </Box>
+                  <Box
+                    sx={{ display: "flex", alignItems: "flex-start", gap: 0.5, mt: 0.5 }}
                   >
-                    📂 {file.fullPath}
-                  </Typography>
+                    <FolderOpenOutlinedIcon
+                      sx={{ fontSize: 14, opacity: 0.7, mt: "1px", flexShrink: 0 }}
+                    />
+                    <Typography
+                      variant="caption"
+                      display="block"
+                      sx={{
+                        wordBreak: "break-all",
+                        color: "text.secondary",
+                        fontSize: "10px",
+                      }}
+                    >
+                      {file.fullPath}
+                    </Typography>
+                  </Box>
                 </Box>
               )}
             </Paper>

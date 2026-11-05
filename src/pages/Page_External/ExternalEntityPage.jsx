@@ -150,7 +150,7 @@ export default function ExternalEntityPage() {
         onClick={() =>
           navigate(`/external?selected=${encodeURIComponent(entity.id)}`)
         }
-        sx={{ mb: 2, borderRadius: "10px" }}
+        sx={{ mb: 2, borderRadius: "12px" }}
       >
         К справочнику
       </Button>
@@ -159,7 +159,7 @@ export default function ExternalEntityPage() {
         elevation={0}
         sx={{
           p: 3,
-          borderRadius: "20px",
+          borderRadius: "16px",
           bgcolor: isDark ? "rgba(42,42,42,0.6)" : "#fff",
           border: "1px solid",
           borderColor: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)",

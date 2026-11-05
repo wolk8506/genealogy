@@ -310,7 +310,7 @@ const FamilyTree = forwardRef(({ data, mode, people, personId, onCardClick, onPe
             width: "100%",
             height: "100%",
             padding: "8px 10px 8px 8px",
-            borderRadius: 16,
+            borderRadius: "999px",
             border: `2px solid ${borderColor}`,
             background: isDark
               ? "linear-gradient(135deg, rgb(31,35,40), rgb(20,24,28))"
@@ -531,7 +531,7 @@ const FamilyTree = forwardRef(({ data, mode, people, personId, onCardClick, onPe
   return (
     <Paper
       sx={{
-        borderRadius: "18px",
+        borderRadius: "16px",
         height: "100%",
         position: "relative",
         overflow: "hidden",

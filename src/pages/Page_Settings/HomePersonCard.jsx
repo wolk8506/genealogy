@@ -71,7 +71,7 @@ export function HomePersonCard({ cardStyle }) {
       variant="outlined"
       sx={{
         ...cardStyle,
-        borderRadius: "18px",
+        borderRadius: "16px",
         border: "none",
         bgcolor: "transparent",
         boxShadow: "none",
@@ -142,7 +142,7 @@ export function HomePersonCard({ cardStyle }) {
                   sx={{
                     width: 24,
                     height: 24,
-                    borderRadius: "7px",
+                    borderRadius: "8px",
                     display: "grid",
                     placeItems: "center",
                     bgcolor: "action.hover",

@@ -1060,7 +1060,7 @@ const mapGlassColumnSx = {
   display: "flex",
   flexDirection: "column",
   alignItems: "center",
-  borderRadius: "18px",
+  borderRadius: "16px",
   overflow: "hidden",
   bgcolor: "glass.surface",
   color: "text.primary",
@@ -1077,7 +1077,7 @@ const mapGlassButtonSx = {
   justifyContent: "center",
   cursor: "pointer",
   color: "inherit",
-  transition: "background 0.15s",
+  transition: "background-color 160ms ease",
   "&:hover": { bgcolor: "glass.hover" },
 };
 

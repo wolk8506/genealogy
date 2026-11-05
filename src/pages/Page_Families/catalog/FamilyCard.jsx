@@ -73,6 +73,7 @@ export default function FamilyCard({ family, isMine = false, onOpen }) {
 
         <Box sx={{ minWidth: 0, flex: 1 }}>
           <Typography
+            title={unionTitle(family)}
             sx={{
               display: "-webkit-box",
               WebkitLineClamp: 2,
@@ -88,6 +89,7 @@ export default function FamilyCard({ family, isMine = false, onOpen }) {
           </Typography>
           <Typography
             noWrap
+            title={unionMetaLine(family) || "дата и место не указаны"}
             sx={{ fontSize: 11.5, color: "text.secondary", lineHeight: 1.4 }}
           >
             {unionMetaLine(family) || "дата и место не указаны"}

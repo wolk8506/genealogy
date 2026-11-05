@@ -13,6 +13,7 @@ import {
 } from "@mui/material";
 
 import AddPersonModal from "../../components/Dialog/AddPeopleDialog";
+import ConfirmDialog from "../../components/Dialog/ConfirmDialog";
 import { useSearchParams } from "react-router-dom";
 
 import PersonAddAlt1Icon from "@mui/icons-material/PersonAddAlt1";
@@ -160,6 +161,8 @@ export default function PeopleListPage({
   const personTags = useTagsStore((state) => state.personTags);
   const [people, setPeople] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [archiveTarget, setArchiveTarget] = useState(null);
+  const [archiving, setArchiving] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
   const isModalOpen = searchParams.get("action") === "add";
 
@@ -266,6 +269,11 @@ export default function PeopleListPage({
     return keys;
   }, [grouped, sortOrder]);
 
+  const requestArchive = (id) => {
+    const person = people.find((p) => p.id === id);
+    if (person) setArchiveTarget(person);
+  };
+
   const handleArchive = async (id) => {
     await window.peopleAPI.update(id, {
       archived: true,
@@ -282,13 +290,29 @@ export default function PeopleListPage({
 
     addNotification({
       timestamp: new Date().toISOString(),
-      title: "Человек перемещен в корзину",
-      message: `Из дерева удален: ${name} `,
+      title: "Человек перемещён в корзину",
+      message: `Из дерева удалён: ${name}`,
       type: "warning",
       category: "trash",
       link: `/trash`,
     });
   };
+
+  const confirmArchive = async () => {
+    if (!archiveTarget || archiving) return;
+    setArchiving(true);
+    try {
+      await handleArchive(archiveTarget.id);
+      setArchiveTarget(null);
+    } finally {
+      setArchiving(false);
+    }
+  };
+
+  const formatPersonName = (p) =>
+    [p.firstName, p.patronymic, p.lastName || p.maidenName]
+      .filter(Boolean)
+      .join(" ") || `ID ${p.id}`;
 
   // Поиск сузился до одного человека — показать его в связях панели.
   // Срабатывает только на переходе (не на монтировании).
@@ -528,7 +552,7 @@ export default function PeopleListPage({
                     <PersonCard
                       person={person}
                       stats={personStats[person.id]}
-                      onDelete={handleArchive}
+                      onDelete={requestArchive}
                       onShowRelations={onShowRelations}
                       size="full" // В основном списке всегда полный размер
                     />
@@ -540,6 +564,21 @@ export default function PeopleListPage({
       </Stack>
 
       <AddPersonModal open={isModalOpen} onClose={handleCloseModal} />
+      <ConfirmDialog
+        open={!!archiveTarget}
+        title="Переместить в корзину?"
+        message={
+          archiveTarget
+            ? `«${formatPersonName(archiveTarget)}» исчезнет из списка и дерева. Восстановить можно в разделе «Корзина».`
+            : ""
+        }
+        confirmLabel="В корзину"
+        busy={archiving}
+        onClose={(confirmed) => {
+          if (confirmed) confirmArchive();
+          else setArchiveTarget(null);
+        }}
+      />
     </>
   );
 }

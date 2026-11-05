@@ -73,7 +73,8 @@ export default function PhotoGallery({
   const [facesDialogPhoto, setFacesDialogPhoto] = useState(null);
   const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
   const [previewDialogPhoto, setPreviewDialogPhoto] = useState(null);
-  const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+  const galleryRef = useRef(null);
+  const [galleryWidth, setGalleryWidth] = useState(0);
   const lastTriggerRef = useRef(uploadTrigger);
   const [allExternal, setAllExternal] = useState([]);
 
@@ -109,10 +110,18 @@ export default function PhotoGallery({
   }, [uploadTrigger]);
 
   useEffect(() => {
-    const handleResize = () => setWindowWidth(window.innerWidth);
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
+    const node = galleryRef.current;
+    if (!node) return undefined;
+    const observer = new ResizeObserver(([entry]) => {
+      const width = Math.floor(entry.contentRect.width);
+      setGalleryWidth((prev) => (Math.abs(prev - width) > 1 ? width : prev));
+    });
+    observer.observe(node);
+    return () => observer.disconnect();
   }, []);
+
+  // Ширину берём у самой галереи: при открытом инспекторе она уже окна.
+  const layoutWidth = galleryWidth || Math.max(320, window.innerWidth - 80);
 
   useEffect(() => {
     if (!personId) return; // Убрали !openMain
@@ -152,11 +161,11 @@ export default function PhotoGallery({
   } = useMemo(() => {
     const groupsMap = new Map();
     const cols =
-      windowWidth < 1200
+      layoutWidth < 1200
         ? 3
-        : windowWidth < 1600
+        : layoutWidth < 1600
           ? 4
-          : windowWidth < 2000
+          : layoutWidth < 2000
             ? 5
             : 6;
 
@@ -216,7 +225,7 @@ export default function PhotoGallery({
       headers: labels,
       columnsCount: cols,
     };
-  }, [sortedBase, groupBy, windowWidth, sortDir, personId]);
+  }, [sortedBase, groupBy, layoutWidth, sortDir, personId]);
 
   // Загрузка путей (Thumbs)
   const fetchThumb = useCallback(
@@ -437,13 +446,18 @@ export default function PhotoGallery({
     if (!photo) return null;
     const owner = allPeople.find((p) => p.id === photo.owner);
     const ownerText = owner
-      ? `👤 ${owner.gender === "male" ? "Добавил" : "Добавила"}: ${owner.firstName}`
-      : "👤 Неизвестно";
+      ? `${owner.gender === "male" ? "Добавил" : "Добавила"}: ${owner.firstName}`
+      : "Неизвестно";
     const peopleText = buildPhotoAttendeesText(photo, allPeople, allExternal);
     return { ...photo, ownerText, peopleText };
   }, [index, displayList, allPeople, allExternal]);
 
-  const rowHeight = Math.floor((windowWidth * 0.9) / columnsCount);
+  const columnGap = 8;
+  const cellWidth = Math.max(
+    0,
+    (layoutWidth - columnGap * (columnsCount - 1)) / columnsCount,
+  );
+  const rowHeight = Math.max(80, Math.round(cellWidth));
 
   return (
     <>
@@ -457,6 +471,7 @@ export default function PhotoGallery({
         }}
       >
         <Box
+          ref={galleryRef}
           onClick={(event) => {
             // Клик по пустому месту галереи снимает выделение,
             // клики по самим фото и их кнопкам — нет.
@@ -500,7 +515,8 @@ export default function PhotoGallery({
                     justifyContent: "space-between",
                     bgcolor: alpha(theme.palette.background.default, 0.9),
                     backdropFilter: "blur(6px)",
-                    borderBottom: "1px solid divider",
+                    borderBottom: "1px solid",
+                    borderColor: "divider",
                     zIndex: 1,
                   }}
                 >
@@ -525,7 +541,14 @@ export default function PhotoGallery({
               itemContent={(idx) => {
                 const rowItems = flattenedRows[idx];
                 return (
-                  <Stack direction="row" spacing={1} sx={{ px: 0, py: 0.5 }}>
+                  <Box
+                    sx={{
+                      display: "grid",
+                      gridTemplateColumns: `repeat(${columnsCount}, minmax(0, 1fr))`,
+                      gap: 1,
+                      py: 0.5,
+                    }}
+                  >
                     {rowItems.map((item) => {
                       if (!photoPaths.thumbs[item.id]) fetchThumb(item);
 
@@ -533,10 +556,7 @@ export default function PhotoGallery({
                         <Box
                           key={item.id}
                           data-photo-cell
-                          sx={{
-                            width: `${100 / columnsCount}%`,
-                            height: rowHeight,
-                          }}
+                          sx={{ minWidth: 0, height: rowHeight }}
                         >
                           <PhotoCell
                             scope={"personal_gallery"}
@@ -562,7 +582,7 @@ export default function PhotoGallery({
                         </Box>
                       );
                     })}
-                  </Stack>
+                  </Box>
                 );
               }}
             />

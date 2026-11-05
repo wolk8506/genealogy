@@ -178,7 +178,7 @@ export function SegmentedControl({ value, onChange, options }) {
         display: "flex",
         gap: "2px",
         p: "2px",
-        borderRadius: "10px",
+        borderRadius: "12px",
         bgcolor: (t) =>
           t.palette.mode === "dark"
             ? "rgba(255,255,255,0.08)"
@@ -237,7 +237,7 @@ export function CountBadge({ value }) {
         minWidth: 24,
         height: 22,
         px: 0.8,
-        borderRadius: "11px",
+        borderRadius: "999px",
         bgcolor: "action.hover",
         display: "grid",
         placeItems: "center",

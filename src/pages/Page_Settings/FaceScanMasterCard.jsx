@@ -335,7 +335,7 @@ export const FaceScanMasterCard = ({ cardStyle }) => {
         display: "flex",
         flexDirection: "column",
         overflow: "hidden",
-        borderRadius: "18px",
+        borderRadius: "16px",
         border: "none",
         bgcolor: "transparent",
         boxShadow: "none",

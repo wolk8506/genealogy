@@ -32,9 +32,9 @@ export const RenderSectionChildren = ({ title, people, row = 1 }) => {
           justifyContent: "center",
           flexWrap: "wrap",
           // width: "736px",
-          width: row === 1 ? "360px" : people.length !== 1 ? "736px" : "360",
+          width: row === 1 ? "360px" : people.length !== 1 ? "736px" : "360px",
           gap: 2,
-          borderRadius: 5,
+          borderRadius: 4,
           p: 1,
         }}
       >

@@ -64,7 +64,7 @@ export default function PhotoUploadDialog({
   );
 
   const fieldSx = {
-    "& .MuiOutlinedInput-root": { borderRadius: "10px" },
+    "& .MuiOutlinedInput-root": { borderRadius: "12px" },
   };
   const sectionLabelSx = {
     display: "block",
@@ -85,7 +85,7 @@ export default function PhotoUploadDialog({
     height: 32,
     minHeight: 32,
     px: 1.75,
-    borderRadius: "10px",
+    borderRadius: "8px",
     textTransform: "none",
     fontWeight: 600,
     fontSize: "0.8125rem",
@@ -362,7 +362,7 @@ export default function PhotoUploadDialog({
     const ext = file.name.split(".").pop().toLowerCase();
     const allowed = ["jpg", "jpeg", "png", "webp", "heic"];
     if (!allowed.includes(ext)) {
-      alert(`❌ Формат .${ext} не поддерживается.`);
+      alert(`Формат .${ext} не поддерживается.`);
       return;
     }
 
@@ -383,7 +383,7 @@ export default function PhotoUploadDialog({
         name = file.name.replace(/\.heic$/i, ".jpg");
       } catch (err) {
         console.error(err);
-        alert("❌ Ошибка конвертации HEIC.");
+        alert("Ошибка конвертации HEIC.");
         return;
       }
     } else {
@@ -644,7 +644,7 @@ export default function PhotoUploadDialog({
               <IconButton
                 onClick={onClose}
                 size="small"
-                sx={{ borderRadius: "10px" }}
+                sx={{ borderRadius: "8px" }}
               >
                 <CloseIcon fontSize="small" />
               </IconButton>
@@ -847,7 +847,7 @@ export default function PhotoUploadDialog({
                             onClick={() => setLocationPickerOpen(true)}
                             sx={{
                               height: 32,
-                              borderRadius: "10px",
+                              borderRadius: "8px",
                               textTransform: "none",
                               fontWeight: 600,
                             }}
@@ -945,7 +945,7 @@ export default function PhotoUploadDialog({
                 flexGrow: 1,
                 width: "100%",
                 bgcolor: isDark ? alpha("#000", 0.35) : alpha("#000", 0.03),
-                borderRadius: "14px",
+                borderRadius: "16px",
                 overflow: "hidden",
                 display: "flex",
                 alignItems: "center",
@@ -980,7 +980,7 @@ export default function PhotoUploadDialog({
                     sx={{
                       width: 64,
                       height: 64,
-                      borderRadius: "18px",
+                      borderRadius: "16px",
                       bgcolor: alpha(theme.palette.primary.main, 0.09),
                       color: theme.palette.primary.main,
                       display: "flex",

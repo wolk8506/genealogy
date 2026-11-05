@@ -45,7 +45,7 @@ export function HomePersonBanner({ onOpenSettings, hasPeople = true }) {
         }
         sx={{
           alignItems: "center",
-          borderRadius: "15px",
+          borderRadius: "16px",
           gap: "10px",
         }}
       >

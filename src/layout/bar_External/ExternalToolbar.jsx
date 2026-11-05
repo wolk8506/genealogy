@@ -58,7 +58,7 @@ export default function ExternalToolbar({
             "& .MuiToggleButton-root": {
               color: "text.primary",
               border: "none",
-              borderRadius: "14px",
+              borderRadius: "12px",
               height: 30,
               py: 0,
               px: 1.2,

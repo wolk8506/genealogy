@@ -505,7 +505,7 @@ export default function LocationPickerDialog({
           ref={mapBoxRef}
           sx={{
             height: 300,
-            borderRadius: "18px",
+            borderRadius: "16px",
             overflow: "hidden",
             position: "relative",
             bgcolor: "action.hover",
@@ -569,7 +569,7 @@ export default function LocationPickerDialog({
                 boxShadow: "0 2px 12px rgba(0,0,0,0.22)",
                 backdropFilter: "blur(8px)",
                 WebkitBackdropFilter: "blur(8px)",
-                transition: "background 0.15s",
+                transition: "background-color 160ms ease",
                 // Кликабельность поверх невидимой шапки (frameless-окно).
                 WebkitAppRegion: "no-drag",
                 "&:hover": {
@@ -595,7 +595,7 @@ export default function LocationPickerDialog({
           sx={{
             mt: 2,
             p: 1.5,
-            borderRadius: "18px",
+            borderRadius: "16px",
             bgcolor: "action.hover",
             ...hiddenSx,
           }}
@@ -757,7 +757,7 @@ export default function LocationPickerDialog({
                 flex: 1,
                 minHeight: 0,
                 overflowY: "auto",
-                borderRadius: "14px",
+                borderRadius: "12px",
                 bgcolor: "action.hover",
                 p: 0.5,
               }}
@@ -771,9 +771,9 @@ export default function LocationPickerDialog({
                     alignItems: "center",
                     gap: 1.25,
                     p: 1,
-                    borderRadius: "10px",
+                    borderRadius: "8px",
                     cursor: "pointer",
-                    transition: "background 0.15s",
+                    transition: "background-color 160ms ease",
                     "&:hover": { bgcolor: "action.selected" },
                   }}
                 >

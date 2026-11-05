@@ -13,6 +13,8 @@ import DownloadIcon from "@mui/icons-material/Download";
 import InfoIcon from "@mui/icons-material/Info";
 import DeleteIcon from "@mui/icons-material/Delete";
 import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
+import PersonOutlineIcon from "@mui/icons-material/PersonOutline";
+import PlaceOutlinedIcon from "@mui/icons-material/PlaceOutlined";
 import { useTheme, alpha } from "@mui/material/styles";
 import { useDispatch } from "react-redux";
 // import { setSearchQuery } from "../../../store/searchSlice";
@@ -30,8 +32,9 @@ const StyledOverlay = styled(Box)(({ theme }) => ({
   alignItems: "center",
   textAlign: "center",
   padding: theme.spacing(1.5), // Немного меньше отступы
-  backgroundColor: "rgba(0, 0, 0, 0.65)", // Чуть темнее фон оверлея
-  backdropFilter: "blur(1px)",
+  // Затемнение по низу: подпись читается, а снимок остаётся видимым.
+  background:
+    "linear-gradient(to top, rgba(0,0,0,0.82) 0%, rgba(0,0,0,0.6) 42%, rgba(0,0,0,0.26) 72%, rgba(0,0,0,0.1) 100%)",
   color: "#fff",
   zIndex: 2,
   borderRadius: "inherit",
@@ -114,14 +117,16 @@ const PhotoCell = React.memo(
           overflow: "hidden", // КРИТИЧНО: обрезает всё, что выходит за границы
           bgcolor: isDark ? "#1e1e1e" : "#f0f0f0",
           boxShadow: selected ? 2 : hover ? 6 : 1,
-          transition: "all 0.3s ease",
+          transition: "box-shadow 200ms ease, border-color 200ms ease",
+          "&:focus-within .photo-card-actions": {
+            opacity: 1,
+            "& .MuiIconButton-root": { pointerEvents: "auto" },
+          },
           // Рамку рисуем внутри (border), без внешнего box-shadow-кольца:
           // внешнее кольцо обрезалось скроллером у краёв страницы.
           border: selected
             ? `2px solid ${theme.palette.primary.main}`
-            : isDark
-              ? "1px solid #333"
-              : "1px solid #e0e0e0",
+            : `1px solid ${theme.palette.divider}`,
         }}
       >
         <CardActionArea
@@ -151,7 +156,7 @@ const PhotoCell = React.memo(
                 height: "100%",
                 width: "100%",
                 objectFit: "cover",
-                transition: "transform 0.5s ease",
+                transition: "transform 240ms ease-out",
                 transform: hover ? "scale(1.05)" : "scale(1)",
               }}
             />
@@ -204,36 +209,67 @@ const PhotoCell = React.memo(
                   sx={{
                     display: "flex",
                     flexDirection: "column",
+                    alignItems: "center",
+                    gap: 0.75,
                     mb: tags.length === 0 ? "109px" : 0,
                   }}
                 >
-                  <Typography
-                    variant="caption"
+                  <Box
                     sx={{
-                      fontWeight: 600,
-                      fontSize: "0.65rem",
-                      opacity: 0.8,
-                      color: "lightgray",
-                      // mb: tags.length === 0 ? "109px" : 0,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 0.5,
+                      minWidth: 0,
+                      maxWidth: "100%",
                     }}
                   >
-                    👤 {peopleText || "—"}
-                  </Typography>
-
-                  {photo.locationName && (
+                    <PersonOutlineIcon
+                      sx={{ fontSize: 12, color: "lightgray", opacity: 0.8, flexShrink: 0 }}
+                    />
                     <Typography
                       variant="caption"
+                      noWrap
+                      title={peopleText || ""}
                       sx={{
                         fontWeight: 600,
                         fontSize: "0.65rem",
                         opacity: 0.8,
                         color: "lightgray",
-                        mt: 1,
-                        // mb: tags.length === 0 ? "109px" : 0,
                       }}
                     >
-                      📍 {photo.locationName || "—"}
+                      {peopleText || "—"}
                     </Typography>
+                  </Box>
+
+                  {photo.locationName && (
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: 0.5,
+                        minWidth: 0,
+                        maxWidth: "100%",
+                      }}
+                    >
+                      <PlaceOutlinedIcon
+                        sx={{ fontSize: 12, color: "lightgray", opacity: 0.8, flexShrink: 0 }}
+                      />
+                      <Typography
+                        variant="caption"
+                        noWrap
+                        title={photo.locationName}
+                        sx={{
+                          fontWeight: 600,
+                          fontSize: "0.65rem",
+                          opacity: 0.8,
+                          color: "lightgray",
+                        }}
+                      >
+                        {photo.locationName}
+                      </Typography>
+                    </Box>
                   )}
                 </Box>
               </TextContent>
@@ -294,7 +330,16 @@ const PhotoCell = React.memo(
         </CardActionArea>
 
         {/* Кнопки */}
-        <ActionButtons sx={{ opacity: hover ? 1 : 0, transition: "0.2s" }}>
+        <ActionButtons
+          className="photo-card-actions"
+          sx={{
+            opacity: hover ? 1 : 0,
+            transition: "opacity 160ms ease-out",
+            "& .MuiIconButton-root": {
+              pointerEvents: hover ? "auto" : "none",
+            },
+          }}
+        >
           <Box sx={{ display: "flex", gap: 0.5 }}>
             <IconButton
               size="small"

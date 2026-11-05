@@ -636,7 +636,7 @@ export default function PhotoMetaUpdateDialog({
               <IconButton
                 onClick={onClose}
                 size="small"
-                sx={{ borderRadius: "10px" }}
+                sx={{ borderRadius: "8px" }}
               >
                 <CloseIcon fontSize="small" />
               </IconButton>
@@ -647,7 +647,7 @@ export default function PhotoMetaUpdateDialog({
                 <Box
                   sx={{
                     p: 0.8,
-                    borderRadius: "10px",
+                    borderRadius: "8px",
                     bgcolor: alpha(theme.palette.primary.main, 0.1),
                     color: theme.palette.primary.main,
                     display: "flex",
@@ -749,8 +749,8 @@ export default function PhotoMetaUpdateDialog({
                             onClick={() => setSelectedFaceId(face.id)}
                             sx={{
                               p: 0.5,
-                              borderRadius: "14px",
-                              transition: "all 0.2s ease",
+                              borderRadius: "12px",
+                              transition: "background-color 200ms ease",
                               bgcolor: isSelected
                                 ? alpha(theme.palette.primary.main, 0.08)
                                 : "transparent",
@@ -797,11 +797,12 @@ export default function PhotoMetaUpdateDialog({
                                     sx={{
                                       "& .MuiOutlinedInput-root": {
                                         borderRadius: "12px",
-                                        transition: "all 0.2s ease",
                                         borderColor: isSelected
                                           ? theme.palette.primary.main
                                           : undefined,
                                         "& fieldset": {
+                                          transition:
+                                            "border-color 200ms ease, border-width 200ms ease",
                                           borderColor: isSelected
                                             ? `${theme.palette.primary.main} !important`
                                             : undefined,
@@ -859,9 +860,7 @@ export default function PhotoMetaUpdateDialog({
                                   sx={{
                                     cursor: "pointer",
                                     p: 0.5,
-                                    borderRadius: "10px",
-                                    transition: "all 0.2s ease",
-
+                                    borderRadius: "8px",
                                   }}
                                 >
                                   <TextField
@@ -880,7 +879,7 @@ export default function PhotoMetaUpdateDialog({
                                     sx={{
                                       pointerEvents: "none",
                                       "& .MuiOutlinedInput-root": {
-                                        borderRadius: "10px",
+                                        borderRadius: "12px",
                                         bgcolor: "transparent", // <--- Прозрачный фон инпута
                                         "& fieldset": {
                                           borderStyle: "dashed",
@@ -1093,7 +1092,7 @@ export default function PhotoMetaUpdateDialog({
                       ? alpha("#000", 0.15)
                       : alpha(theme.palette.action.hover, 0.05),
                     border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
-                    transition: "0.3s",
+                    transition: "border-color 200ms ease",
                     borderStyle: rename ? "solid" : "dashed",
                     borderColor: rename
                       ? theme.palette.primary.main
@@ -1395,7 +1394,7 @@ export default function PhotoMetaUpdateDialog({
                   color: alpha("#fff", 0.9),
                   px: 1.5,
                   py: 0.6,
-                  borderRadius: "10px",
+                  borderRadius: "6px",
                   fontSize: "0.7rem",
                   fontWeight: 600,
                   letterSpacing: "0.5px",

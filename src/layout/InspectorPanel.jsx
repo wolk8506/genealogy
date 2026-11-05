@@ -66,6 +66,7 @@ function PersonHeader({ personId, allPeople, onFocusPerson }) {
       <Box sx={{ minWidth: 0, flexGrow: 1 }}>
         <Typography
           variant="body1"
+          title={`${[person.firstName, person.lastName || person.maidenName].filter(Boolean).join(" ")}`}
           sx={{ fontWeight: 800, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}
         >
           {`${[person.firstName, person.lastName || person.maidenName].filter(Boolean).join(" ")}`}
@@ -229,10 +230,10 @@ function MemoriesTab({ groups, allPeople }) {
                             width: "100%",
                             aspectRatio: "1",
                             objectFit: "cover",
-                            borderRadius: "10px",
+                            borderRadius: "8px",
                             bgcolor: "action.hover",
                             cursor: "pointer",
-                            transition: "opacity 0.15s",
+                            transition: "opacity 160ms ease",
                             "&:hover": { opacity: 0.9 },
                           }}
                         />
@@ -643,7 +644,7 @@ export default function InspectorPanel({
             sx={{
               flexGrow: 1,
               display: "flex",
-              borderRadius: "10px",
+              borderRadius: "12px",
               bgcolor: isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.05)",
               border: "1px solid",
               borderColor: isDark
@@ -671,7 +672,7 @@ export default function InspectorPanel({
                     minHeight: 24,
                     py: 0,
                     px: 1,
-                    borderRadius: "7px",
+                    borderRadius: "8px",
                     cursor: "pointer",
                     color: selected ? "text.primary" : "text.secondary",
                     bgcolor: selected
@@ -710,7 +711,7 @@ export default function InspectorPanel({
                         sx={{
                           minWidth: 18,
                           height: 18,
-                          borderRadius: 9,
+                          borderRadius: "999px",
                           bgcolor: isDark
                             ? "rgba(255,255,255,0.22)"
                             : "rgba(0,0,0,0.08)",

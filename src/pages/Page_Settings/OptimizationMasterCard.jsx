@@ -288,7 +288,7 @@ export const OptimizationMasterCard = ({ cardStyle, onSubpageChange }) => {
           display: "flex",
           flexDirection: "column",
           overflow: "hidden",
-          borderRadius: "18px",
+          borderRadius: "16px",
           border: "none",
           bgcolor: "transparent",
           boxShadow: "none",
@@ -397,7 +397,7 @@ export const OptimizationMasterCard = ({ cardStyle, onSubpageChange }) => {
                           sx={{
                             px: 1,
                             height: 22,
-                            borderRadius: "11px",
+                            borderRadius: "999px",
                             bgcolor: "action.hover",
                             display: "grid",
                             placeItems: "center",
@@ -701,7 +701,7 @@ export const OptimizationMasterCard = ({ cardStyle, onSubpageChange }) => {
                           }
                           sx={{
                             height: 22,
-                            borderRadius: "7px",
+                            borderRadius: "8px",
                             fontSize: "0.68rem",
                             fontWeight: 600,
                             flexShrink: 0,
@@ -730,7 +730,7 @@ export const OptimizationMasterCard = ({ cardStyle, onSubpageChange }) => {
                       sx={{
                         bgcolor: "#1e1e1e",
                         color: "#d4d4d4",
-                        borderRadius: "10px",
+                        borderRadius: "12px",
                         border: "1px solid #333",
                         fontFamily: "monospace",
                         fontSize: "0.74rem",

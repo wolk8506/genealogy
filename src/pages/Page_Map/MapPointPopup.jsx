@@ -2,6 +2,7 @@ import React from "react";
 import { Box, Stack, Typography, Button } from "@mui/material";
 import EditLocationAltIcon from "@mui/icons-material/EditLocationAlt";
 import EventIcon from "@mui/icons-material/Event";
+import PlaceOutlinedIcon from "@mui/icons-material/PlaceOutlined";
 import { KIND_COLOR } from "./mapHelpers";
 import { eventTypeIconElement } from "./mapHelpers";
 
@@ -157,9 +158,19 @@ export default function MapPointPopup({
               </Typography>
             )}
             {single.place && (
-              <Typography variant="caption" display="block">
-                📍 {single.place}
-              </Typography>
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 0.4,
+                  color: "text.secondary",
+                }}
+              >
+                <PlaceOutlinedIcon sx={{ fontSize: 14, flexShrink: 0 }} />
+                <Typography variant="caption" display="block">
+                  {single.place}
+                </Typography>
+              </Box>
             )}
           </Box>
         )}

@@ -289,14 +289,14 @@ export const BackupRestoreCard = ({ cardStyle, onSubpageChange }) => {
       setExportPath(archivePath);
       setSaveDone(true);
 
-      setExportStatus("✅ Полный бэкап сохранён");
+      setExportStatus("Полный бэкап сохранён");
       addNotification({
         timestamp: new Date().toISOString(),
         title: "Бэкап",
         message:
           allExternal.length > 0
-            ? `✅ Бэкап сохранён (родственники + справочник: ${allExternal.length})`
-            : `✅ Полный бэкап сохранён`,
+            ? `Бэкап сохранён (родственники + справочник: ${allExternal.length})`
+            : `Полный бэкап сохранён`,
         type: "success",
         category: "dataManagement",
       });
@@ -362,11 +362,11 @@ export const BackupRestoreCard = ({ cardStyle, onSubpageChange }) => {
       setImportSetupOpen(true);
     } catch (err) {
       setImportError(true);
-      setImportStatus(`❌ Ошибка: ${err.message}`);
+      setImportStatus(`Ошибка: ${err.message}`);
       addNotification({
         timestamp: new Date().toISOString(),
         title: "Импорт",
-        message: `❌ Ошибка: ${err.message}`,
+        message: `Ошибка: ${err.message}`,
         type: "error",
         category: "dataManagement",
       });
@@ -382,7 +382,7 @@ export const BackupRestoreCard = ({ cardStyle, onSubpageChange }) => {
     setImportSetupOpen(false);
     setIsImporting(true);
     setIsImportingOpen(true);
-    setImportStatus("📥 Восстановление из бэкапа...");
+    setImportStatus("Восстановление из бэкапа...");
 
     try {
       const importResult = await window.importAPI.importZip(importZipPath, {
@@ -423,11 +423,11 @@ export const BackupRestoreCard = ({ cardStyle, onSubpageChange }) => {
       resetImportSetup();
     } catch (err) {
       setImportError(true);
-      setImportStatus(`❌ Ошибка: ${err.message}`);
+      setImportStatus(`Ошибка: ${err.message}`);
       addNotification({
         timestamp: new Date().toISOString(),
         title: "Импорт",
-        message: `❌ Ошибка: ${err.message}`,
+        message: `Ошибка: ${err.message}`,
         type: "error",
         category: "dataManagement",
       });
@@ -541,7 +541,7 @@ export const BackupRestoreCard = ({ cardStyle, onSubpageChange }) => {
         display: "flex",
         flexDirection: "column",
         overflow: "hidden",
-        borderRadius: "18px",
+        borderRadius: "16px",
         border: "none",
         bgcolor: "transparent",
         boxShadow: "none",
@@ -840,7 +840,7 @@ export const BackupRestoreCard = ({ cardStyle, onSubpageChange }) => {
                           size="small"
                           sx={{
                             height: 22,
-                            borderRadius: "7px",
+                            borderRadius: "8px",
                             fontSize: "0.7rem",
                             fontWeight: 600,
                           }}
@@ -853,7 +853,7 @@ export const BackupRestoreCard = ({ cardStyle, onSubpageChange }) => {
                         size="small"
                         sx={{
                           height: 22,
-                          borderRadius: "7px",
+                          borderRadius: "8px",
                           fontSize: "0.7rem",
                           fontWeight: 600,
                         }}
@@ -865,7 +865,7 @@ export const BackupRestoreCard = ({ cardStyle, onSubpageChange }) => {
                         size="small"
                         sx={{
                           height: 22,
-                          borderRadius: "7px",
+                          borderRadius: "8px",
                           fontSize: "0.7rem",
                           fontWeight: 600,
                         }}
@@ -1053,7 +1053,7 @@ export const BackupRestoreCard = ({ cardStyle, onSubpageChange }) => {
                       font: "inherit",
                       width: "100%",
                       border: 0,
-                      borderRadius: "10px",
+                      borderRadius: "8px",
                       bgcolor: "action.hover",
                       px: 1.5,
                       py: 1,

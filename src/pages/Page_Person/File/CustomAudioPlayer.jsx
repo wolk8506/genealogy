@@ -1,316 +1,445 @@
 import React, { useState, useRef, useEffect } from "react";
-import { styled, useTheme } from "@mui/material/styles";
-import { Box, Typography, Slider, IconButton, Stack } from "@mui/material";
+import { Box, Typography, Slider } from "@mui/material";
+import { useTheme } from "@mui/material/styles";
 import {
   PauseRounded,
   PlayArrowRounded,
-  FastForwardRounded,
-  FastRewindRounded,
-  VolumeUpRounded,
-  VolumeDownRounded,
-  GraphicEq as GraphicEqIcon, // Иконка для обложки по умолчанию
+  Replay10Rounded,
+  Forward10Rounded,
+  GraphicEqRounded,
+  HighlightOffRounded,
 } from "@mui/icons-material";
+import { RADIUS, MOTION } from "../../../theme/designTokens";
+import { sliderSx } from "../../Page_Settings/settingsUi";
+import {
+  VolumeMuteIcon,
+  VolumeLowIcon,
+  VolumeWave1Icon,
+  VolumeWave2Icon,
+  VolumeWave3Icon,
+} from "./VolumeIcons";
 
-// Стилизованные компоненты
-const Widget = styled("div")(({ theme }) => ({
-  padding: 16,
-  borderRadius: 16,
-  width: 343,
-  maxWidth: "100%",
-  margin: "auto",
-  position: "relative",
-  zIndex: 1,
-  // Адаптация цвета под светлую/темную тему
-  backgroundColor:
-    theme.palette.mode === "dark" ? "rgba(0,0,0,0.6)" : "rgba(255,255,255,0.6)",
-  backdropFilter: "blur(40px)",
-  boxShadow: theme.shadows[4],
-}));
-
-const CoverImage = styled("div")(({ theme }) => ({
-  width: 100,
-  height: 100,
-  objectFit: "cover",
-  overflow: "hidden",
-  flexShrink: 0,
-  borderRadius: 8,
-  backgroundColor:
-    theme.palette.mode === "dark"
-      ? "rgba(255,255,255,0.08)"
-      : "rgba(0,0,0,0.08)",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  color: theme.palette.text.secondary,
-  "& > img": {
-    width: "100%",
+const iconButtonSx = {
+  border: 0,
+  p: 0,
+  cursor: "pointer",
+  display: "grid",
+  placeItems: "center",
+  bgcolor: "transparent",
+  color: "text.primary",
+  transition: `opacity ${MOTION.fast} ease, background-color ${MOTION.fast} ease, color ${MOTION.fast} ease, transform ${MOTION.fast} ${MOTION.easeOut}`,
+  "&:focus-visible": {
+    outline: "2px solid",
+    outlineColor: "primary.main",
+    outlineOffset: 2,
   },
-}));
+};
 
-const TinyText = styled(Typography)({
-  fontSize: "0.75rem",
-  opacity: 0.5,
-  fontWeight: 500,
-  letterSpacing: 0.2,
-});
-
-export default function CustomAudioPlayer({ src, fileName }) {
+export default function CustomAudioPlayer({ src, fileName, subtitle, onClose }) {
   const theme = useTheme();
+  const isDark = theme.palette.mode === "dark";
   const audioRef = useRef(null);
+  const lastVolumeRef = useRef(30);
 
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
-  const [volume, setVolume] = useState(30); // Громкость по умолчанию 30%
+  const [volume, setVolume] = useState(30);
 
-  // Форматирование времени (0:00)
   const formatDuration = (value) => {
-    if (isNaN(value) || value === Infinity) return "0:00";
-    const minute = Math.floor(value / 60);
-    const secondLeft = Math.floor(value - minute * 60);
+    if (!Number.isFinite(value) || value < 0) return "0:00";
+    const total = Math.floor(value);
+    const minute = Math.floor(total / 60);
+    const secondLeft = total - minute * 60;
     return `${minute}:${secondLeft < 10 ? `0${secondLeft}` : secondLeft}`;
   };
 
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
-
-    // Сбрасываем прогресс при смене трека
-    setCurrentTime(0);
-
-    const updateTime = () => setCurrentTime(audio.currentTime);
-    const updateDuration = () => setDuration(audio.duration);
-    const onEnded = () => setIsPlaying(false);
-
-    audio.addEventListener("timeupdate", updateTime);
-    audio.addEventListener("loadedmetadata", updateDuration);
-    audio.addEventListener("ended", onEnded);
-
-    // Устанавливаем громкость
     audio.volume = volume / 100;
+  }, [volume]);
 
-    // АВТОЗАПУСК: когда src меняется, пытаемся начать воспроизведение
-    const playPromise = audio.play();
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
 
-    if (playPromise !== undefined) {
-      playPromise
-        .then(() => {
-          setIsPlaying(true);
-        })
-        .catch((error) => {
-          // Автоплей может быть заблокирован, если не было взаимодействия с DOM,
-          // или если файл еще не прогрузился. Просто логируем это.
-          console.log("Автозапуск ожидается или прерван:", error);
-          setIsPlaying(false);
-        });
-    }
+    setCurrentTime(0);
+    setDuration(0);
+
+    const syncDuration = () => {
+      if (Number.isFinite(audio.duration)) setDuration(audio.duration);
+    };
+    const syncTime = () => setCurrentTime(audio.currentTime);
+    const onPlay = () => setIsPlaying(true);
+    const onPause = () => setIsPlaying(false);
+
+    audio.addEventListener("timeupdate", syncTime);
+    audio.addEventListener("loadedmetadata", syncDuration);
+    audio.addEventListener("durationchange", syncDuration);
+    audio.addEventListener("play", onPlay);
+    audio.addEventListener("pause", onPause);
+    audio.addEventListener("ended", onPause);
+
+    syncDuration();
+
+    // Выбор файла — жест пользователя, поэтому воспроизведение можно начать сразу
+    audio.play()?.catch(() => setIsPlaying(false));
 
     return () => {
-      audio.removeEventListener("timeupdate", updateTime);
-      audio.removeEventListener("loadedmetadata", updateDuration);
-      audio.removeEventListener("ended", onEnded);
+      audio.removeEventListener("timeupdate", syncTime);
+      audio.removeEventListener("loadedmetadata", syncDuration);
+      audio.removeEventListener("durationchange", syncDuration);
+      audio.removeEventListener("play", onPlay);
+      audio.removeEventListener("pause", onPause);
+      audio.removeEventListener("ended", onPause);
     };
-  }, [src]); // <-- Добавляем src сюда, чтобы эффект срабатывал при каждом новом файле
+  }, [src]);
 
   const togglePlay = () => {
-    if (isPlaying) audioRef.current.pause();
-    else audioRef.current.play();
-    setIsPlaying(!isPlaying);
+    const audio = audioRef.current;
+    if (!audio) return;
+    if (audio.paused) audio.play().catch(() => {});
+    else audio.pause();
   };
 
-  const handleSliderChange = (_, newValue) => {
-    audioRef.current.currentTime = newValue;
-    setCurrentTime(newValue);
+  const seekTo = (value) => {
+    const audio = audioRef.current;
+    if (!audio || !Number.isFinite(duration) || duration <= 0) return;
+    const next = Math.min(duration, Math.max(0, value));
+    audio.currentTime = next;
+    setCurrentTime(next);
   };
 
-  const handleVolumeChange = (_, newValue) => {
-    setVolume(newValue);
-    audioRef.current.volume = newValue / 100;
+  const skipBackward = () => seekTo(currentTime - 10);
+  const skipForward = () => seekTo(currentTime + 10);
+
+  const applyVolume = (next) => {
+    const clamped = Math.max(0, Math.min(100, next));
+    if (clamped > 0) lastVolumeRef.current = clamped;
+    setVolume(clamped);
   };
 
-  // Перемотка назад на 10 сек
-  const skipBackward = () => {
-    const newTime = Math.max(0, currentTime - 10);
-    audioRef.current.currentTime = newTime;
-    setCurrentTime(newTime);
-  };
+  const toggleMute = () =>
+    applyVolume(volume > 0 ? 0 : lastVolumeRef.current || 30);
 
-  // Перемотка вперед на 10 сек
-  const skipForward = () => {
-    const newTime = Math.min(duration, currentTime + 10);
-    audioRef.current.currentTime = newTime;
-    setCurrentTime(newTime);
-  };
-
-  // Вычисляем оставшееся время
   const timeRemaining = Math.max(0, duration - currentTime);
+  const hasExtension = Boolean(fileName?.includes("."));
+  const extension = hasExtension ? fileName.split(".").pop().toUpperCase() : "";
+  const displayName = hasExtension
+    ? fileName.slice(0, -(extension.length + 1))
+    : fileName;
+  const metaLine = subtitle || (extension ? `Аудиозапись · ${extension}` : "Аудиозапись");
 
-  // Общие цвета для контролов в зависимости от темы
-  const controlColor =
-    theme.palette.mode === "dark" ? "#fff" : "rgba(0,0,0,0.87)";
-  const inactiveColor =
-    theme.palette.mode === "dark" ? "rgba(255,255,255,0.4)" : "rgba(0,0,0,0.4)";
+  const VolumeIcon =
+    volume === 0
+      ? VolumeMuteIcon
+      : volume <= 25
+        ? VolumeLowIcon
+        : volume <= 50
+          ? VolumeWave1Icon
+          : volume <= 75
+            ? VolumeWave2Icon
+            : VolumeWave3Icon;
+
+  const timeSx = {
+    fontSize: 11,
+    fontWeight: 500,
+    lineHeight: 1,
+    letterSpacing: "0.01em",
+    fontVariantNumeric: "tabular-nums",
+    color: "text.secondary",
+    opacity: 0.9,
+  };
+
+  const capsuleSx = {
+    display: "flex",
+    alignItems: "center",
+    borderRadius: `${RADIUS.pill}px`,
+    bgcolor: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.04)",
+    border: `1px solid ${theme.palette.glass.border}`,
+  };
+
+  const skipSx = {
+    ...iconButtonSx,
+    width: 44,
+    height: 44,
+    flexShrink: 0,
+    borderRadius: "50%",
+    bgcolor: isDark ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.06)",
+    "&:hover": {
+      bgcolor: isDark ? "rgba(255,255,255,0.18)" : "rgba(0,0,0,0.1)",
+    },
+    "&:active": { transform: "scale(0.92)" },
+    "& svg": { fontSize: 26 },
+  };
 
   return (
-    <Box
-      sx={{
-        width: "100%",
-        overflow: "hidden",
-        position: "relative",
-      }}
-    >
+    <Box sx={{ width: "100%", position: "relative" }}>
       <audio ref={audioRef} src={src} />
-      <Widget>
-        {/* Блок с обложкой и названием */}
-        <Box sx={{ display: "flex", alignItems: "center" }}>
-          <CoverImage>
-            <GraphicEqIcon sx={{ fontSize: 40 }} />
-          </CoverImage>
 
-          <Box sx={{ ml: 1.5, minWidth: 0 }}>
-            <Typography
-              variant="caption"
-              sx={{ color: "text.secondary", fontWeight: 500 }}
-            >
-              Аудиозапись
-            </Typography>
-            <Typography noWrap fontWeight="bold">
-              {fileName}
-            </Typography>
-            <Typography
-              noWrap
-              variant="caption"
-              sx={{ letterSpacing: -0.25, color: "text.secondary" }}
-            >
-              Локальный файл
-            </Typography>
-          </Box>
-        </Box>
-
-        {/* Главный ползунок времени */}
-        <Slider
-          aria-label="time-indicator"
-          size="small"
-          value={currentTime}
-          min={0}
-          step={1}
-          max={duration || 50}
-          onChange={handleSliderChange}
-          sx={{
-            color: controlColor,
-            height: 4,
-            mt: 2,
-            "& .MuiSlider-thumb": {
-              width: 8,
-              height: 8,
-              transition: "0.3s cubic-bezier(.47,1.64,.41,.8)",
-              "&::before": {
-                boxShadow: "0 2px 12px 0 rgba(0,0,0,0.4)",
-              },
-              "&:hover, &.Mui-focusVisible": {
-                boxShadow: `0px 0px 0px 8px ${
-                  theme.palette.mode === "dark"
-                    ? "rgb(255 255 255 / 16%)"
-                    : "rgb(0 0 0 / 16%)"
-                }`,
-              },
-              "&.Mui-active": {
-                width: 20,
-                height: 20,
-              },
-            },
-            "& .MuiSlider-rail": {
-              opacity: 0.28,
-            },
-          }}
-        />
-
-        {/* Тексты времени под ползунком */}
+      <Box
+        sx={{
+          position: "relative",
+          p: 2,
+          borderRadius: `${RADIUS.dialog}px`,
+          bgcolor: theme.palette.glass.strong,
+          color: "text.primary",
+          border: `1px solid ${theme.palette.glass.border}`,
+          backdropFilter: "blur(30px) saturate(180%)",
+          WebkitBackdropFilter: "blur(30px) saturate(180%)",
+          boxShadow: isDark
+            ? "inset 0 1px 0 rgba(255,255,255,0.07), 0 24px 60px rgba(0,0,0,0.55), 0 2px 8px rgba(0,0,0,0.35)"
+            : "inset 0 1px 0 rgba(255,255,255,0.7), 0 24px 60px rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.06)",
+          "@keyframes playerIn": {
+            from: { opacity: 0, transform: "translateY(12px) scale(0.97)" },
+            to: { opacity: 1, transform: "none" },
+          },
+          animation: `playerIn 220ms ${MOTION.easeOut}`,
+          "@media (prefers-reduced-motion: reduce)": {
+            animation: "none",
+          },
+        }}
+      >
         <Box
           sx={{
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
-            mt: -2,
+            gap: 1,
+            mb: 1.5,
           }}
         >
-          <TinyText>{formatDuration(currentTime)}</TinyText>
-          <TinyText>-{formatDuration(timeRemaining)}</TinyText>
+          <Box
+            component="button"
+            type="button"
+            aria-label="Закрыть плеер"
+            title="Закрыть плеер"
+            onClick={onClose}
+            sx={{
+              ...iconButtonSx,
+              width: 28,
+              height: 28,
+              flexShrink: 0,
+              borderRadius: "50%",
+              opacity: 0.72,
+              "&:hover": { opacity: 1, bgcolor: "action.hover" },
+              "&:active": { transform: "scale(0.9)" },
+              "& svg": { fontSize: 22 },
+            }}
+          >
+            <HighlightOffRounded />
+          </Box>
+
+          <Box sx={{ ...capsuleSx, width: 180, height: 36, gap: 2, px: 2 }}>
+            <Slider
+              aria-label="Громкость"
+              size="small"
+              value={volume}
+              min={0}
+              max={100}
+              step={1}
+              onChange={(_, value) => applyVolume(value)}
+              sx={{
+                ...sliderSx,
+                flex: 1,
+                py: 0.5,
+                "& .MuiSlider-thumb": {
+                  ...sliderSx["& .MuiSlider-thumb"],
+                  // Невидимая область захвата MUI шире ползунка и перекрывает
+                  // соседнюю кнопку звука при громкости 100
+                  "&::after": { display: "none" },
+                },
+              }}
+            />
+
+            <Box
+              component="button"
+              type="button"
+              aria-label={volume > 0 ? "Выключить звук" : "Включить звук"}
+              title={volume > 0 ? "Выключить звук" : "Включить звук"}
+              onClick={toggleMute}
+              sx={{
+                ...iconButtonSx,
+                width: 26,
+                height: 26,
+                flexShrink: 0,
+                borderRadius: "50%",
+                placeItems: "center start",
+                opacity: 0.85,
+                "&:hover": { opacity: 1 },
+                "&:active": { transform: "scale(0.9)" },
+              }}
+            >
+              <VolumeIcon />
+            </Box>
+          </Box>
         </Box>
 
-        {/* Кнопки управления воспроизведением */}
+        <Box
+          sx={{
+            position: "relative",
+            height: 192,
+            borderRadius: `${RADIUS.card}px`,
+            overflow: "hidden",
+            display: "grid",
+            placeItems: "center",
+            color: "#fff",
+            background: `linear-gradient(155deg, ${theme.palette.primary.main} 0%, ${theme.palette.secondary.main} 100%)`,
+            boxShadow: "inset 0 1px 0 rgba(255,255,255,0.28)",
+            "&::before": {
+              content: '""',
+              position: "absolute",
+              top: "-35%",
+              left: "-15%",
+              width: "110%",
+              height: "95%",
+              borderRadius: "50%",
+              background:
+                "radial-gradient(circle at 35% 35%, rgba(255,255,255,0.5), rgba(255,255,255,0) 62%)",
+              filter: "blur(18px)",
+              pointerEvents: "none",
+            },
+            "&::after": {
+              content: '""',
+              position: "absolute",
+              inset: 0,
+              background:
+                "linear-gradient(180deg, rgba(0,0,0,0) 45%, rgba(0,0,0,0.3) 100%)",
+              pointerEvents: "none",
+            },
+          }}
+        >
+          <GraphicEqRounded
+            sx={{
+              position: "absolute",
+              right: -34,
+              bottom: -44,
+              fontSize: 190,
+              opacity: 0.12,
+              zIndex: 0,
+            }}
+          />
+          <GraphicEqRounded
+            sx={{
+              position: "relative",
+              zIndex: 1,
+              fontSize: 48,
+              opacity: 0.94,
+              filter: "drop-shadow(0 2px 10px rgba(0,0,0,0.22))",
+            }}
+          />
+        </Box>
+
+        <Typography
+          noWrap
+          title={fileName}
+          sx={{
+            mt: 2,
+            fontSize: 24,
+            fontWeight: 700,
+            lineHeight: 1.2,
+            letterSpacing: "-0.02em",
+          }}
+        >
+          {displayName}
+        </Typography>
+        <Typography
+          noWrap
+          sx={{
+            mt: "3px",
+            fontSize: 14,
+            lineHeight: 1.4,
+            letterSpacing: "-0.005em",
+            color: "text.secondary",
+          }}
+        >
+          {metaLine}
+        </Typography>
+
+        <Slider
+          aria-label="Позиция воспроизведения"
+          size="small"
+          value={Math.min(currentTime, duration || 0)}
+          min={0}
+          step={0.1}
+          max={duration || 0}
+          disabled={!duration}
+          onChange={(_, value) => seekTo(value)}
+          sx={{
+            ...sliderSx,
+            mt: 1.5,
+            px: 0,
+            py: 1,
+            "&.Mui-disabled": { color: "text.disabled" },
+          }}
+        />
+
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            mt: "-2px",
+            px: "2px",
+          }}
+        >
+          <Typography sx={timeSx}>{formatDuration(currentTime)}</Typography>
+          <Typography sx={timeSx}>-{formatDuration(timeRemaining)}</Typography>
+        </Box>
+
         <Box
           sx={{
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            mt: -1,
-            "& svg": { color: controlColor },
+            gap: "18px",
+            mt: 1.5,
           }}
         >
-          <IconButton aria-label="rewind" onClick={skipBackward}>
-            <FastRewindRounded fontSize="large" />
-          </IconButton>
-
-          <IconButton
-            aria-label={isPlaying ? "pause" : "play"}
-            onClick={togglePlay}
+          <Box
+            component="button"
+            type="button"
+            aria-label="Назад на 10 секунд"
+            title="Назад на 10 секунд"
+            onClick={skipBackward}
+            sx={skipSx}
           >
-            {isPlaying ? (
-              <PauseRounded sx={{ fontSize: "3rem" }} />
-            ) : (
-              <PlayArrowRounded sx={{ fontSize: "3rem" }} />
-            )}
-          </IconButton>
+            <Replay10Rounded />
+          </Box>
 
-          <IconButton aria-label="fast forward" onClick={skipForward}>
-            <FastForwardRounded fontSize="large" />
-          </IconButton>
-        </Box>
-
-        {/* Регулятор громкости */}
-        <Stack
-          spacing={2}
-          direction="row"
-          alignItems="center"
-          sx={{
-            mb: 1,
-            px: 1,
-            "& > svg": { color: inactiveColor },
-          }}
-        >
-          <VolumeDownRounded
-            onClick={() => setVolume(0)}
-            sx={{ cursor: "pointer" }}
-          />
-          <Slider
-            aria-label="Volume"
-            value={volume}
-            onChange={handleVolumeChange}
+          <Box
+            component="button"
+            type="button"
+            aria-label={isPlaying ? "Пауза" : "Воспроизвести"}
+            title={isPlaying ? "Пауза" : "Воспроизвести"}
+            onClick={togglePlay}
             sx={{
-              color: controlColor,
-              "& .MuiSlider-track": {
-                border: "none",
-              },
-              "& .MuiSlider-thumb": {
-                width: 24,
-                height: 24,
-                backgroundColor: "#fff",
-                "&::before": {
-                  boxShadow: "0 4px 8px rgba(0,0,0,0.4)",
-                },
-                "&:hover, &.Mui-focusVisible, &.Mui-active": {
-                  boxShadow: "none",
-                },
-              },
+              ...iconButtonSx,
+              width: 58,
+              height: 58,
+              flexShrink: 0,
+              borderRadius: "50%",
+              "&:hover": { opacity: 0.75 },
+              "&:active": { transform: "scale(0.94)" },
+              "& svg": { fontSize: 50 },
             }}
-          />
-          <VolumeUpRounded
-            onClick={() => setVolume(100)}
-            sx={{ cursor: "pointer" }}
-          />
-        </Stack>
-      </Widget>
+          >
+            {isPlaying ? <PauseRounded /> : <PlayArrowRounded />}
+          </Box>
+
+          <Box
+            component="button"
+            type="button"
+            aria-label="Вперёд на 10 секунд"
+            title="Вперёд на 10 секунд"
+            onClick={skipForward}
+            sx={skipSx}
+          >
+            <Forward10Rounded />
+          </Box>
+        </Box>
+      </Box>
     </Box>
   );
 }

@@ -551,7 +551,7 @@ export default function FacesQueueView({
   const compactButtonSx = {
     height: 30,
     minHeight: 30,
-    borderRadius: "9px",
+    borderRadius: "12px",
     px: 1.5,
     textTransform: "none",
     fontWeight: 600,
@@ -599,7 +599,7 @@ export default function FacesQueueView({
           <IconButton
             onClick={handleExit}
             size="small"
-            sx={{ borderRadius: "10px" }}
+            sx={{ borderRadius: "8px" }}
           >
             <ArrowBackIcon fontSize="small" />
           </IconButton>
@@ -802,7 +802,7 @@ export default function FacesQueueView({
               {!isNoFaces && totalPending === 0 && (
                 <Alert
                   severity="success"
-                  sx={{ py: 0.2, fontSize: "0.8rem", borderRadius: "10px" }}
+                  sx={{ py: 0.2, fontSize: "0.8rem", borderRadius: "12px" }}
                 >
                   Все лица подписаны.
                 </Alert>
@@ -899,7 +899,7 @@ export default function FacesQueueView({
                                 placeholder="Выберите человека"
                                 sx={{
                                   "& .MuiOutlinedInput-root": {
-                                    borderRadius: "10px",
+                                    borderRadius: "12px",
                                   },
                                 }}
                               />
@@ -964,7 +964,7 @@ export default function FacesQueueView({
                                 sx={{
                                   pointerEvents: "none",
                                   "& .MuiOutlinedInput-root": {
-                                    borderRadius: "10px",
+                                    borderRadius: "12px",
                                     bgcolor: alpha(
                                       theme.palette.primary.main,
                                       0.04,
@@ -1181,7 +1181,7 @@ export default function FacesQueueView({
                       display: "flex",
                       flexDirection: "column",
                       gap: "4px",
-                      borderRadius: "18px",
+                      borderRadius: "16px",
                       overflow: "hidden",
                       bgcolor: theme.palette.glass.surface,
                       boxShadow: "0 2px 12px rgba(0,0,0,0.22)",

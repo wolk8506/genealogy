@@ -43,8 +43,13 @@ ipcMain.handle("bio:save", async (event, id, content) => {
 
     // 🧹 Чистка неиспользуемых изображений в подпапке bio_images
     if (fs.existsSync(imagesDir)) {
-      const usedFiles = [...content.matchAll(/\]\((.+?)\)/g)]
-        .map((m) => m[1])
+      // Путь берём без заголовка: ![alt](bio_images/x.jpg "bio-size:sm")
+      const usedFiles = [
+        ...content.matchAll(
+          /\]\(\s*(?:<([^>]+)>|([^\s)]+))(?:\s+["'][^"']*["'])?\s*\)/g,
+        ),
+      ]
+        .map((m) => m[1] || m[2] || "")
         .filter((p) => p.startsWith("bio_images/"))
         .map((p) => path.basename(p));
 

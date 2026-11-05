@@ -451,7 +451,7 @@ export default function PersonEditDialog({
                   fullWidth
                   value={form.birthday || ""}
                   onClick={() => setBirthdayPickerOpen(true)}
-                  InputProps={{ readOnly: true, sx: { borderRadius: "10px" } }}
+                  InputProps={{ readOnly: true, sx: { borderRadius: "12px" } }}
                 />
                 <TextField
                   label="Смерть"
@@ -459,7 +459,7 @@ export default function PersonEditDialog({
                   fullWidth
                   value={form.died || ""}
                   onClick={() => setDiedPickerOpen(true)}
-                  InputProps={{ readOnly: true, sx: { borderRadius: "10px" } }}
+                  InputProps={{ readOnly: true, sx: { borderRadius: "12px" } }}
                 />
                 {/* <TextField
                   label="Поколение"
@@ -603,7 +603,7 @@ export default function PersonEditDialog({
         <Alert
           severity="success"
           variant="filled"
-          sx={{ borderRadius: "10px" }}
+          sx={{ borderRadius: "12px" }}
         >
           Данные сохранены
         </Alert>

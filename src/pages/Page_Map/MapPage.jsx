@@ -974,7 +974,7 @@ export default function MapPage({
                 </InputAdornment>
               ),
               sx: {
-                borderRadius: "10px",
+                borderRadius: "12px",
                 width: 460,
                 maxWidth: "45vw",
                 bgcolor: "background.paper",

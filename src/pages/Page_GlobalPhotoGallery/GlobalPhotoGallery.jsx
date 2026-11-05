@@ -56,7 +56,7 @@ export default function GlobalPhotoGallery({
   const virtuosoRef = useRef(null);
 
   const [photoPaths, setPhotoPaths] = useState({ thumbs: {}, full: {} });
-  const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+  const [galleryWidth, setGalleryWidth] = useState(0);
   const pendingRef = useRef(new Set());
 
   const [fullscreen, setFullscreen] = useState(false);
@@ -122,10 +122,18 @@ export default function GlobalPhotoGallery({
     refresh(); // Обновляем список галереи
   };
 
+  // Ширину берём у самой галереи: при открытой правой панели она уже окна.
+  const layoutWidth = galleryWidth || Math.max(320, window.innerWidth - 80);
+
   useEffect(() => {
-    const handleResize = () => setWindowWidth(window.innerWidth);
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
+    const node = scrollAreaRef.current;
+    if (!node) return undefined;
+    const observer = new ResizeObserver(([entry]) => {
+      const width = Math.floor(entry.contentRect.width);
+      setGalleryWidth((prev) => (Math.abs(prev - width) > 1 ? width : prev));
+    });
+    observer.observe(node);
+    return () => observer.disconnect();
   }, []);
 
   const getOwnerName = useCallback(
@@ -160,11 +168,11 @@ export default function GlobalPhotoGallery({
       };
 
     const cols =
-      windowWidth < 1200
+      layoutWidth < 1200
         ? 3
-        : windowWidth < 1600
+        : layoutWidth < 1600
           ? 4
-          : windowWidth < 2000
+          : layoutWidth < 2000
             ? 5
             : 6;
 
@@ -281,7 +289,7 @@ export default function GlobalPhotoGallery({
     groupBy,
     sortDir,
     getOwnerName,
-    windowWidth,
+    layoutWidth,
   ]);
 
   const handleRangeChanged = useCallback(
@@ -476,11 +484,18 @@ export default function GlobalPhotoGallery({
     if (!photo) return null;
     const owner = allPeople.find((p) => p.id === photo.owner);
     const ownerText = owner
-      ? `👤 ${owner.gender === "male" ? "Добавил" : "Добавила"}: ${owner.firstName}`
-      : "👤 Неизвестно";
+      ? `${owner.gender === "male" ? "Добавил" : "Добавила"}: ${owner.firstName}`
+      : "Неизвестно";
     const peopleText = buildPhotoAttendeesText(photo, allPeople, allExternal);
     return { ...photo, ownerText, peopleText };
   }, [index, displayList, allPeople, allExternal]);
+
+  const columnGap = 8;
+  const cellWidth = Math.max(
+    0,
+    (layoutWidth - columnGap * (columnsCount - 1)) / columnsCount,
+  );
+  const rowHeight = Math.max(80, Math.round(cellWidth));
 
   // if (isLoading)
   //   return (
@@ -676,17 +691,21 @@ export default function GlobalPhotoGallery({
               );
             }}
             itemContent={(idx) => (
-              <Stack direction="row" spacing={1} sx={{ px: 0, py: 0.5 }}>
+              <Box
+                sx={{
+                  display: "grid",
+                  gridTemplateColumns: `repeat(${columnsCount}, minmax(0, 1fr))`,
+                  gap: 1,
+                  py: 0.5,
+                }}
+              >
                 {flattenedRows[idx]?.map((item) => {
                   if (!photoPaths.thumbs[item.id]) fetchThumb(item);
                   return (
                     <Box
                       key={item.id}
                       data-photo-cell
-                      sx={{
-                        width: `${100 / columnsCount}%`,
-                        height: Math.floor((windowWidth * 0.9) / columnsCount),
-                      }}
+                      sx={{ minWidth: 0, height: rowHeight }}
                     >
                       <PhotoCell
                         photo={item}
@@ -700,9 +719,7 @@ export default function GlobalPhotoGallery({
                           setFullscreen(true);
                         }}
                         isDark={isDark}
-                        rowHeight={Math.floor(
-                          (windowWidth * 0.9) / columnsCount,
-                        )}
+                        rowHeight={rowHeight}
                         allPeople={allPeople}
                         allExternal={allExternal}
                         onEdit={(p) => selectPhoto(p)}
@@ -711,7 +728,7 @@ export default function GlobalPhotoGallery({
                     </Box>
                   );
                 })}
-              </Stack>
+              </Box>
             )}
           />
         )}

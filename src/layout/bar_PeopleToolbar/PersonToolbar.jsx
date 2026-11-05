@@ -51,7 +51,7 @@ export default function ToolbarGroup({
             "& .MuiToggleButton-root": {
               color: "text.primary",
               border: "none",
-              borderRadius: "14px",
+              borderRadius: "12px",
               minWidth: 36,
               height: 30,
               p: 0,

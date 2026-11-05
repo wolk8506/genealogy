@@ -59,7 +59,7 @@ export default function AvatarPreviewDialog({
             onClick={onClose}
             sx={{
               height: 34,
-              borderRadius: 7,
+              borderRadius: "999px",
               px: 1.5,
               textTransform: "none",
               fontWeight: "bold",
@@ -84,7 +84,7 @@ export default function AvatarPreviewDialog({
               sx={{
                 ml: "auto",
                 height: 34,
-                borderRadius: 7,
+                borderRadius: "999px",
                 px: 1.5,
                 textTransform: "none",
                 fontWeight: "bold",

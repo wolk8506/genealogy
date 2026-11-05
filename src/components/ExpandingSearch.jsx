@@ -30,7 +30,7 @@ const SearchContainer = styled(Box, {
 })(({ theme, $expanded }) => ({
   display: "flex",
   alignItems: "center",
-  borderRadius: 18,
+  borderRadius: "999px",
   height: 36,
   padding: 0,
   transition: theme.transitions.create("width", {
