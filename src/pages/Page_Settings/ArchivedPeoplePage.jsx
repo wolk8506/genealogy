@@ -139,7 +139,7 @@ export default function SettingsPage() {
   }, [backupSubpage, mediaSubpage]);
 
   const cardStyle = {
-    borderRadius: 5,
+    borderRadius: 4,
     width: "100%",
     bgcolor: alpha(theme.palette.background.paper, 0.4),
   };

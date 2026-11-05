@@ -21,7 +21,7 @@ const StyledContainer = styled(Box, {
   ...toolbarPillSx,
   display: "flex",
   alignItems: "center",
-  transition: "all 0.3s ease",
+  transition: "padding-right 300ms cubic-bezier(0.23, 1, 0.32, 1)",
   paddingRight: $expanded ? 12 : 0,
   cursor: "pointer",
 }));

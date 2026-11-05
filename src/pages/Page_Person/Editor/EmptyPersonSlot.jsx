@@ -59,7 +59,7 @@ export const EmptyPersonSlot = ({
         alignItems: "center",
         justifyContent: "center",
         gap: 1,
-        transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
+        transition: "border-color 200ms ease, background-color 200ms ease",
         pointerEvents: "auto",
 
         // Состояния границ

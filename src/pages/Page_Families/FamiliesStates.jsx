@@ -41,7 +41,7 @@ export function FamiliesError({ onRetry }) {
         sx={{
           mt: 2,
           textTransform: "none",
-          borderRadius: "10px",
+          borderRadius: "12px",
           fontSize: 12.5,
         }}
       >
@@ -68,7 +68,7 @@ export function FamilyNotFound({ onBack }) {
         sx={{
           mt: 2,
           textTransform: "none",
-          borderRadius: "10px",
+          borderRadius: "12px",
           fontSize: 12.5,
         }}
       >

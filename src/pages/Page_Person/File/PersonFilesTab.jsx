@@ -242,7 +242,7 @@ const FINDER_COLUMNS = [
   { key: "kind", label: "Тип" },
 ];
 
-export default function PersonFilesTab({ personId }) {
+export default function PersonFilesTab({ personId, personName }) {
   const appSettings = useSettingsStore((state) => state.appSettings);
   const MAX_FILE_SIZE = appSettings.maxUploadSize * 1024 * 1024 * 1024;
   const theme = useTheme();
@@ -330,6 +330,10 @@ export default function PersonFilesTab({ personId }) {
   useEffect(() => {
     if (personId) loadFiles();
   }, [personId, loadFiles]);
+
+  useEffect(() => {
+    setActiveAudio(null);
+  }, [personId]);
 
   useEffect(() => {
     if (!previewFile && !activeAudio) return;
@@ -1005,27 +1009,16 @@ export default function PersonFilesTab({ personId }) {
             bottom: 24,
             left: "50%",
             transform: "translateX(-50%)",
+            width: "min(400px, calc(100vw - 32px))",
             zIndex: 1000,
           }}
         >
-          <Box sx={{ position: "relative" }}>
-            <IconButton
-              size="small"
-              onClick={() => setActiveAudio(null)}
-              sx={{
-                position: "absolute",
-                top: 10,
-                right: 10,
-                bgcolor: "background.paper",
-                boxShadow: 2,
-                zIndex: 1000,
-                "&:hover": { bgcolor: "error.light", color: "white" },
-              }}
-            >
-              <CloseIcon fontSize="small" />
-            </IconButton>
-            <CustomAudioPlayer src={activeAudio.path} fileName={activeAudio.name} />
-          </Box>
+          <CustomAudioPlayer
+            src={activeAudio.path}
+            fileName={activeAudio.name}
+            subtitle={personName}
+            onClose={() => setActiveAudio(null)}
+          />
         </Box>
       )}
 

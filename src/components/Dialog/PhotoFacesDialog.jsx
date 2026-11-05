@@ -325,7 +325,7 @@ export default function PhotoFacesDialog({
               flex: 1,
               minWidth: 0,
               height: "min(640px, 72vh)",
-              borderRadius: "18px",
+              borderRadius: "16px",
               overflow: "hidden",
               position: "relative",
               bgcolor: "action.hover",
@@ -533,7 +533,7 @@ export default function PhotoFacesDialog({
                         onClick={() => setSelectedFaceId(face.id)}
                         sx={{
                           p: 1.5,
-                          borderRadius: "18px",
+                          borderRadius: "16px",
                           bgcolor: isSelected
                             ? alpha(theme.palette.primary.main, 0.1)
                             : "action.hover",
@@ -542,7 +542,7 @@ export default function PhotoFacesDialog({
                               ? theme.palette.primary.main
                               : alpha(theme.palette.divider, 0.4)
                           }`,
-                          transition: "all 0.2s ease",
+                          transition: "background-color 200ms ease, border-color 200ms ease",
                         }}
                       >
                         <Stack direction="row" spacing={1} alignItems="center">
@@ -607,7 +607,7 @@ export default function PhotoFacesDialog({
                                 setSelectedFaceId(null);
                             }}
                             sx={{
-                              borderRadius: "10px",
+                              borderRadius: "8px",
                               flexShrink: 0,
                               bgcolor: alpha(theme.palette.error.main, 0.12),
                               "&:hover": {
@@ -678,7 +678,7 @@ export default function PhotoFacesDialog({
                                   }}
                                   sx={{
                                     flexShrink: 0,
-                                    borderRadius: "10px",
+                                    borderRadius: "8px",
                                     bgcolor: alpha(
                                       theme.palette.success.main,
                                       0.12,

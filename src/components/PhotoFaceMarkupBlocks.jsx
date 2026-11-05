@@ -272,8 +272,8 @@ export function PhotoFaceFormSection({
                   onClick={() => onSelectFace(face.id)}
                   sx={{
                     p: 0.5,
-                    borderRadius: "14px",
-                    transition: "all 0.2s ease",
+                    borderRadius: "12px",
+                    transition: "background-color 200ms ease",
                     bgcolor: isSelected
                       ? alpha(theme.palette.primary.main, 0.08)
                       : "transparent",
@@ -312,11 +312,12 @@ export function PhotoFaceFormSection({
                           sx={{
                             "& .MuiOutlinedInput-root": {
                               borderRadius: "12px",
-                              transition: "all 0.2s ease",
                               borderColor: isSelected
                                 ? theme.palette.primary.main
                                 : undefined,
                               "& fieldset": {
+                                transition:
+                                  "border-color 200ms ease, border-width 200ms ease",
                                 borderColor: isSelected
                                   ? `${theme.palette.primary.main} !important`
                                   : undefined,
@@ -375,7 +376,7 @@ export function PhotoFaceFormSection({
                         sx={{
                           pointerEvents: "none",
                           "& .MuiOutlinedInput-root": {
-                            borderRadius: "10px",
+                            borderRadius: "12px",
                             bgcolor: alpha(theme.palette.primary.main, 0.04),
                             "& fieldset": {
                               borderStyle: "dashed",

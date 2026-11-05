@@ -169,7 +169,7 @@ export default function CustomDatePickerDialog({
               fontSize: "0.75rem",
               fontWeight: 600,
               textTransform: "none",
-              borderRadius: "10px",
+              borderRadius: "8px",
             },
             "& .MuiTabs-indicator": { height: 3, borderRadius: "3px 3px 0 0" },
           }}

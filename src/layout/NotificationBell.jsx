@@ -230,7 +230,7 @@ export const NotificationBell = () => {
                     mt: 1.5,
                     textAlign: "center",
                     bgcolor: lighten(theme.palette.background.paper, 0.1),
-                    borderRadius: 5,
+                    borderRadius: 4,
                     border: "1px solid",
                     borderColor: "divider",
                   }}
@@ -266,7 +266,7 @@ export const NotificationBell = () => {
                         mt: index === 0 ? 1.5 : 0,
                         p: 1.5,
                         mx: 1,
-                        borderRadius: 5,
+                        borderRadius: 4,
                         bgcolor: lighten(theme.palette.background.paper, 0.1),
                         border: "1px solid",
                         borderColor: note.isNew

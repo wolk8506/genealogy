@@ -13,6 +13,8 @@ import { Link } from "react-router-dom";
 
 import { alpha } from "@mui/material/styles";
 import AddIcon from "@mui/icons-material/Add";
+import PlaceOutlinedIcon from "@mui/icons-material/PlaceOutlined";
+import StickyNote2OutlinedIcon from "@mui/icons-material/StickyNote2Outlined";
 
 import { EVENT_TYPES } from "./EventTypesList";
 
@@ -63,7 +65,7 @@ export default function PersonEvents({
       sx={{
         border: "solid 1px",
         borderColor: "divider",
-        borderRadius: "15px",
+        borderRadius: "12px",
         height: "100%",
         display: "flex",
         flexDirection: "column",
@@ -133,9 +135,17 @@ export default function PersonEvents({
                 divider={index !== sortedEvents.length - 1} // Разделитель между всеми, кроме последнего
                 sx={{
                   // Стили для появления кнопки карандаша
-                  "&:hover .edit-button": { opacity: 1, visibility: "visible" },
+                  "&:hover .edit-button": {
+                    opacity: 1,
+                    pointerEvents: "auto",
+                  },
+                  // Кнопка должна появляться и при переходе с клавиатуры.
+                  "&:focus-within .edit-button": {
+                    opacity: 1,
+                    pointerEvents: "auto",
+                  },
                   "&:hover": { bgcolor: "action.hover" },
-                  transition: "background 0.2s",
+                  transition: "background-color 160ms ease-out",
                 }}
               >
                 <Box
@@ -242,8 +252,32 @@ export default function PersonEvents({
                           component="div"
                           sx={{ display: "flex", gap: 1.5 }}
                         >
-                          {ev.place && <span>📍 {ev.place}</span>}
-                          {ev.notes && <span>📝 {ev.notes}</span>}
+                          {ev.place && (
+                            <Box
+                              component="span"
+                              sx={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: 0.4,
+                              }}
+                            >
+                              <PlaceOutlinedIcon sx={{ fontSize: 14 }} />
+                              {ev.place}
+                            </Box>
+                          )}
+                          {ev.notes && (
+                            <Box
+                              component="span"
+                              sx={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: 0.4,
+                              }}
+                            >
+                              <StickyNote2OutlinedIcon sx={{ fontSize: 14 }} />
+                              {ev.notes}
+                            </Box>
+                          )}
                         </Typography>
                       )}
 
@@ -275,7 +309,7 @@ export default function PersonEvents({
                                       : "rgba(0,0,0,0.05)",
                                   px: 1,
                                   py: 0.2,
-                                  borderRadius: "10px",
+                                  borderRadius: "999px",
                                   fontWeight: 700,
                                   color: "text.secondary",
                                   fontSize: "0.7rem",
@@ -311,7 +345,7 @@ export default function PersonEvents({
                                     alpha(theme.palette.secondary.main, 0.12),
                                   px: 1,
                                   py: 0.2,
-                                  borderRadius: "10px",
+                                  borderRadius: "999px",
                                   fontWeight: 700,
                                   color: "text.secondary",
                                   fontSize: "0.7rem",
@@ -339,7 +373,7 @@ export default function PersonEvents({
                                 sx={{
                                   px: 1,
                                   py: 0.2,
-                                  borderRadius: "10px",
+                                  borderRadius: "999px",
                                   fontSize: "0.7rem",
                                   color: "text.secondary",
                                 }}
@@ -364,8 +398,9 @@ export default function PersonEvents({
                       top: "50%",
                       transform: "translateY(-50%)",
                       opacity: 0,
-                      visibility: "hidden",
-                      transition: "all 0.2s",
+                      pointerEvents: "none",
+                      transition:
+                        "opacity 160ms ease-out, background-color 160ms ease-out",
                       bgcolor: "background.paper",
                       boxShadow: 1,
                       "&:hover": { bgcolor: "primary.main", color: "white" },

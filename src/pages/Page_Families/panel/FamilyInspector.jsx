@@ -80,7 +80,7 @@ export default function FamilyInspector({
             sx={{
               flexGrow: 1,
               display: "flex",
-              borderRadius: "10px",
+              borderRadius: "12px",
               bgcolor: isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.05)",
               border: "1px solid",
               borderColor: isDark
@@ -108,7 +108,7 @@ export default function FamilyInspector({
                     minHeight: 24,
                     py: 0,
                     px: 1,
-                    borderRadius: "7px",
+                    borderRadius: "8px",
                     cursor: "pointer",
                     color: selected ? "text.primary" : "text.secondary",
                     bgcolor: selected

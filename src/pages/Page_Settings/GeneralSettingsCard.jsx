@@ -100,7 +100,7 @@ export const GeneralSettingsCard = ({ cardStyle }) => {
       variant="outlined"
       sx={{
         ...cardStyle,
-        borderRadius: "18px",
+        borderRadius: "16px",
         border: "none",
         bgcolor: "transparent",
         boxShadow: "none",

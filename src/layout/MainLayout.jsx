@@ -787,16 +787,16 @@ export default function MainLayout() {
       "update:manual-check-result",
       (event, result) => {
         if (result.status === "available") {
-          enqueueSnackbar(`🔔 Доступна новая версия: ${result.version}`, {
+          enqueueSnackbar(`Доступна новая версия: ${result.version}`, {
             variant: "info",
           });
         } else if (result.status === "up-to-date") {
           enqueueSnackbar(
-            `✅ Установлена актуальная версия: ${result.version}`,
+            `Установлена актуальная версия: ${result.version}`,
             { variant: "success" },
           );
         } else if (result.status === "error") {
-          enqueueSnackbar(`❌ Ошибка: ${result.message}`, {
+          enqueueSnackbar(`Ошибка: ${result.message}`, {
             variant: "error",
           });
         }

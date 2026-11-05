@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Stack,
   Divider,
@@ -27,13 +27,19 @@ export const RenderSectionFamilies = ({ people = [], soloChildren = [] }) => {
   // renderList.push({ type: "empty_spouse_slot" });
 
   const totalItems = renderList.length;
-  const visibleItems = renderList.slice(index, index + 2);
+  // Индекс мог остаться от прошлой персоны или от большего числа семей.
+  const safeIndex = Math.min(index, Math.max(totalItems - 1, 0));
+  const visibleItems = renderList.slice(safeIndex, safeIndex + 2);
+
+  useEffect(() => {
+    setIndex((prev) => Math.min(prev, Math.max(totalItems - 1, 0)));
+  }, [totalItems]);
 
   // --- ЛОГИКА ПОДСВЕТКИ (ТВОЯ РАБОЧАЯ ВЕРСИЯ) ---
 
   const handleNext = () =>
-    index < totalItems - 1 && setIndex((prev) => prev + 1);
-  const handlePrev = () => index > 0 && setIndex((prev) => prev - 1);
+    safeIndex < totalItems - 1 && setIndex(safeIndex + 1);
+  const handlePrev = () => safeIndex > 0 && setIndex(safeIndex - 1);
 
   return (
     <Box sx={{ width: "100%", position: "relative", mt: 2 }}>
@@ -61,21 +67,21 @@ export const RenderSectionFamilies = ({ people = [], soloChildren = [] }) => {
               bgcolor: alpha(theme.palette.text.primary, 0.05),
               px: 2,
               height: 30,
-              borderRadius: "20px",
+              borderRadius: "999px",
               backdropFilter: "blur(4px)",
               border: "1px solid",
               borderColor: "divider",
             }}
           >
             <Typography variant="caption" sx={{ fontWeight: 600 }}>
-              {index + 1}—{Math.min(index + 2, totalItems)} из {totalItems}
+              {safeIndex + 1}—{Math.min(safeIndex + 2, totalItems)} из {totalItems}
             </Typography>
           </Box>
           <Stack
             direction="row"
             sx={{
               bgcolor: alpha(theme.palette.text.primary, 0.05),
-              borderRadius: 7,
+              borderRadius: "999px",
               height: 30,
               backdropFilter: "blur(4px)",
               border: "1px solid",
@@ -85,7 +91,7 @@ export const RenderSectionFamilies = ({ people = [], soloChildren = [] }) => {
             <IconButton
               size="small"
               onClick={handlePrev}
-              disabled={index === 0}
+              disabled={safeIndex === 0}
             >
               <ArrowBackIosNewIcon fontSize="inherit" />
             </IconButton>
@@ -93,7 +99,7 @@ export const RenderSectionFamilies = ({ people = [], soloChildren = [] }) => {
             <IconButton
               size="small"
               onClick={handleNext}
-              disabled={index >= totalItems - 2}
+              disabled={safeIndex >= totalItems - 2}
             >
               <ArrowForwardIosIcon fontSize="inherit" />
             </IconButton>
@@ -112,7 +118,6 @@ export const RenderSectionFamilies = ({ people = [], soloChildren = [] }) => {
           const columnStyle = {
             flex: "0 0 360px",
             borderRadius: 4,
-            transition: "all 0.2s ease-in-out",
           };
 
           if (item.type === "solo_children") {

@@ -62,7 +62,7 @@ export default function EventCopyDialog({
       fullWidth
       PaperProps={{
         sx: {
-          borderRadius: "20px",
+          borderRadius: "24px",
           backgroundImage: "none",
           bgcolor: isDark ? alpha(theme.palette.background.paper, 0.9) : "#fff",
           backdropFilter: "blur(12px)",
@@ -122,7 +122,7 @@ export default function EventCopyDialog({
             <Box
               sx={{
                 p: 0.5,
-                borderRadius: "14px",
+                borderRadius: "12px",
                 bgcolor: alpha(theme.palette.action.hover, 0.05),
                 border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
               }}
@@ -135,9 +135,9 @@ export default function EventCopyDialog({
                   onClick={() => setMode("new")}
                   startIcon={<AddCircleIcon />}
                   sx={{
-                    borderRadius: "10px",
+                    borderRadius: "12px",
                     py: 1,
-                    transition: "0.3s",
+                    transition: "background-color 200ms ease, color 200ms ease, box-shadow 200ms ease",
                     ...(mode === "new" && { boxShadow: theme.shadows[4] }),
                   }}
                 >
@@ -153,9 +153,9 @@ export default function EventCopyDialog({
                   onClick={() => setMode("replace")}
                   startIcon={<SwapHorizontalCircleIcon />}
                   sx={{
-                    borderRadius: "10px",
+                    borderRadius: "12px",
                     py: 1,
-                    transition: "0.3s",
+                    transition: "background-color 200ms ease, color 200ms ease, box-shadow 200ms ease",
                     ...(mode === "replace" && { boxShadow: theme.shadows[4] }),
                   }}
                 >

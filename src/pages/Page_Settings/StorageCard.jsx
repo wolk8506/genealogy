@@ -139,7 +139,7 @@ export const StorageCard = ({ cardStyle }) => {
       variant="outlined"
       sx={{
         ...cardStyle,
-        borderRadius: "18px",
+        borderRadius: "16px",
         border: "none",
         bgcolor: "transparent",
         boxShadow: "none",
@@ -234,7 +234,7 @@ export const StorageCard = ({ cardStyle }) => {
                               sx={{
                                 px: 0.8,
                                 height: 20,
-                                borderRadius: "10px",
+                                borderRadius: "6px",
                                 bgcolor: "action.hover",
                                 display: "grid",
                                 placeItems: "center",
@@ -377,7 +377,7 @@ export const StorageCard = ({ cardStyle }) => {
         open={libraryCandidate != null}
         onClose={() => setLibraryCandidate(null)}
         PaperProps={{
-          sx: { borderRadius: "20px", backgroundImage: "none" },
+          sx: { borderRadius: "24px", backgroundImage: "none" },
         }}
         maxWidth="xs"
         fullWidth

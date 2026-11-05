@@ -2,7 +2,7 @@ export const toolbarPillSx = {
   WebkitAppRegion: "no-drag",
   height: 36,
   minWidth: 36,
-  borderRadius: "18px",
+  borderRadius: "999px",
   border: 0,
   backgroundColor: "rgba(153, 153, 153, 0.17)",
   "& > .MuiIconButton-root": {

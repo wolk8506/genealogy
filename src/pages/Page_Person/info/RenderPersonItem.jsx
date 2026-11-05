@@ -36,7 +36,7 @@ export const RenderPersonItem = ({
     left: "50%",
     transform: "translateX(-50%)",
     opacity: 0,
-    transition: "all 0.2s ease",
+    transition: "opacity 200ms ease, transform 200ms ease",
     bgcolor: theme.palette.error.main,
     color: "#fff",
     padding: "4px",
@@ -67,7 +67,7 @@ export const RenderPersonItem = ({
         position: "relative",
         // Убираем overflow: hidden, чтобы кнопки-бейжди могли выступать за края
         bgcolor: isDark ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.01)",
-        transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+        transition: "border-color 200ms ease, background-color 200ms ease, box-shadow 200ms ease",
         "&:hover": {
           backgroundColor: isDark ? "rgba(255,255,255,0.05)" : "#fff",
           borderColor: theme.palette.primary.main,
@@ -128,6 +128,7 @@ export const RenderPersonItem = ({
         <Stack spacing={0.2} sx={{ overflow: "hidden", flex: 1 }}>
           <Typography
             variant="subtitle1"
+            title={name}
             sx={{
               fontWeight: 700,
               lineHeight: 1.2,

@@ -109,7 +109,7 @@ export default function MapStyleSwitcher({
     justifyContent: "center",
     cursor: "pointer",
     color: glassFg,
-    transition: "background 0.15s",
+    transition: "background-color 160ms ease",
     "&:hover": { bgcolor: hoverBg },
   };
 
@@ -122,7 +122,7 @@ export default function MapStyleSwitcher({
           flexDirection: "column",
           gap: "4px",
           // p: "4px",
-          borderRadius: "18px",
+          borderRadius: "16px",
           overflow: "hidden",
           bgcolor: glassBg,
           boxShadow: "0 2px 12px rgba(0,0,0,0.22)",
@@ -164,7 +164,7 @@ export default function MapStyleSwitcher({
         slotProps={{
           paper: {
             sx: {
-              borderRadius: "22px",
+              borderRadius: "16px",
               p: 2,
               bgcolor: popoverBg,
               color: glassFg,

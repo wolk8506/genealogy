@@ -36,7 +36,7 @@ export default function ConfirmDialog({
         sx: (t) => ({
           width: 300,
           maxWidth: "calc(100vw - 32px)",
-          borderRadius: "30px",
+          borderRadius: "24px",
           backgroundImage: "none",
           overflow: "hidden",
           bgcolor:

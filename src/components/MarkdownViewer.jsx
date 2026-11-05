@@ -169,7 +169,7 @@ const appleHelpSx = {
     borderSpacing: 0,
     my: 2.2,
     fontSize: "14px",
-    borderRadius: "10px",
+    borderRadius: "12px",
     overflow: "hidden",
     border: "1px solid",
     borderColor: (theme) =>
@@ -253,7 +253,7 @@ const appleHelpSx = {
     maxWidth: "100%",
     display: "block",
     margin: "1.2rem 0 1.6rem",
-    borderRadius: "10px",
+    borderRadius: "12px",
     border: "1px solid",
     borderColor: (theme) =>
       theme.palette.mode === "dark"

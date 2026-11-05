@@ -35,7 +35,7 @@ export default function SettingsSidebar({
         selected={selected}
         onClick={() => onSelect(section.id)}
         sx={{
-          borderRadius: "10px",
+          borderRadius: "8px",
           mb: "2px",
           minHeight: 32,
           height: 32,
@@ -95,7 +95,7 @@ export default function SettingsSidebar({
         height: "calc(100vh - 64px)",
         maxHeight: "calc(100vh - 64px)",
         overflowY: "auto",
-        borderRadius: "14px",
+        borderRadius: "16px",
         border: "1px solid",
         borderColor: "divider",
         p: 1,
@@ -157,7 +157,7 @@ export default function SettingsSidebar({
           "& .MuiOutlinedInput-root": {
             height: 34,
             fontSize: "0.8rem",
-            borderRadius: "9px",
+            borderRadius: "12px",
             bgcolor: (t) =>
               alpha(
                 t.palette.mode === "dark" ? "#ffffff" : "#000000",

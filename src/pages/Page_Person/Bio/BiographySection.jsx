@@ -1952,7 +1952,7 @@ export default function BiographySection({
                     sx={{
                       justifyContent: "flex-start",
                       textTransform: "none",
-                      borderRadius: "10px",
+                      borderRadius: "8px",
                       px: 1.2,
                       py: 0.75,
                       fontWeight:
@@ -2631,7 +2631,7 @@ export default function BiographySection({
             sx={{
               width: 64,
               height: 64,
-              borderRadius: "20px",
+              borderRadius: "16px",
               bgcolor: (theme) => alpha(theme.palette.primary.main, 0.1),
               display: "flex",
               alignItems: "center",
@@ -2717,7 +2717,7 @@ export default function BiographySection({
               alignItems: "center",
               bgcolor: "rgba(0, 0, 0, 0.4)",
               border: "1px solid rgba(255, 255, 255, 0.2)",
-              borderRadius: 7,
+              borderRadius: "999px",
               height: 34,
               px: 0.5,
               color: "text.secondary",

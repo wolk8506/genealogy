@@ -43,7 +43,7 @@ function FeatureCard({ node, imageRight, onOpen, colors }) {
         aspectRatio: "16 / 10",
         objectFit: "cover",
         objectPosition: "top left",
-        borderRadius: "10px",
+        borderRadius: "12px",
         border: `1px solid ${colors.divider}`,
         cursor: "pointer",
         bgcolor: colors.control,

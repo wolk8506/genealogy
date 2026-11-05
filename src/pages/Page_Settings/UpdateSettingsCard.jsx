@@ -60,7 +60,7 @@ export const UpdateSettingsCard = ({ cardStyle }) => {
       variant="outlined"
       sx={{
         ...cardStyle,
-        borderRadius: "18px",
+        borderRadius: "16px",
         border: "none",
         bgcolor: "transparent",
         boxShadow: "none",
@@ -112,7 +112,7 @@ export const UpdateSettingsCard = ({ cardStyle }) => {
                     sx={{
                       px: 1,
                       height: 22,
-                      borderRadius: "11px",
+                      borderRadius: "999px",
                       bgcolor: "action.hover",
                       display: "grid",
                       placeItems: "center",

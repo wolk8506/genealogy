@@ -100,7 +100,7 @@ export const RenderSectionFamilies = ({
               bgcolor: alpha(theme.palette.text.primary, 0.05),
               px: 2,
               height: 30,
-              borderRadius: "20px",
+              borderRadius: "999px",
               backdropFilter: "blur(4px)",
               border: "1px solid",
               borderColor: "divider",
@@ -114,7 +114,7 @@ export const RenderSectionFamilies = ({
             direction="row"
             sx={{
               bgcolor: alpha(theme.palette.text.primary, 0.05),
-              borderRadius: 7,
+              borderRadius: "999px",
               height: 30,
               backdropFilter: "blur(4px)",
               border: "1px solid",
@@ -153,7 +153,6 @@ export const RenderSectionFamilies = ({
           const columnStyle = {
             flex: "0 0 360px",
             borderRadius: 4,
-            transition: "all 0.2s ease-in-out",
           };
 
           if (item.type === "solo_children") {

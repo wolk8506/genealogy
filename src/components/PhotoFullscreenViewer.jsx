@@ -18,8 +18,22 @@ import InfoIcon from "@mui/icons-material/Info";
 import DownloadIcon from "@mui/icons-material/Download";
 import EditIcon from "@mui/icons-material/Edit";
 import FaceIcon from "@mui/icons-material/Face";
+import PersonOutlineIcon from "@mui/icons-material/PersonOutline";
+import PeopleOutlineIcon from "@mui/icons-material/PeopleOutline";
+import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
+import PlaceOutlinedIcon from "@mui/icons-material/PlaceOutlined";
 import PhotoFaceOverlay from "./PhotoFaceOverlay";
 import { normalizeFaces } from "../utils/photoFaces";
+
+const MetaRow = ({ icon: Icon, children }) => (
+  <Box
+    component="span"
+    sx={{ display: "inline-flex", alignItems: "flex-start", gap: 0.5, minWidth: 0 }}
+  >
+    <Icon sx={{ fontSize: 14, opacity: 0.85, flexShrink: 0, mt: "2px" }} />
+    <span style={{ minWidth: 0 }}>{children}</span>
+  </Box>
+);
 
 const PhotoFullscreenViewer = ({
   open,
@@ -126,7 +140,7 @@ const PhotoFullscreenViewer = ({
               px: 2,
               // py: 0.5,
               height: 34,
-              borderRadius: "20px",
+              borderRadius: "999px",
               backdropFilter: "blur(4px)",
               border: "1px solid rgba(255,255,255,0.2)",
             }}
@@ -163,7 +177,7 @@ const PhotoFullscreenViewer = ({
               alignItems: "center",
               border: "1px solid",
               borderColor: "divider",
-              borderRadius: 7,
+              borderRadius: "999px",
               height: 34,
               color: "text.secondary",
               fontSize: 20,
@@ -396,10 +410,13 @@ const PhotoFullscreenViewer = ({
                 {renderTextWithTags(currentPhotoInfo.description)}
               </Typography>
 
-              <Typography
-                variant="caption"
+              <Box
                 sx={{
-                  display: "block",
+                  display: "flex",
+                  flexWrap: "wrap",
+                  justifyContent: "center",
+                  columnGap: 2,
+                  rowGap: 0.75,
                   borderTop: "1px solid rgba(255,255,255,0.2)",
                   pt: 1.5,
                   fontSize: "0.75rem",
@@ -407,25 +424,23 @@ const PhotoFullscreenViewer = ({
                   color: "rgba(255,255,255,0.7)",
                 }}
               >
-                {currentPhotoInfo.ownerText} |{" "}
-                {currentPhotoInfo.datePhoto &&
-                  `📅 ${currentPhotoInfo.datePhoto} | `}
-                🏷️ На фото: {currentPhotoInfo.peopleText || "—"}
-              </Typography>
-              <Typography
-                variant="caption"
-                sx={{
-                  display: "block",
-                  borderTop: "1px solid rgba(255,255,255,0.2)",
-                  pt: 1.5,
-                  fontSize: "0.75rem",
-                  letterSpacing: "0.03em",
-                  color: "rgba(255,255,255,0.7)",
-                }}
-              >
-                {currentPhotoInfo.locationName &&
-                  `📍 ${currentPhotoInfo.locationName}`}
-              </Typography>
+                <MetaRow icon={PersonOutlineIcon}>
+                  {currentPhotoInfo.ownerText}
+                </MetaRow>
+                {currentPhotoInfo.datePhoto && (
+                  <MetaRow icon={CalendarTodayIcon}>
+                    {currentPhotoInfo.datePhoto}
+                  </MetaRow>
+                )}
+                <MetaRow icon={PeopleOutlineIcon}>
+                  На фото: {currentPhotoInfo.peopleText || "—"}
+                </MetaRow>
+                {currentPhotoInfo.locationName && (
+                  <MetaRow icon={PlaceOutlinedIcon}>
+                    {currentPhotoInfo.locationName}
+                  </MetaRow>
+                )}
+              </Box>
             </motion.div>
           )}
         </AnimatePresence>

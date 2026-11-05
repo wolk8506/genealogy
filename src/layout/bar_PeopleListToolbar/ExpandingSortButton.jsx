@@ -13,7 +13,7 @@ const StyledContainer = styled(Box, {
   alignItems: "center",
   justifyContent: "center",
   width: 56,
-  transition: "all 0.3s ease",
+  transition: "background-color 200ms ease",
   cursor: "pointer",
   overflow: "hidden",
   backgroundColor: $sortOrder === "desc" ? toolbarPillHoverBg : toolbarPillBg,

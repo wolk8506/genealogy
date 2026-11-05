@@ -47,7 +47,7 @@ export const RenderSectionChildren = ({
           flexWrap: "wrap",
           gap: 2,
           p: 1,
-          borderRadius: 5,
+          borderRadius: 4,
           bgcolor: (theme) => alpha(theme.palette.divider, 0.03),
           border: "1px dashed",
           borderColor: "divider",

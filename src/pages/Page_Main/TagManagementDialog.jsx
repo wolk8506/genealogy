@@ -177,7 +177,7 @@ export default function TagManagementDialog({ personId }) {
                           ? theme.palette.text.primary
                           : "transparent",
                       outline: "none",
-                      transition: "0.2s",
+                      transition: "border-color 200ms ease, transform 160ms ease",
                       "&:hover": { transform: "scale(1.08)" },
                     }}
                   />

@@ -143,7 +143,7 @@ export default function PhotoPreviewDialog({ open, meta, onClose, setPhotoPaths 
         <Box
           sx={{
             height: "min(440px, 55vh)",
-            borderRadius: "18px",
+            borderRadius: "16px",
             overflow: "hidden",
             position: "relative",
             bgcolor: "action.hover",
