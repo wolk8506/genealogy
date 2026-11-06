@@ -35,11 +35,30 @@ jobs:
       - name: Build Windows installer
         run: npm run dist:win
 
+      - name: Prepare release notes
+        shell: bash
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          awk -v ver="$VERSION" '
+            /^## v/ {
+              split($0, a, " "); take = (a[2] == "v" ver)
+              if (!take && taking) exit
+              taking = take; next
+            }
+            taking { print }
+          ' CHANGELOG.md | sed '/./,$!d' > release-notes.md
+          if [ ! -s release-notes.md ]; then
+            echo "::error::CHANGELOG.md has no block for version $VERSION"
+            exit 1
+          fi
+
       - name: Create Release and Upload Installer
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ inputs.version }}
           name: "Release ${{ inputs.version }}"
+          body_path: release-notes.md
           draft: false
           prerelease: false
           files: |

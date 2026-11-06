@@ -1,5 +1,6 @@
 // src/main/window.cjs
-const { BrowserWindow, Menu, session } = require("electron");
+const { BrowserWindow, Menu, ipcMain, nativeTheme, session } =
+  require("electron");
 const path = require("path");
 const log = require("./logger.cjs").createLogger("window");
 const isDev = process.env.NODE_ENV === "development";
@@ -18,7 +19,26 @@ if (process.platform !== "darwin") {
 // Проверка платформы
 const isMac = process.platform === "darwin";
 const isWin = process.platform === "win32";
-const { setMainWindow } = require("./mainWindow.cjs");
+const { setMainWindow, getMainWindow } = require("./mainWindow.cjs");
+
+// Высота стеклянного хедера в рендерере; нативная полоса вместо него.
+const CAPTION_HEIGHT = 50;
+
+// На Windows кнопки окна лежат поверх нашего хедера (Window Controls Overlay),
+// поэтому фон полосы прозрачный, а значки красятся в цвет текста темы.
+const captionOverlay = (isDark) => ({
+  color: "#00000000",
+  symbolColor: isDark ? "#e6e6eb" : "#1d1d1f",
+  height: CAPTION_HEIGHT,
+});
+
+// Самостоятельная тема приложения живёт в рендерере — renderer сообщает её сюда.
+ipcMain.on("window:set-caption-theme", (_event, isDark) => {
+  if (!isWin) return;
+  const win = getMainWindow();
+  if (!win) return;
+  win.setTitleBarOverlay(captionOverlay(Boolean(isDark)));
+});
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -27,11 +47,20 @@ function createWindow() {
     minWidth: 1430, // минимальная ширина
     minHeight: 700, // минимальная высота
     resizable: true, // окно остаётся изменяемым, но не меньше min*
-    titleBarStyle: isMac ? "hidden" : "default", // Скрывает полосу, но оставляет кнопки управления
+    // Нативной полосы заголовка нет ни на macOS, ни на Windows: её роль
+    // играет стеклянный хедер приложения. Кнопки окна возвращаем поверх
+    // веб-контента через titleBarOverlay.
+    titleBarStyle: isMac || isWin ? "hidden" : "default",
 
-    titleBarOverlay: {
-      height: 50, // Увеличьте это число, чтобы "опустить" кнопки визуально ниже
-    },
+    titleBarOverlay: isWin
+      ? captionOverlay(nativeTheme.shouldUseDarkColors)
+      : {
+          height: CAPTION_HEIGHT, // Увеличьте это число, чтобы "опустить" кнопки визуально ниже
+        },
+
+    // На Windows меню «Файл/Правка/Вид/Помощь» больше не занимает отдельную
+    // полосу: оно показывается по Alt, а его горячие клавиши работают всегда.
+    autoHideMenuBar: isWin,
     backgroundColor: "#05070d",
 
     webPreferences: {

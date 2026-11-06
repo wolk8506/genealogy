@@ -120,6 +120,7 @@ export default function App() {
   useEffect(() => {
     if (!themeReady) return;
     document.body.style.background = getPalette(mode).background.default;
+    window.windowAPI?.setCaptionTheme?.(mode === "dark");
   }, [themeReady, mode]);
 
   const theme = useMemo(
@@ -195,8 +196,10 @@ export default function App() {
               /* Ховер кнопок — лёгкий оттенок их собственного (активного)
                  цвета, а не серый action.hover. Включены только «плоские»
                  варианты (outlined/text) и иконко-кнопки; у contained
-                 ховер и так = затемнённый цвет кнопки. */
-              ".MuiButton-outlined:hover:not(.Mui-disabled), .MuiButton-text:hover:not(.Mui-disabled), .MuiIconButton-root:hover:not(.Mui-disabled), .MuiToggleButton-root:hover:not(.Mui-disabled), .MuiButtonGroup-root .MuiButton-outlined:hover:not(.Mui-disabled)":
+                 ховер и так = затемнённый цвет кнопки.
+                 [data-accent] — кнопки с активным фоном красят ховер сами,
+                 иначе белый оттенок съедает их цвет. */
+              ".MuiButton-outlined:hover:not(.Mui-disabled), .MuiButton-text:hover:not(.Mui-disabled), .MuiIconButton-root:hover:not(.Mui-disabled):not([data-accent]), .MuiToggleButton-root:hover:not(.Mui-disabled), .MuiButtonGroup-root .MuiButton-outlined:hover:not(.Mui-disabled)":
                 {
                   backgroundColor:
                     "color-mix(in srgb, currentColor 12%, transparent) !important",

@@ -13,6 +13,7 @@ import {
 } from "@mui/material";
 import SellIcon from "@mui/icons-material/Sell";
 import { useTagsStore } from "../../store/useTagsStore";
+import { popoverArrowSx } from "../../theme/popoverArrow";
 import { toolbarPillSx } from "../toolbarStyles";
 
 const StyledContainer = styled(Box, {
@@ -108,21 +109,7 @@ export default function ExpandingTagsFilter({ selectedTags = [], onChange }) {
               theme.palette.mode === "dark" ? "#1E1E1E" : "#FFFFFF",
             border: "1px solid",
             borderColor: "divider",
-            "&::before": {
-              content: '""',
-              display: "block",
-              position: "absolute",
-              top: -6,
-              left: "calc(50% - 6px)",
-              width: 12,
-              height: 12,
-              bgcolor: "inherit",
-              borderLeft: "1px solid",
-              borderTop: "1px solid",
-              borderColor: "divider",
-              transform: "rotate(45deg)",
-              zIndex: 0,
-            },
+            "&::before": popoverArrowSx(),
           },
         }}
       >

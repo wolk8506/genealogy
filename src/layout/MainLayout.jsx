@@ -54,7 +54,7 @@ import PageBackground from "./PageBackground";
 import useAppHotkeys from "../hooks/useAppHotkeys";
 
 import PeopleListPage from "../pages/Page_Main/PeopleListPage";
-import { UpdateBanner } from "../pages/Page_Settings/UpdateBanner";
+import { UpdateDialog } from "../pages/Page_Settings/UpdateDialog";
 import { HomePersonBanner } from "../pages/Page_Settings/HomePersonBanner";
 
 // Тяжёлые страницы — ленивая загрузка отдельными чанками.
@@ -607,14 +607,6 @@ export default function MainLayout() {
   const bioExecRef = useRef(null); // Ссылка на команды Milkdown
   const bioRequestToggleRef = useRef(null); // Сюда BiographySection положит свою функцию проверки "грязности"
 
-  useEffect(() => {
-    if (isBioEditing) {
-      setBioSearchQuery("");
-      setBioSearchMatchIndex(0);
-      setBioSearchMatchCount(0);
-    }
-  }, [isBioEditing]);
-
   // Чтобы открыть диалог загрузки из Toolbar, нам понадобится триггер или глобальный стейт
   const [uploadTrigger, setUploadTrigger] = useState(0);
   const match = matchPath("/person/:id", location.pathname);
@@ -787,9 +779,8 @@ export default function MainLayout() {
       "update:manual-check-result",
       (event, result) => {
         if (result.status === "available") {
-          enqueueSnackbar(`Доступна новая версия: ${result.version}`, {
-            variant: "info",
-          });
+          // само обновление показывает окно — второй раз сообщать не нужно
+          return;
         } else if (result.status === "up-to-date") {
           enqueueSnackbar(
             `Установлена актуальная версия: ${result.version}`,
@@ -955,6 +946,16 @@ export default function MainLayout() {
   // На Mac: если FullScreen -> 0, если окно -> 64px
   const appBarHeight = isMac ? (isMaximized ? 0 : "64px") : 0;
 
+  // На Windows кнопки окна («свернуть/развернуть/закрыть») лежат поверх
+  // стеклянного хедера, поэтому его правый край освобожаем под них.
+  // env(...) даёт точную ширину полосы, 138px — страховка, если переменных нет.
+  // В полноэкранном режиме (F11) кнопок нет, и отступ не нужен.
+  const isWindows = /^Win/i.test(navigator.platform);
+  const captionInset =
+    isWindows && !isMaximized
+      ? "max(138px, calc(100vw - env(titlebar-area-x, 0px) - env(titlebar-area-width, 100vw)))"
+      : 0;
+
   // -------------------------------------------------------
 
   return (
@@ -988,6 +989,7 @@ export default function MainLayout() {
               minHeight: "50px !important", // Фиксируем высоту
               height: 50,
               ml: appBarHeight,
+              mr: captionInset,
               display: "flex",
               alignItems: "center",
             }}
@@ -1020,7 +1022,7 @@ export default function MainLayout() {
             <NotificationBell />
 
             {isFamiliesPage && !loading && familiesView && (
-              <Box sx={{ ml: "12px", display: "inline-flex" }}>
+              <Box sx={{ display: "inline-flex" }}>
                 <FamiliesCountPill count={familiesView.families.length} />
               </Box>
             )}
@@ -1279,7 +1281,6 @@ export default function MainLayout() {
           }}
         >
           <DrawerHeader />
-          <UpdateBanner onOpenSettings={() => navigate("/settings")} />
           <HomePersonBanner
             hasPeople={allPeople.length > 0}
             onOpenSettings={() => navigate("/settings?section=home")}
@@ -1540,6 +1541,7 @@ export default function MainLayout() {
         />
       )}
       <ChangelogModal />
+      <UpdateDialog />
     </>
   );
 }

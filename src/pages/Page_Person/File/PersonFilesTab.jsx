@@ -38,6 +38,7 @@ import {
 import { alpha, useTheme } from "@mui/material/styles";
 import VideoFileIcon from "@mui/icons-material/VideoFile";
 import CustomAudioPlayer from "./CustomAudioPlayer";
+import CustomVideoPlayer from "./CustomVideoPlayer";
 import { useSettingsStore } from "../../../store/useSettingsStore";
 import { usePersonStore } from "../../../store/usePersonStore";
 import { useNotificationStore } from "../../../store/useNotificationStore";
@@ -709,6 +710,14 @@ export default function PersonFilesTab({ personId, personName }) {
   const isTxtPreview = previewFile && isTxtFile(previewFile);
   const isMediaPreview =
     previewFile && ["image", "video"].includes(previewFile.type);
+  const isVideoPreview = previewFile?.type === "video";
+  // Видео и текст растягиваются на всю сцену, остальное центрируется.
+  const isStretchPreview = isTxtPreview || isVideoPreview;
+  const previewMaxHeight = isTxtPreview
+    ? "80vh"
+    : isVideoPreview
+      ? "min(90vh, 900px)"
+      : "min(80vh, 900px)";
 
   const handleOpenPreviewExternal = () => {
     if (previewFile?.localPath) {
@@ -736,11 +745,10 @@ export default function PersonFilesTab({ personId, personName }) {
         );
       case "video":
         return (
-          <Box
-            component="video"
+          <CustomVideoPlayer
             src={path}
-            controls
-            sx={{ maxWidth: "100%", maxHeight: "100%", outline: "none" }}
+            fileName={previewFile.name}
+            onClose={() => setPreviewFile(null)}
           />
         );
       case "doc":
@@ -976,23 +984,30 @@ export default function PersonFilesTab({ personId, personName }) {
               display: "flex",
               flexDirection: "column",
               width: "100%",
-              maxHeight: isTxtPreview ? "80vh" : "min(80vh, 900px)",
+              // У видео сцена обязана иметь точную высоту, иначе кадр
+              // растягивается на свою внутреннюю высоту и уезжает за окно.
+              height: isVideoPreview ? previewMaxHeight : undefined,
+              maxHeight: previewMaxHeight,
             }}
           >
-            <PreviewOverlayBar
-              file={previewFile}
-              onClose={() => setPreviewFile(null)}
-              onOpenExternal={handleOpenPreviewExternal}
-              showOpenExternal={isTxtPreview}
-              tone={isTxtPreview ? "light" : "dark"}
-            />
+            {/* У видео верхняя полоса — часть плеера: она лежит поверх кадра
+                и прячется вместе с кнопками управления. */}
+            {!isVideoPreview && (
+              <PreviewOverlayBar
+                file={previewFile}
+                onClose={() => setPreviewFile(null)}
+                onOpenExternal={handleOpenPreviewExternal}
+                showOpenExternal={isTxtPreview}
+                tone={isTxtPreview ? "light" : "dark"}
+              />
+            )}
             <Box
               sx={{
                 flex: 1,
                 minHeight: 0,
                 display: "flex",
                 justifyContent: "center",
-                alignItems: isTxtPreview ? "stretch" : "center",
+                alignItems: isStretchPreview ? "stretch" : "center",
                 overflow: "hidden",
               }}
             >
