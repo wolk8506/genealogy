@@ -20,6 +20,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import CloseIcon from "@mui/icons-material/Close";
 import { formatNotificationDate } from "../utils/formatDate";
 import TrashFillIcon from "../components/svg/TrashFillIcon";
+import { popoverArrowSx } from "../theme/popoverArrow";
 import EventIcon from "@mui/icons-material/Event";
 import InfoIcon from "@mui/icons-material/Info";
 import PhotoLibraryIcon from "@mui/icons-material/PhotoLibrary";
@@ -132,21 +133,10 @@ export const NotificationBell = () => {
             overflow: "visible",
 
             // ТРЕУГОЛЬНИК (Хвостик)
-            "&::before": {
-              content: '""',
-              display: "block",
-              position: "absolute",
-              top: -7,
-              left: "calc(50% - 7px)",
-              width: 14,
-              height: 14,
-              bgcolor: lighten(theme.palette.background.paper, 0.1),
-              borderLeft: "1px solid",
-              borderTop: "1px solid",
-              borderColor: "divider",
-              transform: "rotate(45deg)",
+            "&::before": popoverArrowSx({
+              background: lighten(theme.palette.background.paper, 0.1),
               zIndex: 100,
-            },
+            }),
           },
         }}
       >
@@ -166,18 +156,6 @@ export const NotificationBell = () => {
             width: 340,
             mr: "auto",
             ml: "auto",
-
-            // Небольшой хак: закрашиваем "вход" треугольника основным цветом
-            "&::before": {
-              content: '""',
-              position: "absolute",
-              top: 0,
-              left: "20%",
-              right: "20%",
-              height: "10px",
-              bgcolor: lighten(theme.palette.background.paper, 0.1),
-              zIndex: -1,
-            },
           }}
         >
           <Typography variant="subtitle1" sx={{ fontWeight: 800 }}>

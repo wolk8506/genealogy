@@ -24,6 +24,7 @@ import PieChartOutlineIcon from "@mui/icons-material/PieChartOutline";
 import TouchAppIcon from "@mui/icons-material/TouchApp";
 import ZoomInIcon from "@mui/icons-material/ZoomIn";
 import SidebarRightIcon from "../../components/svg/SidebarRightIcon";
+import { popoverArrowSx } from "../../theme/popoverArrow";
 import { toolbarPillSx } from "../toolbarStyles";
 
 // Иконки режимов — те же, что в разделе «Древо» на странице человека:
@@ -202,21 +203,7 @@ export default function GenealogyTreeToolbar({ mode, onModeChange }) {
               border: "1px solid",
               borderColor: "divider",
               // Треугольник сверху, указывающий на кнопку справки.
-              "&::before": {
-                content: '""',
-                display: "block",
-                position: "absolute",
-                top: -6,
-                left: "calc(50% - 6px)",
-                width: 12,
-                height: 12,
-                bgcolor: "inherit",
-                borderLeft: "1px solid",
-                borderTop: "1px solid",
-                borderColor: "divider",
-                transform: "rotate(45deg)",
-                zIndex: 0,
-              },
+              "&::before": popoverArrowSx(),
             },
           },
         }}

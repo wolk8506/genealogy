@@ -154,10 +154,16 @@ function setupAutoUpdater(win) {
     try {
       log.info("📡 [MAIN] update:check received");
       const result = await autoUpdater.checkForUpdates();
-      updateInfo = result.updateInfo;
+      // без новой версии в фиде electron-updater возвращает null —
+      // считаем актуальной текущую версию, чтобы UI показал «последняя»
+      const info = result?.updateInfo ?? {
+        version: app.getVersion(),
+        files: [],
+      };
+      updateInfo = info;
       log.info("🔍 [MAIN] updateInfo:", updateInfo);
       win.webContents.send("update:available", {
-        ...updateInfo,
+        ...info,
         platform: process.platform,
       });
     } catch (err) {
@@ -247,29 +253,39 @@ function setupAutoUpdater(win) {
 
 ipcMain.on("trigger-update-check", () => {
   const win = getMainWindow(); // Получаем активное окно
+  let answered = false;
+  const answer = (payload) => {
+    if (answered) return;
+    answered = true;
+    win.webContents.send("update:manual-check-result", payload);
+  };
 
   autoUpdater.once("update-available", (info) => {
+    answered = true;
     win.webContents.send("update:manual-check-result", {
       status: "available",
       version: info.version,
     });
+    // окно обновления получает тот же updateInfo: в нём файлы и текст релиза.
+    // manual — явная просьба пользователя, её не нужно прятать за «напомнить позже»
+    win.webContents.send("app:update-available", { ...info, manual: true });
   });
 
   autoUpdater.once("update-not-available", () => {
-    win.webContents.send("update:manual-check-result", {
-      status: "up-to-date",
-      version: app.getVersion(),
-    });
+    answer({ status: "up-to-date", version: app.getVersion() });
   });
 
   autoUpdater.once("error", (err) => {
-    win.webContents.send("update:manual-check-result", {
-      status: "error",
-      message: err.message,
-    });
+    answer({ status: "error", message: err.message });
   });
 
-  autoUpdater.checkForUpdates();
+  // несобранное приложение проверку пропускает: событий нет, отвечаем сами
+  autoUpdater
+    .checkForUpdates()
+    .then((result) => {
+      if (!result) answer({ status: "up-to-date", version: app.getVersion() });
+    })
+    .catch((err) => answer({ status: "error", message: err.message }));
 });
 
 module.exports = { setupAutoUpdater };

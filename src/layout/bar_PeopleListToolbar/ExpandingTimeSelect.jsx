@@ -21,6 +21,7 @@ import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import HistoryToggleOffIcon from "@mui/icons-material/HistoryToggleOff";
 import EventNoteIcon from "@mui/icons-material/EventNote";
 import { toolbarPillBg, toolbarPillSx } from "../toolbarStyles";
+import { popoverArrowSx } from "../../theme/popoverArrow";
 
 const StyledContainer = styled(Box, {
   shouldForwardProp: (prop) => prop !== "$expanded",
@@ -133,21 +134,7 @@ export default function ExpandingTimeSelect({
             border: "1px solid",
             borderColor: "divider",
             // Хвостик меню
-            "&::before": {
-              content: '""',
-              display: "block",
-              position: "absolute",
-              top: -6,
-              left: "calc(50% - 6px)",
-              width: 12,
-              height: 12,
-              bgcolor: "inherit",
-              borderLeft: "1px solid",
-              borderTop: "1px solid",
-              borderColor: "divider",
-              transform: "rotate(45deg)",
-              zIndex: 0,
-            },
+            "&::before": popoverArrowSx(),
           },
         }}
       >

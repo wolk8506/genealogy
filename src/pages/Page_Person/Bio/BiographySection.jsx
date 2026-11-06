@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, {
+  useState,
+  useEffect,
+  useMemo,
+  useRef,
+  useCallback,
+} from "react";
 import {
   Dialog,
   DialogTitle,
@@ -15,6 +21,7 @@ import {
   Paper,
   TextField,
   CircularProgress,
+  Portal,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import DialogActionButton, {
@@ -23,6 +30,7 @@ import DialogActionButton, {
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import EditIcon from "@mui/icons-material/Edit";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import FeedIcon from "@mui/icons-material/Feed";
 import FormatAlignLeftIcon from "@mui/icons-material/FormatAlignLeft";
 import FormatAlignCenterIcon from "@mui/icons-material/FormatAlignCenter";
@@ -33,6 +41,7 @@ import { GlobalStyles } from "@mui/material";
 import { TextSelection, Plugin, PluginKey } from "prosemirror-state";
 import { Decoration, DecorationSet } from "prosemirror-view";
 import { keymap } from "@milkdown/prose/keymap";
+import { lift } from "@milkdown/prose/commands";
 import { prosePluginsCtx } from "@milkdown/core";
 
 import {
@@ -44,15 +53,37 @@ import {
   parserCtx,
   editorViewOptionsCtx,
   commandsCtx,
+  remarkStringifyOptionsCtx,
 } from "@milkdown/core";
 import { nord } from "@milkdown/theme-nord";
 import { commonmark } from "@milkdown/preset-commonmark";
 import { history } from "@milkdown/plugin-history";
-import { ButtonScrollTop } from "../../../components/ButtonScrollTop";
 import {
   createBioSpellController,
   createBioSpellPlugin,
 } from "./bioSpellcheck";
+import {
+  bioMarksPlugins,
+  bioMarksRemarkPlugin,
+  withBioMarkdownHandlers,
+} from "./bioMarks";
+import { BIO_HIGHLIGHT_COLORS } from "../../../theme/bioHighlightColors";
+import {
+  BIO_SIZE_MAX,
+  BIO_SIZE_MIN,
+  bioPercentStyle,
+  bioSizeLabel,
+  bioSizeStyle,
+  buildBioSizeTitle,
+  maxPercentFor,
+  percentOfBioSize,
+  percentToBioSize,
+  readBioSize,
+  rubberband,
+  snapBioPercent,
+  stepBioPercent,
+  stepPresetFromPercent,
+} from "./bioImageSize";
 import { gfm } from "@milkdown/kit/preset/gfm";
 import { block } from "@milkdown/plugin-block";
 import AddColumnRowRightIcon from "../../../components/svg/AddColumnRowRightIcon";
@@ -60,25 +91,6 @@ import TrashFillIcon from "../../../components/svg/TrashFillIcon";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import SubtitlesOutlinedIcon from "@mui/icons-material/SubtitlesOutlined";
 import PhotoSizeSelectSmallIcon from "@mui/icons-material/PhotoSizeSelectSmall";
-
-const BIO_SIZE_PREFIX = "bio-size:";
-const BIO_SIZE_CLASS = {
-  sm: "bio-img-size-sm",
-  md: "bio-img-size-md",
-  lg: "bio-img-size-lg",
-  full: "bio-img-size-full",
-};
-
-function parseBioSize(title) {
-  const raw = String(title || "").trim();
-  if (!raw.startsWith(BIO_SIZE_PREFIX)) return "md";
-  const size = raw.slice(BIO_SIZE_PREFIX.length);
-  return Object.prototype.hasOwnProperty.call(BIO_SIZE_CLASS, size) ? size : "md";
-}
-
-function buildBioSizeTitle(size) {
-  return `${BIO_SIZE_PREFIX}${size || "md"}`;
-}
 
 function findImageAtPos(doc, pos) {
   const node = doc.nodeAt(pos);
@@ -111,10 +123,9 @@ function createBioImagePlugin() {
         const decos = [];
         state.doc.descendants((node, pos) => {
           if (node.type.name !== "image") return;
-          const size = parseBioSize(node.attrs.title);
           decos.push(
             Decoration.node(pos, pos + node.nodeSize, {
-              class: BIO_SIZE_CLASS[size] || BIO_SIZE_CLASS.md,
+              style: bioSizeStyle(readBioSize(node.attrs.title)),
             }),
           );
           const alt = node.attrs.alt?.trim();
@@ -140,6 +151,84 @@ function createBioImagePlugin() {
   });
 }
 
+function collectBioSearchMatches(doc, query) {
+  const q = query?.trim().toLowerCase();
+  if (!q) return [];
+  const matches = [];
+  doc.descendants((node, pos) => {
+    if (!node.isText || !node.text) return;
+    const text = node.text.toLowerCase();
+    let index = text.indexOf(q);
+    while (index !== -1) {
+      matches.push({ from: pos + index, to: pos + index + q.length });
+      index = text.indexOf(q, index + q.length);
+    }
+  });
+  return matches;
+}
+
+const bioSearchPluginKey = new PluginKey("bio-search");
+
+// Подсветка поиска в редакторе идёт через decorations ProseMirror:
+// правка текста при этом не ломает разметку документа, как это сделал
+// бы прямой обход DOM.
+function createBioSearchPlugin(onCountChange) {
+  return new Plugin({
+    key: bioSearchPluginKey,
+    state: {
+      init: () => ({ query: "", active: 0, matches: [] }),
+      apply(tr, value, _old, state) {
+        const meta = tr.getMeta(bioSearchPluginKey);
+        if (meta) {
+          const query = meta.query?.trim() ?? "";
+          return {
+            query,
+            active: meta.active ?? 0,
+            matches: collectBioSearchMatches(state.doc, query),
+          };
+        }
+        if (value.query && tr.docChanged) {
+          return {
+            ...value,
+            matches: collectBioSearchMatches(state.doc, value.query),
+          };
+        }
+        return value;
+      },
+    },
+    props: {
+      decorations(state) {
+        const value = bioSearchPluginKey.getState(state);
+        if (!value?.matches.length) return null;
+        return DecorationSet.create(
+          state.doc,
+          value.matches.map((match, index) =>
+            Decoration.inline(match.from, match.to, {
+              class:
+                index === value.active
+                  ? "bio-search-hit bio-search-hit-active"
+                  : "bio-search-hit",
+              "data-bio-search-index": String(index),
+            }),
+          ),
+        );
+      },
+    },
+    view: () => ({
+      update(view, prevState) {
+        if (view.state.doc.eq(prevState.doc)) return;
+        const value = bioSearchPluginKey.getState(view.state);
+        if (value?.query) onCountChange?.(value.matches.length);
+      },
+    }),
+  });
+}
+
+const BIO_RESIZE_HINT_KEY = "genealogy.bio.resizeHint.v1";
+
+const BIO_RESIZE_HINT_TEXT =
+  "Тяните за уголок — шаг 5 %. Стрелки: тот же шаг, Shift+стрелки — типовые размеры.";
+
 const MilkdownEditor = ({
   content,
   isEditing,
@@ -153,6 +242,9 @@ const MilkdownEditor = ({
   onImageAdded,
   onRequestCaption,
   onRequestLink,
+  searchQuery = "",
+  searchMatchIndex = 0,
+  onSearchMatchCountChange,
 }) => {
   const editorRef = useRef(null);
   const isEditingRef = useRef(isEditing);
@@ -164,6 +256,11 @@ const MilkdownEditor = ({
       isEditing: () => isEditingRef.current,
     });
   }
+
+  const searchCountRef = useRef(onSearchMatchCountChange);
+  useEffect(() => {
+    searchCountRef.current = onSearchMatchCountChange;
+  }, [onSearchMatchCountChange]);
 
   // Синхронизация режима редактирования без пересоздания редактора
   useEffect(() => {
@@ -190,6 +287,9 @@ const MilkdownEditor = ({
             // иначе macOS подчёркивает русские слова украинским словарём.
             attributes: { spellcheck: "false" },
           });
+          ctx.update(remarkStringifyOptionsCtx, (prev) =>
+            withBioMarkdownHandlers(prev),
+          );
           ctx.update(prosePluginsCtx, (prev) => [
             ...prev,
             keymap({
@@ -198,11 +298,14 @@ const MilkdownEditor = ({
               },
             }),
             createBioImagePlugin(),
+            createBioSearchPlugin((count) => searchCountRef.current?.(count)),
             createBioSpellPlugin(spellControllerRef.current),
           ]);
         })
         .config(nord)
         .use(commonmark)
+        .use(bioMarksRemarkPlugin)
+        .use(bioMarksPlugins)
         .use(history)
         .use(gfm)
         .use(block); // возможно не нужен
@@ -236,9 +339,7 @@ const MilkdownEditor = ({
           img.src = `${cleanDir}/${cleanSrc}`;
         }
 
-        const size = parseBioSize(img.getAttribute("title"));
-        Object.values(BIO_SIZE_CLASS).forEach((cls) => img.classList.remove(cls));
-        img.classList.add(BIO_SIZE_CLASS[size] || BIO_SIZE_CLASS.md);
+        img.style.cssText = bioSizeStyle(readBioSize(img.getAttribute("title")));
       });
     };
     const handleImgClick = (e) => {
@@ -288,6 +389,28 @@ const MilkdownEditor = ({
     return () => dispatchRestore?.();
   }, [loading, setIsDirty, lastSavedRef, content]);
 
+  // Поиск по тексту биографии в режиме правки
+  const runSearch = useCallback((query, active) => {
+    let count = 0;
+    editorRef.current?.action((ctx) => {
+      const view = ctx.get(editorViewCtx);
+      view.dispatch(
+        view.state.tr.setMeta(bioSearchPluginKey, { query, active }),
+      );
+      const state = bioSearchPluginKey.getState(view.state);
+      count = state?.matches.length ?? 0;
+      view.dom
+        .querySelector(`[data-bio-search-index="${active}"]`)
+        ?.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+    return count;
+  }, []);
+
+  useEffect(() => {
+    if (loading) return;
+    searchCountRef.current?.(runSearch(searchQuery, searchMatchIndex));
+  }, [loading, isEditing, searchQuery, searchMatchIndex, runSearch]);
+
   // Команды для кнопок
   useEffect(() => {
     if (loading) return;
@@ -300,6 +423,105 @@ const MilkdownEditor = ({
         editorRef.current?.action((ctx) =>
           ctx.get(commandsCtx).call(key, payload),
         ),
+      focus: () =>
+        editorRef.current?.action((ctx) => ctx.get(editorViewCtx).focus()),
+      getFormatState: () => {        let result = { block: "paragraph", marks: {} };
+        editorRef.current?.action((ctx) => {
+          const view = ctx.get(editorViewCtx);
+          const { state } = view;
+          const { $from } = state.selection;
+
+          let block = "paragraph";
+          for (let depth = $from.depth; depth > 0; depth -= 1) {
+            const node = $from.node(depth);
+            const name = node.type.name;
+            if (name === "code_block") {
+              block = "code";
+              break;
+            }
+            if (name === "heading") {
+              block = `h${node.attrs.level}`;
+              break;
+            }
+            if (name === "blockquote") {
+              block = "quote";
+              break;
+            }
+            if (name === "bullet_list") {
+              block = "bullet";
+              break;
+            }
+            if (name === "ordered_list") {
+              block = "ordered";
+              break;
+            }
+          }
+
+          const marks =
+            state.storedMarks || state.selection.$from.marks() || [];
+          const { from, to, empty } = state.selection;
+
+          // Цвет маркера для палитры: у курсора берём активную марку,
+          // у выделения — первый цвет внутри диапазона. Граница
+          // выделения не считается: маркер до его начала не отмечаем.
+          let highlight = null;
+          if (empty) {
+            highlight =
+              marks.find((mark) => mark.type.name === "highlight")?.attrs
+                .color || null;
+          } else {
+            state.doc.nodesBetween(from, to, (node) => {
+              if (highlight) return false;
+              const found = node.marks?.find(
+                (mark) => mark.type.name === "highlight",
+              );
+              if (found) highlight = found.attrs.color;
+              return true;
+            });
+          }
+
+          result = {
+            block,
+            marks: {
+              strong: marks.some((mark) => mark.type.name === "strong"),
+              emphasis: marks.some((mark) => mark.type.name === "emphasis"),
+              strikethrough: marks.some(
+                (mark) => mark.type.name === "strike_through",
+              ),
+              underline: marks.some((mark) => mark.type.name === "underline"),
+              highlight,
+            },
+          };
+        });
+        return result;
+      },
+      clearFormatting: () =>
+        editorRef.current?.action((ctx) => {
+          const view = ctx.get(editorViewCtx);
+          const commands = ctx.get(commandsCtx);
+          const { state } = view;
+          const { $from, from, to, empty } = state.selection;
+
+          const tr = state.tr.removeMark(
+            empty ? $from.start() : from,
+            empty ? $from.end() : to,
+          );
+          if (tr.docChanged) view.dispatch(tr);
+
+          commands.call("TurnIntoText");
+          view.focus();
+        }),
+      setParagraph: () =>
+        editorRef.current?.action((ctx) => {
+          const view = ctx.get(editorViewCtx);
+          ctx.get(commandsCtx).call("TurnIntoText");
+          // Выходим из цитаты или списка, чтобы «Основной текст»
+          // возвращал обычный абзац, а не абзац внутри обёртки.
+          for (let depth = 0; depth < 6; depth += 1) {
+            if (!lift(view.state, view.dispatch, view)) break;
+          }
+          view.focus();
+        }),
       getSpellWordAt: (x, y) =>
         spellControllerRef.current?.getWordAtCoords(x, y) || null,
       replaceSpellWord: (from, to, word) =>
@@ -346,7 +568,7 @@ const MilkdownEditor = ({
             alt: node.attrs.alt || "",
             src: node.attrs.src || "",
             title: node.attrs.title || "",
-            size: parseBioSize(node.attrs.title),
+            size: readBioSize(node.attrs.title),
             isSingle: isSingleImageParagraph(view.state.doc, imagePos),
           };
         });
@@ -957,6 +1179,7 @@ const MilkdownEditor = ({
   return (
     <Box
       ref={containerRef}
+      className={isEditing ? "bio-editing" : undefined}
       sx={{
         mt: 2,
 
@@ -1020,7 +1243,7 @@ const MilkdownEditor = ({
         "& .ProseMirror .bio-spell-error": {
           textDecorationLine: "underline",
           textDecorationStyle: "wavy",
-          textDecorationColor: "#FF453A",
+          textDecorationColor: "rgba(255, 68, 58, 0.50)",
           textDecorationThickness: "1px",
           textUnderlineOffset: "3px",
         },
@@ -1050,40 +1273,6 @@ const MilkdownEditor = ({
           verticalAlign: "top",
         },
 
-        "& .ProseMirror img.bio-img-size-sm": {
-          width: "calc(25% - 12px)",
-          minWidth: "140px",
-          maxWidth: "calc(25% - 12px)",
-          aspectRatio: "1 / 1",
-          height: "auto",
-        },
-
-        "& .ProseMirror img.bio-img-size-md": {
-          width: "calc(33.33% - 12px)",
-          minWidth: "220px",
-          maxWidth: "calc(33.33% - 12px)",
-          aspectRatio: "1 / 1",
-          height: "auto",
-        },
-
-        "& .ProseMirror img.bio-img-size-lg": {
-          width: "calc(50% - 12px)",
-          minWidth: "280px",
-          maxWidth: "calc(50% - 12px)",
-          aspectRatio: "1 / 1",
-          height: "auto",
-        },
-
-        "& .ProseMirror img.bio-img-size-full": {
-          width: "100%",
-          minWidth: "100%",
-          maxWidth: "100%",
-          aspectRatio: "auto",
-          height: "auto",
-          maxHeight: "520px",
-          objectFit: "contain",
-        },
-
         "& .ProseMirror p:has(img) img:not(.ProseMirror-separator)": {
           cursor: "pointer",
           "&:hover": {
@@ -1092,6 +1281,17 @@ const MilkdownEditor = ({
             zIndex: 10,
           },
         },
+
+        // В режиме правки картинка не должна уезжать из-под курсора,
+        // иначе ручка угла дрожит при перетаскивании. Селектор повторяет
+        // :not(.ProseMirror-separator) из базового правила — без него
+        // детализация меньше и hover-увеличение всё равно побеждает.
+        "&.bio-editing .ProseMirror p:has(img) img:not(.ProseMirror-separator):hover":
+          {
+            transform: "none",
+            boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
+            zIndex: "auto",
+          },
 
         "& .bio-caption-widget": {
           flexBasis: "100%",
@@ -1106,14 +1306,44 @@ const MilkdownEditor = ({
           textIndent: 0,
         },
 
-        "& mark.bio-search-hit": {
+        "& span.bio-search-hit": {
           bgcolor: (theme) => alpha(theme.palette.warning.main, 0.45),
           color: "inherit",
           borderRadius: "2px",
           px: "1px",
         },
 
-        "& u": { textDecoration: "underline" },
+        "& span.bio-search-hit.bio-search-hit-active": {
+          bgcolor: (theme) => alpha(theme.palette.warning.main, 0.9),
+          color: "#111111",
+        },
+
+        "& u": {
+          textDecoration: "underline",
+          textDecorationThickness: "1px",
+          textUnderlineOffset: "2px",
+        },
+        "& mark[data-bio-color]": {
+          color: "inherit",
+          borderRadius: "3px",
+          px: "1px",
+          boxDecorationBreak: "clone",
+          WebkitBoxDecorationBreak: "clone",
+          printColorAdjust: "exact",
+          WebkitPrintColorAdjust: "exact",
+        },
+        ...Object.fromEntries(
+          BIO_HIGHLIGHT_COLORS.map((color) => [
+            `& mark[data-bio-color="${color.id}"]`,
+            {
+              bgcolor: (theme) =>
+                alpha(
+                  color.hex,
+                  theme.palette.mode === "dark" ? 0.34 : 0.4,
+                ),
+            },
+          ]),
+        ),
         "& blockquote": { borderLeft: "4px solid #666", pl: 2, color: "#aaa" },
       }}
     >
@@ -1122,65 +1352,6 @@ const MilkdownEditor = ({
   );
 };
 
-function escapeRegex(str) {
-  return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
-function clearSearchHighlights(root) {
-  if (!root) return;
-  root.querySelectorAll("mark.bio-search-hit").forEach((mark) => {
-    const parent = mark.parentNode;
-    if (!parent) return;
-    parent.replaceChild(document.createTextNode(mark.textContent), mark);
-    parent.normalize();
-  });
-}
-
-function highlightSearchInDom(root, query) {
-  clearSearchHighlights(root);
-  if (!query?.trim()) return [];
-
-  const hits = [];
-  const regex = new RegExp(escapeRegex(query.trim()), "gi");
-
-  const walk = (node) => {
-    if (node.nodeType === Node.TEXT_NODE) {
-      const text = node.nodeValue;
-      if (!text || !regex.test(text)) return;
-      regex.lastIndex = 0;
-
-      const frag = document.createDocumentFragment();
-      let lastIndex = 0;
-      let match;
-      while ((match = regex.exec(text)) !== null) {
-        if (match.index > lastIndex) {
-          frag.appendChild(
-            document.createTextNode(text.slice(lastIndex, match.index)),
-          );
-        }
-        const mark = document.createElement("mark");
-        mark.className = "bio-search-hit";
-        mark.textContent = match[0];
-        hits.push(mark);
-        frag.appendChild(mark);
-        lastIndex = regex.lastIndex;
-      }
-      if (lastIndex < text.length) {
-        frag.appendChild(document.createTextNode(text.slice(lastIndex)));
-      }
-      node.parentNode?.replaceChild(frag, node);
-      return;
-    }
-
-    if (node.nodeType === Node.ELEMENT_NODE) {
-      if (node.tagName === "MARK" || node.closest("mark.bio-search-hit")) return;
-      Array.from(node.childNodes).forEach(walk);
-    }
-  };
-
-  walk(root);
-  return hits;
-}
 
 export default function BiographySection({
   personId,
@@ -1214,6 +1385,100 @@ export default function BiographySection({
   const [sessionImages, setSessionImages] = useState([]);
   const [headings, setHeadings] = useState([]);
   const [activeHeadingId, setActiveHeadingId] = useState("");
+  const [expandedHeadingIds, setExpandedHeadingIds] = useState(() => new Set());
+
+  // Дерево заголовков: H2 вкладывается в H1, H3 — в H2.
+  const headingTree = useMemo(() => {
+    const nodes = headings.map((heading) => ({
+      ...heading,
+      children: [],
+      parentId: null,
+    }));
+    const roots = [];
+    const stack = [];
+    const byId = new Map();
+
+    for (const node of nodes) {
+      while (stack.length && stack[stack.length - 1].level >= node.level) {
+        stack.pop();
+      }
+
+      const parent = stack[stack.length - 1];
+      if (parent) {
+        node.parentId = parent.id;
+        parent.children.push(node);
+      } else {
+        roots.push(node);
+      }
+
+      stack.push(node);
+      byId.set(node.id, node);
+    }
+
+    return { roots, byId };
+  }, [headings]);
+
+  // Подпункты по умолчанию свёрнуты: показываем только корневые заголовки.
+  const visibleHeadings = useMemo(() => {
+    const result = [];
+
+    const walk = (nodes) => {
+      for (const node of nodes) {
+        result.push(node);
+        if (node.children.length > 0 && expandedHeadingIds.has(node.id)) {
+          walk(node.children);
+        }
+      }
+    };
+
+    walk(headingTree.roots);
+    return result;
+  }, [headingTree, expandedHeadingIds]);
+
+  const toggleHeading = useCallback((id) => {
+    setExpandedHeadingIds((previous) => {
+      const next = new Set(previous);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
+
+  // Убираем из состояния заголовки, которых больше нет в тексте.
+  useEffect(() => {
+    setExpandedHeadingIds((previous) => {
+      if (previous.size === 0) return previous;
+      const next = new Set(
+        [...previous].filter((id) => headingTree.byId.has(id)),
+      );
+      return next.size === previous.size ? previous : next;
+    });
+  }, [headingTree]);
+
+  // При переходе к вложенному заголовку раскрываем его родителей.
+  useEffect(() => {
+    if (!activeHeadingId) return;
+
+    const ancestorIds = [];
+    let node = headingTree.byId.get(activeHeadingId);
+    while (node?.parentId) {
+      ancestorIds.push(node.parentId);
+      node = headingTree.byId.get(node.parentId);
+    }
+    if (ancestorIds.length === 0) return;
+
+    setExpandedHeadingIds((previous) => {
+      let changed = false;
+      const next = new Set(previous);
+      for (const id of ancestorIds) {
+        if (!next.has(id)) {
+          next.add(id);
+          changed = true;
+        }
+      }
+      return changed ? next : previous;
+    });
+  }, [activeHeadingId, headingTree]);
 
   const saveRef = useRef(null);
   const lastSavedRef = useRef("");
@@ -1226,6 +1491,21 @@ export default function BiographySection({
   const [spellMenu, setSpellMenu] = useState(null);
   const [promptState, setPromptState] = useState(null);
   const [promptValues, setPromptValues] = useState({ text: "", url: "" });
+  const [activeImage, setActiveImage] = useState(null);
+  const [resizeValue, setResizeValue] = useState(null);
+  const [isResizing, setIsResizing] = useState(false);
+  const [resizeHint, setResizeHint] = useState(false);
+  const [resizeHintSeen, setResizeHintSeen] = useState(() => {
+    try {
+      return localStorage.getItem(BIO_RESIZE_HINT_KEY) === "1";
+    } catch {
+      return true;
+    }
+  });
+  const [resizeHandleFocused, setResizeHandleFocused] = useState(false);
+  const activeImageRef = useRef(null);
+  const resizeHandleRef = useRef(null);
+  const resizeDragRef = useRef(null);
 
   const collectHeadings = useCallback(() => {
     const root = articleRef.current;
@@ -1432,7 +1712,231 @@ export default function BiographySection({
     preserveViewportScroll(() => {
       execRef.current?.updateImageAtPos?.(pos, { size });
     });
+    setActiveImage((prev) =>
+      prev && prev.name === String(imageMenu.src || "").split("/").pop()
+        ? { ...prev, size }
+        : prev,
+    );
   };
+
+  // ——— Размер картинки перетаскиванием за угол ———
+
+  // ProseMirror пересобирает DOM картинки при смене размера, поэтому
+  // элемент не держим в ссылке, а каждый раз находим по имени файла.
+  const findImageElement = (entry) => {
+    if (!entry) return null;
+    const images = document.querySelectorAll(
+      ".ProseMirror img:not(.ProseMirror-separator)",
+    );
+    for (const img of images) {
+      const name = String(img.getAttribute("src") || "").split("/").pop();
+      if (name === entry.name) return img;
+    }
+    return null;
+  };
+
+  const positionResizeHandle = useCallback(() => {
+    const handle = resizeHandleRef.current;
+    const entry = activeImageRef.current;
+    if (!handle || !entry) return;
+    const img = findImageElement(entry);
+    if (!img) {
+      setActiveImage(null);
+      return;
+    }
+    const rect = img.getBoundingClientRect();
+    const next = `translate3d(${rect.right}px, ${rect.bottom}px, 0)`;
+    if (handle.style.transform !== next) handle.style.transform = next;
+  }, []);
+
+  const resizeGeometryOf = (img) => {
+    // Проценты считаются от ширины абзаца-контейнера, как и в CSS.
+    const basis = img.parentElement?.clientWidth || 0;
+    return { basis, cap: maxPercentFor(img.naturalWidth, basis) };
+  };
+
+  const dismissResizeHint = useCallback(() => {
+    setResizeHint(false);
+    setResizeHintSeen(true);
+    try {
+      localStorage.setItem(BIO_RESIZE_HINT_KEY, "1");
+    } catch {
+      /* приватный режим — подсказка просто будет появляться снова */
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!resizeHint) return undefined;
+    const timer = setTimeout(dismissResizeHint, 9000);
+    return () => clearTimeout(timer);
+  }, [resizeHint, dismissResizeHint]);
+
+  // Картинка «активна», пока на неё кликнули в режиме правки: у неё
+  // появляется ручка угла. Клик мимо картинки или выход из правки её снимают.
+  const handleBioPointerDown = (event) => {
+    if (!isEditing) return;
+    // Портал с ручкой — потомок этого Box в дереве React, поэтому клик
+    // по ручке не должен сбрасывать выбор картинки.
+    if (event.target?.closest?.("[data-bio-resize-ui]")) return;
+    const img = event.target?.closest?.("img");
+    if (!img || img.classList.contains("ProseMirror-separator")) {
+      setActiveImage(null);
+      return;
+    }
+    const info = execRef.current?.getImageInfoAtDom?.(img);
+    if (!info) {
+      setActiveImage(null);
+      return;
+    }
+    setActiveImage({
+      name: String(info.src || "").split("/").pop(),
+      size: info.size,
+      isSingle: info.isSingle,
+    });
+    if (info.isSingle && !resizeHintSeen) setResizeHint(true);
+  };
+
+  useEffect(() => {
+    activeImageRef.current = activeImage;
+    setResizeValue(null);
+    if (!activeImage) setResizeHint(false);
+  }, [activeImage]);
+
+  useEffect(() => {
+    if (!isEditing) setActiveImage(null);
+  }, [isEditing]);
+
+  // Ручка лежит в портале, поэтому её позиция — снимок уголка картинки.
+  // Обновляем каждый кадр, пока картинка выбрана: перетаскивание, набор
+  // текста, рефлоу строки и наведение мыши двигают уголок независимо друг
+  // от друга, и по событиям (MutationObserver, scroll) не поймаешь все.
+  useEffect(() => {
+    if (!activeImage) return undefined;
+    let frame = requestAnimationFrame(function tick() {
+      positionResizeHandle();
+      frame = requestAnimationFrame(tick);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [activeImage, positionResizeHandle]);
+
+  const commitResize = (entry, value) => {
+    const img = findImageElement(entry);
+    if (!img) return;
+    // Позиция в документе после правок съезжает, поэтому спрашиваем
+    // редактор, где картинка лежит сейчас.
+    const info = execRef.current?.getImageInfoAtDom?.(img);
+    if (!info || info.size === value) return;
+    execRef.current?.updateImageAtPos?.(info.pos, { size: value });
+    setActiveImage((prev) => (prev ? { ...prev, size: value } : prev));
+  };
+
+  const onResizePointerDown = (event) => {
+    const entry = activeImageRef.current;
+    const img = findImageElement(entry);
+    if (!img) return;
+    event.preventDefault();
+    event.stopPropagation();
+    event.currentTarget.focus?.({ preventScroll: true });
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+    dismissResizeHint();
+    const { basis, cap } = resizeGeometryOf(img);
+    const rendered = img.getBoundingClientRect().width;
+    resizeDragRef.current = {
+      pointerId: event.pointerId,
+      img,
+      startX: event.clientX,
+      startY: event.clientY,
+      basis,
+      cap,
+      startPercent: basis
+        ? ((rendered + 12) / basis) * 100
+        : percentOfBioSize(entry.size),
+      value: entry.size,
+      shown: entry.size,
+    };
+    setResizeValue(entry.size);
+    setIsResizing(true);
+  };
+
+  const onResizePointerMove = (event) => {
+    const drag = resizeDragRef.current;
+    if (!drag || !drag.img.isConnected) return;
+    if (event.pointerId !== drag.pointerId) return;
+    // Мышь без зажатой кнопки — это обычное наведение, а не перетаскивание:
+    // если состояние жеста почему-то осталось, менять размер нельзя.
+    if (event.pointerType === "mouse" && event.buttons === 0) return;
+    // Угол тянем по диагонали, поэтому считаем среднее смещение по осям.
+    const pull =
+      (event.clientX - drag.startX + (event.clientY - drag.startY)) / 2;
+    const raw = drag.startPercent + (drag.basis ? (pull / drag.basis) * 100 : 0);
+    const snapped = snapBioPercent(raw, drag.cap);
+    const overshoot = Math.max(0, Math.min(raw, BIO_SIZE_MAX) - drag.cap);
+    drag.img.style.cssText = bioPercentStyle(
+      Math.min(
+        BIO_SIZE_MAX,
+        percentOfBioSize(snapped) + rubberband(overshoot, drag.cap),
+      ),
+    );
+    drag.value = snapped;
+    if (snapped !== drag.shown) {
+      drag.shown = snapped;
+      setResizeValue(snapped);
+    }
+  };
+
+  const finishResizeDrag = () => {
+    const drag = resizeDragRef.current;
+    if (!drag) return;
+    resizeDragRef.current = null;
+    setIsResizing(false);
+    if (drag.img.isConnected) drag.img.style.cssText = bioSizeStyle(drag.value);
+    commitResize(activeImageRef.current, drag.value);
+  };
+
+  const onResizeKeyDown = (event) => {
+    const entry = activeImageRef.current;
+    const img = findImageElement(entry);
+    if (!img) return;
+    const directions = {
+      ArrowRight: 1,
+      ArrowUp: 1,
+      ArrowLeft: -1,
+      ArrowDown: -1,
+    };
+    const direction = directions[event.key];
+    const { basis, cap } = resizeGeometryOf(img);
+    const current = percentOfBioSize(resizeValue ?? entry.size);
+    let target = null;
+    if (direction) {
+      target = event.shiftKey
+        ? percentOfBioSize(stepPresetFromPercent(current, direction))
+        : stepBioPercent(current, direction, cap);
+    } else if (event.key === "Home") {
+      target = BIO_SIZE_MIN;
+    } else if (event.key === "End") {
+      target = cap;
+    } else if (event.key === "Escape") {
+      event.preventDefault();
+      setActiveImage(null);
+      return;
+    }
+    if (target === null) return;
+    event.preventDefault();
+    dismissResizeHint();
+    // Шаг уже ведёт по точкам сетки, поэтому заново не примагничиваем:
+    // иначе стрелка из «Средний (33 %)» прыгает обратно в свою детенту.
+    const value = percentToBioSize(target);
+    img.style.cssText = bioSizeStyle(value);
+    setResizeValue(value);
+    commitResize(entry, value);
+  };
+
+  const resizeBubbleValue = resizeValue ?? activeImage?.size;
+  // Подсказка и пузырёк значения делят один уголок: пока подсказка видна,
+  // пузырёк не показываем — иначе они сливаются в одну плашку.
+  const showResizeBubble = Boolean(
+    activeImage?.isSingle && !resizeHint && (isResizing || resizeHandleFocused),
+  );
 
   // Очищаем список при входе в режим редактирования
   useEffect(() => {
@@ -1555,6 +2059,18 @@ export default function BiographySection({
     th, td { border: 1px solid #ccc; padding: 8px; }
     blockquote { border-left: 4px solid #999; padding-left: 16px; color: #444; }
     a { color: #0088FF; }
+    u { text-decoration: underline; text-underline-offset: 2px; }
+    mark[data-bio-color] {
+      color: inherit;
+      padding: 0 1px;
+      border-radius: 3px;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    ${BIO_HIGHLIGHT_COLORS.map(
+      (color) =>
+        `mark[data-bio-color="${color.id}"] { background-color: ${color.hex}66; }`,
+    ).join("\n    ")}
   </style>
 </head>
 <body>
@@ -1676,38 +2192,11 @@ export default function BiographySection({
     }
   }, [bio, personId, setIsDirty]);
 
+  // Подсветкой и счётчиком совпадений занимается редактор (см. MilkdownEditor),
+  // здесь только сброс счётчика, когда биография скрыта.
   useEffect(() => {
-    if (activeElement !== "bio") {
-      onSearchMatchCountChange?.(0);
-      return;
-    }
-
-    if (isEditing) {
-      onSearchMatchCountChange?.(0);
-      return;
-    }
-
-    const prose = articleRef.current?.querySelector(".ProseMirror");
-    if (!prose) {
-      onSearchMatchCountChange?.(0);
-      return;
-    }
-
-    const hits = highlightSearchInDom(prose, searchQuery);
-    onSearchMatchCountChange?.(hits.length);
-    const target = hits[searchMatchIndex % Math.max(hits.length, 1)];
-    target?.scrollIntoView({ behavior: "smooth", block: "center" });
-
-    return () => clearSearchHighlights(prose);
-  }, [
-    searchQuery,
-    searchMatchIndex,
-    activeElement,
-    isEditing,
-    bio,
-    execRef,
-    onSearchMatchCountChange,
-  ]);
+    if (activeElement !== "bio") onSearchMatchCountChange?.(0);
+  }, [activeElement, onSearchMatchCountChange]);
 
   // Загрузка данных и CLEANUP
   useEffect(() => {
@@ -1879,7 +2368,7 @@ export default function BiographySection({
       >
         <Box
           sx={{
-            width: { xs: 0, lg: isNavVisible ? 280 : 0 },
+            width: { xs: 0, lg: isNavVisible ? 320 : 0 },
             opacity: { xs: 0, lg: isNavVisible ? 1 : 0 },
             transform: { xs: "translateX(-16px)", lg: isNavVisible ? "translateX(0)" : "translateX(-16px)" },
             transition:
@@ -1898,7 +2387,7 @@ export default function BiographySection({
         >
           <Box
             sx={{
-              maxHeight: "calc(100dvh - 120px)",
+              height: "calc(100dvh - 120px)",
               overflowY: "auto",
               border: "1px solid",
               // borderColor: "divider",
@@ -1939,40 +2428,102 @@ export default function BiographySection({
                   </Typography>
                 )}
 
-                {headings.map((heading) => (
-                  <Button
-                    key={heading.id}
-                    variant={
-                      activeHeadingId === heading.id ? "contained" : "text"
-                    }
-                    color={
-                      activeHeadingId === heading.id ? "primary" : "inherit"
-                    }
-                    onClick={() => handleScrollToHeading(heading.sourceIndex)}
-                    sx={{
-                      justifyContent: "flex-start",
-                      textTransform: "none",
-                      borderRadius: "8px",
-                      px: 1.2,
-                      py: 0.75,
-                      fontWeight:
-                        heading.level === 1 ? 700 : heading.level === 2 ? 600 : 500,
-                      pl:
-                        heading.level === 1
-                          ? 1.2
-                          : heading.level === 2
-                            ? 2.8
-                            : 4.2,
-                      fontSize: heading.level === 3 ? "0.85rem" : undefined,
-                      color:
-                        activeHeadingId === heading.id
-                          ? "primary.contrastText"
-                          : "text.primary",
-                    }}
-                  >
-                    {heading.text}
-                  </Button>
-                ))}
+                {visibleHeadings.map((heading) => {
+                  const hasChildren = heading.children.length > 0;
+                  const isExpanded = expandedHeadingIds.has(heading.id);
+                  const isActive = activeHeadingId === heading.id;
+
+                  return (
+                    <Box
+                      key={heading.id}
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 0.25,
+                      }}
+                    >
+                      <Button
+                        variant={isActive ? "contained" : "text"}
+                        color={isActive ? "primary" : "inherit"}
+                        onClick={() =>
+                          handleScrollToHeading(heading.sourceIndex)
+                        }
+                        sx={{
+                          flex: 1,
+                          minWidth: 0,
+                          justifyContent: "flex-start",
+                          textAlign: "left",
+                          textTransform: "none",
+                          borderRadius: "8px",
+                          px: 1.2,
+                          py: 0.75,
+                          fontWeight:
+                            heading.level === 1
+                              ? 700
+                              : heading.level === 2
+                                ? 600
+                                : 500,
+                          pl:
+                            heading.level === 1
+                              ? 1.2
+                              : heading.level === 2
+                                ? 2.8
+                                : 4.2,
+                          fontSize:
+                            heading.level === 3 ? "0.85rem" : undefined,
+                          color: isActive
+                            ? "primary.contrastText"
+                            : "text.primary",
+                        }}
+                      >
+                        {heading.text}
+                      </Button>
+
+                      {hasChildren ? (
+                        <Tooltip
+                          title={
+                            isExpanded
+                              ? "Свернуть подпункты"
+                              : "Развернуть подпункты"
+                          }
+                        >
+                          <IconButton
+                            size="small"
+                            aria-label={
+                              isExpanded
+                                ? "Свернуть подпункты"
+                                : "Развернуть подпункты"
+                            }
+                            aria-expanded={isExpanded}
+                            onClick={() => toggleHeading(heading.id)}
+                            sx={{
+                              width: 28,
+                              height: 28,
+                              flexShrink: 0,
+                              mr: 0.25,
+                              color: "text.secondary",
+                            }}
+                          >
+                            <ExpandMoreIcon
+                              sx={{
+                                fontSize: 18,
+                                transform: isExpanded
+                                  ? "rotate(0deg)"
+                                  : "rotate(-90deg)",
+                                transition: "transform 160ms ease",
+                              }}
+                            />
+                          </IconButton>
+                        </Tooltip>
+                      ) : (
+                        <Box
+                          aria-hidden
+                          sx={{ width: 28, flexShrink: 0, mr: 0.25 }}
+                        />
+                      )}
+                    </Box>
+                  );
+                })}
               </Stack>
           </Box>
         </Box>
@@ -2091,6 +2642,7 @@ export default function BiographySection({
             {activeElement === "bio" && bio !== null && (
               <Box
                 onContextMenu={handleContextMenu}
+                onPointerDownCapture={handleBioPointerDown}
                 sx={{ position: "relative" }}
               >
                 <MilkdownProvider key={personId + (isEditing ? "_ed" : "_vw")}>
@@ -2109,8 +2661,143 @@ export default function BiographySection({
                     onImageClick={openImagePreview}
                     onRequestCaption={onRequestCaption}
                     onRequestLink={onRequestLink}
+                    searchQuery={searchQuery}
+                    searchMatchIndex={searchMatchIndex}
+                    onSearchMatchCountChange={onSearchMatchCountChange}
                   />
                 </MilkdownProvider>
+
+                {isEditing && activeImage?.isSingle && (
+                  <Portal>
+                    <Box
+                      ref={resizeHandleRef}
+                      data-bio-resize-ui=""
+                      sx={{
+                        position: "fixed",
+                        left: 0,
+                        top: 0,
+                        width: 0,
+                        height: 0,
+                        zIndex: 1300,
+                        pointerEvents: "none",
+                      }}
+                    >
+                      <Box
+                        component="span"
+                        role="slider"
+                        tabIndex={0}
+                        aria-label="Размер изображения"
+                        aria-valuemin={BIO_SIZE_MIN}
+                        aria-valuemax={BIO_SIZE_MAX}
+                        aria-valuenow={percentOfBioSize(resizeBubbleValue)}
+                        aria-valuetext={bioSizeLabel(resizeBubbleValue)}
+                        title={BIO_RESIZE_HINT_TEXT}
+                        onPointerDown={onResizePointerDown}
+                        onPointerMove={onResizePointerMove}
+                        onPointerUp={finishResizeDrag}
+                        onPointerCancel={finishResizeDrag}
+                        onKeyDown={onResizeKeyDown}
+                        onFocus={() => setResizeHandleFocused(true)}
+                        onBlur={() => setResizeHandleFocused(false)}
+                        sx={{
+                          position: "absolute",
+                          left: -7,
+                          top: -7,
+                          width: 14,
+                          height: 14,
+                          boxSizing: "border-box",
+                          borderRadius: "50%",
+                          bgcolor: "background.paper",
+                          border: "2px solid",
+                          borderColor: "primary.main",
+                          boxShadow: "0 1px 4px rgba(0, 0, 0, 0.35)",
+                          cursor: "nwse-resize",
+                          pointerEvents: "auto",
+                          touchAction: "none",
+                          transform: isResizing ? "scale(1.18)" : "scale(1)",
+                          transition: "transform 140ms cubic-bezier(0.32, 0.72, 0, 1)",
+                          "&::after": {
+                            content: '""',
+                            position: "absolute",
+                            inset: "-10px",
+                            borderRadius: "50%",
+                          },
+                          "&:focus-visible": {
+                            outline: "none",
+                            boxShadow: (theme) =>
+                              `0 0 0 4px ${alpha(theme.palette.primary.main, 0.35)}`,
+                          },
+                        }}
+                      />
+
+                      {showResizeBubble && (
+                        <Box
+                          sx={{
+                            position: "absolute",
+                            left: 0,
+                            top: 0,
+                            transform:
+                              "translate(calc(-100% - 14px), calc(-50% - 2px))",
+                            transformOrigin: "right center",
+                            transition:
+                              "opacity 140ms ease-out, transform 140ms cubic-bezier(0.32, 0.72, 0, 1)",
+                            "@starting-style": {
+                              opacity: 0,
+                              transform:
+                                "translate(calc(-100% - 8px), calc(-50% - 2px)) scale(0.94)",
+                            },
+                            px: 1,
+                            py: 0.4,
+                            borderRadius: "7px",
+                            bgcolor: (theme) =>
+                              alpha(theme.palette.common.black, 0.72),
+                            color: "#fff",
+                            fontSize: 12,
+                            fontWeight: 600,
+                            lineHeight: 1.35,
+                            whiteSpace: "nowrap",
+                            fontVariantNumeric: "tabular-nums",
+                          }}
+                        >
+                          {bioSizeLabel(resizeBubbleValue)}
+                        </Box>
+                      )}
+
+                      {resizeHint && (
+                        <Box
+                          sx={{
+                            position: "absolute",
+                            left: 0,
+                            top: 0,
+                            width: 250,
+                            transform:
+                              "translate(calc(-100% - 14px), calc(-100% - 14px))",
+                            transformOrigin: "right bottom",
+                            transition:
+                              "opacity 180ms ease-out, transform 180ms cubic-bezier(0.32, 0.72, 0, 1)",
+                            "@starting-style": {
+                              opacity: 0,
+                              transform:
+                                "translate(calc(-100% - 8px), calc(-100% - 10px)) scale(0.96)",
+                            },
+                            px: 1.25,
+                            py: 1,
+                            borderRadius: "10px",
+                            bgcolor: (theme) =>
+                              alpha(theme.palette.common.black, 0.78),
+                            backdropFilter: "blur(10px)",
+                            color: "#fff",
+                            fontSize: 12.5,
+                            lineHeight: 1.45,
+                            boxShadow: "0 8px 24px rgba(0, 0, 0, 0.35)",
+                          }}
+                        >
+                          {BIO_RESIZE_HINT_TEXT}
+                        </Box>
+                      )}
+                    </Box>
+                  </Portal>
+                )}
 
                 {!isEditing && bio?.includes("bio_images") && (
                   <Typography
@@ -2500,7 +3187,13 @@ export default function BiographySection({
                         <ListItemIcon>
                           <PhotoSizeSelectSmallIcon fontSize="small" />
                         </ListItemIcon>
-                        <ListItemText primary="Размер" />
+                        <ListItemText
+                          primary="Размер"
+                          secondary={bioSizeLabel(imageMenu?.size)}
+                          sx={{
+                            "& .MuiListItemText-secondary": { fontSize: 11.5 },
+                          }}
+                        />
                       </MenuItem>
                       {[
                         { id: "sm", label: "Маленький (25%)" },
@@ -2533,7 +3226,6 @@ export default function BiographySection({
                 </Menu>
               </Box>
             )}
-            <ButtonScrollTop />
           </Box>
         </Box>
       </Box>

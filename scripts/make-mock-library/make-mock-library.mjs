@@ -149,7 +149,7 @@ const PET_NAMES = ["Барсик", "Уголёк", "Капитан", "Мурка
 // отображается только для значения из этого справочника, а «Украина» здесь
 // исключена — мест и народностей из неё в моке нет.
 const NATIONALITIES = JSON.parse(
-  readFileSync(new URL("../src/pages/Page_Person/Facts/nationalities.json", import.meta.url), "utf8"),
+  readFileSync(new URL("../../src/pages/Page_Person/Facts/nationalities.json", import.meta.url), "utf8"),
 )
   .filter((entry) => entry.country !== "Ukraine")
   .map((entry) => entry.country);

@@ -79,7 +79,7 @@ export default function TimelineToolbar({
   onGoMonths,
 }) {
   return (
-    <Stack direction="row" spacing={2} alignItems="center" sx={{ flexGrow: 1, ml: 2 }}>
+    <Stack direction="row" spacing={2} alignItems="center" sx={{ flexGrow: 1 }}>
       <Pill>
         <SegButton onClick={onGoYears}>Лента</SegButton>
         {year && (

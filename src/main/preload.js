@@ -292,6 +292,8 @@ contextBridge.exposeInMainWorld("logAPI", {
 contextBridge.exposeInMainWorld("windowAPI", {
   setFullscreen: (state) => ipcRenderer.invoke("window:setFullscreen", state),
   isFullscreen: () => ipcRenderer.invoke("window:isFullscreen"),
+  setCaptionTheme: (isDark) =>
+    ipcRenderer.send("window:set-caption-theme", isDark),
 });
 
 contextBridge.exposeInMainWorld("fileAPI", {

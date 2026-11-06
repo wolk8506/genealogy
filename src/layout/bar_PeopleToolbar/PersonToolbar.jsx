@@ -25,7 +25,6 @@ export default function ToolbarGroup({
   const isDark = theme.palette.mode === "dark";
   return (
     <Stack
-      ml={2}
       direction="row"
       spacing={2}
       sx={{ alignItems: "center", width: "100%", flex: 1, minWidth: 0 }}

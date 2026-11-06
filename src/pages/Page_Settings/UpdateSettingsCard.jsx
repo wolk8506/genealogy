@@ -1,17 +1,23 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Card,
   Box,
   Typography,
   Stack,
   LinearProgress,
+  Collapse,
+  ButtonBase,
 } from "@mui/material";
 import InfoIcon from "@mui/icons-material/Info";
 import CloudDownloadIcon from "@mui/icons-material/CloudDownload";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import SystemUpdateAltIcon from "@mui/icons-material/SystemUpdateAlt";
 import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import AppButton from "../../components/AppButton";
+import { useUpdateStore } from "../../store/useUpdateStore";
+import { parseReleaseNotes } from "./releaseNotes";
+import { ReleaseNotesList } from "./ReleaseNotesList";
 import {
   groupSx,
   sectionLabelSx,
@@ -20,40 +26,36 @@ import {
 } from "./settingsUi";
 
 export const UpdateSettingsCard = ({ cardStyle }) => {
-  const [version, setVersion] = useState("");
-  const [platform, setPlatform] = useState("");
-  const [updateInfo, setUpdateInfo] = useState(null);
-  const [progress, setProgress] = useState(0);
-  const [downloaded, setDownloaded] = useState(false);
-  const [installing, setInstalling] = useState(false);
-  const [filePath, setFilePath] = useState("");
-  const [error, setError] = useState(null);
+  const version = useUpdateStore((s) => s.currentVersion);
+  const platform = useUpdateStore((s) => s.platform);
+  const updateInfo = useUpdateStore((s) => s.latest);
+  const checking = useUpdateStore((s) => s.checking);
+  const progress = useUpdateStore((s) => s.progress);
+  const downloaded = useUpdateStore((s) => s.downloaded);
+  const installing = useUpdateStore((s) => s.installing);
+  const error = useUpdateStore((s) => s.error);
+  const check = useUpdateStore((s) => s.check);
+  const download = useUpdateStore((s) => s.download);
+  const install = useUpdateStore((s) => s.install);
 
   useEffect(() => {
-    window.appAPI?.getVersion?.().then(setVersion);
-    window.appAPI?.getPlatform?.().then(setPlatform);
-
-    window.updater.check();
-    window.updater.onAvailable((info) => setUpdateInfo(info));
-    window.updater.onProgress((pct) => setProgress(pct));
-    window.updater.onDownloaded((path) => {
-      setDownloaded(true);
-      setFilePath(path);
-    });
-    window.updater.onError((msg) => {
-      setError(msg);
-      setInstalling(false);
-    });
-
-    return () => window.updater.removeAll();
+    const store = useUpdateStore.getState();
+    store.bind();
+    store.loadMeta();
+    store.check();
+    // Подписки живут в сторе и остаются живыми при размонтировании карточки,
+    // иначе диалог обновления и другие страницы теряют прогресс.
   }, []);
 
-  const handleInstall = () => {
-    setError(null);
-    setInstalling(true);
-    // Приложение закроется из main-процесса после запуска установщика.
-    window.updater.install(filePath);
-  };
+  const [notesOpen, setNotesOpen] = useState(false);
+
+  const hasUpdate =
+    !!updateInfo && !!version && updateInfo.version !== version;
+
+  const notes = useMemo(
+    () => (hasUpdate ? parseReleaseNotes(updateInfo?.releaseNotes) : []),
+    [hasUpdate, updateInfo],
+  );
 
   return (
     <Card
@@ -157,18 +159,12 @@ export const UpdateSettingsCard = ({ cardStyle }) => {
                         {error}
                       </Typography>
                     </Box>
-                    <AppButton
-                      preset="secondary"
-                      onClick={() => {
-                        setError(null);
-                        window.updater.check();
-                      }}
-                    >
+                    <AppButton preset="secondary" onClick={check}>
                       Повторить
                     </AppButton>
                   </Stack>
                 </Box>
-              ) : !updateInfo ? (
+              ) : !updateInfo || checking ? (
                 <Box sx={{ px: 2, py: 2 }}>
                   <LinearProgress sx={{ height: 6, borderRadius: 3 }} />
                   <Typography
@@ -180,7 +176,7 @@ export const UpdateSettingsCard = ({ cardStyle }) => {
                     Проверка обновлений…
                   </Typography>
                 </Box>
-              ) : updateInfo.version === version ? (
+              ) : !hasUpdate ? (
                 <SettingsRow
                   icon={
                     <RowIcon bg="green">
@@ -196,7 +192,7 @@ export const UpdateSettingsCard = ({ cardStyle }) => {
                     direction="row"
                     spacing={1.5}
                     alignItems="center"
-                    sx={{ mb: 2 }}
+                    sx={{ mb: notes.length > 0 ? 0.75 : 2 }}
                   >
                     <RowIcon bg="blue">
                       <CloudDownloadIcon sx={{ fontSize: 18 }} />
@@ -210,6 +206,49 @@ export const UpdateSettingsCard = ({ cardStyle }) => {
                       </Typography>
                     </Box>
                   </Stack>
+
+                  {notes.length > 0 && (
+                    <Box sx={{ mb: 2 }}>
+                      <ButtonBase
+                        onClick={() => setNotesOpen((value) => !value)}
+                        aria-expanded={notesOpen}
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 1,
+                          px: 1,
+                          py: 0.5,
+                          ml: -1,
+                          borderRadius: "10px",
+                          transition: "background-color 140ms ease",
+                          "&:hover": { bgcolor: "action.hover" },
+                        }}
+                      >
+                        <ExpandMoreIcon
+                          aria-hidden
+                          sx={{
+                            fontSize: 18,
+                            color: "text.secondary",
+                            transform: notesOpen
+                              ? "rotate(0deg)"
+                              : "rotate(-90deg)",
+                            transition: "transform 160ms ease",
+                          }}
+                        />
+                        <Typography variant="body2" fontWeight={600}>
+                          Что нового в {updateInfo.version}
+                        </Typography>
+                      </ButtonBase>
+                      <Collapse in={notesOpen} timeout={180} unmountOnExit>
+                        <Box sx={{ mt: 1 }}>
+                          <ReleaseNotesList
+                            groups={notes}
+                            sx={{ maxHeight: 260, overflowY: "auto" }}
+                          />
+                        </Box>
+                      </Collapse>
+                    </Box>
+                  )}
 
                   {progress > 0 && !downloaded ? (
                     <Box>
@@ -231,7 +270,7 @@ export const UpdateSettingsCard = ({ cardStyle }) => {
                     <AppButton
                       preset="primary"
                       startIcon={<SystemUpdateAltIcon />}
-                      onClick={handleInstall}
+                      onClick={install}
                       disabled={installing}
                       sx={{ width: "100%" }}
                     >
@@ -243,7 +282,7 @@ export const UpdateSettingsCard = ({ cardStyle }) => {
                     <AppButton
                       preset="primary"
                       startIcon={<CloudDownloadIcon />}
-                      onClick={() => window.updater.download(updateInfo)}
+                      onClick={download}
                       sx={{ width: "100%" }}
                     >
                       Скачать обновление

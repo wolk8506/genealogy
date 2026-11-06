@@ -12,6 +12,7 @@ import {
   alpha,
 } from "@mui/material";
 import LayersIcon from "@mui/icons-material/Layers";
+import { popoverArrowSx } from "../../theme/popoverArrow";
 import { toolbarPillSx } from "../toolbarStyles";
 
 const StyledContainer = styled(Box, {
@@ -108,21 +109,7 @@ export default function ExpandingGenSelect({ options, value, onChange }) {
             border: "1px solid",
             borderColor: "divider",
             // Тот самый треугольник
-            "&::before": {
-              content: '""',
-              display: "block",
-              position: "absolute",
-              top: -6,
-              left: "calc(50% - 6px)",
-              width: 12,
-              height: 12,
-              bgcolor: "inherit",
-              borderLeft: "1px solid",
-              borderTop: "1px solid",
-              borderColor: "divider",
-              transform: "rotate(45deg)",
-              zIndex: 0,
-            },
+            "&::before": popoverArrowSx(),
           },
         }}
       >

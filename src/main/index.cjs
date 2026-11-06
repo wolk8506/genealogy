@@ -1,4 +1,4 @@
-const { app, Menu, Notification } = require("electron");
+const { app, Menu } = require("electron");
 const { autoUpdater } = require("electron-updater"); // ← импортим здесь
 const path = require("path");
 const log = require("./logger.cjs").createLogger("main");
@@ -110,18 +110,13 @@ const log = require("./logger.cjs").createLogger("main");
     }
 
     try {
-      const { updateInfo } = await autoUpdater.checkForUpdates();
+      const result = await autoUpdater.checkForUpdates();
+      const updateInfo = result?.updateInfo;
       if (updateInfo && updateInfo.version !== app.getVersion()) {
-        // пришло что-то новое — шлём в рендер баннер
+        // пришло что-то новое — показываем окно обновления в рендерере
         if (!win.isDestroyed()) {
           win.webContents.send("app:update-available", updateInfo);
         }
-
-        // и системная нотификация
-        new Notification({
-          title: "Доступно обновление",
-          body: `Версия ${updateInfo.version} готова к загрузке`,
-        }).show();
       }
     } catch (e) {
       log.warn("Не удалось проверить апдейт на старте:", e.message);
