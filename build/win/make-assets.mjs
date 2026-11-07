@@ -3,8 +3,13 @@
 // NSIS принимает только BMP, поэтому рисуем SVG, растрируем sharp'ом
 // и вручную кодируем 24-битный BMP (BI_RGB, строки снизу вверх).
 //
-//   installerSidebar.bmp — 164×314, MUI_WELCOMEFINISHPAGE_BITMAP
-//   installerHeader.bmp  — 150×57,  MUI_HEADERIMAGE_BITMAP
+//   installerSidebar.bmp — 328×628, MUI_WELCOMEFINISHPAGE_BITMAP
+//   installerHeader.bmp  — 300×114, MUI_HEADERIMAGE_BITMAP
+//
+// Размер вдвое больше эталонных 164×314 и 150×57: мастер установки
+// DPI-aware, поэтому на масштабе 125–200 % растягивает картинку под свой
+// контрол. Исходник в 2× при этом уменьшается (резко), а не растягивается
+// (пиксели).
 //
 // Запуск: npm run win:assets
 // Версия берётся из package.json — при релизе картинки нужно перегенерировать.
@@ -237,8 +242,12 @@ async function renderIco(svg, pngPath, icoPath) {
   writeFileSync(icoPath, encodeIco(images));
 }
 
+// Эталонные размеры NSIS умножаем на этот коэффициент.
+const SCALE = 2;
+
 async function render(svg, width, height, pngPath, bmpPath) {
-  const raster = sharp(Buffer.from(svg), { density: 72 });
+  const raster = sharp(Buffer.from(svg), { density: 72 * SCALE });
+  const target = { width: width * SCALE, height: height * SCALE };
 
   await raster
     .clone()
@@ -252,9 +261,9 @@ async function render(svg, width, height, pngPath, bmpPath) {
     .raw()
     .toBuffer({ resolveWithObject: true });
 
-  if (info.width !== width || info.height !== height) {
+  if (info.width !== target.width || info.height !== target.height) {
     throw new Error(
-      `Неверный размер ${bmpPath}: ${info.width}×${info.height}, ожидалось ${width}×${height}`,
+      `Неверный размер ${bmpPath}: ${info.width}×${info.height}, ожидалось ${target.width}×${target.height}`,
     );
   }
 

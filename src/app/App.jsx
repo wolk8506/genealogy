@@ -123,6 +123,23 @@ export default function App() {
     window.windowAPI?.setCaptionTheme?.(mode === "dark");
   }, [themeReady, mode]);
 
+  // Кольцо фокуса включаем только при клавиатурной модальности: браузер
+  // считает программный фокус «клавиатурным», если предыдущий элемент
+  // удалён из DOM, — из-за этого autoFocus в диалогах рисует кольцо, хотя
+  // клавиатуру не трогали.
+  useEffect(() => {
+    const root = document.documentElement;
+    const onKey = () => root.setAttribute("data-kbd", "1");
+    const onPointer = () => root.removeAttribute("data-kbd");
+    window.addEventListener("keydown", onKey, true);
+    window.addEventListener("pointerdown", onPointer, true);
+    return () => {
+      window.removeEventListener("keydown", onKey, true);
+      window.removeEventListener("pointerdown", onPointer, true);
+      root.removeAttribute("data-kbd");
+    };
+  }, []);
+
   const theme = useMemo(
     () =>
       createTheme({
@@ -188,7 +205,7 @@ export default function App() {
               },
 
               /* Видимый фокус для клавиатуры: мышь его не показывает. */
-              ".MuiButtonBase-root:focus-visible": {
+              "[data-kbd] .MuiButtonBase-root:focus-visible": {
                 outline: `2px solid ${themeParam.palette.primary.main}`,
                 outlineOffset: 2,
               },
