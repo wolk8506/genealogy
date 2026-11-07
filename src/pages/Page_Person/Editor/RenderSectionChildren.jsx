@@ -1,14 +1,5 @@
 import React from "react";
-import {
-  Stack,
-  Divider,
-  Box,
-  Typography,
-  alpha,
-  useTheme,
-  Paper,
-  Tooltip,
-} from "@mui/material";
+import { Stack, Divider, Box, alpha, Paper, Tooltip } from "@mui/material";
 import { RenderPersonItem } from "../info/RenderPersonItem";
 import InfoIcon from "@mui/icons-material/Info";
 import { EmptyPersonSlot } from "./EmptyPersonSlot"; // Убедитесь, что импорт есть

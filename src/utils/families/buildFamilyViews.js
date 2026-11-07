@@ -278,11 +278,3 @@ export function buildFamilyViews(people = []) {
 
   return { families, byPerson, byId, childrenOf };
 }
-
-export function familyKeyForIds(ids = []) {
-  return sortIds(ids.filter(Boolean)).join("-");
-}
-
-export function familyKeyForPerson(personId) {
-  return `p${toId(personId)}`;
-}

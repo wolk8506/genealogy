@@ -5,19 +5,6 @@
 
 import { shortName, toId, yearOf } from "./familyLabels";
 
-export function parseFamilyKey(key) {
-  const raw = String(key || "").trim();
-  if (!raw) return { ids: [], isSingle: false };
-
-  if (raw.startsWith("p")) {
-    const id = toId(raw.slice(1));
-    return { ids: id ? [id] : [], isSingle: true };
-  }
-
-  const ids = raw.split("-").map(toId).filter(Boolean);
-  return { ids, isSingle: ids.length === 1 };
-}
-
 export function findFamily(families, key) {
   const target = String(key || "");
   if (!target) return null;
@@ -40,15 +27,6 @@ export function resolveFamilyForPerson(families, byPerson, personId) {
   return (
     (families || []).find((family) => family.partnerIds.includes(id)) || null
   );
-}
-
-/** Ссылка на семью; personId добавляет выбранного человека. */
-export function familyPath(familyOrKey, personId) {
-  const key =
-    typeof familyOrKey === "string" ? familyOrKey : familyOrKey?.key;
-  if (!key) return "/families";
-  const id = toId(personId);
-  return id ? `/families/${key}?person=${id}` : `/families/${key}`;
 }
 
 /**

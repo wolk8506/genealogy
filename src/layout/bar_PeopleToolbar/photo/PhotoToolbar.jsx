@@ -3,7 +3,7 @@ import { Stack, IconButton, Box, Tooltip } from "@mui/material";
 
 import SortIcon from "@mui/icons-material/Sort";
 
-import { useTheme, alpha } from "@mui/material/styles";
+import { useTheme } from "@mui/material/styles";
 
 import ExpandingSearch from "../../../components/ExpandingSearch";
 import ExpandingAddPhotoButton from "./ExpandingAddPhotoButton";

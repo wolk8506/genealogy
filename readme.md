@@ -30,7 +30,7 @@
 - [Vite](https://vitejs.dev/) — сборка рендерера
 - [React Router](https://reactrouter.com/) + [Zustand](https://zustand-demo.pmnd.rs/) — навигация и состояние
 - [better-sqlite3](https://github.com/WiseLibs/better-sqlite3) — SQLite для лиц и кэша геокодинга
-- [sharp](https://sharp.pixelplumbing.com/) + [JSZip](https://stuk.github.io/jszip/) — обработка медиа и ZIP-бэкапы
+- [sharp](https://sharp.pixelplumbing.com/) + [archiver](https://github.com/archiverjs/node-archiver) — обработка медиа и ZIP-бэкапы
 - [@vladmandic/face-api](https://github.com/vladmandic/face-api) — локальное распознавание лиц
 - [Leaflet](https://leafletjs.com/) — карта, [Milkdown](https://milkdown.dev/) — редактор биографий
 - IPC и `preload.js` — безопасный мост между UI и файловой системой

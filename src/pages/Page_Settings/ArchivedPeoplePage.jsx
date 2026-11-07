@@ -115,7 +115,7 @@ const SECTIONS = [
 
 const STORAGE_KEY = "settings-active-section";
 
-export default function SettingsPage() {
+export default function ArchivedPeoplePage() {
   const theme = useTheme();
   const navigate = useNavigate();
   const location = useLocation();

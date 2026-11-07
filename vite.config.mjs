@@ -58,21 +58,9 @@ export default defineConfig({
             id.includes("node_modules/notistack/")
           )
             return "lib-state";
-          if (
-            id.includes("/d3") ||
-            id.includes("d3-") ||
-            id.includes("react-d3-tree") ||
-            id.includes("react-virtuoso") ||
-            id.includes("react-window")
-          )
-            return "lib-viz";
+          if (id.includes("react-virtuoso")) return "lib-viz";
           if (id.includes("node_modules/framer-motion/")) return "lib-motion";
           if (id.includes("node_modules/dayjs/")) return "lib-date";
-          if (
-            id.includes("node_modules/jszip/") ||
-            id.includes("node_modules/file-saver/")
-          )
-            return "lib-zip";
           if (
             id.includes("node_modules/exifreader/") ||
             id.includes("node_modules/heic2any/") ||

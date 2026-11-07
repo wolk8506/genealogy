@@ -1,7 +1,6 @@
 import {
   computeDescriptorFromImageUrl,
   detectFacesFromImageUrl,
-  euclideanDistance,
   suggestPersonsForFaces,
   DEFAULT_MATCH_THRESHOLD,
 } from "../services/faceRecognition";
@@ -283,69 +282,4 @@ export async function suggestPersonsFromFaceIndex(
   }
 
   return suggestPersonsForFaces(normalizedFaces, index.references, threshold);
-}
-
-export function findDuplicatePersonClusters(
-  photos = [],
-  threshold = DEFAULT_MATCH_THRESHOLD,
-) {
-  const entries = [];
-
-  for (const photo of photos) {
-    for (const face of normalizeFaces(photo.faces)) {
-      if (face.personId == null || !face.descriptor?.length) continue;
-
-      entries.push({
-        owner: photo.owner,
-        photoId: photo.id,
-        filename: photo.filename,
-        faceId: face.id,
-        personId: face.personId,
-        descriptor: face.descriptor,
-        box: face.box,
-      });
-    }
-  }
-
-  if (entries.length < 2) return [];
-
-  const parent = entries.map((_, i) => i);
-
-  const find = (x) => {
-    if (parent[x] !== x) parent[x] = find(parent[x]);
-    return parent[x];
-  };
-
-  const unite = (a, b) => {
-    const ra = find(a);
-    const rb = find(b);
-    if (ra !== rb) parent[rb] = ra;
-  };
-
-  for (let i = 0; i < entries.length; i += 1) {
-    for (let j = i + 1; j < entries.length; j += 1) {
-      if (entries[i].personId === entries[j].personId) continue;
-      const dist = euclideanDistance(
-        entries[i].descriptor,
-        entries[j].descriptor,
-      );
-      if (dist < threshold) unite(i, j);
-    }
-  }
-
-  const groups = new Map();
-  for (let i = 0; i < entries.length; i += 1) {
-    const root = find(i);
-    if (!groups.has(root)) groups.set(root, []);
-    groups.get(root).push(entries[i]);
-  }
-
-  return [...groups.values()]
-    .filter((group) => new Set(group.map((e) => e.personId)).size > 1)
-    .map((group, index) => ({
-      id: `cluster-${index}`,
-      entries: group,
-      personIds: [...new Set(group.map((e) => e.personId))],
-      avgDistance: 0,
-    }));
 }
