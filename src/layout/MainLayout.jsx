@@ -750,14 +750,58 @@ export default function MainLayout() {
       usePhotoInspectorStore.getState().reset();
   }, [isGalleryPage, isPersonPhotoPage]);
 
-  // Открывает лицензию
+  // Лицензия: пункт системного меню «Помощь» и строка раздела «О приложении».
   useEffect(() => {
-    window.electron.ipcRenderer.on("open-license-modal", () => {
-      setLicenseOpen(true);
-    });
+    const openLicense = () => setLicenseOpen(true);
+
+    window.electron.ipcRenderer.on("open-license-modal", openLicense);
+    window.addEventListener("app:open-license", openLicense);
 
     return () => {
-      window.electron.ipcRenderer.removeAllListeners("open-license-modal");
+      window.electron.ipcRenderer.removeListener("open-license-modal", openLicense);
+      window.removeEventListener("app:open-license", openLicense);
+    };
+  }, []);
+
+  // Alt показывает меню приложения. Одиночное нажатие — это Alt, отпущенный
+  // без других клавиш между нажатием и отпусканием; Alt+Tab и горячие клавиши
+  // редакторов меню не касаются. Саму отрисовку делает main-процесс.
+  useEffect(() => {
+    let altDown = false;
+    let otherKey = false;
+
+    const onKeyDown = (event) => {
+      if (event.key === "Alt") {
+        if (!event.repeat) {
+          altDown = true;
+          otherKey = false;
+        }
+      } else if (altDown) {
+        otherKey = true;
+      }
+    };
+
+    const onKeyUp = (event) => {
+      if (event.key !== "Alt") return;
+      const single = altDown && !otherKey;
+      altDown = false;
+      otherKey = false;
+      if (single) window.electron.ipcRenderer.send("window:show-menu");
+    };
+
+    const onBlur = () => {
+      altDown = false;
+      otherKey = false;
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    window.addEventListener("keyup", onKeyUp);
+    window.addEventListener("blur", onBlur);
+
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("keyup", onKeyUp);
+      window.removeEventListener("blur", onBlur);
     };
   }, []);
 

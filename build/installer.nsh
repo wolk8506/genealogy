@@ -1,3 +1,8 @@
+# NSIS is DPI-unaware by default, so at 125% Windows bitmap-stretches the
+# whole wizard and the text turns blurry. The dialogs are laid out in dialog
+# units, so declaring awareness lets them re-layout instead of being scaled.
+ManifestDPIAware true
+
 # Builds before 1.12.2 used the default oneClick installer, which installs into
 # a folder named after package.json "name" (genealogy-react). Windows keeps that
 # folder in Software\<APP_GUID>\InstallLocation and every later installer reuses

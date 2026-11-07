@@ -20,6 +20,7 @@ export function UpdateDialog() {
   const progress = useUpdateStore((s) => s.progress);
   const downloading = useUpdateStore((s) => s.downloading);
   const downloaded = useUpdateStore((s) => s.downloaded);
+  const filePath = useUpdateStore((s) => s.filePath);
   const installing = useUpdateStore((s) => s.installing);
   const error = useUpdateStore((s) => s.error);
 
@@ -72,18 +73,25 @@ export function UpdateDialog() {
     setOpen(false);
   };
 
-  const primaryLabel = error
-    ? "Повторить"
-    : installing
-      ? "Запуск установщика…"
-      : downloaded
-        ? "Установить и перезапустить"
-        : downloading
-          ? "Загрузка…"
-          : "Обновить сейчас";
+  // Ошибка при уже скачанном файле — это сбой запуска установщика, а не
+  // загрузки: «повторить проверку» предложили бы не туда.
+  const installFailed = Boolean(error) && Boolean(filePath);
+
+  const primaryLabel = installFailed
+    ? "Установить ещё раз"
+    : error
+      ? "Повторить"
+      : installing
+        ? "Запуск установщика…"
+        : downloaded
+          ? "Установить и перезапустить"
+          : downloading
+            ? "Загрузка…"
+            : "Обновить сейчас";
 
   const handlePrimary = () => {
     const store = useUpdateStore.getState();
+    if (installFailed) return store.install();
     if (error) return store.check();
     if (installing) return;
     if (downloaded) return store.install();
@@ -132,8 +140,21 @@ export function UpdateDialog() {
       {error ? (
         <Box sx={{ px: { xs: 2, sm: 3 }, pb: { xs: 2, sm: 2.5 } }}>
           <Typography variant="caption" color="error.main" sx={{ wordBreak: "break-word" }}>
-            Не удалось загрузить обновление: {error}
+            {installFailed
+              ? "Не удалось запустить установщик"
+              : "Не удалось загрузить обновление"}
+            : {error}
           </Typography>
+          {installFailed && (
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ display: "block", mt: 0.5 }}
+            >
+              Файл лежит в папке «Загрузки → GenealogyUpdater» — его можно
+              запустить и самому.
+            </Typography>
+          )}
         </Box>
       ) : downloading ? (
         <Box sx={{ px: { xs: 2, sm: 3 }, pb: { xs: 2, sm: 2.5 } }}>
@@ -164,7 +185,7 @@ export function UpdateDialog() {
           pt: 1,
           pb: { xs: 2, sm: 3 },
           gap: "10px",
-          "& > .MuiButton-root": { flex: 1, minWidth: 0, maxWidth: "none" },
+          "& > .MuiButton-root": { flex: 1, maxWidth: "none" },
         }}
       >
         <DialogActionButton
