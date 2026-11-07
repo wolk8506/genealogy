@@ -5,7 +5,6 @@ const log = require("./logger.cjs").createLogger("autoUpdater");
 const { autoUpdater } = require("electron-updater");
 const path = require("path");
 const fs = require("fs");
-const { spawn } = require("child_process");
 const { https } = require("follow-redirects");
 
 // отключаем авто-скачивание внутри electron-updater
@@ -126,22 +125,13 @@ async function downloadWithRetry(url, outputPath, win, attempts = 3) {
   }
 }
 
-// Запускает установщик отдельным процессом. На Windows используем spawn:
-// shell.openPath не даёт гарантии, что процесс стартовал до выхода приложения.
+// Установщик запускаем через ShellExecute — так же, как его открывает
+// двойной клик в проводнике. spawn() сделал бы его дочерним процессом
+// приложения: система безопасности снимает такой процесс, как только
+// приложение выходит, и установка не начинается.
 function launchInstaller(filePath) {
-  if (process.platform !== "win32") {
-    return shell.openPath(filePath).then((error) => {
-      if (error) throw new Error(error);
-    });
-  }
-
-  return new Promise((resolve, reject) => {
-    const child = spawn(filePath, [], { detached: true, stdio: "ignore" });
-    child.once("error", reject);
-    child.once("spawn", () => {
-      child.unref();
-      resolve();
-    });
+  return shell.openPath(filePath).then((error) => {
+    if (error) throw new Error(error);
   });
 }
 

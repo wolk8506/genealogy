@@ -14,6 +14,7 @@ import EventIcon from "@mui/icons-material/Event";
 import ContactsIcon from "@mui/icons-material/Contacts";
 import NewReleasesIcon from "@mui/icons-material/NewReleases";
 import MenuBookIcon from "@mui/icons-material/MenuBook";
+import BalanceIcon from "@mui/icons-material/Balance";
 
 import AppDiagnostic from "./AppInfo";
 
@@ -310,6 +311,19 @@ export default function AboutPage({ cardStyle }) {
                 subtitle="Как пользоваться приложением"
                 onClick={() =>
                   window.userGuideAPI?.openWindow?.()
+                }
+                trailing={chevron}
+              />
+              <SettingsRow
+                icon={
+                  <RowIcon bg="teal">
+                    <BalanceIcon sx={{ fontSize: 18 }} />
+                  </RowIcon>
+                }
+                title="Лицензия"
+                subtitle="Условия использования"
+                onClick={() =>
+                  window.dispatchEvent(new Event("app:open-license"))
                 }
                 trailing={chevron}
               />

@@ -32,6 +32,7 @@ export const UpdateSettingsCard = ({ cardStyle }) => {
   const checking = useUpdateStore((s) => s.checking);
   const progress = useUpdateStore((s) => s.progress);
   const downloaded = useUpdateStore((s) => s.downloaded);
+  const filePath = useUpdateStore((s) => s.filePath);
   const installing = useUpdateStore((s) => s.installing);
   const error = useUpdateStore((s) => s.error);
   const check = useUpdateStore((s) => s.check);
@@ -48,6 +49,10 @@ export const UpdateSettingsCard = ({ cardStyle }) => {
   }, []);
 
   const [notesOpen, setNotesOpen] = useState(false);
+
+  // Ошибка при скачанном файле — это сбой запуска установщика: предлагать
+  // заново проверить версию в этом случае значит вести не туда.
+  const installFailed = Boolean(error) && Boolean(filePath);
 
   const hasUpdate =
     !!updateInfo && !!version && updateInfo.version !== version;
@@ -148,7 +153,9 @@ export const UpdateSettingsCard = ({ cardStyle }) => {
                         fontWeight={600}
                         color="error.main"
                       >
-                        Ошибка обновления
+                        {installFailed
+                          ? "Не удалось запустить установщик"
+                          : "Не удалось проверить обновления"}
                       </Typography>
                       <Typography
                         variant="caption"
@@ -156,11 +163,17 @@ export const UpdateSettingsCard = ({ cardStyle }) => {
                         display="block"
                         noWrap
                       >
-                        {error}
+                        {installFailed
+                          ? "Файл в папке «Загрузки → GenealogyUpdater» — можно запустить его вручную"
+                          : error}
                       </Typography>
                     </Box>
-                    <AppButton preset="secondary" onClick={check}>
-                      Повторить
+                    <AppButton
+                      preset="secondary"
+                      onClick={installFailed ? install : check}
+                      sx={{ flexShrink: 0 }}
+                    >
+                      {installFailed ? "Установить" : "Повторить"}
                     </AppButton>
                   </Stack>
                 </Box>

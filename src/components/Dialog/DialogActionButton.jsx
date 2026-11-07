@@ -49,6 +49,9 @@ const TONES = {
 
 export const dialogActionsSx = {
   display: "flex",
+  // Если подписи двух кнопок не влезают в одну строку, вторая уходит под
+  // первую: пилюля с обрезанным текстом выглядит сломанной.
+  flexWrap: "wrap",
   alignItems: "center",
   justifyContent: "center",
   gap: "18px",
@@ -57,6 +60,9 @@ export const dialogActionsSx = {
   pb: 2,
   "& > .MuiButton-root": {
     flex: "1 1 0",
+    // min-width больше 0 автоматически означал бы «не уже подписи», но MUI
+    // выставляет себе min-width 64px, и кнопка сжималась бы до неё.
+    minWidth: "max-content",
     maxWidth: 220,
   },
 };

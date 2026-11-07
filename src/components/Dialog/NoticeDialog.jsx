@@ -87,9 +87,10 @@ export default function NoticeDialog({
           pb: { xs: 2, sm: 3 },
           gap: "10px",
           // Одна кнопка — пилюля обычной ширины по центру, две — делят ширину.
+          // minWidth не обнуляем: с flex-basis 0 кнопка сожмется до уже
+          // подписи, и nowrap-текст вылезет за пилюлю.
           "& > .MuiButton-root": {
             flex: 1,
-            minWidth: 0,
             maxWidth: secondaryLabel ? "none" : 220,
           },
         }}

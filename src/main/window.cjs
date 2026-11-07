@@ -40,6 +40,21 @@ ipcMain.on("window:set-caption-theme", (_event, isDark) => {
   win.setTitleBarOverlay(captionOverlay(Boolean(isDark)));
 });
 
+// Меню приложения по Alt. Пока полоса заголовка скрыта, Electron не создаёт
+// нативную полосу меню (окно считается безрамочным), поэтому Alt рисует те же
+// пункты обычным всплывающим меню под хедером.
+ipcMain.on("window:show-menu", () => {
+  if (!isWin) return;
+  const win = getMainWindow();
+  if (!win) return;
+  const { buildMenuTemplate } = require("./menu.cjs");
+  Menu.buildFromTemplate(buildMenuTemplate()).popup({
+    window: win,
+    x: 12,
+    y: CAPTION_HEIGHT,
+  });
+});
+
 function createWindow() {
   const win = new BrowserWindow({
     width: 1430,
@@ -58,9 +73,6 @@ function createWindow() {
           height: CAPTION_HEIGHT, // Увеличьте это число, чтобы "опустить" кнопки визуально ниже
         },
 
-    // На Windows меню «Файл/Правка/Вид/Помощь» больше не занимает отдельную
-    // полосу: оно показывается по Alt, а его горячие клавиши работают всегда.
-    autoHideMenuBar: isWin,
     backgroundColor: "#05070d",
 
     webPreferences: {
