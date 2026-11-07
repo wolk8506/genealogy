@@ -3,6 +3,8 @@ import { Box, Dialog, LinearProgress, Typography } from "@mui/material";
 import DialogActionButton, {
   DialogActionsBar,
 } from "../../components/Dialog/DialogActionButton";
+import { glassPaperSx, secondaryButtonSx } from "../../components/Dialog/glassDialog";
+import { AppIcon } from "../../components/Dialog/NoticeDialog";
 import { useSettingsStore } from "../../store/useSettingsStore";
 import { useUpdateStore } from "../../store/useUpdateStore";
 import { sectionLabelSx } from "./settingsUi";
@@ -95,43 +97,12 @@ export function UpdateDialog() {
       transitionDuration={{ enter: 180, exit: 140 }}
       slotProps={{
         paper: {
-          sx: (t) => ({
-            width: 440,
-            maxWidth: "calc(100vw - 32px)",
-            bgcolor:
-              t.palette.mode === "dark"
-                ? "rgba(26,26,26,0.92)"
-                : "rgba(249,249,249,0.95)",
-            backdropFilter: "blur(24px)",
-            WebkitBackdropFilter: "blur(24px)",
-            border: "1px solid",
-            borderColor:
-              t.palette.mode === "dark"
-                ? "rgba(255,255,255,0.08)"
-                : "rgba(0,0,0,0.06)",
-            boxShadow:
-              t.palette.mode === "dark"
-                ? "0 18px 48px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.06)"
-                : "0 18px 48px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.8)",
-            overflow: "hidden",
-          }),
+          sx: (t) => ({ ...glassPaperSx(t), width: 440 }),
         },
       }}
     >
       <Box sx={{ p: { xs: 2, sm: 3 }, textAlign: "center" }}>
-        <Box
-          component="img"
-          src="./app-icon.png"
-          alt=""
-          sx={{
-            width: 72,
-            height: 72,
-            borderRadius: "16px",
-            mb: 1.5,
-            pointerEvents: "none",
-            userSelect: "none",
-          }}
-        />
+        <AppIcon sx={{ mb: 1.5 }} />
         <Typography
           sx={{
             fontSize: "1.25rem",
@@ -199,18 +170,7 @@ export function UpdateDialog() {
         <DialogActionButton
           onClick={remindLater}
           disabled={installing}
-          sx={(t) => ({
-            bgcolor:
-              t.palette.mode === "dark"
-                ? "rgba(12,12,12,0.9)"
-                : "rgba(0,0,0,0.06)",
-            "&:hover": {
-              bgcolor:
-                t.palette.mode === "dark"
-                  ? "rgba(24,24,24,0.95)"
-                  : "rgba(0,0,0,0.1)",
-            },
-          })}
+          sx={secondaryButtonSx}
         >
           Напомнить позже
         </DialogActionButton>
