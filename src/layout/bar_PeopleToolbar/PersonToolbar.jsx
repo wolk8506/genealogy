@@ -1,9 +1,9 @@
 import React from "react";
-import { Stack, Tooltip, Box, Button } from "@mui/material";
+import { Stack, Tooltip, Box } from "@mui/material";
 
 // import PersonTabs from "./PersonTabs"; // Используем созданный ранее компонент
 import { ToggleButton, ToggleButtonGroup } from "@mui/material";
-import { useTheme, alpha } from "@mui/material/styles";
+import { useTheme } from "@mui/material/styles";
 import BioToolbar from "./bio/BioToolbar";
 import PersonFillIcon from "../../components/svg/PersonFillIcon";
 import TextDocumentFillIcon from "../../components/svg/TextDocumentFillIcon";

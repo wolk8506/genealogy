@@ -296,20 +296,3 @@ export default function MarkdownViewer({ content, sx, variant = "default" }) {
     </Box>
   );
 }
-
-export function parseMarkdownSections(markdown) {
-  return markdown
-    .split(/^## /m)
-    .map((part, idx) => {
-      if (idx === 0) {
-        const body = part.trim();
-        if (!body) return null;
-        return { title: "Введение", body };
-      }
-
-      const lines = part.split("\n");
-      const title = lines.shift()?.trim() ?? "";
-      return { title, body: lines.join("\n").trim() };
-    })
-    .filter((section) => section && section.body.length > 0);
-}

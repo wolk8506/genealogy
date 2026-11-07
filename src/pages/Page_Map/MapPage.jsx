@@ -36,7 +36,6 @@ import {
 } from "./mapCache";
 import {
   norm,
-  GROUP_PRECISION,
   MISS_TTL_MS,
   pointKey,
   locationKeyFromPoint,

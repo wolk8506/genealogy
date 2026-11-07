@@ -127,12 +127,6 @@ export function unionStatusMeta(status) {
   return UNION_STATUS[status] || null;
 }
 
-export function genderLabel(person) {
-  if (person?.gender === "male") return "мужчина";
-  if (person?.gender === "female") return "женщина";
-  return "";
-}
-
 /** Строка «1947 · Москва · 3 детей» из заполненных частей. */
 export function unionMetaParts(family, { withChildren = true } = {}) {
   const parts = [];

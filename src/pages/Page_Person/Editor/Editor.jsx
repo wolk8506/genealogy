@@ -14,7 +14,6 @@ import {
   Divider,
   Box,
   Paper,
-  Grid,
   TextField,
   MenuItem,
   InputAdornment,
@@ -42,7 +41,7 @@ import { buildFamiliesForPerson } from "../function/Function_buildFamiliesForPer
 import { formatAge } from "../function/HowOldIsThePerson";
 import { RenderPersonItem } from "../info/RenderPersonItem";
 
-import { alpha, useTheme } from "@mui/material/styles";
+import { useTheme } from "@mui/material/styles";
 import { useNotificationStore } from "../../../store/useNotificationStore";
 import CustomDatePickerDialog from "../../../components/CustomDatePickerDialog";
 import { ClearIcon } from "@mui/x-date-pickers";

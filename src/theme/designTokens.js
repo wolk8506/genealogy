@@ -19,15 +19,6 @@ export const MOTION = {
   easeInOut: "cubic-bezier(0.77, 0, 0.175, 1)",
 };
 
-export const TRANSITION = {
-  fast: `${MOTION.fast} ${MOTION.easeOut}`,
-  base: `${MOTION.base} ${MOTION.easeOut}`,
-  colors: `background-color ${MOTION.fast} ease, border-color ${MOTION.fast} ease, color ${MOTION.fast} ease`,
-  colorsSlow: `background-color ${MOTION.base} ease, border-color ${MOTION.base} ease, color ${MOTION.base} ease`,
-  press: `transform ${MOTION.fast} ${MOTION.easeOut}`,
-  hover: `transform ${MOTION.fast} ${MOTION.easeOut}, box-shadow ${MOTION.fast} ${MOTION.easeOut}, background-color ${MOTION.fast} ease, border-color ${MOTION.fast} ease`,
-};
-
 export const Z = {
   base: 1,
   raised: 2,

@@ -1,14 +1,6 @@
 // layout/GenealogyTreeInspector.jsx
 import React, { useEffect, useState } from "react";
-import {
-  Drawer,
-  Box,
-  Stack,
-  Typography,
-  Avatar,
-  IconButton,
-  Divider,
-} from "@mui/material";
+import { Drawer, Box, Stack, Typography, Avatar, Divider } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import {
   Person as PersonIcon,

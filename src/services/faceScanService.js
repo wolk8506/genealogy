@@ -11,7 +11,6 @@ import {
 } from "../utils/photoFaces";
 import {
   normalizeFaceIndex,
-  enrichFacesWithDescriptors,
   rebuildFaceIndex,
 } from "../utils/faceIndex";
 
@@ -282,19 +281,4 @@ export async function ensureFaceReferencesReady(allPeople = []) {
 
   const rebuilt = await rebuildReferencesFromDatabase(allPeople);
   return { rebuilt: true, index: normalizeFaceIndex(rebuilt) };
-}
-
-export async function ensurePhotoFaceDescriptors(photo) {
-  const imageUrl = await window.photoAPI.getPath(
-    photo.owner,
-    photo.filename,
-    "webp",
-  );
-  if (!imageUrl) return normalizeFaces(photo.faces);
-
-  return enrichFacesWithDescriptors(
-    imageUrl,
-    photo.faces,
-    photo.imageSize,
-  );
 }

@@ -22,12 +22,6 @@ import {
   CssBaseline,
   Typography,
   IconButton,
-  Stack,
-  TextField,
-  InputAdornment,
-  ToggleButton,
-  ToggleButtonGroup,
-  Button,
   CircularProgress,
 } from "@mui/material";
 import { alpha, styled, useTheme } from "@mui/material/styles";
@@ -1357,7 +1351,7 @@ export default function MainLayout() {
                     />
                   }
                 />
-                <Route path="/people" element={<PeopleListPage />} />
+                <Route path="/people" element={<Navigate to="/" replace />} />
                 <Route
                   path="/person/:id"
                   element={

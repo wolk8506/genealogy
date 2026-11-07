@@ -15,7 +15,7 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
 import PersonOutlineIcon from "@mui/icons-material/PersonOutline";
 import PlaceOutlinedIcon from "@mui/icons-material/PlaceOutlined";
-import { useTheme, alpha } from "@mui/material/styles";
+import { useTheme } from "@mui/material/styles";
 import { useDispatch } from "react-redux";
 // import { setSearchQuery } from "../../../store/searchSlice";
 import { setSearchQuery } from "../store/searchSlice";

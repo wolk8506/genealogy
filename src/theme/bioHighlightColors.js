@@ -18,8 +18,3 @@ const COLOR_IDS = new Set(BIO_HIGHLIGHT_COLORS.map((color) => color.id));
 export function normalizeBioHighlightColor(value) {
   return COLOR_IDS.has(value) ? value : DEFAULT_BIO_HIGHLIGHT_COLOR;
 }
-
-export function getBioHighlightColor(value) {
-  const id = normalizeBioHighlightColor(value);
-  return BIO_HIGHLIGHT_COLORS.find((color) => color.id === id);
-}

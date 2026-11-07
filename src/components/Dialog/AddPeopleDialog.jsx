@@ -188,7 +188,6 @@ export default function AddPersonModal({ open, onClose }) {
 
     const all = allPeople.map((p) => ({ ...p }));
     all.push(newPersonObj);
-    // setNewPerson(newPersonObj);
 
     // 1.1) родители ← добавляем ребёнка
     if (newPersonObj.father) {
@@ -559,8 +558,6 @@ export default function AddPersonModal({ open, onClose }) {
           setDiedPickerOpen(false);
         }}
       />
-
-      {/* <AddBanner isOpen={success} newPerson={newPerson} /> */}
     </>
   );
 }

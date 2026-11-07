@@ -66,10 +66,6 @@ export function percentOfBioSize(size) {
     : BIO_SIZE_PRESETS[normalized];
 }
 
-export function isPresetSize(size) {
-  return PRESET_IDS.includes(normalizeBioSize(size));
-}
-
 export function bioSizeLabel(size) {
   const normalized = normalizeBioSize(size);
   return typeof normalized === "number"
