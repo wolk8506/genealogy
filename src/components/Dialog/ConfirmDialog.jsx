@@ -12,6 +12,7 @@ import WarningAmberRoundedIcon from "@mui/icons-material/WarningAmberRounded";
 import DialogActionButton, {
   DialogActionsBar,
 } from "./DialogActionButton";
+import { glassPaperSx, secondaryButtonSx } from "./glassDialog";
 
 // Простое подтверждение вместо нативного window.confirm:
 // не блокирует main-процесс и выглядит как остальной UI.
@@ -33,27 +34,7 @@ export default function ConfirmDialog({
         if (!busy) onClose(false);
       }}
       PaperProps={{
-        sx: (t) => ({
-          width: 300,
-          maxWidth: "calc(100vw - 32px)",
-          borderRadius: "24px",
-          backgroundImage: "none",
-          overflow: "hidden",
-          bgcolor:
-            t.palette.mode === "dark"
-              ? "rgba(26,26,26,0.92)"
-              : "rgba(249,249,249,0.95)",
-          backdropFilter: "blur(24px)",
-          border: "1px solid",
-          borderColor:
-            t.palette.mode === "dark"
-              ? "rgba(255,255,255,0.08)"
-              : "rgba(0,0,0,0.06)",
-          boxShadow:
-            t.palette.mode === "dark"
-              ? "0 18px 48px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.06)"
-              : "0 18px 48px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.8)",
-        }),
+        sx: (t) => ({ ...glassPaperSx(t), width: 300 }),
       }}
     >
       {title && (
@@ -133,18 +114,7 @@ export default function ConfirmDialog({
         <DialogActionButton
           onClick={() => onClose(false)}
           disabled={busy}
-          sx={(t) => ({
-            bgcolor:
-              t.palette.mode === "dark"
-                ? "rgba(12,12,12,0.9)"
-                : alpha(t.palette.common.black, 0.06),
-            "&:hover": {
-              bgcolor:
-                t.palette.mode === "dark"
-                  ? "rgba(24,24,24,0.95)"
-                  : alpha(t.palette.common.black, 0.1),
-            },
-          })}
+          sx={secondaryButtonSx}
         >
           {cancelLabel}
         </DialogActionButton>

@@ -20,6 +20,9 @@ export const useUpdateStore = create((set, get) => ({
   installing: false,
   // info, пришедший со стартовой проверки — по нему открывается диалог
   notice: null,
+  // исход явной проверки из меню: «актуальна» или ошибка. При «available»
+  // диалог не нужен — там уже стоит notice.
+  checkResult: null,
 
   bind: () => {
     if (bound || !window.updater) return;
@@ -55,6 +58,15 @@ export const useUpdateStore = create((set, get) => ({
     set({ checking: true, error: null });
     window.updater.check();
   },
+
+  // Проверка по пункту меню: ответ приходит отдельным событием
+  // update:manual-check-result, а не через update:available.
+  checkManual: () => {
+    window.electron?.ipcRenderer?.send("trigger-update-check");
+  },
+
+  setCheckResult: (result) => set({ checkResult: result }),
+  clearCheckResult: () => set({ checkResult: null }),
 
   download: () => {
     const { latest } = get();

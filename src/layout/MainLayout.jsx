@@ -16,8 +16,6 @@ import {
   useSearchParams,
 } from "react-router-dom"; // Link переименован в RouterLink
 
-import { useSnackbar } from "notistack";
-
 import {
   Box,
   Toolbar,
@@ -55,7 +53,8 @@ import useAppHotkeys from "../hooks/useAppHotkeys";
 
 import PeopleListPage from "../pages/Page_Main/PeopleListPage";
 import { UpdateDialog } from "../pages/Page_Settings/UpdateDialog";
-import { HomePersonBanner } from "../pages/Page_Settings/HomePersonBanner";
+import { HomePersonDialog } from "../pages/Page_Settings/HomePersonDialog";
+import { UpdateResultDialog } from "../pages/Page_Settings/UpdateResultDialog";
 
 // Тяжёлые страницы — ленивая загрузка отдельными чанками.
 // Пути — статические строки в точном регистре (сборка на Linux чувствительна).
@@ -121,6 +120,7 @@ import { useFaceReviewStore } from "../store/useFaceReviewStore";
 import { usePeopleListStore } from "../store/usePeopleListStore";
 import { usePhotoInspectorStore } from "../store/usePhotoInspectorStore";
 import { useSettingsStore } from "../store/useSettingsStore";
+import { useUpdateStore } from "../store/useUpdateStore";
 
 import GalleryToolbar from "./bar_GlobalPhotoGallery/GalleryToolbar";
 import FamiliesToolbar from "./bar_Families/FamiliesToolbar";
@@ -215,7 +215,6 @@ export default function MainLayout() {
   const navigate = useNavigate();
   // !!!  ▼▼▼   GlobalPhotoGallery  ▼▼▼
   const [isLicenseOpen, setLicenseOpen] = useState(false);
-  const { enqueueSnackbar } = useSnackbar();
   // const [search, setSearch] = useState("");
   const [gallerySearch, setGallerySearch] = useState("");
   const [selectedPeople, setSelectedPeople] = useState([]);
@@ -762,11 +761,11 @@ export default function MainLayout() {
     };
   }, []);
 
-  // Проверка обновление через меню
+  // Проверка обновлений через меню: запросом и ответом заведует стор
+  // обновлений, окно с результатом открывается само.
   useEffect(() => {
     window.electron.ipcRenderer.on("check-for-updates", () => {
-      // Эта функция вызовется при нажатии
-      window.electron.ipcRenderer.send("trigger-update-check");
+      useUpdateStore.getState().checkManual();
     });
 
     return () => {
@@ -778,19 +777,10 @@ export default function MainLayout() {
     window.electron.ipcRenderer.on(
       "update:manual-check-result",
       (event, result) => {
-        if (result.status === "available") {
-          // само обновление показывает окно — второй раз сообщать не нужно
-          return;
-        } else if (result.status === "up-to-date") {
-          enqueueSnackbar(
-            `Установлена актуальная версия: ${result.version}`,
-            { variant: "success" },
-          );
-        } else if (result.status === "error") {
-          enqueueSnackbar(`Ошибка: ${result.message}`, {
-            variant: "error",
-          });
-        }
+        // При «available» окно обновления открывается по своему событию —
+        // второй раз сообщать о том же не нужно.
+        if (result.status === "available") return;
+        useUpdateStore.getState().setCheckResult(result);
       },
     );
 
@@ -1281,10 +1271,6 @@ export default function MainLayout() {
           }}
         >
           <DrawerHeader />
-          <HomePersonBanner
-            hasPeople={allPeople.length > 0}
-            onOpenSettings={() => navigate("/settings?section=home")}
-          />
           <PageBackground accent={pageAccent}>
             <Suspense fallback={<RouteFallback />}>
               <Routes>
@@ -1542,6 +1528,11 @@ export default function MainLayout() {
       )}
       <ChangelogModal />
       <UpdateDialog />
+      <UpdateResultDialog />
+      <HomePersonDialog
+        hasPeople={allPeople.length > 0}
+        onOpenSettings={() => navigate("/settings?section=home")}
+      />
     </>
   );
 }
