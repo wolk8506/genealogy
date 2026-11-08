@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from "react";
-import { useSnackbar } from "notistack";
 import {
   Stack,
   Typography,
@@ -34,7 +33,6 @@ const sectionLabelSx = {
 };
 
 export default function AddPersonModal({ open, onClose }) {
-  const { enqueueSnackbar } = useSnackbar();
   const [allPeople, setAllPeople] = useState([]);
   const [birthdayPickerOpen, setBirthdayPickerOpen] = useState(false);
   const [diedPickerOpen, setDiedPickerOpen] = useState(false);
@@ -131,16 +129,10 @@ export default function AddPersonModal({ open, onClose }) {
     // ... (Вся ваша логика handleSave остается идентичной)
     if (!gender) {
       setError("Пол обязателен");
-      enqueueSnackbar("Пол обязателен", {
-        variant: "error",
-      });
       return;
     }
     if (!generation || isNaN(genNum) || genNum < 1) {
       setError("Поколение должно быть числом ≥ 1");
-      enqueueSnackbar("Поколение должно быть числом ≥ 1", {
-        variant: "error",
-      });
       return;
     }
     const hasName =
@@ -150,12 +142,6 @@ export default function AddPersonModal({ open, onClose }) {
       maidenName.trim();
     if (!hasName) {
       setError("Укажите хотя бы имя, фамилию, отчество или девичью фамилию");
-      enqueueSnackbar(
-        "Укажите хотя бы имя, фамилию, отчество или девичью фамилию",
-        {
-          variant: "error",
-        },
-      );
       return;
     }
 
@@ -246,13 +232,6 @@ export default function AddPersonModal({ open, onClose }) {
         // Если у вас есть роутинг, можно передать линк на карточку:
         link: `/person/${newId}`,
       });
-      enqueueSnackbar(
-        `Человек успешно добавлен: ${firstName.trim()} ${lastName.trim()}`,
-        {
-          variant: "success",
-        },
-      );
-      // setSuccess(true);
       setAllPeople(all);
 
       // Сброс полей
@@ -264,9 +243,6 @@ export default function AddPersonModal({ open, onClose }) {
     } catch (err) {
       console.error(err);
       setError("Ошибка при сохранении данных");
-      enqueueSnackbar("Ошибка при сохранении данных", {
-        variant: "error",
-      });
 
       // Опционально: уведомление об ошибке
       addNotification({

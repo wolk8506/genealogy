@@ -7,6 +7,10 @@ import React, {
 } from "react";
 import { Box, Typography } from "@mui/material";
 import { alpha, useTheme } from "@mui/material/styles";
+import {
+  INSPECTOR_TRANSITION_EASING,
+  INSPECTOR_TRANSITION_MS,
+} from "../layout/inspectorPanelTransition";
 
 const MONTHS_GEN = [
   "января",
@@ -419,12 +423,17 @@ export default function TimelineScrubber({
 
   if (headers.length < 2) return null;
 
+  // Скраббер прижат к правому краю, а панель инспектора едет 300 мс — без
+  // того же перехода колонка годов перескакивает на место раньше меню.
+  const offsetTransition = `right ${INSPECTOR_TRANSITION_MS}ms ${INSPECTOR_TRANSITION_EASING}`;
+
   const trackStyle = anchorRect
     ? {
         position: "fixed",
         top: anchorRect.top,
         height: anchorRect.height,
         right: rightOffset,
+        transition: offsetTransition,
         width: 76,
       }
     : {
@@ -432,6 +441,7 @@ export default function TimelineScrubber({
         top: 100,
         bottom: 60,
         right: rightOffset,
+        transition: offsetTransition,
         width: 76,
       };
 
@@ -447,6 +457,7 @@ export default function TimelineScrubber({
                 position: "fixed",
                 left: anchorRect?.left ?? 0,
                 right: lineRight,
+                transition: offsetTransition,
                 top: hoverInfo.y,
                 height: 1,
                 bgcolor: "primary.main",
@@ -460,6 +471,7 @@ export default function TimelineScrubber({
             sx={{
               position: "fixed",
               right: lineRight + 4,
+              transition: offsetTransition,
               top: hoverInfo.y,
               transform: "translateY(-50%)",
               display: "flex",

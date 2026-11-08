@@ -3,6 +3,8 @@
 // (margin-right в MainLayout).
 export const INSPECTOR_TRANSITION_MS = 300;
 export const INSPECTOR_TRANSITION_EASING = "ease";
+// Ширина панели: она отнимается от области контента через margin-right.
+export const INSPECTOR_PANEL_WIDTH = 340;
 
 export const inspectorDrawerTransitionProps = {
   transitionDuration: INSPECTOR_TRANSITION_MS,

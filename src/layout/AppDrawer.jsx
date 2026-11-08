@@ -7,6 +7,12 @@ import GroupsIcon from "@mui/icons-material/Groups";
 
 const drawerWidth = 210;
 
+/** Насколько раскрытый ящик отнимает места у контента: рейл — 57 px. */
+export const DRAWER_EXPANDED_EXTRA = drawerWidth - 57;
+
+/** Высота верхней панели: ниже неё контент обязан начинаться без зазора. */
+export const DRAWER_HEADER_HEIGHT = 50;
+
 /** Отступы и шаг плиток раскрытого меню. */
 const TILE_WIDTH = 92;
 const TILE_HEIGHT = 88;
@@ -50,8 +56,8 @@ const DrawerHeader = styled("div")(({ theme }) => ({
   justifyContent: "flex-end",
   padding: theme.spacing(0, 1),
   // Заменяем стандартное поведение на фиксированное:
-  height: 50, // 50 (бар) + 20 (отступ под кнопки macOS)
-  minHeight: 50,
+  height: DRAWER_HEADER_HEIGHT, // 50 (бар) + 20 (отступ под кнопки macOS)
+  minHeight: DRAWER_HEADER_HEIGHT,
 }));
 
 /**

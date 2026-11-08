@@ -5,7 +5,6 @@ import React, {
   useRef,
   useCallback,
 } from "react";
-import { useNotificationStore } from "../../../store/useNotificationStore";
 import { Typography, Box, Stack, CircularProgress, Chip } from "@mui/material";
 import { useTheme, alpha } from "@mui/material/styles";
 import { GroupedVirtuoso } from "react-virtuoso";
@@ -25,15 +24,23 @@ import PhotoUploadDialog from "../../../components/Dialog/PhotoUploadDialog";
 import PhotoMetaDialog from "../../../components/Dialog/PhotoMetaDialog";
 import { buildPhotoAttendeesText } from "../../../utils/photoFaces";
 import { usePhotoInspectorStore } from "../../../store/usePhotoInspectorStore";
+import { useLayoutStore } from "../../../store/useLayoutStore";
+import {
+  DRAWER_EXPANDED_EXTRA,
+  DRAWER_HEADER_HEIGHT,
+} from "../../../layout/AppDrawer";
+import ConfirmDialog from "../../../components/Dialog/ConfirmDialog";
+import TimelineScrubber from "../../../components/TimelineScrubber";
+import {
+  useGalleryLayout,
+  useGroupFirstPhotos,
+} from "../../../features/photoGallery/useGalleryLayout";
+import { useGalleryViewer } from "../../../features/photoGallery/useGalleryViewer";
+import { useGalleryScrubber } from "../../../features/photoGallery/useGalleryScrubber";
+import { useGalleryDelete } from "../../../features/photoGallery/useGalleryDelete";
+import { INSPECTOR_PANEL_WIDTH } from "../../../layout/inspectorPanelTransition";
 
-const normalizePhotoDate = (dp) => {
-  if (!dp) return null;
-  let s = dp.trim();
-  if (/^\d{4}$/.test(s)) s += "-01-01";
-  else if (/^\d{4}-\d{2}$/.test(s)) s += "-01";
-  const t = Date.parse(s);
-  return isNaN(t) ? null : t;
-};
+const MY_PHOTOS_GROUP = "Мои фотографии";
 
 export default function PhotoGallery({
   personId,
@@ -48,24 +55,14 @@ export default function PhotoGallery({
 }) {
   const theme = useTheme();
   const isDark = theme.palette.mode === "dark";
-  const addNotification = useNotificationStore(
-    (state) => state.addNotification,
-  );
   const virtuosoRef = useRef(null);
-  const pendingRef = useRef(new Set());
 
   // Состояния данных
   const [photos, setPhotos] = useState([]);
-  const [photoPaths, setPhotoPaths] = useState({ thumbs: {}, full: {} });
   const [isLoading, setIsLoading] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
-  // Состояния слайдера и диалогов
-  const [fullscreen, setFullscreen] = useState(false);
-  const [index, setIndex] = useState(0);
-  const [direction, setDirection] = useState(0);
-  const [hideLabels, setHideLabels] = useState(false);
-  const [sliderForcedFullscreen, setSliderForcedFullscreen] = useState(false);
+  // Диалоги
   const [uploadOpen, setUploadOpen] = useState(false);
   const [openInfo, setOpenInfo] = useState(false);
   const [metaInfo, setMetaInfo] = useState(null);
@@ -80,6 +77,8 @@ export default function PhotoGallery({
 
   // Правая панель-инспектор (общая с глобальной галереей).
   const selectedId = usePhotoInspectorStore((s) => s.selectedId);
+  const photoPanelOpen = usePhotoInspectorStore((s) => s.open);
+  const drawerOpen = useLayoutStore((s) => s.drawerOpen);
   const selectPhoto = usePhotoInspectorStore((s) => s.select);
   const clearSelection = usePhotoInspectorStore((s) => s.clearSelection);
   const setInspectorActions = usePhotoInspectorStore((s) => s.setActions);
@@ -135,22 +134,18 @@ export default function PhotoGallery({
     });
   }, [personId, refreshTrigger]); // Убрали openMain из зависимостей
 
-  // 1. Фильтрация и сортировка (Упрощена)
-  const sortedBase = useMemo(() => {
-    const result = photos.filter((p) => {
-      const txt =
-        `${p.id || ""} ${p.title || ""} ${p.description || ""} ${p.fileName || ""}`.toLowerCase();
-      return txt.includes(search.toLowerCase());
-    });
+  // Группировка «мои / я на фото» — единственное, чем персональная сетка
+  // отличается от глобальной; остальное считает общее ядро.
+  const groupKey = useCallback(
+    (photo, key) =>
+      key === "byType"
+        ? String(photo.owner) === String(personId)
+          ? MY_PHOTOS_GROUP
+          : "Я на фото"
+        : undefined,
+    [personId],
+  );
 
-    return result.sort((a, b) => {
-      const valA = normalizePhotoDate(a.datePhoto) || 0;
-      const valB = normalizePhotoDate(b.datePhoto) || 0;
-      return sortDir === "asc" ? valA - valB : valB - valA;
-    });
-  }, [photos, search, sortDir]);
-
-  // 2. Группировка
   const {
     displayList,
     groupCounts,
@@ -158,194 +153,57 @@ export default function PhotoGallery({
     flattenedRows,
     headers,
     columnsCount,
-  } = useMemo(() => {
-    const groupsMap = new Map();
-    const cols =
-      layoutWidth < 1200
-        ? 3
-        : layoutWidth < 1600
-          ? 4
-          : layoutWidth < 2000
-            ? 5
-            : 6;
+    groupOffsets,
+    rowHeight,
+  } = useGalleryLayout({
+    photos,
+    search,
+    groupBy,
+    sortDir,
+    layoutWidth,
+    chromeInset:
+      (drawerOpen ? DRAWER_EXPANDED_EXTRA : 0) +
+      (photoPanelOpen ? INSPECTOR_PANEL_WIDTH : 0),
+    groupKey,
+    firstGroupKey: groupBy === "byType" ? MY_PHOTOS_GROUP : undefined,
+  });
 
-    sortedBase.forEach((p) => {
-      let key = "Без даты";
-      if (groupBy === "date") {
-        key = p.date?.split("T")[0] || "Без даты";
-      } else if (groupBy === "datePhoto") {
-        key = p.datePhoto || "Без даты";
-      } else if (groupBy === "byType") {
-        key =
-          String(p.owner) === String(personId) ? "Мои фотографии" : "Я на фото";
-      } else if (groupBy === "none") {
-        key = "Все фотографии";
-      }
+  const {
+    photoPaths,
+    setPhotoPaths,
+    dropPaths,
+    fetchThumb,
+    fullscreen,
+    index,
+    direction,
+    hideLabels,
+    openAt,
+    close: handleFullscreenClose,
+    next: handleNext,
+    prev: handlePrev,
+    toggleMaximize: handleMaximizeWindow,
+  } = useGalleryViewer({ displayList, flattenedRows, virtuosoRef });
 
-      if (!groupsMap.has(key)) groupsMap.set(key, []);
-      groupsMap.get(key).push(p);
-    });
+  const { canDelete, requestDelete, confirmProps } = useGalleryDelete({
+    viewerId: personId,
+    setPhotos,
+    dropPaths,
+  });
 
-    const sortedGroupKeys = Array.from(groupsMap.keys()).sort((a, b) => {
-      if (groupBy === "byType") {
-        if (a === "Мои фотографии") return -1;
-        if (b === "Мои фотографии") return 1;
-      }
-      if (a === b) return 0;
-      if (a === "Без даты") return 1;
-      if (b === "Без даты") return -1;
-      return sortDir === "asc" ? a.localeCompare(b) : b.localeCompare(a);
-    });
+  const { activeGroupIndex, handleRangeChanged, scrubberMode } =
+    useGalleryScrubber({ groupBy, groupCounts });
 
-    const finalOrderedList = [];
-    const groupRowsCount = [];
-    const pCounts = [];
-    const rows = [];
-    const labels = [];
-
-    sortedGroupKeys.forEach((key) => {
-      const items = groupsMap.get(key);
-      labels.push(key);
-      finalOrderedList.push(...items);
-      pCounts.push(items.length);
-
-      let addedRows = 0;
-      for (let i = 0; i < items.length; i += cols) {
-        rows.push(items.slice(i, i + cols));
-        addedRows++;
-      }
-      groupRowsCount.push(addedRows);
-    });
-
-    return {
-      displayList: finalOrderedList,
-      groupCounts: groupRowsCount,
-      photoCountsPerGroup: pCounts,
-      flattenedRows: rows,
-      headers: labels,
-      columnsCount: cols,
-    };
-  }, [sortedBase, groupBy, layoutWidth, sortDir, personId]);
-
-  // Загрузка путей (Thumbs)
-  const fetchThumb = useCallback(
-    async (p) => {
-      if (photoPaths.thumbs[p.id] || pendingRef.current.has(p.id)) return;
-      pendingRef.current.add(p.id);
-      try {
-        const path = await window.photoAPI.getPath(
-          p.owner,
-          p.filename,
-          "thumbs",
-        );
-        if (path) {
-          setPhotoPaths((prev) => ({
-            ...prev,
-            thumbs: { ...prev.thumbs, [p.id]: path },
-          }));
-        }
-      } finally {
-        pendingRef.current.delete(p.id);
-      }
-    },
-    [photoPaths.thumbs],
+  const groupFirstPhotos = useGroupFirstPhotos(
+    displayList,
+    photoCountsPerGroup,
   );
-
-  // Загрузка Full
-  useEffect(() => {
-    if (!fullscreen || !displayList[index]) return;
-    const p = displayList[index];
-    if (!photoPaths.full[p.id] && !pendingRef.current.has(p.id + "_full")) {
-      pendingRef.current.add(p.id + "_full");
-      window.photoAPI
-        .getPath(p.owner, p.filename, "webp")
-        .then((path) => {
-          if (path) {
-            setPhotoPaths((prev) => ({
-              ...prev,
-              full: { ...prev.full, [p.id]: path },
-            }));
-          }
-        })
-        .finally(() => pendingRef.current.delete(p.id + "_full"));
-    }
-  }, [fullscreen, index, displayList, photoPaths.full]);
-
-  // Скролл
-  useEffect(() => {
-    if (fullscreen && virtuosoRef.current) {
-      const photoId = displayList[index]?.id;
-      if (photoId) {
-        const rowIndex = flattenedRows.findIndex((row) =>
-          row.some((p) => p.id === photoId),
-        );
-        if (rowIndex !== -1) {
-          virtuosoRef.current.scrollToIndex({
-            index: rowIndex,
-            align: "center",
-            behavior: "auto",
-          });
-        }
-      }
-    }
-  }, [index, fullscreen, displayList, flattenedRows]);
-
-  //  --- Управление слайдером ---
-
-  const handleFullscreenClose = useCallback(async () => {
-    setFullscreen(false);
-    if (sliderForcedFullscreen && window.windowAPI) {
-      await window.windowAPI.setFullscreen(false);
-      setSliderForcedFullscreen(false);
-    }
-    setHideLabels(false);
-  }, [sliderForcedFullscreen]);
-
-  const handleMaximizeWindow = useCallback(async () => {
-    const wantFullscreen = !hideLabels;
-    setHideLabels(wantFullscreen);
-    if (window.windowAPI) {
-      const isNow = await window.windowAPI.isFullscreen();
-      if (wantFullscreen && !isNow) {
-        await window.windowAPI.setFullscreen(true);
-        setSliderForcedFullscreen(true);
-      } else if (!wantFullscreen && sliderForcedFullscreen) {
-        await window.windowAPI.setFullscreen(false);
-        setSliderForcedFullscreen(false);
-      }
-    }
-  }, [hideLabels, sliderForcedFullscreen]);
-
-  const handleNext = useCallback(() => {
-    setDirection(1);
-    setIndex((prev) => (prev + 1 < displayList.length ? prev + 1 : prev));
-  }, [displayList.length]);
-
-  const handlePrev = useCallback(() => {
-    setDirection(-1);
-    setIndex((prev) => (prev - 1 >= 0 ? prev - 1 : prev));
-  }, []);
-
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (!fullscreen) return;
-      if (e.key === "ArrowLeft") handlePrev();
-      if (e.key === "ArrowRight") handleNext();
-      if (e.key === "Escape") handleFullscreenClose();
-      if (e.key.toLowerCase() === "f") {
-        handleMaximizeWindow();
-      }
-    };
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [fullscreen, handleNext, handlePrev, handleFullscreenClose]);
 
   // -------------------------------------------------------------------------
 
   // IPC context menu listeners
   useEffect(() => {
     const { ipcRenderer } = window.electron || {};
-    if (!ipcRenderer) return;
+    if (!ipcRenderer) return undefined;
     ipcRenderer.removeAllListeners?.("photo:open");
     ipcRenderer.removeAllListeners?.("photo:delete");
     ipcRenderer.removeAllListeners?.("photo:meta-response");
@@ -356,11 +214,11 @@ export default function PhotoGallery({
       const p = photosRef.current?.find((x) => x.id === id);
       if (p) selectPhoto(p);
     });
+    // Удаление из контекстного меню окна идёт через то же подтверждение,
+    // что и кнопка на карточке.
     ipcRenderer.on("photo:delete", (_, id) => {
-      if (confirm("Удалить фото?")) {
-        window.photoAPI.delete(personId, id);
-        setPhotos((prev) => prev.filter((p) => p.id !== id));
-      }
+      const p = photosRef.current?.find((x) => x.id === id);
+      if (p) requestDelete(p);
     });
     ipcRenderer.on("photo:meta-response", (_, receivedMeta) => {
       setMetaInfo(receivedMeta);
@@ -372,52 +230,12 @@ export default function PhotoGallery({
       ipcRenderer.removeAllListeners?.("photo:delete");
       ipcRenderer.removeAllListeners?.("photo:meta-response");
     };
-  }, [personId]);
-
-  const handleDelete = useCallback(
-    async (photo) => {
-      if (!window.confirm("Вы уверены, что хотите удалить это фото?")) return;
-      try {
-        const success = await window.photoAPI.delete(personId, photo.id);
-        if (success) {
-          setPhotos((prev) => prev.filter((p) => p.id !== photo.id));
-          setPhotoPaths((prev) => {
-            const nt = { ...prev.thumbs };
-            const nf = { ...prev.full };
-            delete nt[photo.id];
-            delete nf[photo.id];
-            return { thumbs: nt, full: nf };
-          });
-        }
-        addNotification({
-          title: "Фото удалено",
-          message: `Файл "${photo.filename}" успешно удален. Владелец ID: ${personId}`,
-          type: "warning",
-          category: "photo",
-        });
-      } catch (e) {
-        console.error(e);
-        addNotification({
-          title: "Ошибка удаления",
-          message: e || "Не удалось удалить фото",
-          type: "error",
-          category: "photo",
-        });
-      }
-    },
-    [personId],
-  );
+  }, [requestDelete]);
 
   // Действия панели-инспектора для выбранного фото.
   useEffect(() => {
     setInspectorActions({
-      openFullscreen: (photo) => {
-        const i = displayList.findIndex((x) => x.id === photo.id);
-        if (i === -1) return;
-        setDirection(0);
-        setIndex(i);
-        setFullscreen(true);
-      },
+      openFullscreen: openAt,
       openFaces: (photo) => {
         setFacesDialogPhoto(photo);
         setFacesDialogOpen(true);
@@ -427,19 +245,12 @@ export default function PhotoGallery({
         setPreviewDialogOpen(true);
       },
       onSaved: (photo, { ownerChanged, filenameChanged } = {}) => {
-        if (ownerChanged || filenameChanged) {
-          setPhotoPaths((prev) => {
-            const copy = { ...prev };
-            if (copy.thumbs) delete copy.thumbs[photo.id];
-            if (copy.full) delete copy.full[photo.id];
-            return copy;
-          });
-        }
+        if (ownerChanged || filenameChanged) dropPaths(photo.id);
         setRefreshTrigger((r) => r + 1);
         if (refresh) refresh();
       },
     });
-  }, [displayList, setInspectorActions, refresh]);
+  }, [openAt, dropPaths, setInspectorActions, refresh]);
 
   const currentPhotoInfo = useMemo(() => {
     const photo = displayList[index];
@@ -452,20 +263,14 @@ export default function PhotoGallery({
     return { ...photo, ownerText, peopleText };
   }, [index, displayList, allPeople, allExternal]);
 
-  const columnGap = 8;
-  const cellWidth = Math.max(
-    0,
-    (layoutWidth - columnGap * (columnsCount - 1)) / columnsCount,
-  );
-  const rowHeight = Math.max(80, Math.round(cellWidth));
-
   return (
     <>
       <Box
         sx={{
           display: "flex",
           flexDirection: "column",
-          height: "calc(100vh - 60px)", // ЗАДАЙТЕ ВЫСОТУ ТУТ (например, 700 или 80vh)
+          // Та же высота, что и в общей галерее: до нижнего окна только шапка.
+          height: `calc(100vh - ${DRAWER_HEADER_HEIGHT}px)`,
           width: "100%",
           // position: "relative",
         }}
@@ -478,7 +283,25 @@ export default function PhotoGallery({
             if (event.target.closest("[data-photo-cell]")) return;
             clearSelection();
           }}
-          sx={{ flex: 1, bgcolor: "transparent", position: "relative" }}
+          sx={{
+            flex: 1,
+            // Полоса справа под колонку годов — та же ширина сетки, что и в
+            // общей галерее.
+            mr: 4.5,
+            ...(groupBy === "datePhoto" && {
+              "& > div": {
+                scrollbarWidth: "none",
+                msOverflowStyle: "none",
+              },
+              "& > div::-webkit-scrollbar": {
+                display: "none",
+                width: 0,
+                height: 0,
+              },
+            }),
+            bgcolor: "transparent",
+            position: "relative",
+          }}
         >
           {isLoading ? (
             <Box sx={{ display: "flex", justifyContent: "center", mt: 10 }}>
@@ -487,7 +310,7 @@ export default function PhotoGallery({
           ) : displayList.length === 0 ? (
             <Box
               sx={{
-                height: "80vh",
+                height: "100%",
                 display: "flex",
                 justifyContent: "center",
                 flexDirection: "column",
@@ -504,6 +327,7 @@ export default function PhotoGallery({
               ref={virtuosoRef}
               style={{ height: "100%", width: "100%" }}
               groupCounts={groupCounts}
+              rangeChanged={handleRangeChanged}
               groupContent={(idx) => (
                 <Box
                   sx={{
@@ -534,7 +358,7 @@ export default function PhotoGallery({
                     label={photoCountsPerGroup[idx]}
                     size="small"
                     variant="outlined"
-                    sx={{ height: 20 }}
+                    sx={{ height: 20, mr: 5 }}
                   />
                 </Box>
               )}
@@ -562,17 +386,13 @@ export default function PhotoGallery({
                             scope={"personal_gallery"}
                             photo={item}
                             path={photoPaths.thumbs[item.id]}
-                            onOpen={() => {
-                              setIndex(
-                                displayList.findIndex((p) => p.id === item.id),
-                              );
-                              setFullscreen(true);
-                            }}
+                            onOpen={() => openAt(item)}
                             onDownload={onDownload}
                             onSelect={(p) => selectPhoto(p, { open: false })}
                             selected={selectedId === item.id}
                             onEdit={(p) => selectPhoto(p)}
-                            onDelete={() => handleDelete(item)}
+                            canDelete={canDelete(item)}
+                            onDelete={requestDelete}
                             rowHeight={rowHeight}
                             isDark={isDark}
                             allPeople={allPeople}
@@ -588,6 +408,25 @@ export default function PhotoGallery({
             />
           )}
         </Box>
+
+        {/* Колонка годов — как в общей галерее: плотность по группам и прыжок
+            к группе по клику или перетаскиванию. */}
+        <TimelineScrubber
+          headers={headers}
+          groupOffsets={groupOffsets}
+          groupCounts={groupCounts}
+          groupWeights={photoCountsPerGroup}
+          activeGroupIndex={activeGroupIndex}
+          mode={scrubberMode}
+          anchorRef={galleryRef}
+          virtuosoRef={virtuosoRef}
+          getPreviewUrl={(i) => {
+            const p = groupFirstPhotos[i];
+            return p ? photoPaths.thumbs[p.id] : null;
+          }}
+          showCrosshairLine={false}
+          rightOffset={photoPanelOpen ? INSPECTOR_PANEL_WIDTH : 0}
+        />
 
         <PhotoFullscreenViewer
           open={fullscreen}
@@ -632,6 +471,8 @@ export default function PhotoGallery({
           onClose={() => setPreviewDialogOpen(false)}
           setPhotoPaths={setPhotoPaths}
         />
+
+        <ConfirmDialog {...confirmProps} />
 
         <PhotoUploadDialog
           open={uploadOpen}

@@ -78,6 +78,7 @@ const PhotoCell = React.memo(
     onDownload,
     onEdit,
     onDelete,
+    canDelete = false,
     onOpen,
     onSelect,
     selected = false,
@@ -114,6 +115,9 @@ const PhotoCell = React.memo(
           height: rowHeight,
           borderRadius: "12px", // Фиксированное скругление
           position: "relative",
+          // Карточка — отдельный слой: её оверлей (z-index 2) и кнопки (10)
+          // остаются внутри неё и не перекрывают залипающую полосу группы.
+          zIndex: 0,
           overflow: "hidden", // КРИТИЧНО: обрезает всё, что выходит за границы
           bgcolor: isDark ? "#1e1e1e" : "#f0f0f0",
           boxShadow: selected ? 2 : hover ? 6 : 1,
@@ -361,7 +365,7 @@ const PhotoCell = React.memo(
             </IconButton>
           </Box>
 
-          {personId === photo.owner && (
+          {canDelete && (
             <IconButton
               size="small"
               onClick={(e) => {

@@ -1,14 +1,43 @@
 import React from "react";
-import { Stack, IconButton, Box, Tooltip } from "@mui/material";
+import { Stack, Box } from "@mui/material";
 
-import SortIcon from "@mui/icons-material/Sort";
-
-import { useTheme } from "@mui/material/styles";
+import PersonIcon from "@mui/icons-material/Person";
+import EventIcon from "@mui/icons-material/Event";
+import HistoryIcon from "@mui/icons-material/History";
+import LayersClearIcon from "@mui/icons-material/LayersClear";
 
 import ExpandingSearch from "../../../components/ExpandingSearch";
 import ExpandingAddPhotoButton from "./ExpandingAddPhotoButton";
-import ExpandingGroupSelect from "./ExpandingGroupSelect";
+import ExpandingGroupSelect from "../../../components/ExpandingGroupSelect";
+import SortDirToggle from "../../../components/SortDirToggle";
 import { toolbarPillSx } from "../../toolbarStyles";
+
+const groupOptions = [
+  {
+    value: "none",
+    label: "Без группировки",
+    icon: <LayersClearIcon fontSize="small" />,
+    category: "Сброс",
+  },
+  {
+    value: "byType",
+    label: "Типу участия",
+    icon: <PersonIcon fontSize="small" />,
+    category: "Личности",
+  },
+  {
+    value: "date",
+    label: "Дата добавления",
+    icon: <HistoryIcon fontSize="small" />,
+    category: "Время",
+  },
+  {
+    value: "datePhoto",
+    label: "Дата снимка",
+    icon: <EventIcon fontSize="small" />,
+    category: "Время",
+  },
+];
 
 export default function PhotoToolbar({
   search,
@@ -19,8 +48,6 @@ export default function PhotoToolbar({
   setSortDir,
   onAddPhoto,
 }) {
-  const theme = useTheme();
-
   return (
     <Stack
       direction="row"
@@ -39,20 +66,12 @@ export default function PhotoToolbar({
           fontSize: 20,
         }}
       >
-        <ExpandingGroupSelect value={groupBy} onChange={setGroupBy} />
-        <Tooltip title="Сортировка">
-          <IconButton
-            onClick={() => setSortDir((p) => (p === "asc" ? "desc" : "asc"))}
-            sx={{ color: "text.primary", p: 1, WebkitAppRegion: "no-drag" }}
-          >
-            <SortIcon
-              sx={{
-                transform: sortDir === "desc" ? "none" : "scaleY(-1)",
-                fontSize: "20px",
-              }}
-            />
-          </IconButton>
-        </Tooltip>
+        <ExpandingGroupSelect
+          value={groupBy}
+          onChange={setGroupBy}
+          options={groupOptions}
+        />
+        <SortDirToggle sortDir={sortDir} onChange={setSortDir} />
       </Box>
 
       <ExpandingSearch

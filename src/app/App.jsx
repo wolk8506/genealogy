@@ -216,7 +216,7 @@ export default function App() {
                  ховер и так = затемнённый цвет кнопки.
                  [data-accent] — кнопки с активным фоном красят ховер сами,
                  иначе белый оттенок съедает их цвет. */
-              ".MuiButton-outlined:hover:not(.Mui-disabled), .MuiButton-text:hover:not(.Mui-disabled), .MuiIconButton-root:hover:not(.Mui-disabled):not([data-accent]), .MuiToggleButton-root:hover:not(.Mui-disabled), .MuiButtonGroup-root .MuiButton-outlined:hover:not(.Mui-disabled)":
+              ".MuiButton-outlined:hover:not(.Mui-disabled):not([data-accent]), .MuiButton-text:hover:not(.Mui-disabled):not([data-accent]), .MuiIconButton-root:hover:not(.Mui-disabled):not([data-accent]), .MuiToggleButton-root:hover:not(.Mui-disabled), .MuiButtonGroup-root .MuiButton-outlined:hover:not(.Mui-disabled)":
                 {
                   backgroundColor:
                     "color-mix(in srgb, currentColor 12%, transparent) !important",

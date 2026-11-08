@@ -1,6 +1,11 @@
 import React from "react";
-import { Box, Button, Divider, Typography } from "@mui/material";
+import { Box, Button, Divider, IconButton, Typography } from "@mui/material";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
+import CloseIcon from "@mui/icons-material/Close";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
+import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
+import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 
 export const groupSx = {
   border: (t) => (t.palette.mode === "dark" ? "none" : "1px solid"),
@@ -258,3 +263,67 @@ export const chevron = (
     }}
   />
 );
+
+const statusTone = {
+  success: { bg: "green", icon: <CheckCircleIcon sx={{ fontSize: 18 }} /> },
+  error: { bg: "red", icon: <ErrorOutlineIcon sx={{ fontSize: 18 }} /> },
+  warning: { bg: "orange", icon: <WarningAmberIcon sx={{ fontSize: 18 }} /> },
+  info: { bg: "blue", icon: <InfoOutlinedIcon sx={{ fontSize: 18 }} /> },
+};
+
+// Статус операции живёт внутри карточки, а не всплывает поверх окна:
+// сообщение появляется там, где было действие, и не тянет за собой таймер.
+export function InlineStatus({ tone = "info", title, message, onClose }) {
+  const tone_ = statusTone[tone] || statusTone.info;
+
+  return (
+    <Box
+      sx={{
+        ...groupSx,
+        display: "flex",
+        alignItems: "center",
+        gap: 1.5,
+        px: 2,
+        py: 1,
+      }}
+    >
+      <RowIcon bg={tone_.bg}>{tone_.icon}</RowIcon>
+      <Box sx={{ minWidth: 0, flexGrow: 1 }}>
+        <Typography
+          variant="body2"
+          fontWeight={600}
+          sx={{ lineHeight: 1.4, overflowWrap: "anywhere" }}
+        >
+          {title}
+        </Typography>
+        {message && (
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            display="block"
+            sx={{ lineHeight: 1.4, overflowWrap: "anywhere" }}
+          >
+            {message}
+          </Typography>
+        )}
+      </Box>
+      {onClose && (
+        <IconButton
+          size="small"
+          aria-label="Закрыть сообщение"
+          onClick={onClose}
+          sx={{
+            flexShrink: 0,
+            color: "text.disabled",
+            transition: "color 120ms ease-out, transform 120ms ease-out",
+            "&:hover": { color: "text.primary" },
+            "&:active": { transform: "scale(0.92)" },
+            "& svg": { fontSize: 16 },
+          }}
+        >
+          <CloseIcon />
+        </IconButton>
+      )}
+    </Box>
+  );
+}

@@ -23,7 +23,7 @@ const SelectContainer = styled(Box, {
     duration: theme.transitions.duration.standard,
   }),
   fontSize: 20,
-  width: $expanded ? 420 : 36, // Чуть увеличил ширину для чипов
+  width: $expanded ? 320 : 36,
   overflow: "hidden",
   cursor: "pointer",
   backgroundColor: toolbarPillBg,
