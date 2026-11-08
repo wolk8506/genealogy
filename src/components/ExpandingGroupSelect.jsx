@@ -8,79 +8,56 @@ import {
   Typography,
   ListItemIcon,
   Divider,
+  Tooltip,
 } from "@mui/material";
-
-// Иконки
-import ViewModuleIcon from "@mui/icons-material/ViewModule"; // По умолчанию
-import PersonIcon from "@mui/icons-material/Person";
-import EventIcon from "@mui/icons-material/Event";
-import HistoryIcon from "@mui/icons-material/History";
-import LayersClearIcon from "@mui/icons-material/LayersClear";
-import { toolbarPillBg, toolbarPillSx } from "../toolbarStyles";
+import ViewModuleIcon from "@mui/icons-material/ViewModule";
+import { toolbarPillBg, toolbarPillSx } from "../layout/toolbarStyles";
 
 const StyledContainer = styled(Box, {
   shouldForwardProp: (prop) => prop !== "$expanded",
-})(({ theme, $expanded }) => ({
+})(({ $expanded }) => ({
   ...toolbarPillSx,
   display: "flex",
   alignItems: "center",
-  transition: "width 300ms cubic-bezier(0.23, 1, 0.32, 1), padding-right 300ms cubic-bezier(0.23, 1, 0.32, 1)",
+  transition:
+    "width 300ms cubic-bezier(0.23, 1, 0.32, 1), padding-right 300ms cubic-bezier(0.23, 1, 0.32, 1)",
   width: $expanded ? "auto" : 36,
   paddingRight: $expanded ? 12 : 0,
   overflow: "hidden",
   cursor: "pointer",
+  fontSize: 20,
   backgroundColor: toolbarPillBg,
 }));
 
-const groupOptions = [
-  {
-    value: "none",
-    label: "Без групп",
-    icon: <LayersClearIcon fontSize="small" />,
-    category: "Сброс",
-  },
-  {
-    value: "owner",
-    label: "По людям",
-    icon: <PersonIcon fontSize="small" />,
-    category: "Личности",
-  },
-  {
-    value: "date",
-    label: "Дата загрузки",
-    icon: <HistoryIcon fontSize="small" />,
-    category: "Время",
-  },
-  {
-    value: "datePhoto",
-    label: "Дата снимка",
-    icon: <EventIcon fontSize="small" />,
-    category: "Время",
-  },
-];
-
-export default function ExpandingGroupSelect({ value, onChange }) {
+/**
+ * Пилюля группировки фотогалереи. `options` и `label` приходят снаружи,
+ * чтобы каждая галерея описывала свои режимы, а не различала себя флагом.
+ */
+export default function ExpandingGroupSelect({
+  value,
+  onChange,
+  options,
+  label = "Группировка",
+}) {
   const [anchorEl, setAnchorEl] = useState(null);
   const open = Boolean(anchorEl);
 
   const handleOpen = (e) => setAnchorEl(e.currentTarget);
   const handleClose = () => setAnchorEl(null);
 
-  const selectedOption = groupOptions.find((o) => o.value === value);
+  const selectedOption = options.find((o) => o.value === value);
   const isExpanded = value !== "none";
 
-  // Динамическая иконка для главной кнопки
-  // Если ничего не выбрано, показываем ViewModuleIcon, иначе иконку фильтра
   const CurrentIcon =
-    selectedOption && value !== "none"
-      ? selectedOption.icon.type
-      : ViewModuleIcon;
+    selectedOption && isExpanded ? selectedOption.icon.type : ViewModuleIcon;
 
   return (
     <StyledContainer $expanded={isExpanded} onClick={handleOpen}>
-      <IconButton size="small" sx={{ color: "text.primary", p: 1 }}>
-        <CurrentIcon fontSize="inherit" />
-      </IconButton>
+      <Tooltip title={!open ? label : ""}>
+        <IconButton size="small" sx={{ color: "text.primary", p: 1 }}>
+          <CurrentIcon fontSize="inherit" />
+        </IconButton>
+      </Tooltip>
 
       {isExpanded && (
         <Typography
@@ -122,18 +99,13 @@ export default function ExpandingGroupSelect({ value, onChange }) {
             fontWeight: "bold",
           }}
         >
-          Группировка
+          {label}
         </Typography>
 
-        {/* Вместо React.Fragment используем обычный map, который возвращает массив.
-            Для вставки разделителей используем плоский массив, 
-            формируемый через reduce или вставку условий напрямую.
-        */}
-        {groupOptions.flatMap((opt, index) => {
+        {options.flatMap((opt, index) => {
           const elements = [];
 
-          // Добавляем Divider перед категориями (кроме самой первой)
-          if (index > 0 && opt.category !== groupOptions[index - 1].category) {
+          if (index > 0 && opt.category !== options[index - 1].category) {
             elements.push(
               <Divider
                 key={`divider-${opt.value}`}

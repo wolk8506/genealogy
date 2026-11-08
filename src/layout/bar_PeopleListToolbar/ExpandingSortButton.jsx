@@ -50,7 +50,7 @@ export default function ExpandingSortButton({ sortOrder, onToggle }) {
             fontSize="small"
           />
           {isDesc ? (
-            <KeyboardArrowDownIcon sx={{ fontSize: "1rem" }} />
+            <KeyboardArrowDownIcon color="primary" sx={{ fontSize: "1rem" }} />
           ) : (
             <KeyboardArrowUpIcon sx={{ fontSize: "1rem" }} />
           )}

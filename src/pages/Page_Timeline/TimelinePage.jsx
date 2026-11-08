@@ -35,6 +35,7 @@ import {
 } from "../../utils/timelineGroups";
 import { KIND_COLOR } from "../Page_Map/mapHelpers";
 import { useNotificationStore } from "../../store/useNotificationStore";
+import { DRAWER_HEADER_HEIGHT } from "../../layout/AppDrawer";
 import appIcon from "../../img/app_icon.png";
 
 const THUMB_SIZE = 120;
@@ -809,7 +810,9 @@ export default function TimelinePage({
       sx={{
         display: "flex",
         flexDirection: "column",
-        height: "calc(100vh - 60px)",
+        // До нижнего края окна ленту отделяет только шапка: 60 px давали
+        // видимую пустую полосу под последней строкой.
+        height: `calc(100vh - ${DRAWER_HEADER_HEIGHT}px)`,
         bgcolor: "transparent",
         position: "relative",
       }}
@@ -888,7 +891,7 @@ export default function TimelinePage({
           </Box>
         )}
         {!isFeedEmpty && level === "years" && (
-          <Box ref={listRef} sx={{ height: "100%", px: 2, pb: 2 }}>
+          <Box ref={listRef} sx={{ height: "100%", px: 2 }}>
             {yearsList.length === 0 ? (
               <Typography color="text.secondary" sx={{ pt: 2 }}>
                 Нет датированных фото — всё в хвосте «Без даты» на уровне дней.
@@ -976,7 +979,7 @@ export default function TimelinePage({
         )}
 
         {!isFeedEmpty && level === "months" && (
-          <Box ref={listRef} sx={{ height: "100%", px: 2, pb: 2 }}>
+          <Box ref={listRef} sx={{ height: "100%", px: 2 }}>
             <Virtuoso
               style={{ height: "100%" }}
               data={monthsList}

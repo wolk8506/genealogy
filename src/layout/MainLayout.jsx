@@ -111,6 +111,7 @@ import SidebarRightIcon from "../components/svg/SidebarRightIcon";
 import useMemories from "../hooks/useMemories";
 import { countPendingReviewFaces, countNoFacePhotos } from "../utils/photoFaces";
 import { useFaceReviewStore } from "../store/useFaceReviewStore";
+import { useLayoutStore } from "../store/useLayoutStore";
 import { usePeopleListStore } from "../store/usePeopleListStore";
 import { usePhotoInspectorStore } from "../store/usePhotoInspectorStore";
 import { useSettingsStore } from "../store/useSettingsStore";
@@ -203,7 +204,8 @@ export default function MainLayout() {
   useAppHotkeys(); // Cmd/Ctrl+K — поиск, Cmd/Ctrl+S — сохранить био
   const theme = useTheme();
   const isDark = theme.palette.mode === "dark";
-  const [open, setOpen] = useState(false);
+  const open = useLayoutStore((state) => state.drawerOpen);
+  const setOpen = useLayoutStore((state) => state.setDrawerOpen);
   const location = useLocation();
 
   const navigate = useNavigate();
@@ -588,7 +590,8 @@ export default function MainLayout() {
   // photo
   const [activeElement, setActiveElement] = useState("info"); // "info" - анкета, "photo" - фотографии
   const [galleryPersonSearch, setGalleryPersonSearch] = useState("");
-  const [galleryGroupBy, setGalleryGroupBy] = useState("none");
+  // Как в общей галерее: лента открывается по годам снимка, а не сплошным списком.
+  const [galleryGroupBy, setGalleryGroupBy] = useState("datePhoto");
   const [gallerySortDir, setGallerySortDir] = useState("desc");
   // bio
   const [isBioEditing, setIsBioEditing] = useState(false);
@@ -1302,7 +1305,16 @@ export default function MainLayout() {
             transition: `margin-right ${INSPECTOR_TRANSITION_MS}ms ${INSPECTOR_TRANSITION_EASING}`,
             // pt: 1,
             pr: isFullBleedPage ? 0 : 1,
-            pb: isFullBleedPage ? 0 : 1,
+            // В галереях и ленте содержимое доходит до нижнего края окна,
+            // поэтому нижний отступ main там убираем: иначе он отнимает место
+            // у последней строки и по всему окну появляется полоса прокрутки.
+            pb:
+              isFullBleedPage ||
+              isGalleryPage ||
+              isPersonPhotoPage ||
+              isTimelinePage
+                ? 0
+                : 1,
             pl: isFullBleedPage ? 0 : 1,
             // width: "calc(100% - 64px)",
             // height: "100vh",

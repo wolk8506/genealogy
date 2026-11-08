@@ -1,7 +1,14 @@
 import SvgIcon from "@mui/material/SvgIcon";
 function PhotoBadgePlusIcon(props) {
+  const { style, ...rest } = props;
   return (
-    <SvgIcon {...props} viewBox="0 0 33.6914 24.3457">
+    // Широкий viewBox обрезается квадратом MUI, из-за чего иконка выглядит
+    // меньше соседей — растягиваем коробку под реальные пропорции картинки.
+    <SvgIcon
+      {...rest}
+      viewBox="0 0 33.6914 24.3457"
+      style={{ width: "1.35em", height: "1em", ...style }}
+    >
       <g fill="currentColor">
         <rect height="24.3457" opacity="0" width="33.6914" x="0" y="0" />
         <path

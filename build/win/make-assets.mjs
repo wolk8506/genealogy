@@ -3,13 +3,16 @@
 // NSIS принимает только BMP, поэтому рисуем SVG, растрируем sharp'ом
 // и вручную кодируем 24-битный BMP (BI_RGB, строки снизу вверх).
 //
-//   installerSidebar.bmp — 328×628, MUI_WELCOMEFINISHPAGE_BITMAP
-//   installerHeader.bmp  — 300×114, MUI_HEADERIMAGE_BITMAP
+//   installerSidebar.bmp — 205×393, MUI_WELCOMEFINISHPAGE_BITMAP
+//   installerHeader.bmp  — 188×71, MUI_HEADERIMAGE_BITMAP
 //
-// Размер вдвое больше эталонных 164×314 и 150×57: мастер установки
-// DPI-aware, поэтому на масштабе 125–200 % растягивает картинку под свой
-// контрол. Исходник в 2× при этом уменьшается (резко), а не растягивается
-// (пиксели).
+// Контрол мастера установки занимает ровно эталонные 164×314 и 150×57 при
+// 100 % и растёт вместе с масштабом системы (мастер DPI-aware), поэтому
+// картинку рисуем в том размере, в котором её покажут: 1.25× — это 125 %,
+// самый частый масштаб на ноутбуках. Любое другое соотношение Windows
+// пересчитывает nearest-neighbor'ом: уменьшение выбрасывает строки и
+// столбцы (тонкие штрихи букв исчезают), поэтому двойной исходник на 125 %
+// выглядел мылом — он уменьшался в 0.625.
 //
 // Запуск: npm run win:assets
 // Версия берётся из package.json — при релизе картинки нужно перегенерировать.
@@ -243,11 +246,14 @@ async function renderIco(svg, pngPath, icoPath) {
 }
 
 // Эталонные размеры NSIS умножаем на этот коэффициент.
-const SCALE = 2;
+const SCALE = 1.25;
 
 async function render(svg, width, height, pngPath, bmpPath) {
   const raster = sharp(Buffer.from(svg), { density: 72 * SCALE });
-  const target = { width: width * SCALE, height: height * SCALE };
+  const target = {
+    width: Math.round(width * SCALE),
+    height: Math.round(height * SCALE),
+  };
 
   await raster
     .clone()

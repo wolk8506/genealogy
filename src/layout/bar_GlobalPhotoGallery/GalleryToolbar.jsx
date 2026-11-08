@@ -1,10 +1,44 @@
 import React from "react";
-import { Stack } from "@mui/material";
+import { Stack, Box } from "@mui/material";
+
+import PersonIcon from "@mui/icons-material/Person";
+import EventIcon from "@mui/icons-material/Event";
+import HistoryIcon from "@mui/icons-material/History";
+import LayersClearIcon from "@mui/icons-material/LayersClear";
+
 import ExpandingPeopleSelect from "./ExpandingPeopleSelect";
-import ExpandingGroupSelect from "./ExpandingGroupSelect";
-import ExpandingSelect from "./ExpandingSelect";
+import ExpandingGroupSelect from "../../components/ExpandingGroupSelect";
+import SortDirToggle from "../../components/SortDirToggle";
 import ExpandingSearch from "../../components/ExpandingSearch";
 import ExpandingAddPhotoButton from "./ExpandingAddPhotoButton";
+import { toolbarPillSx } from "../toolbarStyles";
+
+const groupOptions = [
+  {
+    value: "none",
+    label: "Без групп",
+    icon: <LayersClearIcon fontSize="small" />,
+    category: "Сброс",
+  },
+  {
+    value: "owner",
+    label: "По людям",
+    icon: <PersonIcon fontSize="small" />,
+    category: "Личности",
+  },
+  {
+    value: "date",
+    label: "Дата загрузки",
+    icon: <HistoryIcon fontSize="small" />,
+    category: "Время",
+  },
+  {
+    value: "datePhoto",
+    label: "Дата снимка",
+    icon: <EventIcon fontSize="small" />,
+    category: "Время",
+  },
+];
 
 export default function GalleryToolbar({
   allPeople,
@@ -19,9 +53,16 @@ export default function GalleryToolbar({
   setSearch,
 }) {
   return (
-    <Stack direction="row" spacing={2} ml="auto">
-      {/* КНОПКА ДОБАВЛЕНИЯ ФОТО */}
+    <Stack
+      direction="row"
+      spacing={1.5}
+      width="100%"
+      sx={{ alignItems: "center" }}
+    >
+      {/* КНОПКА ДОБАВЛЕНИЯ ФОТО — слева, как в личном альбоме */}
       <ExpandingAddPhotoButton />
+
+      <Box sx={{ flexGrow: 1 }} />
 
       {/* КТО НА ФОТО */}
       <ExpandingPeopleSelect
@@ -31,16 +72,26 @@ export default function GalleryToolbar({
         photos={photos}
       />
 
-      {/* ГРУППИРОВКА */}
-      <ExpandingGroupSelect value={groupBy} onChange={setGroupBy} />
+      <Box
+        sx={{
+          ...toolbarPillSx,
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 1,
+          color: "text.primary",
+          fontSize: 20,
+        }}
+      >
+        {/* ГРУППИРОВКА */}
+        <ExpandingGroupSelect
+          value={groupBy}
+          onChange={setGroupBy}
+          options={groupOptions}
+        />
 
-      {/* СОРТИРОВКА: направление текущей группировки */}
-      <ExpandingSelect
-        label="Сортировка"
-        groupBy={groupBy}
-        sortDir={sortDir}
-        onSortChange={setSortDir}
-      />
+        {/* СОРТИРОВКА: направление текущей группировки */}
+        <SortDirToggle sortDir={sortDir} onChange={setSortDir} />
+      </Box>
 
       {/* ПОИСК */}
       <ExpandingSearch
