@@ -1,7 +1,7 @@
 import React from "react";
 import { Typography, IconButton, Box, List, ListItem } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
-import InfoOutlineIcon from "@mui/icons-material/InfoOutline";
+import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import BloodtypeIcon from "@mui/icons-material/Bloodtype";
 // import ManIcon from "@mui/icons-material/Man";
 import VisibilityIcon from "@mui/icons-material/Visibility";
@@ -81,7 +81,7 @@ export default function PersonFacts({ person, facts = [], onAdd, onEdit }) {
       }}
     >
       {/* ФОНОВАЯ ИКОНКА (Стиль как в Событиях) */}
-      <InfoOutlineIcon
+      <InfoOutlinedIcon
         sx={{
           position: "absolute",
           bottom: -10,
@@ -109,8 +109,10 @@ export default function PersonFacts({ person, facts = [], onAdd, onEdit }) {
           zIndex: 1,
         }}
       >
-        <Stack direction="row" alignItems="center" spacing={1}>
-          <InfoOutlineIcon sx={{ color: "secondary.main", fontSize: 20 }} />
+        <Stack direction="row" spacing={1} sx={{
+          alignItems: "center"
+        }}>
+          <InfoOutlinedIcon sx={{ color: "secondary.main", fontSize: 20 }} />
           <Typography variant="subtitle2" sx={{ fontWeight: 800 }}>
             Факты ({facts.length})
           </Typography>

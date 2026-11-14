@@ -92,7 +92,9 @@ export default function AboutPage({ cardStyle }) {
       }}
     >
       <Stack spacing={3}>
-        <Stack direction="row" spacing={2.5} alignItems="center">
+        <Stack direction="row" spacing={2.5} sx={{
+          alignItems: "center"
+        }}>
           <Box sx={{ position: "relative", flexShrink: 0 }}>
             <Box
               sx={{
@@ -125,9 +127,10 @@ export default function AboutPage({ cardStyle }) {
             </Typography>
             <Typography
               variant="body2"
-              color="text.secondary"
-              sx={{ mt: 0.5 }}
-            >
+              sx={{
+                color: "text.secondary",
+                mt: 0.5
+              }}>
               Хранитель вашей семейной истории
             </Typography>
           </Box>
@@ -135,9 +138,10 @@ export default function AboutPage({ cardStyle }) {
 
         <Typography
           variant="body2"
-          color="text.secondary"
-          sx={{ lineHeight: 1.7 }}
-        >
+          sx={{
+            color: "text.secondary",
+            lineHeight: 1.7
+          }}>
           Приложение для хранения семейной истории: люди, события, фотографии
           и связи. Работает автономно — ваши данные не покидают компьютер.
         </Typography>
@@ -358,9 +362,11 @@ export default function AboutPage({ cardStyle }) {
 
         <Typography
           variant="caption"
-          color="text.secondary"
-          sx={{ textAlign: "center", pb: 1 }}
-        >
+          sx={{
+            color: "text.secondary",
+            textAlign: "center",
+            pb: 1
+          }}>
           Сделано с уважением к прошлому ради будущего
         </Typography>
       </Stack>

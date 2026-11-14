@@ -39,7 +39,7 @@ import GearIcon from "../components/svg/GearIcon";
 import PersonAddAlt1Icon from "@mui/icons-material/PersonAddAlt1";
 import SearchIcon from "@mui/icons-material/Search";
 import PetsIcon from "@mui/icons-material/Pets";
-import PersonOutlineIcon from "@mui/icons-material/PersonOutline";
+import PersonOutlineOutlinedIcon from "@mui/icons-material/PersonOutlineOutlined";
 
 import AppDrawer, { DrawerHeader } from "./AppDrawer";
 import PageBackground from "./PageBackground";
@@ -134,6 +134,8 @@ import GenealogyTreeToolbar from "./bar_GenealogyTree/GenealogyTreeToolbar";
 import { normalizeTreeMode } from "../pages/Page_GenealogyTree/treeModes";
 
 import ButtonConteiner from "../components/ButtonConteiner";
+import { toolbarPageHostSx } from "./appBarToolbarLayout";
+import { TOOLBAR_HIT } from "./toolbarTokens";
 import SidebarLeftIcon from "../components/svg/SidebarLeftIcon";
 import TrashFillIcon from "../components/svg/TrashFillIcon";
 import { buildFamilyViews } from "../utils/families/buildFamilyViews";
@@ -242,7 +244,6 @@ export default function MainLayout() {
   const [mapShowExternal, setMapShowExternal] = useState(true);
   const [mapRefreshKey, setMapRefreshKey] = useState(0);
   const [mapClearGeocodeKey, setMapClearGeocodeKey] = useState(0);
-  const [mapFitBoundsKey, setMapFitBoundsKey] = useState(0);
   const [mapPanelOpen, setMapPanelOpen] = useState(true);
   const [mapFocusKey, setMapFocusKey] = useState(null);
   const [mapFocusTrigger, setMapFocusTrigger] = useState(0);
@@ -1028,22 +1029,16 @@ export default function MainLayout() {
             <ButtonConteiner>
               <IconButton
                 color="inherit"
-                // aria-label="open drawer"
+                aria-label="Открыть боковое меню"
                 onClick={handleDrawerOpen}
-                // edge="start"
-                sx={[
-                  {
-                    // marginRight: 1,
-                    WebkitAppRegion: "no-drag",
-                    p: "6px",
-                    px: "6px",
-                    m: 0,
-                  },
-                  // open && { display: "none" },
-                ]}
+                sx={{
+                  WebkitAppRegion: "no-drag",
+                  p: 0,
+                  m: 0,
+                }}
               >
                 <SidebarLeftIcon
-                  sx={{ fontSize: "20px", color: "text.primary" }}
+                  sx={{ fontSize: "20px", color: "inherit" }}
                 />
               </IconButton>
             </ButtonConteiner>
@@ -1059,7 +1054,7 @@ export default function MainLayout() {
             )}
 
             {match && (
-              <Box sx={{ flex: 1, minWidth: 0, display: "flex" }}>
+              <Box sx={toolbarPageHostSx}>
               <PersonToolbar
                 activeElement={activeElement}
                 setActiveElement={handleTabChange}
@@ -1107,117 +1102,127 @@ export default function MainLayout() {
 
             {/* 2. Если мы в галерее, показываем фильтры прямо здесь */}
             {isGalleryPage && (
-              <GalleryToolbar
-                allPeople={allPeople}
-                selectedPeople={selectedPeople}
-                setSelectedPeople={setSelectedPeople}
-                photos={photos}
-                groupBy={groupBy}
-                setGroupBy={setGroupBy}
-                sortDir={sortDir}
-                setSortDir={setSortDir}
-                search={gallerySearch} // Передаем стейт галереи
-                setSearch={setGallerySearch} // Передаем сеттер галереи
-              />
+              <Box sx={toolbarPageHostSx}>
+                <GalleryToolbar
+                  allPeople={allPeople}
+                  selectedPeople={selectedPeople}
+                  setSelectedPeople={setSelectedPeople}
+                  photos={photos}
+                  groupBy={groupBy}
+                  setGroupBy={setGroupBy}
+                  sortDir={sortDir}
+                  setSortDir={setSortDir}
+                  search={gallerySearch}
+                  setSearch={setGallerySearch}
+                />
+              </Box>
             )}
 
             {location.pathname === "/" && (
-              <PeopleListToolbar
-                people={allPeople}
-                search={peopleSearch}
-                setSearch={setPeopleSearch}
-                isFilterActive={isFilterActive}
-                onOpenFilter={() => setFilterOpen(true)}
-                sortOrder={sortOrder}
-                onToggleSort={() =>
-                  setSortOrder((o) => (o === "asc" ? "desc" : "asc"))
-                }
-                filters={filters}
-                updateFilter={updateFilter}
-                allGenerations={Array.from(
-                  new Set(allPeople.map((p) => String(p.generation))),
-                )}
-              />
+              <Box sx={toolbarPageHostSx}>
+                <PeopleListToolbar
+                  people={allPeople}
+                  search={peopleSearch}
+                  setSearch={setPeopleSearch}
+                  isFilterActive={isFilterActive}
+                  onOpenFilter={() => setFilterOpen(true)}
+                  sortOrder={sortOrder}
+                  onToggleSort={() =>
+                    setSortOrder((o) => (o === "asc" ? "desc" : "asc"))
+                  }
+                  filters={filters}
+                  updateFilter={updateFilter}
+                  allGenerations={Array.from(
+                    new Set(allPeople.map((p) => String(p.generation))),
+                  )}
+                />
+              </Box>
             )}
 
             {location.pathname === "/external" && (
-              <ExternalToolbar
-                search={externalSearch}
-                setSearch={setExternalSearch}
-                typeFilter={externalTypeFilter}
-                setTypeFilter={setExternalTypeFilter}
-              />
+              <Box sx={toolbarPageHostSx}>
+                <ExternalToolbar
+                  search={externalSearch}
+                  setSearch={setExternalSearch}
+                  typeFilter={externalTypeFilter}
+                  setTypeFilter={setExternalTypeFilter}
+                />
+              </Box>
             )}
 
             {location.pathname === "/timeline" && (
-              <TimelineToolbar
-                level={timelineLevel}
-                onLevelChange={(v) => navigateTimeline({ level: v })}
-                showPhotos={timelineShowPhotos}
-                showEvents={timelineShowEvents}
-                showExternal={timelineShowExternal}
-                onTogglePhotos={() => setTimelineShowPhotos((v) => !v)}
-                onToggleEvents={() => setTimelineShowEvents((v) => !v)}
-                onToggleExternal={() => setTimelineShowExternal((v) => !v)}
-                filterPerson={timelineFilterPerson}
-                onClearPersonFilter={() =>
-                  setSearchParams(clearTimelinePerson(searchParams))
-                }
-                year={timelineYear}
-                month={timelineMonth}
-                onGoYears={() =>
-                  navigateTimeline({ level: "years", year: null, month: null })
-                }
-                onGoMonths={() =>
-                  navigateTimeline({ level: "months", month: null })
-                }
-              />
+              <Box sx={toolbarPageHostSx}>
+                <TimelineToolbar
+                  level={timelineLevel}
+                  onLevelChange={(v) => navigateTimeline({ level: v })}
+                  showPhotos={timelineShowPhotos}
+                  showEvents={timelineShowEvents}
+                  showExternal={timelineShowExternal}
+                  onTogglePhotos={() => setTimelineShowPhotos((v) => !v)}
+                  onToggleEvents={() => setTimelineShowEvents((v) => !v)}
+                  onToggleExternal={() => setTimelineShowExternal((v) => !v)}
+                  filterPerson={timelineFilterPerson}
+                  onClearPersonFilter={() =>
+                    setSearchParams(clearTimelinePerson(searchParams))
+                  }
+                  year={timelineYear}
+                  month={timelineMonth}
+                  onGoYears={() =>
+                    navigateTimeline({ level: "years", year: null, month: null })
+                  }
+                  onGoMonths={() =>
+                    navigateTimeline({ level: "months", month: null })
+                  }
+                />
+              </Box>
             )}
 
             {isMapPage && (
-              <MapToolbar
-                allPeople={allPeople}
-                mapPeopleOptions={mapPeopleOptions}
-                selectedPeople={mapSelectedPeople}
-                onPeopleChange={(_, value) => setMapSelectedPeople(value || [])}
-                showPhotos={mapShowPhotos}
-                showEvents={mapShowEvents}
-                showExternal={mapShowExternal}
-                onTogglePhotos={() => setMapShowPhotos((v) => !v)}
-                onToggleEvents={() => setMapShowEvents((v) => !v)}
-                onToggleExternal={() => setMapShowExternal((v) => !v)}
-                onRefresh={(e) => {
-                  if (e?.shiftKey) setMapClearGeocodeKey((k) => k + 1);
-                  setMapRefreshKey((k) => k + 1);
-                }}
-                onFitBounds={() => setMapFitBoundsKey((k) => k + 1)}
-                loading={mapStats.loading}
-                visiblePhotoCount={mapStats.visiblePhotoCount}
-                visibleEventCount={mapStats.visibleEventCount}
-                visibleExternalCount={mapStats.visibleExternalCount}
-              />
+              <Box sx={toolbarPageHostSx}>
+                <MapToolbar
+                  allPeople={allPeople}
+                  mapPeopleOptions={mapPeopleOptions}
+                  selectedPeople={mapSelectedPeople}
+                  onPeopleChange={(_, value) => setMapSelectedPeople(value || [])}
+                  showPhotos={mapShowPhotos}
+                  showEvents={mapShowEvents}
+                  showExternal={mapShowExternal}
+                  onTogglePhotos={() => setMapShowPhotos((v) => !v)}
+                  onToggleEvents={() => setMapShowEvents((v) => !v)}
+                  onToggleExternal={() => setMapShowExternal((v) => !v)}
+                  onRefresh={(e) => {
+                    if (e?.shiftKey) setMapClearGeocodeKey((k) => k + 1);
+                    setMapRefreshKey((k) => k + 1);
+                  }}
+                  loading={mapStats.loading}
+                />
+              </Box>
             )}
 
             {isFamiliesPage && (
-              <FamiliesToolbar
-                detail={isFamiliesDetail}
-                search={familiesSearch}
-                setSearch={setFamiliesSearch}
-                sort={familiesSort}
-                setSort={setFamiliesSort}
-                unionOptions={familiesUnion.options}
-                activeUnionKey={familiesFamily?.key}
-                onOpenUnion={(key) =>
-                  handleFamiliesOpenFamily(key, familiesUnion.anchorId)
-                }
-              />
+              <Box sx={toolbarPageHostSx}>
+                <FamiliesToolbar
+                  detail={isFamiliesDetail}
+                  search={familiesSearch}
+                  setSearch={setFamiliesSearch}
+                  sort={familiesSort}
+                  setSort={setFamiliesSort}
+                  unionOptions={familiesUnion.options}
+                  activeUnionKey={familiesFamily?.key}
+                  onOpenUnion={(key) =>
+                    handleFamiliesOpenFamily(key, familiesUnion.anchorId)
+                  }
+                />
+              </Box>
             )}
 
             {isGenealogyTreePage && (
-              <GenealogyTreeToolbar
-                mode={genealogyTreeMode}
-                onModeChange={(value) => updateTreeParams({ mode: value })}
-              />
+              <Box sx={toolbarPageHostSx}>
+                <GenealogyTreeToolbar
+                  mode={genealogyTreeMode}
+                  onModeChange={(value) => updateTreeParams({ mode: value })}
+                />
+              </Box>
             )}
 
             {/* Кнопка правой панели — главная, справочник, карта, галереи */}
@@ -1231,6 +1236,7 @@ export default function MainLayout() {
               <Box sx={{ ml: "12px", display: "inline-flex" }}>
                 <ButtonConteiner>
                   <IconButton
+                    aria-label="Правая панель"
                     title="Правая панель"
                     onClick={() => {
                       if (isExternalPage) setExternalPanelOpen((v) => !v);
@@ -1244,9 +1250,11 @@ export default function MainLayout() {
                       else setMemoriesOpen((v) => !v);
                     }}
                     size="small"
-                    sx={{ color: "text.primary", p: 1 }}
+                    sx={{ color: "inherit", p: 0 }}
                   >
-                    <SidebarRightIcon fontSize="inherit" />
+                    <SidebarRightIcon
+                      sx={{ fontSize: TOOLBAR_HIT.iconSize, color: "inherit" }}
+                    />
                   </IconButton>
                 </ButtonConteiner>
               </Box>
@@ -1445,7 +1453,6 @@ export default function MainLayout() {
                       refreshKey={mapRefreshKey}
                       clearGeocodeKey={mapClearGeocodeKey}
                       dataRevision={appDataRevision}
-                      fitBoundsKey={mapFitBoundsKey}
                       selectedPeopleIds={mapSelectedPeopleIds}
                       focusPointKey={mapFocusKey}
                       focusTrigger={mapFocusTrigger}
@@ -1537,6 +1544,9 @@ export default function MainLayout() {
           open={mapPanelOpen}
           onClose={() => setMapPanelOpen(false)}
           points={mapStats.listPoints || []}
+          photoCount={mapStats.visiblePhotoCount}
+          eventCount={mapStats.visibleEventCount}
+          externalCount={mapStats.visibleExternalCount}
           focusedKey={mapFocusKey}
           onSelectPoint={(p) => {
             setMapFocusKey(p.key);

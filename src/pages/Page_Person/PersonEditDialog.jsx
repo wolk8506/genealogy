@@ -303,17 +303,19 @@ export default function PersonEditDialog({
         onClose={onClose}
         fullWidth
         maxWidth="sm"
-        PaperProps={{
-          sx: {
-            borderRadius: "24px",
-            backgroundImage: "none",
-            bgcolor: isDark
-              ? alpha(theme.palette.background.paper, 0.85)
-              : "#fff",
-            backdropFilter: "blur(16px)",
-            border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
-            boxShadow: theme.shadows[24],
-          },
+        slotProps={{
+          paper: {
+            sx: {
+              borderRadius: "24px",
+              backgroundImage: "none",
+              bgcolor: isDark
+                ? alpha(theme.palette.background.paper, 0.85)
+                : "#fff",
+              backdropFilter: "blur(16px)",
+              border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+              boxShadow: theme.shadows[24],
+            },
+          }
         }}
       >
         <DialogTitle
@@ -387,22 +389,24 @@ export default function PersonEditDialog({
                     select
                     value={form.gender || ""}
                     onChange={handleChange("gender")}
-                    InputProps={{
-                      startAdornment: form.gender ? (
-                        <Box
-                          sx={{
-                            mr: 1,
-                            display: "flex",
-                            color: "action.active",
-                          }}
-                        >
-                          {form.gender === "male" ? (
-                            <MaleIcon fontSize="small" />
-                          ) : (
-                            <FemaleIcon fontSize="small" />
-                          )}
-                        </Box>
-                      ) : null,
+                    slotProps={{
+                      input: {
+                        startAdornment: form.gender ? (
+                          <Box
+                            sx={{
+                              mr: 1,
+                              display: "flex",
+                              color: "action.active",
+                            }}
+                          >
+                            {form.gender === "male" ? (
+                              <MaleIcon fontSize="small" />
+                            ) : (
+                              <FemaleIcon fontSize="small" />
+                            )}
+                          </Box>
+                        ) : null,
+                      }
                     }}
                   >
                     <MenuItem value="male">Мужской</MenuItem>
@@ -451,7 +455,9 @@ export default function PersonEditDialog({
                   fullWidth
                   value={form.birthday || ""}
                   onClick={() => setBirthdayPickerOpen(true)}
-                  InputProps={{ readOnly: true, sx: { borderRadius: "12px" } }}
+                  slotProps={{
+                    input: { readOnly: true, sx: { borderRadius: "12px" } }
+                  }}
                 />
                 <TextField
                   label="Смерть"
@@ -459,7 +465,9 @@ export default function PersonEditDialog({
                   fullWidth
                   value={form.died || ""}
                   onClick={() => setDiedPickerOpen(true)}
-                  InputProps={{ readOnly: true, sx: { borderRadius: "12px" } }}
+                  slotProps={{
+                    input: { readOnly: true, sx: { borderRadius: "12px" } }
+                  }}
                 />
                 {/* <TextField
                   label="Поколение"

@@ -1,6 +1,5 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
-import { NodeGlobalsPolyfillPlugin } from "@esbuild-plugins/node-globals-polyfill";
 import { cpSync, existsSync, mkdirSync } from "fs";
 import { resolve } from "path";
 
@@ -23,62 +22,61 @@ function copyFaceModelsPlugin() {
   };
 }
 
+// Порядок групп важен: модуль попадает в первую совпавшую группу с наибольшим
+// приоритетом, поэтому частные пакеты идут раньше catch-all vendor.
+const chunkGroups = [
+  { name: "lib-face", test: /node_modules\/@vladmandic\//, priority: 100 },
+  { name: "lib-milkdown", test: /node_modules\/@milkdown\//, priority: 100 },
+  {
+    name: "lib-exif",
+    test: /node_modules\/(exifreader|heic2any|libheif-js)\//,
+    priority: 100,
+  },
+  {
+    name: "lib-mui",
+    test: /node_modules\/(@mui\/|@emotion\/)/,
+    priority: 100,
+  },
+  {
+    name: "lib-motion",
+    test: /node_modules\/(framer-motion|motion|motion-dom)\//,
+    priority: 100,
+  },
+  {
+    name: "lib-react",
+    test: /node_modules\/(react|react-dom|react-router|react-router-dom|scheduler)\//,
+    priority: 90,
+  },
+  {
+    name: "lib-state",
+    test: /node_modules\/(@reduxjs|react-redux|zustand|notistack)\//,
+    priority: 90,
+  },
+  { name: "lib-viz", test: /node_modules\/react-virtuoso\//, priority: 90 },
+  { name: "lib-date", test: /node_modules\/dayjs\//, priority: 90 },
+  { name: "vendor", test: /node_modules\//, priority: 10 },
+];
+
 export default defineConfig({
   base: "./",
+  define: {
+    global: "globalThis",
+  },
   plugins: [react(), copyFaceModelsPlugin()],
   build: {
     outDir: "dist",
     emptyOutDir: true,
     chunkSizeWarningLimit: 1000,
-    rollupOptions: {
+    rolldownOptions: {
       input: {
         main: resolve("index.html"),
         help: resolve("help.html"),
       },
       output: {
-        // Пути строго в нижнем регистре, без переменных — сборка идёт
-        // на macOS/Windows/Linux, Linux чувствителен к регистру.
-        manualChunks(id) {
-          if (!id.includes("node_modules")) return undefined;
-          if (id.includes("@vladmandic")) return "lib-face";
-          if (id.includes("@milkdown")) return "lib-milkdown";
-          if (id.includes("@mui/") || id.includes("@emotion/"))
-            return "lib-mui";
-          if (
-            id.includes("node_modules/react/") ||
-            id.includes("node_modules/react-dom/") ||
-            id.includes("node_modules/react-router-dom/") ||
-            id.includes("node_modules/scheduler/")
-          )
-            return "lib-react";
-          if (
-            id.includes("@reduxjs") ||
-            id.includes("node_modules/react-redux/") ||
-            id.includes("node_modules/zustand/") ||
-            id.includes("node_modules/notistack/")
-          )
-            return "lib-state";
-          if (id.includes("react-virtuoso")) return "lib-viz";
-          if (id.includes("node_modules/framer-motion/")) return "lib-motion";
-          if (id.includes("node_modules/dayjs/")) return "lib-date";
-          if (
-            id.includes("node_modules/exifreader/") ||
-            id.includes("node_modules/heic2any/") ||
-            id.includes("node_modules/libheif-js/")
-          )
-            return "lib-exif";
-          if (id.includes("node_modules/html-to-image/")) return "lib-img";
-          return "vendor";
+        codeSplitting: {
+          groups: chunkGroups,
         },
       },
-    },
-  },
-  optimizeDeps: {
-    esbuildOptions: {
-      define: {
-        global: "globalThis",
-      },
-      plugins: [NodeGlobalsPolyfillPlugin({ buffer: true })],
     },
   },
 });

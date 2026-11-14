@@ -1,9 +1,12 @@
 import React from "react";
 import { Stack, IconButton, Tooltip, Box, Collapse } from "@mui/material";
 import CreateIcon from "@mui/icons-material/Create";
-import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 
 import ButtonConteiner from "../../../components/ButtonConteiner";
+import { TOOLBAR_CAPSULE, TOOLBAR_HIT } from "../../toolbarTokens";
+
+const CENTER_BTN_HALF = TOOLBAR_CAPSULE.height / 2;
+const SIDE_CLUSTER_OFFSET = CENTER_BTN_HALF + 12;
 import StarIcon from "@mui/icons-material/Star";
 import InfoIcon from "@mui/icons-material/Info";
 import CancelIcon from "@mui/icons-material/Cancel";
@@ -19,9 +22,7 @@ const InfoToolbar = ({ personRef, infoProps }) => {
           alignItems: "center",
           justifyContent: "center",
           width: "100%",
-          position: "relative", // Важно для абсолютных детей
-          // minHeight: "48px", // Фиксируем высоту
-          fontSize: 20,
+          position: "relative",
         }}
       >
         {/* Группа СЛЕВА: Отмена и Сохранение */}
@@ -31,7 +32,7 @@ const InfoToolbar = ({ personRef, infoProps }) => {
           orientation="horizontal"
           sx={{
             position: "absolute",
-            right: "calc(50% + 24px)", // Отступаем от центра влево (размер кнопки + отступ)
+            right: `calc(50% + ${SIDE_CLUSTER_OFFSET}px)`,
             // zIndex: -1,
           }}
         >
@@ -41,49 +42,42 @@ const InfoToolbar = ({ personRef, infoProps }) => {
                 <IconButton
                   onClick={infoProps.onCancel}
                   size="small"
-                  sx={{ color: "text.primary", p: "8px" }}
+                  sx={{ color: "inherit", p: 0 }}
                 >
-                  <CancelIcon fontSize="inherit" />
+                  <CancelIcon sx={{ fontSize: TOOLBAR_HIT.iconSize }} />
                 </IconButton>
               </Tooltip>
               <Tooltip title="Сохранить изменения">
                 <IconButton
                   onClick={infoProps.onSave}
                   size="small"
-                  sx={{ color: "text.primary", p: "8px" }}
+                  sx={{ color: "inherit", p: 0 }}
                 >
-                  <SaveIcon fontSize="inherit" />
+                  <SaveIcon sx={{ fontSize: TOOLBAR_HIT.iconSize }} />
                 </IconButton>
               </Tooltip>
             </ButtonConteiner>
           </Stack>
         </Collapse>
 
-        {/* ЦЕНТР: Всегда на месте */}
-        <ButtonConteiner
-          sx={{
-            position: "relative",
-            zIndex: 1, // Центр всегда поверх выезжающих кнопок
-            bgcolor: "primary.main", // Если у тебя ToolbarGroup, можно добавить фон, чтобы скрыть выезд
-            borderRadius: "50%", // Чтобы фон был круглым под кнопку
-          }}
-        >
-          <Tooltip title="Редактировать профиль">
+        <ButtonConteiner sx={{ position: "relative", zIndex: 1, flexShrink: 0 }}>
+          <Tooltip
+            title={
+              infoProps.isEditing
+                ? "Закрыть редактирование"
+                : "Редактировать профиль"
+            }
+          >
             <IconButton
               onClick={() => infoProps.requestToggleEdit()}
               size="small"
-              sx={{
-                color: "text.primary",
-                p: 1,
-                // Добавим поворот при редактировании для красоты
-                // transform: infoProps.isEditing ? "rotate(90deg)" : "none",
-                // transition: "transform 0.3s",
-              }}
+              aria-pressed={infoProps.isEditing}
+              sx={{ color: "inherit", p: 0 }}
             >
               {infoProps.isEditing ? (
-                <EditOffIcon fontSize="inherit" />
+                <EditOffIcon sx={{ fontSize: TOOLBAR_HIT.iconSize }} />
               ) : (
-                <CreateIcon fontSize="inherit" />
+                <CreateIcon sx={{ fontSize: TOOLBAR_HIT.iconSize }} />
               )}
             </IconButton>
           </Tooltip>
@@ -95,7 +89,7 @@ const InfoToolbar = ({ personRef, infoProps }) => {
           orientation="horizontal"
           sx={{
             position: "absolute",
-            left: "calc(50% + 24px)", // Отступаем от центра вправо
+            left: `calc(50% + ${SIDE_CLUSTER_OFFSET}px)`,
             // zIndex: -1,
           }}
         >
@@ -105,18 +99,18 @@ const InfoToolbar = ({ personRef, infoProps }) => {
                 <IconButton
                   onClick={() => personRef.current?.handleAddEvent()}
                   size="small"
-                  sx={{ color: "text.primary", p: 1 }}
+                  sx={{ color: "inherit", p: 0 }}
                 >
-                  <StarIcon fontSize="inherit" />
+                  <StarIcon sx={{ fontSize: TOOLBAR_HIT.iconSize }} />
                 </IconButton>
               </Tooltip>
               <Tooltip title="Добавить факт">
                 <IconButton
                   onClick={() => personRef.current?.handleAddFact()}
                   size="small"
-                  sx={{ color: "text.primary", p: 1 }}
+                  sx={{ color: "inherit", p: 0 }}
                 >
-                  <InfoIcon fontSize="inherit" />
+                  <InfoIcon sx={{ fontSize: TOOLBAR_HIT.iconSize }} />
                 </IconButton>
               </Tooltip>
             </ButtonConteiner>

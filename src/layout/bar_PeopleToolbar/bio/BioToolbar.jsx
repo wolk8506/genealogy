@@ -24,38 +24,18 @@ import {
   TableCellsIcon,
   SquareAndPencilIcon,
 } from "./BioFormatIcons";
-import { toolbarPillBg, toolbarPillHoverBg, toolbarPillSx } from "../../toolbarStyles";
+import ButtonConteiner from "../../../components/ButtonConteiner";
+import ToolbarButtonGroup from "../../../components/ToolbarButtonGroup";
+import { TOOLBAR_CAPSULE } from "../../toolbarTokens";
+import {
+  toolbarClusterSx,
+  toolbarDragSpacerSx,
+  toolbarRowSx,
+} from "../../appBarToolbarLayout";
 
 const SEARCH_FIELD_WIDTH = 150;
 const SEARCH_CONTROLS_GAP = 8;
 const SEARCH_ANIMATION = "200ms cubic-bezier(0.23, 1, 0.32, 1)";
-
-const ToolbarGroup = ({ children, style }) => (
-  <Box
-    style={style}
-    sx={{
-      ...toolbarPillSx,
-      display: "inline-flex",
-      alignItems: "center",
-      gap: 1,
-      fontSize: 20,
-      color: "text.primary",
-      "&:hover": { backgroundColor: toolbarPillBg },
-      "& .MuiIconButton-root": {
-        width: 36,
-        height: 36,
-        p: "3px",
-        backgroundClip: "content-box",
-      },
-      // [data-accent] — кнопка красит фон сама, серая подсветка её не перекрывает
-      "& .MuiIconButton-root:hover:not(.Mui-disabled):not([data-accent])": {
-        backgroundColor: toolbarPillHoverBg,
-      },
-    }}
-  >
-    {children}
-  </Box>
-);
 
 export default function BioToolbar({
   isEditing,
@@ -112,18 +92,16 @@ export default function BioToolbar({
   };
 
   return (
-    <Stack
-      direction="row"
-      spacing={1.5}
+  <Stack direction="row" sx={toolbarRowSx}>
+    <Box
       sx={{
-        alignItems: "center",
-        flex: 1,
-        minWidth: 0,
+        ...toolbarClusterSx,
         flexWrap: "wrap",
         rowGap: 1,
+        minWidth: 0,
       }}
     >
-      <ToolbarGroup>
+      <ButtonConteiner>
         <Tooltip
           title={
             isEditing
@@ -139,7 +117,7 @@ export default function BioToolbar({
             aria-pressed={isEditing}
             data-accent={isEditing ? "" : undefined}
             sx={{
-              color: isEditing ? "common.white" : "text.primary",
+              color: isEditing ? "common.white" : "inherit",
               bgcolor: isEditing ? "primary.main" : "transparent",
               p: "8px",
               transition:
@@ -162,19 +140,19 @@ export default function BioToolbar({
           <IconButton
             size="small"
             onClick={onToggleNav}
-            sx={{ color: "text.primary", p: "8px" }}
+            sx={{ color: "inherit", p: 0 }}
           >
             <TocIcon fontSize="inherit" />
           </IconButton>
         </Tooltip>
-      </ToolbarGroup>
+      </ButtonConteiner>
 
       {!isEditing && (
-        <ToolbarGroup>
+        <ButtonConteiner>
           <Tooltip title="Печать">
             <IconButton
               size="small"
-              sx={{ color: "text.primary", p: 1 }}
+              sx={{ color: "inherit", p: 0 }}
               onClick={onPrint}
             >
               <PrintIcon fontSize="inherit" />
@@ -183,23 +161,23 @@ export default function BioToolbar({
           <Tooltip title="Экспорт в PDF">
             <IconButton
               size="small"
-              sx={{ color: "text.primary", p: 1 }}
+              sx={{ color: "inherit", p: 0 }}
               onClick={onExportPdf}
             >
               <PictureAsPdfIcon fontSize="inherit" />
             </IconButton>
           </Tooltip>
-        </ToolbarGroup>
+        </ButtonConteiner>
       )}
 
       {isEditing && (
         <>
-          <ToolbarGroup>
+          <ButtonConteiner>
             <Tooltip title={isDirty ? "Сохранить (Ctrl+S)" : "Нет изменений"}>
               <span>
                 <IconButton
                   size="small"
-                  sx={{ color: isDirty ? "#ffd54f" : "text.primary", p: 1 }}
+                  sx={{ color: isDirty ? "#ffd54f" : "inherit", p: 0 }}
                   onClick={onSave}
                   disabled={!isDirty}
                 >
@@ -207,32 +185,32 @@ export default function BioToolbar({
                 </IconButton>
               </span>
             </Tooltip>
-          </ToolbarGroup>
+          </ButtonConteiner>
 
-          <ToolbarGroup>
+          <ButtonConteiner>
             <IconButton
               size="small"
-              sx={{ color: "text.primary", p: 1 }}
+              sx={{ color: "inherit", p: 0 }}
               onClick={() => execRef.current?.exec("Undo")}
             >
               <UndoIcon fontSize="inherit" />
             </IconButton>
             <IconButton
               size="small"
-              sx={{ color: "text.primary", p: 1 }}
+              sx={{ color: "inherit", p: 0 }}
               onClick={() => execRef.current?.exec("Redo")}
             >
               <RedoIcon fontSize="inherit" />
             </IconButton>
-          </ToolbarGroup>
+          </ButtonConteiner>
 
-          <ToolbarGroup>
+          <ButtonConteiner>
             <BioFormatMenu execRef={execRef} />
 
             <Tooltip title="Вставить фото в текст">
               <IconButton
                 size="small"
-                sx={{ color: "text.primary", p: 1 }}
+                sx={{ color: "inherit", p: 0 }}
                 onClick={() => execRef.current?.insertImage()}
               >
                 <PhotoBadgePlusIcon />
@@ -241,7 +219,7 @@ export default function BioToolbar({
             <Tooltip title="Вставить таблицу">
               <IconButton
                 size="small"
-                sx={{ color: "text.primary", p: 1 }}
+                sx={{ color: "inherit", p: 0 }}
                 onClick={() => execRef.current?.insertTable()}
               >
                 <TableCellsIcon />
@@ -250,17 +228,24 @@ export default function BioToolbar({
             <Tooltip title="Вставить ссылку">
               <IconButton
                 size="small"
-                sx={{ color: "text.primary", p: 1 }}
+                sx={{ color: "inherit", p: 0 }}
                 onClick={() => execRef.current?.insertLink?.()}
               >
                 <LinkGlyphIcon />
               </IconButton>
             </Tooltip>
-          </ToolbarGroup>
+          </ButtonConteiner>
         </>
       )}
+    </Box>
 
-      <ToolbarGroup style={{ marginLeft: "auto" }}>
+    <Box sx={toolbarDragSpacerSx} />
+
+    <Box sx={toolbarClusterSx}>
+      <ToolbarButtonGroup
+        gap={TOOLBAR_CAPSULE.gapSegmentsPx}
+        contentSx={{ alignItems: "center" }}
+      >
         <TextField
           size="small"
           placeholder="Поиск..."
@@ -282,7 +267,7 @@ export default function BioToolbar({
                 </InputAdornment>
               ),
               sx: {
-                color: "text.primary",
+                color: "inherit",
                 fontSize: "0.85rem",
                 width: searchFieldWidth,
                 py: 0,
@@ -309,7 +294,7 @@ export default function BioToolbar({
           >
             <IconButton
               size="small"
-              sx={{ color: "text.primary", p: 0.5 }}
+              sx={{ color: "inherit", p: 0.5 }}
               onClick={() => goSearchMatch(-1)}
               disabled={matchCount === 0}
             >
@@ -317,7 +302,7 @@ export default function BioToolbar({
             </IconButton>
             <Typography
               variant="caption"
-              sx={{ color: "text.primary", minWidth: 36, textAlign: "center" }}
+              sx={{ color: "inherit", minWidth: 36, textAlign: "center" }}
             >
               {matchCount > 0
                 ? `${(searchMatchIndex % matchCount) + 1}/${matchCount}`
@@ -325,7 +310,7 @@ export default function BioToolbar({
             </Typography>
             <IconButton
               size="small"
-              sx={{ color: "text.primary", p: 0.5 }}
+              sx={{ color: "inherit", p: 0.5 }}
               onClick={() => goSearchMatch(1)}
               disabled={matchCount === 0}
             >
@@ -333,7 +318,8 @@ export default function BioToolbar({
             </IconButton>
           </Box>
         </Box>
-      </ToolbarGroup>
-    </Stack>
+      </ToolbarButtonGroup>
+    </Box>
+  </Stack>
   );
 }

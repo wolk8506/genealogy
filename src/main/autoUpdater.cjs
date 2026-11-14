@@ -6,6 +6,7 @@ const { autoUpdater } = require("electron-updater");
 const path = require("path");
 const fs = require("fs");
 const { https } = require("follow-redirects");
+const { isNewerVersion } = require("./versionUtils.cjs");
 
 // отключаем авто-скачивание внутри electron-updater
 autoUpdater.autoDownload = false;
@@ -155,6 +156,8 @@ function setupAutoUpdater(win) {
       win.webContents.send("update:available", {
         ...info,
         platform: process.platform,
+        // «доступно обновление» только когда номер выше установленного
+        isNewer: isNewerVersion(info.version, app.getVersion()),
       });
     } catch (err) {
       log.error("❌ [MAIN] checkForUpdates error:", err.message);
@@ -258,7 +261,11 @@ ipcMain.on("trigger-update-check", () => {
     });
     // окно обновления получает тот же updateInfo: в нём файлы и текст релиза.
     // manual — явная просьба пользователя, её не нужно прятать за «напомнить позже»
-    win.webContents.send("app:update-available", { ...info, manual: true });
+    win.webContents.send("app:update-available", {
+      ...info,
+      manual: true,
+      isNewer: isNewerVersion(info.version, app.getVersion()),
+    });
   });
 
   autoUpdater.once("update-not-available", () => {

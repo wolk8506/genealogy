@@ -10,7 +10,7 @@ export default function ExpandingAddPhotoButton({ onToggle }) {
       <Tooltip title="Добавить фото">
         <IconButton
           size="small"
-          sx={{ color: "text.primary", p: 0.5 }}
+          sx={{ color: "inherit", p: 0 }}
           onClick={onToggle}
         >
           <PhotoBadgePlusIcon />

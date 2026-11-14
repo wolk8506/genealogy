@@ -130,7 +130,12 @@ export default function MapPointPopup({
                   {p.label}
                 </Typography>
                 {(p.sub || p.place) && (
-                  <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      color: "text.secondary",
+                      display: "block"
+                    }}>
                     {[p.sub, p.place].filter(Boolean).join(" · ")}
                   </Typography>
                 )}
@@ -153,7 +158,12 @@ export default function MapPointPopup({
               {single.label}
             </Typography>
             {single.sub && (
-              <Typography variant="caption" color="text.secondary" display="block">
+              <Typography
+                variant="caption"
+                sx={{
+                  color: "text.secondary",
+                  display: "block"
+                }}>
                 {single.sub}
               </Typography>
             )}
@@ -167,7 +177,9 @@ export default function MapPointPopup({
                 }}
               >
                 <PlaceOutlinedIcon sx={{ fontSize: 14, flexShrink: 0 }} />
-                <Typography variant="caption" display="block">
+                <Typography variant="caption" sx={{
+                  display: "block"
+                }}>
                   {single.place}
                 </Typography>
               </Box>

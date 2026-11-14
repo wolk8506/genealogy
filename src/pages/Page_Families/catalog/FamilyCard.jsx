@@ -49,7 +49,9 @@ export default function FamilyCard({ family, isMine = false, onOpen }) {
         },
       ]}
     >
-      <Stack direction="row" spacing={1.25} alignItems="center">
+      <Stack direction="row" spacing={1.25} sx={{
+        alignItems: "center"
+      }}>
         <Box sx={{ display: "flex", flexShrink: 0, pl: 0.25 }}>
           {(family.partners || []).map((person, index) => (
             <Box

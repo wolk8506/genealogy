@@ -27,18 +27,20 @@ export default function LicenseModal({ open, onClose }) {
       onClose={onClose}
       maxWidth={false}
       transitionDuration={{ enter: 180, exit: 140 }}
-      PaperProps={{
-        sx: {
-          width: 760,
-          maxWidth: "94vw",
-          height: "min(86vh, 860px)",
-          borderRadius: "24px",
-          backgroundImage: "none",
-          display: "flex",
-          flexDirection: "column",
-          overflow: "hidden",
-          position: "relative",
-        },
+      slotProps={{
+        paper: {
+          sx: {
+            width: 760,
+            maxWidth: "94vw",
+            height: "min(86vh, 860px)",
+            borderRadius: "24px",
+            backgroundImage: "none",
+            display: "flex",
+            flexDirection: "column",
+            overflow: "hidden",
+            position: "relative",
+          },
+        }
       }}
     >
       <Box
@@ -90,7 +92,9 @@ export default function LicenseModal({ open, onClose }) {
             bgcolor: "action.hover",
           }}
         >
-          <Typography variant="body2" color="text.secondary" noWrap>
+          <Typography variant="body2" noWrap sx={{
+            color: "text.secondary"
+          }}>
             Copyright © 2026 nebula.9371. Все права защищены.
           </Typography>
         </Box>

@@ -71,12 +71,16 @@ export default function SettingsSidebar({
         </Box>
         <ListItemText
           primary={section.title}
-          primaryTypographyProps={{
-            fontSize: "0.85rem",
-            lineHeight: 1.1,
-            fontWeight: selected ? 600 : 500,
-            color: "inherit",
-            noWrap: true,
+          slotProps={{
+            primary: {
+              sx: {
+                fontSize: "0.85rem",
+                lineHeight: 1.1,
+                fontWeight: selected ? 600 : 500,
+                color: "inherit"
+              },
+              noWrap: true
+              }
           }}
         />
       </ListItemButton>
@@ -126,15 +130,22 @@ export default function SettingsSidebar({
           }}
         />
         <Box sx={{ minWidth: 0 }}>
-          <Typography fontSize="0.95rem" fontWeight={700} lineHeight={1.2} noWrap>
+          <Typography
+            noWrap
+            sx={{
+              fontSize: "0.95rem",
+              fontWeight: 700,
+              lineHeight: 1.2
+            }}>
             Genealogy
           </Typography>
           <Typography
             variant="caption"
-            color="text.secondary"
-            display="block"
             noWrap
-          >
+            sx={{
+              color: "text.secondary",
+              display: "block"
+            }}>
             Настройки
           </Typography>
         </Box>
@@ -145,13 +156,6 @@ export default function SettingsSidebar({
         placeholder="Поиск настроек"
         value={query}
         onChange={(e) => onQueryChange(e.target.value)}
-        InputProps={{
-          startAdornment: (
-            <InputAdornment position="start">
-              <SearchIcon sx={{ fontSize: 17, color: "text.secondary" }} />
-            </InputAdornment>
-          ),
-        }}
         sx={{
           mb: 1,
           "& .MuiOutlinedInput-root": {
@@ -167,13 +171,26 @@ export default function SettingsSidebar({
           },
           "& .MuiInputBase-input": { py: 0 },
         }}
+        slotProps={{
+          input: {
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon sx={{ fontSize: 17, color: "text.secondary" }} />
+              </InputAdornment>
+            ),
+          }
+        }}
       />
       {sections.length === 0 && (
         <Typography
           variant="caption"
-          color="text.secondary"
-          sx={{ display: "block", px: 1, py: 2, textAlign: "center" }}
-        >
+          sx={{
+            color: "text.secondary",
+            display: "block",
+            px: 1,
+            py: 2,
+            textAlign: "center"
+          }}>
           Ничего не найдено
         </Typography>
       )}

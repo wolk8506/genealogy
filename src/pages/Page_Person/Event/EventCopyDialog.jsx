@@ -59,15 +59,17 @@ export default function EventCopyDialog({
       onClose={handleClose}
       maxWidth="xs" // Уменьшил до xs, так как контента тут меньше, будет аккуратнее
       fullWidth
-      PaperProps={{
-        sx: {
-          borderRadius: "24px",
-          backgroundImage: "none",
-          bgcolor: isDark ? alpha(theme.palette.background.paper, 0.9) : "#fff",
-          backdropFilter: "blur(12px)",
-          border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
-          boxShadow: theme.shadows[24],
-        },
+      slotProps={{
+        paper: {
+          sx: {
+            borderRadius: "24px",
+            backgroundImage: "none",
+            bgcolor: isDark ? alpha(theme.palette.background.paper, 0.9) : "#fff",
+            backdropFilter: "blur(12px)",
+            border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+            boxShadow: theme.shadows[24],
+          },
+        }
       }}
     >
       <DialogTitle
@@ -101,17 +103,21 @@ export default function EventCopyDialog({
                 placeholder="Выберите родственника..."
                 variant="outlined"
                 size="small"
-                InputProps={{
-                  ...params.InputProps,
-                  startAdornment: (
-                    <>
-                      <PersonAddAlt1Icon
-                        sx={{ color: "action.active", mr: 1, fontSize: 20 }}
-                      />
-                      {params.InputProps.startAdornment}
-                    </>
-                  ),
-                  sx: { borderRadius: "12px" },
+                slotProps={{
+                  ...params.slotProps,
+
+                  input: {
+                    ...params.slotProps.input,
+                    startAdornment: (
+                      <>
+                        <PersonAddAlt1Icon
+                          sx={{ color: "action.active", mr: 1, fontSize: 20 }}
+                        />
+                        {params.slotProps.input.startAdornment}
+                      </>
+                    ),
+                    sx: { borderRadius: "12px" },
+                  }
                 }}
               />
             )}
@@ -195,8 +201,10 @@ export default function EventCopyDialog({
                   size="small"
                   value={selectedEventIndex}
                   onChange={(e) => setSelectedEventIndex(e.target.value)}
-                  SelectProps={{
-                    sx: { borderRadius: "8px", bgcolor: "background.paper" },
+                  slotProps={{
+                    select: {
+                      sx: { borderRadius: "8px", bgcolor: "background.paper" },
+                    }
                   }}
                 >
                   {targetEvents.map((ev, idx) => (

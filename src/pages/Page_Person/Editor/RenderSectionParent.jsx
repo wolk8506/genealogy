@@ -71,10 +71,16 @@ export const RenderSectionParent = ({
       </Box>
 
       {/* СОЕДИНИТЕЛЬНАЯ ЛИНИЯ */}
-      <Box width={1}>
-        <Box height={30}></Box>
+      <Box sx={{
+        width: 1
+      }}>
+        <Box sx={{
+          height: 30
+        }}></Box>
         <Divider />
-        <Box height={30}></Box>
+        <Box sx={{
+          height: 30
+        }}></Box>
       </Box>
 
       {/* СЛОТ МАТЕРИ */}

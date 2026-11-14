@@ -91,6 +91,7 @@ export const PersonCard = ({
   return (
     <ListItemButton
       component={Link}
+      nativeButton={false}
       to={`/person/${person.id}`}
       // disableRipple
       sx={{
@@ -143,15 +144,14 @@ export const PersonCard = ({
         </ListItemAvatar>
 
         <ListItemText
-          primaryTypographyProps={{ component: "div" }}
-          secondaryTypographyProps={{ component: "div" }}
           primary={
             <Stack
               direction="row"
-              alignItems="center"
               spacing={1}
-              flexWrap="wrap"
-            >
+              sx={{
+                alignItems: "center",
+                flexWrap: "wrap"
+              }}>
               <Typography
                 sx={{
                   fontWeight: 700,
@@ -175,10 +175,11 @@ export const PersonCard = ({
             <Stack
               direction="row"
               spacing={isSmall ? 1 : 2}
-              mt={0.5}
               component="div"
-              alignItems="center"
-            >
+              sx={{
+                mt: 0.5,
+                alignItems: "center"
+              }}>
               <Typography
                 variant="caption"
                 component="span"
@@ -202,13 +203,16 @@ export const PersonCard = ({
                 <Stack
                   direction="row"
                   spacing={0.5}
-                  alignItems="center"
-                  sx={{ color: "info.main" }}
                   component="span"
-                >
+                  sx={{
+                    alignItems: "center",
+                    color: "info.main"
+                  }}>
                   <PhotoLibraryIcon sx={{ fontSize: 16, opacity: 0.7 }} />
                   {!isSmall && (
-                    <Typography variant="caption" fontWeight="800">
+                    <Typography variant="caption" sx={{
+                      fontWeight: "800"
+                    }}>
                       {stats.count}
                     </Typography>
                   )}
@@ -216,7 +220,10 @@ export const PersonCard = ({
               )}
             </Stack>
           }
-        />
+          slotProps={{
+            primary: { component: "div" },
+            secondary: { component: "div" }
+          }} />
 
         {/* Блок кнопок в зависимости от статуса (Корзина или Нет) */}
         <Box

@@ -9,7 +9,7 @@ import { keyframes } from "@mui/system";
 import { useSnackbar } from "notistack";
 
 import MainLayout from "../layout/MainLayout";
-import { ThemeContext } from "../theme/ThemeContext.cjs";
+import { ThemeContext } from "../theme/ThemeContext.js";
 import { useSettingsStore } from "../store/useSettingsStore";
 import { getPalette } from "../theme/palette";
 import { MOTION, RADIUS } from "../theme/designTokens";

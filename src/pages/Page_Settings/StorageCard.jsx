@@ -11,7 +11,7 @@ import AppButton from "../../components/AppButton";
 import { useSnackbar } from "notistack";
 import FolderOpenIcon from "@mui/icons-material/FolderOpen";
 import StorageIcon from "@mui/icons-material/Storage";
-import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 import ConfirmDialog from "../../components/Dialog/ConfirmDialog";
 import DialogActionButton, {
@@ -159,15 +159,18 @@ export const StorageCard = ({ cardStyle }) => {
           <StorageIcon sx={{ fontSize: 18 }} />
         </RowIcon>
         <Box sx={{ minWidth: 0 }}>
-          <Typography variant="subtitle1" fontWeight={700} noWrap>
+          <Typography variant="subtitle1" noWrap sx={{
+            fontWeight: 700
+          }}>
             Места хранения данных
           </Typography>
           <Typography
             variant="caption"
-            color="text.secondary"
-            display="block"
             noWrap
-          >
+            sx={{
+              color: "text.secondary",
+              display: "block"
+            }}>
             Папки библиотеки и активное хранилище
           </Typography>
         </Box>
@@ -176,7 +179,9 @@ export const StorageCard = ({ cardStyle }) => {
       <Box sx={{ px: 2, pb: 2 }}>
         <Stack spacing={2.5}>
           {!apiAvailable && (
-            <Typography variant="caption" color="error.main">
+            <Typography variant="caption" sx={{
+              color: "error.main"
+            }}>
               Мост storageAPI недоступен (preload).
             </Typography>
           )}
@@ -217,14 +222,17 @@ export const StorageCard = ({ cardStyle }) => {
                         <Stack
                           direction="row"
                           spacing={0.75}
-                          alignItems="center"
+                          sx={{
+                            alignItems: "center"
+                          }}
                         >
                           <Typography
                             variant="body2"
-                            fontWeight={400}
-                            sx={{ fontSize: "0.8125rem" }}
                             noWrap
-                          >
+                            sx={{
+                              fontWeight: 400,
+                              fontSize: "0.8125rem"
+                            }}>
                             {root.isDefault
                               ? "Стандартная папка"
                               : "Внешняя папка"}
@@ -242,9 +250,10 @@ export const StorageCard = ({ cardStyle }) => {
                             >
                               <Typography
                                 variant="caption"
-                                fontWeight={700}
-                                color="primary.main"
-                              >
+                                sx={{
+                                  fontWeight: 700,
+                                  color: "primary.main"
+                                }}>
                                 Активна
                               </Typography>
                             </Box>
@@ -252,14 +261,13 @@ export const StorageCard = ({ cardStyle }) => {
                         </Stack>
                         <Typography
                           variant="caption"
-                          color="text.secondary"
                           sx={{
+                            color: "text.secondary",
                             fontFamily: "monospace",
                             wordBreak: "break-all",
                             display: "block",
-                            mt: 0.2,
-                          }}
-                        >
+                            mt: 0.2
+                          }}>
                           {root.path}
                         </Typography>
                       </Box>
@@ -288,7 +296,7 @@ export const StorageCard = ({ cardStyle }) => {
                           disabled={!apiAvailable || busy}
                           sx={{ flexShrink: 0 }}
                         >
-                          <DeleteOutlineIcon fontSize="small" />
+                          <DeleteOutlineOutlinedIcon fontSize="small" />
                         </IconButton>
                       )}
                     </Box>
@@ -298,9 +306,13 @@ export const StorageCard = ({ cardStyle }) => {
             </Box>
             <Typography
               variant="caption"
-              color="text.secondary"
-              sx={{ display: "block", mt: 1, ml: 0.5, lineHeight: 1.4 }}
-            >
+              sx={{
+                color: "text.secondary",
+                display: "block",
+                mt: 1,
+                ml: 0.5,
+                lineHeight: 1.4
+              }}>
               Стандартную папку удалить нельзя. Удаление из списка не трогает
               файлы на диске. После смены активной папки приложение
               перезапускается.
@@ -376,21 +388,30 @@ export const StorageCard = ({ cardStyle }) => {
       <Dialog
         open={libraryCandidate != null}
         onClose={() => setLibraryCandidate(null)}
-        PaperProps={{
-          sx: { borderRadius: "24px", backgroundImage: "none" },
-        }}
         maxWidth="xs"
         fullWidth
+        slotProps={{
+          paper: {
+            sx: { borderRadius: "24px", backgroundImage: "none" },
+          }
+        }}
       >
         <Box sx={{ p: 3, pb: 2 }}>
-          <Typography variant="h6" fontWeight={700} sx={{ mb: 1.5 }}>
+          <Typography
+            variant="h6"
+            sx={{
+              fontWeight: 700,
+              mb: 1.5
+            }}>
             Папка не похожа на библиотеку
           </Typography>
           <Typography
             variant="body2"
-            color="text.secondary"
-            sx={{ mb: 1.5, lineHeight: 1.5 }}
-          >
+            sx={{
+              color: "text.secondary",
+              mb: 1.5,
+              lineHeight: 1.5
+            }}>
             В папке есть файлы, но нет признаков библиотеки Genealogy
             (<b>genealogy-data.json</b>, папки <b>people</b>):
           </Typography>

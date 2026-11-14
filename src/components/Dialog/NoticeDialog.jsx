@@ -68,9 +68,11 @@ export default function NoticeDialog({
         {message && (
           <Typography
             variant="body2"
-            color="text.secondary"
-            sx={{ mt: 0.5, overflowWrap: "anywhere" }}
-          >
+            sx={{
+              color: "text.secondary",
+              mt: 0.5,
+              overflowWrap: "anywhere"
+            }}>
             {message}
           </Typography>
         )}

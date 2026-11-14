@@ -11,7 +11,7 @@ import {
 } from "@mui/material";
 import { alpha } from "@mui/material/styles";
 import AddIcon from "@mui/icons-material/Add";
-import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
 import FaceIcon from "@mui/icons-material/Face";
 import FaceRetouchingNaturalIcon from "@mui/icons-material/FaceRetouchingNatural";
 import CropIcon from "@mui/icons-material/Crop";
@@ -229,12 +229,17 @@ export function PhotoFaceFormSection({
       <Stack spacing={1.5}>
         <Stack
           direction="row"
-          alignItems="center"
-          justifyContent="space-between"
-        >
-          <Stack direction="row" alignItems="center" spacing={1}>
+          sx={{
+            alignItems: "center",
+            justifyContent: "space-between"
+          }}>
+          <Stack direction="row" spacing={1} sx={{
+            alignItems: "center"
+          }}>
             <FaceIcon fontSize="small" color="primary" />
-            <Typography variant="subtitle2" fontWeight={700}>
+            <Typography variant="subtitle2" sx={{
+              fontWeight: 700
+            }}>
               Лица на фото
             </Typography>
           </Stack>
@@ -244,7 +249,9 @@ export function PhotoFaceFormSection({
         </Stack>
 
         {faces.length === 0 ? (
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant="body2" sx={{
+            color: "text.secondary"
+          }}>
             Нет размеченных лиц. Нажмите «Найти» или нарисуйте рамку на
             превью.
           </Typography>
@@ -266,25 +273,26 @@ export function PhotoFaceFormSection({
             return (
               <Stack key={face.id} spacing={0.8}>
                 <Stack
-                  flexDirection="column"
                   spacing={1.25}
-                  alignItems="center"
                   onClick={() => onSelectFace(face.id)}
                   sx={{
+                    flexDirection: "column",
+                    alignItems: "center",
                     p: 0.5,
                     borderRadius: "12px",
                     transition: "background-color 200ms ease",
+
                     bgcolor: isSelected
                       ? alpha(theme.palette.primary.main, 0.08)
-                      : "transparent",
-                  }}
-                >
+                      : "transparent"
+                  }}>
                   <Stack
                     direction="row"
                     spacing={1}
-                    width={1}
-                    alignItems="center"
-                  >
+                    sx={{
+                      width: 1,
+                      alignItems: "center"
+                    }}>
                     <Autocomplete
                       fullWidth
                       size="small"
@@ -348,7 +356,7 @@ export function PhotoFaceFormSection({
                         },
                       }}
                     >
-                      <DeleteOutlineIcon fontSize="small" />
+                      <DeleteOutlineOutlinedIcon fontSize="small" />
                     </IconButton>
                   </Stack>
 
@@ -356,9 +364,10 @@ export function PhotoFaceFormSection({
                     <Stack
                       direction="row"
                       spacing={1}
-                      width={1}
-                      alignItems="center"
-                    >
+                      sx={{
+                        width: 1,
+                        alignItems: "center"
+                      }}>
                       <TextField
                         size="small"
                         fullWidth
@@ -422,7 +431,9 @@ export function PhotoFaceFormSection({
         )}
 
         {selectedFace && (
-          <Typography variant="caption" color="text.secondary">
+          <Typography variant="caption" sx={{
+            color: "text.secondary"
+          }}>
             Выбрано лицо {faces.indexOf(selectedFace) + 1}. Рамку можно
             нарисовать кнопкой «Рамка» на превью.
           </Typography>

@@ -1,8 +1,6 @@
 import React, { useState } from "react";
 import {
   Box,
-  IconButton,
-  styled,
   Menu,
   MenuItem,
   Typography,
@@ -11,21 +9,13 @@ import {
   Tooltip,
   alpha,
 } from "@mui/material";
+import { Toggle } from "@base-ui/react/toggle";
 import LayersIcon from "@mui/icons-material/Layers";
+import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
+import CheckIcon from "@mui/icons-material/Check";
 import { popoverArrowSx } from "../../theme/popoverArrow";
-import { toolbarPillSx } from "../toolbarStyles";
-
-const StyledContainer = styled(Box, {
-  shouldForwardProp: (prop) => prop !== "$expanded",
-})(({ theme, $expanded }) => ({
-  ...toolbarPillSx,
-  display: "flex",
-  alignItems: "center",
-  transition:
-    "transform 0.2s ease-out, box-shadow 0.2s ease-out, background-color 0.2s",
-  paddingRight: $expanded ? 12 : 0,
-  cursor: "pointer",
-}));
+import { ToolbarSegmentHit } from "../../components/ToolbarCapsuleContext";
+import { TOOLBAR_HIT, TOOLBAR_MENU } from "../toolbarTokens";
 
 export default function ExpandingGenSelect({ options, value, onChange }) {
   const [anchorEl, setAnchorEl] = useState(null);
@@ -60,35 +50,51 @@ export default function ExpandingGenSelect({ options, value, onChange }) {
   return (
     <>
       <Tooltip title="Фильтрация по поколениям">
-        <StyledContainer $expanded={isExpanded} onClick={handleOpen}>
-          <IconButton
-            size="small"
-            sx={{
-              color: "text.primary",
-              p: 1,
-              "&:hover": { backgroundColor: "transparent" },
-            }}
-          >
-            <LayersIcon
-              color={isExpanded ? "primary" : "inherit"}
-              fontSize="small"
+        <Toggle
+          pressed={isExpanded}
+          onClick={handleOpen}
+          aria-haspopup="menu"
+          aria-expanded={open}
+          render={(props, state) => (
+            <ToolbarSegmentHit
+              {...props}
+              pressed={state.pressed}
+              sx={{
+                gap: isExpanded
+                  ? TOOLBAR_HIT.gapIconLabelPx
+                  : TOOLBAR_HIT.gapPx,
+              }}
             />
-          </IconButton>
+          )}
+        >
+          <LayersIcon sx={{ fontSize: TOOLBAR_HIT.iconSize, color: "inherit" }} />
 
           {isExpanded && (
             <Typography
               variant="caption"
+              component="span"
               sx={{
-                color: "text.primary",
+                color: "inherit",
                 whiteSpace: "nowrap",
-                ml: 0.5,
-                fontWeight: 700,
+                fontWeight: 600,
+                fontSize: "0.75rem",
+                lineHeight: 1,
               }}
             >
               {renderLabel()}
             </Typography>
           )}
-        </StyledContainer>
+          <KeyboardArrowDownIcon
+            sx={{
+              fontSize: TOOLBAR_HIT.chevronSize,
+              width: TOOLBAR_HIT.chevronSize,
+              height: TOOLBAR_HIT.chevronSize,
+              opacity: 0.85,
+              flexShrink: 0,
+              color: "inherit",
+            }}
+          />
+        </Toggle>
       </Tooltip>
 
       <Menu
@@ -97,20 +103,23 @@ export default function ExpandingGenSelect({ options, value, onChange }) {
         onClose={handleClose}
         anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
         transformOrigin={{ vertical: "top", horizontal: "center" }}
-        PaperProps={{
-          sx: {
-            mt: 1.5,
-            minWidth: 180,
-            borderRadius: "16px",
-            overflow: "visible",
-            backgroundImage: "none",
-            bgcolor: (theme) =>
-              theme.palette.mode === "dark" ? "#1E1E1E" : "#FFFFFF",
-            border: "1px solid",
-            borderColor: "divider",
-            // Тот самый треугольник
-            "&::before": popoverArrowSx(),
+        slotProps={{
+          paper: {
+            sx: {
+              mt: 1.5,
+              minWidth: 180,
+              borderRadius: TOOLBAR_MENU.paperRadiusPx,
+              overflow: "visible",
+              backgroundImage: "none",
+              bgcolor: (theme) =>
+                theme.palette.mode === "dark" ? "#1E1E1E" : "#FFFFFF",
+              border: "1px solid",
+              borderColor: "divider",
+              // Тот самый треугольник
+              "&::before": popoverArrowSx(),
+            },
           },
+          list: { sx: { py: 0.5, px: 0.5 } },
         }}
       >
         <Box sx={{ position: "relative", zIndex: 1 }}>
@@ -138,10 +147,13 @@ export default function ExpandingGenSelect({ options, value, onChange }) {
                   key={opt}
                   onClick={() => handleToggle(opt)}
                   sx={{
-                    mx: 1,
-                    my: 0.5,
-                    borderRadius: "8px",
-                    // Выделение цветом primary вместо чекбокса
+                    gap: 0.75,
+                    mx: 0.5,
+                    my: 0.25,
+                    borderRadius: TOOLBAR_MENU.itemRadiusPx,
+                    pl: 1,
+                    pr: 1.25,
+                    py: 0.75,
                     bgcolor: (t) =>
                       isSelected
                         ? alpha(t.palette.primary.main, 0.15)
@@ -152,13 +164,25 @@ export default function ExpandingGenSelect({ options, value, onChange }) {
                           ? alpha(t.palette.primary.main, 0.25)
                           : "action.hover",
                     },
-                    transition: "background-color 0.2s",
                   }}
                 >
-                  <ListItemIcon sx={{ minWidth: "32px !important" }}>
+                  <Box
+                    sx={{
+                      width: TOOLBAR_MENU.checkGutter,
+                      flexShrink: 0,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    {isSelected && (
+                      <CheckIcon sx={{ fontSize: TOOLBAR_MENU.checkIcon }} />
+                    )}
+                  </Box>
+                  <ListItemIcon sx={{ minWidth: "28px !important" }}>
                     <LayersIcon
                       sx={{
-                        fontSize: 18,
+                        fontSize: TOOLBAR_HIT.iconSize,
                         color: isSelected ? "primary.main" : "text.secondary",
                       }}
                     />
@@ -166,7 +190,7 @@ export default function ExpandingGenSelect({ options, value, onChange }) {
                   <Typography
                     variant="body2"
                     sx={{
-                      fontWeight: isSelected ? 700 : 400,
+                      fontWeight: isSelected ? 600 : 400,
                       color: isSelected ? "text.primary" : "text.secondary",
                     }}
                   >
@@ -176,7 +200,7 @@ export default function ExpandingGenSelect({ options, value, onChange }) {
               );
             })}
 
-          {isExpanded && <Divider sx={{ my: 1 }} />}
+          {isExpanded && <Divider sx={{ my: 0.5, mx: 1 }} />}
 
           {isExpanded && (
             <MenuItem
@@ -188,11 +212,13 @@ export default function ExpandingGenSelect({ options, value, onChange }) {
               sx={{
                 color: "error.main",
                 justifyContent: "center",
-                mx: 1,
-                borderRadius: "8px",
+                mx: 0.5,
+                borderRadius: TOOLBAR_MENU.itemRadiusPx,
               }}
             >
-              <Typography variant="caption" fontWeight="bold">
+              <Typography variant="caption" sx={{
+                fontWeight: "bold"
+              }}>
                 Сбросить фильтр
               </Typography>
             </MenuItem>

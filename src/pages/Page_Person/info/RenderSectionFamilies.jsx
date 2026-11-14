@@ -47,19 +47,19 @@ export const RenderSectionFamilies = ({ people = [], soloChildren = [] }) => {
       {totalItems > 2 && (
         <Stack
           direction="row"
-          alignItems="center"
-          justifyContent="space-between"
           spacing={1}
-          width={1}
           sx={{
+            alignItems: "center",
+            justifyContent: "space-between",
+            width: 1,
             mb: 1,
             pr: 1,
             position: "absolute",
             right: 0,
-            top: "12px",
+
             // px: 2,
-          }}
-        >
+            top: "12px"
+          }}>
           <Box
             sx={{
               display: "flex",
@@ -110,9 +110,10 @@ export const RenderSectionFamilies = ({ people = [], soloChildren = [] }) => {
       <Stack
         direction="row"
         spacing={2}
-        justifyContent="center"
-        alignItems="flex-start"
-      >
+        sx={{
+          justifyContent: "center",
+          alignItems: "flex-start"
+        }}>
         {visibleItems.map((item) => {
           // Базовый стиль колонки (теперь без подсветки границ всей колонки)
           const columnStyle = {
@@ -122,7 +123,11 @@ export const RenderSectionFamilies = ({ people = [], soloChildren = [] }) => {
 
           if (item.type === "solo_children") {
             return (
-              <Stack key="solo-group" alignItems="center" sx={columnStyle}>
+              <Stack
+                key="solo-group"
+                sx={[{
+                  alignItems: "center"
+                }, ...(Array.isArray(columnStyle) ? columnStyle : [columnStyle])]}>
                 <Divider
                   orientation="vertical"
                   sx={{ height: renderList.length > 1 ? 124 : 0 }}
@@ -147,15 +152,16 @@ export const RenderSectionFamilies = ({ people = [], soloChildren = [] }) => {
             return (
               <Stack
                 key={fam.partner.id}
-                alignItems="center"
-                // sx={}
                 sx={{
-                  ...columnStyle,
-                  width: people.length === 1 ? "760px" : "360px", // Ширина подстраивается
-                  // transition: "all 0.3s ease",
                   alignItems: "center",
-                }}
-              >
+                  ...columnStyle,
+
+                  // Ширина подстраивается
+                  width: people.length === 1 ? "760px" : "360px",
+
+                  // transition: "all 0.3s ease",
+                  alignItems: "center"
+                }}>
                 {/* <Divider orientation="vertical" sx={{ height: 30 }} /> */}
                 <Divider
                   orientation="vertical"
@@ -170,9 +176,11 @@ export const RenderSectionFamilies = ({ people = [], soloChildren = [] }) => {
                 >
                   <Stack
                     direction="row"
-                    alignItems="center"
-                    spacing={1}
                     // sx={{ mb: 1 }}
+                    spacing={1}
+                    sx={{
+                      alignItems: "center"
+                    }}
                   >
                     <Typography
                       variant="caption"

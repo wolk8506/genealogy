@@ -171,17 +171,19 @@ export default function QuickAddRelativeModal({
       onClose={onClose}
       maxWidth={false}
       transitionDuration={{ enter: 180, exit: 140 }}
-      PaperProps={{
-        sx: {
-          width: 600,
-          maxWidth: "94vw",
-          maxHeight: "calc(100vh - 64px)",
-          borderRadius: "24px",
-          backgroundImage: "none",
-          display: "flex",
-          flexDirection: "column",
-          overflow: "hidden",
-        },
+      slotProps={{
+        paper: {
+          sx: {
+            width: 600,
+            maxWidth: "94vw",
+            maxHeight: "calc(100vh - 64px)",
+            borderRadius: "24px",
+            backgroundImage: "none",
+            display: "flex",
+            flexDirection: "column",
+            overflow: "hidden",
+          },
+        }
       }}
     >
       <Box sx={{ p: 3, pb: 2, overflowY: "auto" }}>
@@ -266,22 +268,24 @@ export default function QuickAddRelativeModal({
                     size="small"
                     value={gender}
                     onChange={(e) => setGender(e.target.value)}
-                    SelectProps={{
-                      startAdornment: gender && (
-                        <Box
-                          sx={{
-                            mr: 1,
-                            display: "flex",
-                            color: "action.active",
-                          }}
-                        >
-                          {gender === "male" ? (
-                            <MaleIcon fontSize="small" />
-                          ) : (
-                            <FemaleIcon fontSize="small" />
-                          )}
-                        </Box>
-                      ),
+                    slotProps={{
+                      select: {
+                        startAdornment: gender && (
+                          <Box
+                            sx={{
+                              mr: 1,
+                              display: "flex",
+                              color: "action.active",
+                            }}
+                          >
+                            {gender === "male" ? (
+                              <MaleIcon fontSize="small" />
+                            ) : (
+                              <FemaleIcon fontSize="small" />
+                            )}
+                          </Box>
+                        ),
+                      }
                     }}
                   >
                     <MenuItem
@@ -302,7 +306,12 @@ export default function QuickAddRelativeModal({
             </Grid>
           </Box>
 
-          <Typography variant="caption" color="text.secondary" sx={{ px: 1 }}>
+          <Typography
+            variant="caption"
+            sx={{
+              color: "text.secondary",
+              px: 1
+            }}>
             * Новый человек будет создан с автоматическим расчетом поколения на
             основе текущего профиля.
           </Typography>

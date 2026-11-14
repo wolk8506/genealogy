@@ -13,7 +13,7 @@ import {
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import HistoryIcon from "@mui/icons-material/History";
 import EventAvailableIcon from "@mui/icons-material/EventAvailable";
-import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
+import HelpOutlineOutlinedIcon from "@mui/icons-material/HelpOutlineOutlined";
 import { DatePicker, TimePicker } from "@mui/x-date-pickers";
 import dayjs from "dayjs";
 import "dayjs/locale/ru";
@@ -137,14 +137,16 @@ export default function CustomDatePickerDialog({
       onClose={onClose}
       maxWidth={false}
       transitionDuration={{ enter: 180, exit: 140 }}
-      PaperProps={{
-        sx: {
-          width: 440,
-          maxWidth: "94vw",
-          borderRadius: "24px",
-          backgroundImage: "none",
-          overflow: "hidden",
-        },
+      slotProps={{
+        paper: {
+          sx: {
+            width: 440,
+            maxWidth: "94vw",
+            borderRadius: "24px",
+            backgroundImage: "none",
+            overflow: "hidden",
+          },
+        }
       }}
     >
       <Box sx={{ p: 3, pb: 1.5 }}>
@@ -184,7 +186,7 @@ export default function CustomDatePickerDialog({
           />
           <Tab icon={<HistoryIcon sx={{ fontSize: 18 }} />} label="Год" />
           <Tab
-            icon={<HelpOutlineIcon sx={{ fontSize: 18 }} />}
+            icon={<HelpOutlineOutlinedIcon sx={{ fontSize: 18 }} />}
             label="Прочее"
           />
         </Tabs>
@@ -299,7 +301,9 @@ export default function CustomDatePickerDialog({
                   />
                 }
                 label={
-                  <Typography variant="body2" fontWeight={500}>
+                  <Typography variant="body2" sx={{
+                    fontWeight: 500
+                  }}>
                     Дата полностью неизвестна
                   </Typography>
                 }
@@ -335,7 +339,7 @@ const [datePickerOpen, setDatePickerOpen] = useState(false);
   size="small"
   fullWidth
   placeholder="ДД.ММ.ГГГГ / ММ.ГГГГ / ГГГГ"
-  InputProps={{ readOnly: true }}
+  slotProps={{ input: { readOnly: true } }}
 />
 
 <CustomDatePickerDialog

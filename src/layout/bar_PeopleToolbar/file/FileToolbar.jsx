@@ -4,6 +4,7 @@ import UploadFileIcon from "@mui/icons-material/UploadFile";
 import FolderOpenIcon from "@mui/icons-material/FolderOpen";
 import { usePersonStore } from "../../../store/usePersonStore";
 import ButtonConteiner from "../../../components/ButtonConteiner";
+import { TOOLBAR_HIT } from "../../toolbarTokens";
 
 export default function FileToolbar() {
   const executeUpload = usePersonStore((state) => state.executeUpload);
@@ -20,9 +21,9 @@ export default function FileToolbar() {
           <IconButton
             onClick={() => openFilesFolder?.()}
             disabled={!openFilesFolder}
-            sx={{ color: "text.primary", p: 1 }}
+            sx={{ color: "inherit", p: 0 }}
           >
-            <FolderOpenIcon sx={{ fontSize: 20 }} />
+            <FolderOpenIcon sx={{ fontSize: TOOLBAR_HIT.iconSize }} />
           </IconButton>
         </ButtonConteiner>
       </Tooltip>
@@ -31,9 +32,9 @@ export default function FileToolbar() {
           <IconButton
             onClick={() => executeUpload?.()}
             disabled={!executeUpload}
-            sx={{ color: "text.primary", p: 1 }}
+            sx={{ color: "inherit", p: 0 }}
           >
-            <UploadFileIcon sx={{ fontSize: 20 }} />
+            <UploadFileIcon sx={{ fontSize: TOOLBAR_HIT.iconSize }} />
           </IconButton>
         </ButtonConteiner>
       </Tooltip>

@@ -1,44 +1,78 @@
-import { IconButton } from "@mui/material";
+import { Box, Divider, IconButton } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import NavigateBeforeIcon from "@mui/icons-material/NavigateBefore";
 import NavigateNextIcon from "@mui/icons-material/NavigateNext";
-import { useTheme } from "@mui/material/styles";
 
-import Divider from "@mui/material/Divider";
-import ButtonConteiner from "../components/ButtonConteiner";
+import ToolbarButtonGroup from "../components/ToolbarButtonGroup";
+import { useToolbarButtonGroupHitSx } from "../components/ToolbarCapsuleContext";
+import { TOOLBAR_CAPSULE, TOOLBAR_HIT } from "./toolbarTokens";
+
+function NavHitWrap({ children }) {
+  const hitSx = useToolbarButtonGroupHitSx(false);
+  return (
+    <Box
+      sx={{
+        ...hitSx,
+        p: 0,
+        "& .MuiIconButton-root": {
+          width: TOOLBAR_HIT.minWidth,
+          height: TOOLBAR_HIT.height,
+          p: 0,
+          borderRadius: TOOLBAR_HIT.radiusPx,
+          color: "inherit",
+        },
+        "& .MuiIconButton-root:hover": {
+          backgroundColor: "transparent",
+        },
+      }}
+    >
+      {children}
+    </Box>
+  );
+}
 
 export default function NavigationButtons() {
   const navigate = useNavigate();
-  const theme = useTheme();
-  const isDark = theme.palette.mode === "dark";
 
   const canGoBack = window.history.state?.idx > 0;
   const canGoForward = window.history.state?.idx < window.history.length - 1;
 
   return (
-    <ButtonConteiner>
-      <IconButton
+    <ToolbarButtonGroup gap={TOOLBAR_CAPSULE.gapSegmentsPx}>
+      <NavHitWrap>
+        <IconButton
+          onClick={() => canGoBack && navigate(-1)}
+          disabled={!canGoBack}
+          size="small"
+          aria-label="Назад"
+        >
+          <NavigateBeforeIcon sx={{ fontSize: TOOLBAR_HIT.iconSize }} />
+        </IconButton>
+      </NavHitWrap>
+
+      <Divider
+        orientation="vertical"
+        flexItem
+        aria-hidden
         sx={{
-          color: "text.primary",
-          p: 0.5,
+          alignSelf: "center",
+          height: 18,
+          mx: 0.25,
+          borderColor: "divider",
+          pointerEvents: "none",
         }}
-        color={isDark ? "primary" : "default"}
-        onClick={() => canGoBack && navigate(-1)}
-        disabled={!canGoBack}
-        size="small"
-      >
-        <NavigateBeforeIcon style={{ fontSize: 22 }} />
-      </IconButton>
-      <Divider orientation="vertical" variant="middle" flexItem />
-      <IconButton
-        sx={{ color: "text.primary", p: 0.5 }}
-        color={isDark ? "primary" : "default"}
-        onClick={() => canGoForward && navigate(1)}
-        disabled={!canGoForward}
-        size="small"
-      >
-        <NavigateNextIcon style={{ fontSize: 22 }} />
-      </IconButton>
-    </ButtonConteiner>
+      />
+
+      <NavHitWrap>
+        <IconButton
+          onClick={() => canGoForward && navigate(1)}
+          disabled={!canGoForward}
+          size="small"
+          aria-label="Вперёд"
+        >
+          <NavigateNextIcon sx={{ fontSize: TOOLBAR_HIT.iconSize }} />
+        </IconButton>
+      </NavHitWrap>
+    </ToolbarButtonGroup>
   );
 }

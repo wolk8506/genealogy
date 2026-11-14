@@ -111,7 +111,11 @@ export default function ExternalPeoplePage({
   return (
     <Box sx={{ p: { xs: 1, sm: 2 }, width: "100%", mx: "auto" }}>
       {loading ? (
-        <Stack alignItems="center" py={8}>
+        <Stack
+          sx={{
+            alignItems: "center",
+            py: 8
+          }}>
           <CircularProgress />
         </Stack>
       ) : filtered.length === 0 ? (
@@ -144,7 +148,9 @@ export default function ExternalPeoplePage({
               boxShadow: "0 8px 32px rgba(0,0,0,0.1)",
             }}
           >
-            <Stack spacing={3} alignItems="center">
+            <Stack spacing={3} sx={{
+              alignItems: "center"
+            }}>
               <Box sx={{ position: "relative" }}>
                 <Box
                   sx={{

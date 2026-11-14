@@ -9,7 +9,7 @@ import {
   Typography,
   Box,
 } from "@mui/material";
-import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
 import CustomDatePickerDialog from "../CustomDatePickerDialog";
 import AppButton from "../AppButton";
 import DialogActionButton, {
@@ -68,7 +68,7 @@ export default function AddExternalEntityDialog({
     targetKind: "person",
     mainPersonId: null,
     mainExternalEntityId: null,
-    relationType: "friend",
+    relationType: "other",
     dates: "",
     notes: "",
   });
@@ -107,7 +107,7 @@ export default function AddExternalEntityDialog({
       targetKind: "person",
       mainPersonId: null,
       mainExternalEntityId: null,
-      relationType: entity?.type === "pet" ? "pet_owner" : "friend",
+      relationType: entity?.type === "pet" ? "pet_owner" : "other",
       dates: "",
       notes: "",
     });
@@ -168,7 +168,7 @@ export default function AddExternalEntityDialog({
       targetKind: "person",
       mainPersonId: null,
       mainExternalEntityId: null,
-      relationType: isPet ? "pet_owner" : "friend",
+      relationType: isPet ? "pet_owner" : "other",
       dates: "",
       notes: "",
     });
@@ -256,17 +256,19 @@ export default function AddExternalEntityDialog({
       onClose={onClose}
       maxWidth={false}
       transitionDuration={{ enter: 180, exit: 140 }}
-      PaperProps={{
-        sx: {
-          width: 600,
-          maxWidth: "94vw",
-          maxHeight: "calc(100vh - 64px)",
-          borderRadius: "24px",
-          backgroundImage: "none",
-          display: "flex",
-          flexDirection: "column",
-          overflow: "hidden",
-        },
+      slotProps={{
+        paper: {
+          sx: {
+            width: 600,
+            maxWidth: "94vw",
+            maxHeight: "calc(100vh - 64px)",
+            borderRadius: "24px",
+            backgroundImage: "none",
+            display: "flex",
+            flexDirection: "column",
+            overflow: "hidden",
+          },
+        }
       }}
     >
       <Box sx={{ p: 3, pb: 2, overflowY: "auto" }}>
@@ -292,7 +294,7 @@ export default function AddExternalEntityDialog({
               setType(nextType);
               setNewRelation((s) => ({
                 ...s,
-                relationType: nextType === "pet" ? "pet_owner" : "friend",
+                relationType: nextType === "pet" ? "pet_owner" : "other",
                 dates: "",
                 notes: "",
               }));
@@ -375,8 +377,10 @@ export default function AddExternalEntityDialog({
                 value={birthday}
                 onClick={() => setBirthdayPickerOpen(true)}
                 fullWidth
-                InputProps={{ readOnly: true, sx: { cursor: "pointer" } }}
                 sx={fieldSx}
+                slotProps={{
+                  input: { readOnly: true, sx: { cursor: "pointer" } }
+                }}
               />
             </Stack>
           </Box>
@@ -410,7 +414,9 @@ export default function AddExternalEntityDialog({
                     }}
                   >
                     <Box sx={{ flex: 1 }}>
-                      <Typography variant="body2" fontWeight={600}>
+                      <Typography variant="body2" sx={{
+                        fontWeight: 600
+                      }}>
                         {rel.targetKind === "external"
                           ? external
                             ? `${external.id} :: ${getExternalEntityLabel(external)}`
@@ -419,7 +425,9 @@ export default function AddExternalEntityDialog({
                             ? getPersonLabel(person)
                             : `ID ${rel.mainPersonId}`}
                       </Typography>
-                      <Typography variant="caption" color="text.secondary">
+                      <Typography variant="caption" sx={{
+                        color: "text.secondary"
+                      }}>
                         {getRelationTypeLabel(rel.relationType)}
                         {rel.dates ? ` · ${rel.dates}` : ""}
                         {rel.notes ? ` — ${rel.notes}` : ""}
@@ -430,7 +438,7 @@ export default function AddExternalEntityDialog({
                       color="error"
                       onClick={() => handleRemoveRelation(rel.id)}
                     >
-                      <DeleteOutlineIcon fontSize="small" />
+                      <DeleteOutlineOutlinedIcon fontSize="small" />
                     </IconButton>
                   </Box>
                 );

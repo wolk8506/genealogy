@@ -22,14 +22,16 @@ export default function ExternalInspectorPanel({
       onClose={onClose}
       variant="persistent"
       {...inspectorDrawerTransitionProps}
-      PaperProps={{
-        sx: {
-          top: 50,
-          height: "calc(100% - 50px)",
-          ...inspectorPaperSx,
-          borderLeft: "1px solid",
-          borderColor: "divider",
-        },
+      slotProps={{
+        paper: {
+          sx: {
+            top: 50,
+            height: "calc(100% - 50px)",
+            ...inspectorPaperSx,
+            borderLeft: "1px solid",
+            borderColor: "divider",
+          },
+        }
       }}
     >
       <Box
@@ -50,7 +52,9 @@ export default function ExternalInspectorPanel({
           }}
         >
           <ContactsIcon color="primary" sx={{ fontSize: 20 }} />
-          <Typography variant="subtitle1" fontWeight={800}>
+          <Typography variant="subtitle1" sx={{
+            fontWeight: 800
+          }}>
             Карточка
           </Typography>
         </Box>

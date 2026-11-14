@@ -23,10 +23,13 @@ export function ReleaseNotesList({ groups, sx }) {
           {hasTitles && group.title && (
             <Typography
               variant="caption"
-              fontWeight={600}
-              color="text.secondary"
-              sx={{ display: "block", mb: 0.5, letterSpacing: "0.01em" }}
-            >
+              sx={{
+                fontWeight: 600,
+                color: "text.secondary",
+                display: "block",
+                mb: 0.5,
+                letterSpacing: "0.01em"
+              }}>
               {group.title}
             </Typography>
           )}

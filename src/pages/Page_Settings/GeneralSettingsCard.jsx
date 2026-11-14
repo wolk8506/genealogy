@@ -7,7 +7,7 @@ import NewReleasesIcon from "@mui/icons-material/NewReleases";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 
 import { useSettingsStore } from "../../store/useSettingsStore";
-import { ThemeContext } from "../../theme/ThemeContext.cjs";
+import { ThemeContext } from "../../theme/ThemeContext.js";
 import CustomSwitch from "../../components/CustomSwitch";
 import {
   groupSx,
@@ -40,33 +40,40 @@ function SliderRow({ icon, title, subtitle, valueLabel, startLabel, endLabel, sl
     >
       <Stack
         direction="row"
-        alignItems="center"
         spacing={1.5}
-        sx={{ flex: "1 1 220px", minWidth: 0 }}
-      >
+        sx={{
+          alignItems: "center",
+          flex: "1 1 220px",
+          minWidth: 0
+        }}>
         {icon}
         <Box sx={{ minWidth: 0 }}>
-          <Typography variant="body2" fontWeight={600} sx={{ lineHeight: 1.35 }}>
+          <Typography
+            variant="body2"
+            sx={{
+              fontWeight: 600,
+              lineHeight: 1.35
+            }}>
             {title}
           </Typography>
           <Typography
             variant="caption"
-            color="text.secondary"
-            display="block"
-            sx={{ lineHeight: 1.35 }}
-          >
+            sx={{
+              color: "text.secondary",
+              display: "block",
+              lineHeight: 1.35
+            }}>
             {subtitle}
           </Typography>
         </Box>
         <Typography
           variant="body2"
-          color="text.secondary"
           sx={{
+            color: "text.secondary",
             flexShrink: 0,
             pr: 1,
-            fontVariantNumeric: "tabular-nums",
-          }}
-        >
+            fontVariantNumeric: "tabular-nums"
+          }}>
           {valueLabel}
         </Typography>
       </Stack>
@@ -120,15 +127,18 @@ export const GeneralSettingsCard = ({ cardStyle }) => {
           <DisplaySettingsIcon sx={{ fontSize: 18 }} />
         </RowIcon>
         <Box sx={{ minWidth: 0 }}>
-          <Typography variant="subtitle1" fontWeight={700} noWrap>
+          <Typography variant="subtitle1" noWrap sx={{
+            fontWeight: 700
+          }}>
             Общие параметры
           </Typography>
           <Typography
             variant="caption"
-            color="text.secondary"
-            display="block"
             noWrap
-          >
+            sx={{
+              color: "text.secondary",
+              display: "block"
+            }}>
             Внешний вид и поведение приложения
           </Typography>
         </Box>

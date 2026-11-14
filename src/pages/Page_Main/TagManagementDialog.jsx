@@ -107,17 +107,19 @@ export default function TagManagementDialog({ personId }) {
         onClick={(e) => e.stopPropagation()}
         maxWidth={false}
         transitionDuration={{ enter: 180, exit: 140 }}
-        PaperProps={{
-          sx: {
-            width: 440,
-            maxWidth: "94vw",
-            maxHeight: "calc(100vh - 64px)",
-            borderRadius: "24px",
-            backgroundImage: "none",
-            display: "flex",
-            flexDirection: "column",
-            overflow: "hidden",
-          },
+        slotProps={{
+          paper: {
+            sx: {
+              width: 440,
+              maxWidth: "94vw",
+              maxHeight: "calc(100vh - 64px)",
+              borderRadius: "24px",
+              backgroundImage: "none",
+              display: "flex",
+              flexDirection: "column",
+              overflow: "hidden",
+            },
+          }
         }}
       >
         <Box sx={{ p: 3, pb: 2, overflowY: "auto" }}>
@@ -141,7 +143,9 @@ export default function TagManagementDialog({ personId }) {
                 value={newTagName}
                 onChange={(e) => setNewTagName(e.target.value)}
                 sx={fieldSx}
-                inputProps={{ maxLength: 24 }}
+                slotProps={{
+                  htmlInput: { maxLength: 24 }
+                }}
               />
 
               <Typography
@@ -154,9 +158,10 @@ export default function TagManagementDialog({ personId }) {
                 direction="row"
                 spacing={1}
                 useFlexGap
-                flexWrap="wrap"
-                sx={{ mt: 0.5 }}
-              >
+                sx={{
+                  flexWrap: "wrap",
+                  mt: 0.5
+                }}>
                 {DEFAULT_PALETTE.map((color) => (
                   <Box
                     component="button"
@@ -186,19 +191,20 @@ export default function TagManagementDialog({ personId }) {
 
               <Stack
                 direction="row"
-                alignItems="center"
-                gap={1.5}
                 sx={{
+                  alignItems: "center",
+                  gap: 1.5,
                   mt: 2.5,
                   px: 1.5,
                   py: 1,
                   borderRadius: "12px",
                   bgcolor: "action.hover",
-                  minHeight: 40,
-                }}
-              >
+                  minHeight: 40
+                }}>
                 <SellIcon sx={{ fontSize: 18, color: newTagColor }} />
-                <Typography variant="body2" color="text.secondary" noWrap>
+                <Typography variant="body2" noWrap sx={{
+                  color: "text.secondary"
+                }}>
                   {newTagName.trim() || "Предпросмотр метки"}
                 </Typography>
               </Stack>
@@ -216,9 +222,12 @@ export default function TagManagementDialog({ personId }) {
                 {tags.length === 0 ? (
                   <Typography
                     variant="body2"
-                    color="text.secondary"
-                    sx={{ textAlign: "center", px: 2, py: 3 }}
-                  >
+                    sx={{
+                      color: "text.secondary",
+                      textAlign: "center",
+                      px: 2,
+                      py: 3
+                    }}>
                     Меток пока нет
                   </Typography>
                 ) : (
@@ -255,15 +264,14 @@ export default function TagManagementDialog({ personId }) {
                         <SellIcon sx={{ fontSize: 18, color: tag.color }} />
                         <Typography
                           variant="body2"
-                          fontWeight={isChecked ? 600 : 400}
                           sx={{
+                            fontWeight: isChecked ? 600 : 400,
                             flex: 1,
                             minWidth: 0,
                             overflow: "hidden",
                             textOverflow: "ellipsis",
-                            whiteSpace: "nowrap",
-                          }}
-                        >
+                            whiteSpace: "nowrap"
+                          }}>
                           {tag.name}
                         </Typography>
                         <Tooltip
@@ -298,9 +306,12 @@ export default function TagManagementDialog({ personId }) {
               {tags.length > 0 ? (
                 <Typography
                   variant="caption"
-                  color="text.secondary"
-                  sx={{ display: "block", mt: 1, px: 0.5 }}
-                >
+                  sx={{
+                    color: "text.secondary",
+                    display: "block",
+                    mt: 1,
+                    px: 0.5
+                  }}>
                   {canAddNew
                     ? "Удаление метки убирает её у всех людей."
                     : "Достигнут лимит: 8 меток."}
@@ -308,9 +319,12 @@ export default function TagManagementDialog({ personId }) {
               ) : (
                 <Typography
                   variant="caption"
-                  color="text.secondary"
-                  sx={{ display: "block", mt: 1, px: 0.5 }}
-                >
+                  sx={{
+                    color: "text.secondary",
+                    display: "block",
+                    mt: 1,
+                    px: 0.5
+                  }}>
                   Метки помогают отмечать людей в списке.
                 </Typography>
               )}

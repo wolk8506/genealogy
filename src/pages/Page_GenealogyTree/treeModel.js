@@ -3,6 +3,8 @@
 // Люди — узлы, пары — соединительные линии, дети привязываются к паре.
 // Раскладки возвращают только координаты и связи по id; рендер живёт отдельно.
 
+import { DEFAULT_TREE_MODE } from "./treeModes.js";
+
 export const CARD_W = 196;
 export const CARD_H = 60;
 export const COUPLE_GAP = 18;
@@ -858,21 +860,22 @@ function buildFanBlock(graph, rootId) {
   };
 }
 
-export function buildTreeLayout(graph, rootPersonId, mode = "descendants") {
+export function buildTreeLayout(graph, rootPersonId, mode = DEFAULT_TREE_MODE) {
   const root = idOf(rootPersonId);
   if (!graph || !root || !graph.byId.has(root)) return null;
 
   layoutKeySeq = 0;
 
   switch (mode) {
-    case "ancestors": {
+    case "ancestors":
+    default: {
       const block = buildAncestorBlock(
         root,
         0,
         { graph, seen: new Set() },
         true,
       );
-      return block ? { ...block, mode } : null;
+      return block ? { ...block, mode: "ancestors" } : null;
     }
     case "full": {
       const block = buildFullBlock(graph, root);
@@ -886,8 +889,7 @@ export function buildTreeLayout(graph, rootPersonId, mode = "descendants") {
       const block = buildFanBlock(graph, root);
       return block ? { ...block, mode } : null;
     }
-    case "descendants":
-    default: {
+    case "descendants": {
       const block = buildDescendantBlock(
         root,
         0,

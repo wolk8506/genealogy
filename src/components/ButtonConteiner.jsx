@@ -1,36 +1,66 @@
 import React from "react";
 import { Box } from "@mui/material";
-import { toolbarPillHoverBg, toolbarPillSx } from "../layout/toolbarStyles";
+import ToolbarButtonGroup from "./ToolbarButtonGroup";
+import {
+  useToolbarButtonGroupHitSx,
+  useToolbarCapsuleSingle,
+} from "./ToolbarCapsuleContext";
+import { TOOLBAR_CAPSULE, TOOLBAR_HIT } from "../layout/toolbarTokens";
 
-// Вспомогательный компонент для группировки кнопок в общую «пилюлю».
-export default function ButtonConteiner({ children }) {
-  const isGroup = React.Children.count(children) > 1;
+/**
+ * Одна или несколько icon-кнопок в glass-капсуле (как эталон галереи).
+ */
+function IconHitWrapper({ children }) {
+  const isSingle = useToolbarCapsuleSingle();
+  const hitSx = useToolbarButtonGroupHitSx(false);
+  const btnSize = isSingle ? TOOLBAR_CAPSULE.height : TOOLBAR_HIT.minWidth;
 
   return (
     <Box
       sx={{
-        ...toolbarPillSx,
-        display: "inline-flex",
-        flexShrink: 0,
-        alignItems: "center",
-        justifyContent: "center",
-        color: "text.primary",
-        fontSize: 20,
-        backdropFilter: "blur(6px)",
-        "&:hover": { backgroundColor: "rgba(153, 153, 153, 0.17)" },
-        "& > .MuiIconButton-root": {
-          width: 36,
-          height: 36,
-          p: isGroup ? "3px" : 0,
-          backgroundClip: isGroup ? "content-box" : "border-box",
+        ...hitSx,
+        p: 0,
+        ...(isSingle && {
+          width: TOOLBAR_CAPSULE.height,
+          flex: `0 0 ${TOOLBAR_CAPSULE.height}px`,
+        }),
+        "& > .MuiTooltip-root": {
+          display: "inline-flex",
+          width: isSingle ? "100%" : "auto",
+          height: isSingle ? "100%" : "auto",
+          alignItems: "center",
+          justifyContent: "center",
         },
-        "& > .MuiIconButton-root:hover:not(.Mui-disabled)": {
-          backgroundColor: toolbarPillHoverBg,
+        "& .MuiIconButton-root": {
+          width: btnSize,
+          height: btnSize,
+          p: 0,
+          borderRadius: isSingle
+            ? TOOLBAR_CAPSULE.radiusPx
+            : TOOLBAR_HIT.radiusPx,
+          color: "inherit",
         },
-        "& .MuiDivider-root": { my: 1 },
+        "& .MuiIconButton-root:hover": {
+          backgroundColor: "transparent",
+        },
       }}
     >
       {children}
     </Box>
+  );
+}
+
+export default function ButtonConteiner({ children, sx, contentSx }) {
+  const count = React.Children.count(children);
+  const gap = count > 1 ? TOOLBAR_CAPSULE.gapControlsPx : 0;
+
+  return (
+    <ToolbarButtonGroup gap={gap} sx={sx} contentSx={contentSx}>
+      {React.Children.map(children, (child, index) => (
+        <IconHitWrapper key={child?.key ?? index}>
+          {child}
+        </IconHitWrapper>
+      ))}
+    </ToolbarButtonGroup>
   );
 }

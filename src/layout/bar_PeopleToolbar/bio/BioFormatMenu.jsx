@@ -243,8 +243,12 @@ export default function BioFormatMenu({ execRef }) {
             width: 40,
             height: 36,
             borderRadius: "999px",
-            color: "text.primary",
-            "&:hover": { bgcolor: "action.hover" },
+            color: "inherit",
+            p: 0,
+            width: "auto",
+            height: "auto",
+            borderRadius: 0,
+            "&:hover": { bgcolor: "transparent" },
           }}
         >
           <TextFormatIcon height={15} />
@@ -258,7 +262,6 @@ export default function BioFormatMenu({ execRef }) {
         anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
         transformOrigin={{ vertical: "top", horizontal: "center" }}
         transitionDuration={{ enter: 140, exit: 100 }}
-        MenuListProps={{ sx: { p: 0 } }}
         slotProps={{
           paper: {
             sx: (t) => {
@@ -283,6 +286,8 @@ export default function BioFormatMenu({ execRef }) {
               };
             },
           },
+
+          list: { sx: { p: 0 } },
         }}
       >
         <Box sx={{ px: 1.25, py: 0.5 }}>
@@ -457,7 +462,6 @@ export default function BioFormatMenu({ execRef }) {
         anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
         transformOrigin={{ vertical: "top", horizontal: "left" }}
         transitionDuration={{ enter: 120, exit: 90 }}
-        MenuListProps={{ sx: { p: 0.5 } }}
         slotProps={{
           paper: {
             sx: (theme) => {
@@ -477,6 +481,8 @@ export default function BioFormatMenu({ execRef }) {
               };
             },
           },
+
+          list: { sx: { p: 0.5 } },
         }}
       >
         {BIO_HIGHLIGHT_COLORS.map((color) => (

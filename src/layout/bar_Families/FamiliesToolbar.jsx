@@ -1,12 +1,17 @@
 // layout/bar_Families/FamiliesToolbar.jsx
-// Тулбар страницы «Семьи» в хедере приложения:
-// каталог — поиск и сортировка, детальный вид — переключатель союзов.
+// Тулбар страницы «Семьи» в хедере: сортировка, затем поиск (как в галерее).
 
 import React from "react";
-import { Stack } from "@mui/material";
+import { Stack, Box } from "@mui/material";
 import ExpandingSearch from "../../components/ExpandingSearch";
 import FamilySortPill from "./FamilySortPill";
 import FamilyUnionPill from "./FamilyUnionPill";
+import ToolbarButtonGroup from "../../components/ToolbarButtonGroup";
+import {
+  toolbarClusterSx,
+  toolbarDragSpacerSx,
+  toolbarRowSx,
+} from "../appBarToolbarLayout";
 
 export default function FamiliesToolbar({
   detail = false,
@@ -20,27 +25,36 @@ export default function FamiliesToolbar({
 }) {
   if (detail) {
     return (
-      <Stack direction="row" spacing={2} ml="auto">
-        <FamilyUnionPill
-          options={unionOptions}
-          activeKey={activeUnionKey}
-          onSelect={onOpenUnion}
-        />
+      <Stack direction="row" sx={toolbarRowSx}>
+        <Box sx={toolbarDragSpacerSx} />
+        <Box sx={toolbarClusterSx}>
+          <FamilyUnionPill
+            options={unionOptions}
+            activeKey={activeUnionKey}
+            onSelect={onOpenUnion}
+          />
+        </Box>
       </Stack>
     );
   }
 
   return (
-    <Stack direction="row" spacing={2} ml="auto">
-      <ExpandingSearch
-        scope="families"
-        value={search}
-        onChange={setSearch}
-        placeholder="Имена, место, год"
-        tooltip="Поиск по семьям"
-      />
+    <Stack direction="row" sx={toolbarRowSx}>
+      <Box sx={toolbarDragSpacerSx} />
 
-      <FamilySortPill value={sort} onChange={setSort} />
+      <Box sx={{ ...toolbarClusterSx, minWidth: 0 }}>
+        <ToolbarButtonGroup>
+          <FamilySortPill nested value={sort} onChange={setSort} />
+        </ToolbarButtonGroup>
+
+        <ExpandingSearch
+          scope="families"
+          value={search}
+          onChange={setSearch}
+          placeholder="Имена, место, год"
+          tooltip="Поиск по семьям"
+        />
+      </Box>
     </Stack>
   );
 }

@@ -71,14 +71,16 @@ export default function GenealogyTreeInspector({
         onClose={onClose}
         variant="persistent"
         {...inspectorDrawerTransitionProps}
-        PaperProps={{
-          sx: {
-            top: 50,
-            height: "calc(100% - 50px)",
-            ...inspectorPaperSx,
-            borderLeft: "1px solid",
-            borderColor: "divider",
-          },
+        slotProps={{
+          paper: {
+            sx: {
+              top: 50,
+              height: "calc(100% - 50px)",
+              ...inspectorPaperSx,
+              borderLeft: "1px solid",
+              borderColor: "divider",
+            },
+          }
         }}
       >
         <Box
@@ -90,7 +92,9 @@ export default function GenealogyTreeInspector({
             p: 2,
           }}
         >
-          <Typography color="text.secondary" variant="body2">
+          <Typography variant="body2" sx={{
+            color: "text.secondary"
+          }}>
             Выберите человека в дереве для просмотра информации
           </Typography>
         </Box>
@@ -186,14 +190,16 @@ export default function GenealogyTreeInspector({
       onClose={onClose}
       variant="persistent"
       {...inspectorDrawerTransitionProps}
-      PaperProps={{
-        sx: {
-          top: 50,
-          height: "calc(100% - 50px)",
-          ...inspectorPaperSx,
-          borderLeft: "1px solid",
-          borderColor: "divider",
-        },
+      slotProps={{
+        paper: {
+          sx: {
+            top: 50,
+            height: "calc(100% - 50px)",
+            ...inspectorPaperSx,
+            borderLeft: "1px solid",
+            borderColor: "divider",
+          },
+        }
       }}
     >
       <Box
@@ -236,9 +242,11 @@ export default function GenealogyTreeInspector({
                 </Typography>
                 <Typography
                   variant="caption"
-                  color="text.secondary"
-                  sx={{ display: "block", mt: 0.25 }}
-                >
+                  sx={{
+                    color: "text.secondary",
+                    display: "block",
+                    mt: 0.25
+                  }}>
                   Поколение {person.generation ?? "—"}
                 </Typography>
               </Box>
@@ -251,7 +259,9 @@ export default function GenealogyTreeInspector({
                 icon={<RowIcon bg={genderColor}>{genderIcon}</RowIcon>}
                 title="Пол"
                 trailing={
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography variant="body2" sx={{
+                    color: "text.secondary"
+                  }}>
                     {person.gender === "male"
                       ? "Мужской"
                       : person.gender === "female"
@@ -269,7 +279,9 @@ export default function GenealogyTreeInspector({
                 }
                 title="Дата рождения"
                 trailing={
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography variant="body2" sx={{
+                    color: "text.secondary"
+                  }}>
                     {formatDate(person.birthday)}
                   </Typography>
                 }
@@ -284,7 +296,9 @@ export default function GenealogyTreeInspector({
                   }
                   title="Дата смерти"
                   trailing={
-                    <Typography variant="body2" color="text.secondary">
+                    <Typography variant="body2" sx={{
+                      color: "text.secondary"
+                    }}>
                       {formatDate(person.death)}
                     </Typography>
                   }

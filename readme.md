@@ -64,6 +64,11 @@ external/
 ```bash
 npm install
 npm run dev
+npm test          # быстрые unit-тесты (без mock:library)
+npm run test:full # полный прогон, включая mock:library и round-trip
+```
+
+Перед push желательно выполнить `npm test`; перед релизом — `npm run test:full` (см. [docs/maintenance/testing.md](docs/maintenance/testing.md)).
 ```
 
 Тестовая библиотека с вымышленными людьми и местами создаётся командой:
@@ -78,10 +83,12 @@ npm run mock:library
 
 ```bash
 npm run build        # рендерер + установщик для текущей платформы
-npm run dist:mac     # DMG
+npm run dist:mac     # DMG, только Apple Silicon (arm64)
 npm run dist:win     # NSIS
 npm run dist:linux   # AppImage
 ```
+
+Сборка macOS намеренно делает один arm64-артефакт: компьютеры на Intel не поддерживаются, и CI собирает ровно тот же `.dmg`, что и `npm run dist:mac`.
 
 ## 📌 Особенности
 
@@ -95,6 +102,8 @@ npm run dist:linux   # AppImage
 
 - [Руководство пользователя](./USER_GUIDE.md) — разделы приложения, настройки и скриншоты
 - [История изменений](./CHANGELOG.md)
+- [Архитектура (агенты и разработчики)](./docs/architecture.md) — main/preload, `genealogy-data.json`, `photos.json`, **`genealogy.sqlite`** (индекс лиц, геокод), бэкап ZIP
+- [npm audit (снимок)](./docs/maintenance/npm-audit.md) — оставшиеся low/moderate advisories без `audit fix --force`
 
 ---
 

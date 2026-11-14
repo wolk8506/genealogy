@@ -33,8 +33,10 @@ export default function ConfirmDialog({
       onClose={() => {
         if (!busy) onClose(false);
       }}
-      PaperProps={{
-        sx: (t) => ({ ...glassPaperSx(t), width: 300 }),
+      slotProps={{
+        paper: {
+          sx: (t) => ({ ...glassPaperSx(t), width: 300 }),
+        }
       }}
     >
       {title && (

@@ -1,4 +1,9 @@
 // exportToZip.js
+import {
+  buildExportManifest,
+  buildGenealogyDataExportPayload,
+} from "../../main/handlers/exportArchiveManifest.cjs";
+
 export const exportPeopleToZip = async ({
   people,
   defaultFilename = `Genealogy_export_${Date.now()}.zip`,
@@ -123,17 +128,13 @@ export const exportPeopleToZip = async ({
     await window.fileAPI.writeText(
       manifestPath,
       JSON.stringify(
-        {
-          appIdentifier: "MY_GENEALOGY_APP",
+        buildExportManifest({
           archiveName: resolvedArchiveName,
           createdAt,
-          selectedPhotoFolders: photoFolders,
           photoFolders,
-          includeTags: Boolean(includeTags),
-          includeHistory: Boolean(includeHistory),
-          kind: "genealogy-archive",
-          version: 2,
-        },
+          includeTags,
+          includeHistory,
+        }),
         null,
         2,
       ),
@@ -144,17 +145,14 @@ export const exportPeopleToZip = async ({
     await window.fileAPI.writeText(
       jsonPath,
       JSON.stringify(
-        {
-          schemaVersion: 1,
-          appIdentifier: "MY_GENEALOGY_APP",
-          archiveName: resolvedArchiveName,
-          exportedAt: createdAt,
-          selectedPhotoFolders: photoFolders,
-          photoFolders,
-          includeTags: Boolean(includeTags),
-          includeHistory: Boolean(includeHistory),
+        buildGenealogyDataExportPayload({
           people,
-        },
+          archiveName: resolvedArchiveName,
+          createdAt,
+          photoFolders,
+          includeTags,
+          includeHistory,
+        }),
         null,
         2,
       ),

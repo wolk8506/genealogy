@@ -34,7 +34,9 @@ export default function MapLegend() {
     >
       <Stack spacing={0.5}>
         {ITEMS.map((item) => (
-          <Stack key={item.label} direction="row" alignItems="center" spacing={1}>
+          <Stack key={item.label} direction="row" spacing={1} sx={{
+            alignItems: "center"
+          }}>
             <Box
               sx={{
                 width: 10,
@@ -44,7 +46,9 @@ export default function MapLegend() {
                 flexShrink: 0,
               }}
             />
-            <Typography variant="caption" color="inherit">
+            <Typography variant="caption" sx={{
+              color: "inherit"
+            }}>
               {item.label}
             </Typography>
           </Stack>

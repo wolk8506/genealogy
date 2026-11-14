@@ -265,14 +265,16 @@ export default function AddPersonModal({ open, onClose }) {
         onClose={onClose}
         maxWidth="sm"
         transitionDuration={{ enter: 180, exit: 140 }}
-        PaperProps={{
-          sx: {
-            borderRadius: "24px",
-            backgroundImage: "none",
-            width: 600,
-            maxWidth: "94vw",
-            overflow: "hidden",
-          },
+        slotProps={{
+          paper: {
+            sx: {
+              borderRadius: "24px",
+              backgroundImage: "none",
+              width: 600,
+              maxWidth: "94vw",
+              overflow: "hidden",
+            },
+          }
         }}
       >
         <Box sx={{ p: 3, pb: 2 }}>
@@ -335,22 +337,24 @@ export default function AddPersonModal({ open, onClose }) {
                     sx={fieldSx}
                     value={gender}
                     onChange={(e) => setGender(e.target.value)}
-                    InputProps={{
-                      startAdornment: gender && (
-                        <Box
-                          sx={{
-                            mr: 1,
-                            display: "flex",
-                            color: "action.active",
-                          }}
-                        >
-                          {gender === "male" ? (
-                            <MaleIcon fontSize="small" />
-                          ) : (
-                            <FemaleIcon fontSize="small" />
-                          )}
-                        </Box>
-                      ),
+                    slotProps={{
+                      input: {
+                        startAdornment: gender && (
+                          <Box
+                            sx={{
+                              mr: 1,
+                              display: "flex",
+                              color: "action.active",
+                            }}
+                          >
+                            {gender === "male" ? (
+                              <MaleIcon fontSize="small" />
+                            ) : (
+                              <FemaleIcon fontSize="small" />
+                            )}
+                          </Box>
+                        ),
+                      }
                     }}
                   >
                     <MenuItem value="male">Мужской</MenuItem>
@@ -386,7 +390,9 @@ export default function AddPersonModal({ open, onClose }) {
                     sx={fieldSx}
                     value={birthday}
                     onClick={() => setBirthdayPickerOpen(true)}
-                    InputProps={{ readOnly: true }}
+                    slotProps={{
+                      input: { readOnly: true }
+                    }}
                   />
                 </Grid>
                 <Grid size={{ xs: 12, sm: 4.4 }}>
@@ -397,7 +403,9 @@ export default function AddPersonModal({ open, onClose }) {
                     sx={fieldSx}
                     value={died}
                     onClick={() => setDiedPickerOpen(true)}
-                    InputProps={{ readOnly: true }}
+                    slotProps={{
+                      input: { readOnly: true }
+                    }}
                   />
                 </Grid>
                 <Grid size={{ xs: 12, sm: 3.2 }}>

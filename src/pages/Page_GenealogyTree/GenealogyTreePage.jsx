@@ -5,6 +5,7 @@ import React, { useMemo } from "react";
 import { Box, Button, CircularProgress, Stack, Typography } from "@mui/material";
 import AccountTreeIcon from "@mui/icons-material/AccountTree";
 import GenealogyTreeCanvas from "./GenealogyTreeCanvas";
+import { DEFAULT_TREE_MODE } from "./treeModes";
 import {
   buildFamilyGraph,
   buildTreeLayout,
@@ -16,7 +17,7 @@ export default function GenealogyTreePage({
   loading,
   error,
   onRetry,
-  mode = "descendants",
+  mode = DEFAULT_TREE_MODE,
   personId,
   rootPersonId,
   onSelectPerson,
@@ -60,16 +61,22 @@ export default function GenealogyTreePage({
           px: 3,
         }}
       >
-        <Stack alignItems="center" spacing={1.5} sx={{ maxWidth: 380 }}>
+        <Stack
+          spacing={1.5}
+          sx={{
+            alignItems: "center",
+            maxWidth: 380
+          }}>
           <AccountTreeIcon sx={{ fontSize: 48, color: "text.disabled" }} />
           <Typography sx={{ fontWeight: 700, textAlign: "center" }}>
             {error ? "Не удалось загрузить данные" : "Нет данных для дерева"}
           </Typography>
           <Typography
             variant="body2"
-            color="text.secondary"
-            sx={{ textAlign: "center" }}
-          >
+            sx={{
+              color: "text.secondary",
+              textAlign: "center"
+            }}>
             {error
               ? "Проверьте хранилище и попробуйте ещё раз."
               : "Добавьте людей и связи между ними — дерево построится автоматически."}

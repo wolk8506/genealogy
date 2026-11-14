@@ -199,13 +199,13 @@ const HashtagInput = ({
 
       <TextField
         label={label}
-        InputLabelProps={{ shrink: true }}
         multiline
         fullWidth
         rows={4}
         value={value}
         onChange={handleTextChange}
-        onKeyDown={handleKeyDown} // Добавлен обработчик
+        // Добавлен обработчик
+        onKeyDown={handleKeyDown}
         onBlur={onBlur}
         variant="outlined"
         placeholder={placeholder}
@@ -221,6 +221,9 @@ const HashtagInput = ({
             },
           },
           "& .MuiInputLabel-root": { zIndex: 3 },
+        }}
+        slotProps={{
+          inputLabel: { shrink: true }
         }}
       />
 
@@ -268,10 +271,13 @@ const HashtagInput = ({
                 >
                   <ListItemText
                     primary={tag.startsWith("#") ? tag : `#${tag}`}
-                    primaryTypographyProps={{
-                      fontSize: "0.85rem",
-                      fontWeight: isActive ? 700 : 500,
-                      color: isActive ? "primary.main" : "text.primary",
+                    slotProps={{
+                      primary: {
+                        sx: {
+                          fontSize: "0.85rem",
+                          fontWeight: isActive ? 700 : 500,
+                          color: isActive ? "primary.main" : "text.primary"
+                        }}
                     }}
                   />
                 </ListItemButton>

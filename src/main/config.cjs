@@ -140,6 +140,11 @@ function removeRoot(dirPath) {
 }
 
 function getBaseDir() {
+  const testRoot = process.env.GENEALOGY_TEST_ROOT;
+  if (testRoot && typeof testRoot === "string") {
+    const normalized = path.normalize(testRoot.trim());
+    if (path.isAbsolute(normalized)) return normalized;
+  }
   return getActiveRoot();
 }
 

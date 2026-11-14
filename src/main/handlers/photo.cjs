@@ -2,7 +2,7 @@ const { ipcMain, app, dialog } = require("electron");
 const path = require("path");
 const fs = require("fs");
 const sharp = require("sharp");
-const archiver = require("archiver");
+const { ZipArchive } = require("archiver");
 const PDFDocument = require("pdfkit");
 const os = require("os");
 const log = require("../logger.cjs").createLogger("photo");
@@ -585,7 +585,7 @@ module.exports = (settingsStore) => {
     if (canceled || !filePath) return null;
 
     const output = fs.createWriteStream(filePath);
-    const archive = archiver("zip", { zlib: { level: 9 } });
+    const archive = new ZipArchive({ zlib: { level: 9 } });
 
     archive.pipe(output);
 

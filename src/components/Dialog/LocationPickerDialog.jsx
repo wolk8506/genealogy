@@ -482,14 +482,16 @@ export default function LocationPickerDialog({
       open={open}
       onClose={handleClose}
       maxWidth={false}
-      PaperProps={{
-        sx: {
-          borderRadius: "24px",
-          backgroundImage: "none",
-          width: 560,
-          maxWidth: "94vw",
-          overflow: "hidden",
-        },
+      slotProps={{
+        paper: {
+          sx: {
+            borderRadius: "24px",
+            backgroundImage: "none",
+            width: 560,
+            maxWidth: "94vw",
+            overflow: "hidden",
+          },
+        }
       }}
     >
       <Box sx={{ position: "relative" }}>
@@ -590,16 +592,15 @@ export default function LocationPickerDialog({
 
         <Stack
           direction="row"
-          alignItems="center"
           spacing={1.5}
           sx={{
+            alignItems: "center",
             mt: 2,
             p: 1.5,
             borderRadius: "16px",
             bgcolor: "action.hover",
-            ...hiddenSx,
-          }}
-        >
+            ...hiddenSx
+          }}>
           <Box
             sx={{
               width: 44,
@@ -624,12 +625,11 @@ export default function LocationPickerDialog({
             </Typography>
             <Typography
               variant="caption"
-              color="text.secondary"
               sx={{
+                color: "text.secondary",
                 display: "block",
-                wordBreak: "break-word",
-              }}
-            >
+                wordBreak: "break-word"
+              }}>
               {subtitle}
             </Typography>
           </Box>
@@ -664,25 +664,27 @@ export default function LocationPickerDialog({
             if (e.key === "Enter") handleSearch();
           }}
           sx={hiddenSx}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <IconButton
-                  size="small"
-                  edge="start"
-                  onClick={handleSearch}
-                  disabled={searching || !query.trim()}
-                  sx={{ color: "inherit" }}
-                >
-                  {searching ? (
-                    <CircularProgress size={16} color="inherit" />
-                  ) : (
-                    <SearchIcon fontSize="small" />
-                  )}
-                </IconButton>
-              </InputAdornment>
-            ),
-            sx: { borderRadius: "12px" },
+          slotProps={{
+            input: {
+              startAdornment: (
+                <InputAdornment position="start">
+                  <IconButton
+                    size="small"
+                    edge="start"
+                    onClick={handleSearch}
+                    disabled={searching || !query.trim()}
+                    sx={{ color: "inherit" }}
+                  >
+                    {searching ? (
+                      <CircularProgress size={16} color="inherit" />
+                    ) : (
+                      <SearchIcon fontSize="small" />
+                    )}
+                  </IconButton>
+                </InputAdornment>
+              ),
+              sx: { borderRadius: "12px" },
+            }
           }}
         />
         {searchError && (
@@ -721,10 +723,11 @@ export default function LocationPickerDialog({
           >
             <Stack
               direction="row"
-              alignItems="center"
               spacing={1}
-              sx={{ mb: 2 }}
-            >
+              sx={{
+                alignItems: "center",
+                mb: 2
+              }}>
               <IconButton
                 size="small"
                 onClick={() => setView("picker")}
@@ -743,13 +746,15 @@ export default function LocationPickerDialog({
               value={savedQuery}
               onChange={(e) => setSavedQuery(e.target.value)}
               sx={{ mb: 1.5 }}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchIcon fontSize="small" sx={{ color: "text.secondary" }} />
-                  </InputAdornment>
-                ),
-                sx: { borderRadius: "12px" },
+              slotProps={{
+                input: {
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon fontSize="small" sx={{ color: "text.secondary" }} />
+                    </InputAdornment>
+                  ),
+                  sx: { borderRadius: "12px" },
+                }
               }}
             />
             <Box
@@ -806,14 +811,13 @@ export default function LocationPickerDialog({
                     </Typography>
                     <Typography
                       variant="caption"
-                      color="text.secondary"
                       sx={{
+                        color: "text.secondary",
                         display: "block",
                         whiteSpace: "nowrap",
                         overflow: "hidden",
-                        textOverflow: "ellipsis",
-                      }}
-                    >
+                        textOverflow: "ellipsis"
+                      }}>
                       {p.count > 1 ? `${p.count} фото` : p.date || ""}
                     </Typography>
                   </Box>
@@ -822,9 +826,12 @@ export default function LocationPickerDialog({
               {filteredSaved.length === 0 && (
                 <Typography
                   variant="body2"
-                  color="text.secondary"
-                  sx={{ display: "block", textAlign: "center", p: 3 }}
-                >
+                  sx={{
+                    color: "text.secondary",
+                    display: "block",
+                    textAlign: "center",
+                    p: 3
+                  }}>
                   Ничего не найдено
                 </Typography>
               )}

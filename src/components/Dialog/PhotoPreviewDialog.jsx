@@ -122,14 +122,16 @@ export default function PhotoPreviewDialog({ open, meta, onClose, setPhotoPaths 
       open={open}
       onClose={onClose}
       maxWidth={false}
-      PaperProps={{
-        sx: {
-          borderRadius: "24px",
-          backgroundImage: "none",
-          width: 560,
-          maxWidth: "94vw",
-          overflow: "hidden",
-        },
+      slotProps={{
+        paper: {
+          sx: {
+            borderRadius: "24px",
+            backgroundImage: "none",
+            width: 560,
+            maxWidth: "94vw",
+            overflow: "hidden",
+          },
+        }
       }}
     >
       <Box sx={{ p: 3, pb: 2 }}>

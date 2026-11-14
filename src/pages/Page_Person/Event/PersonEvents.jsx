@@ -102,7 +102,9 @@ export default function PersonEvents({
               : "rgba(0,0,0,0.01)",
         }}
       >
-        <Stack direction="row" alignItems="center" spacing={1}>
+        <Stack direction="row" spacing={1} sx={{
+          alignItems: "center"
+        }}>
           <StarIcon sx={{ color: "primary.main", fontSize: 20 }} />
           <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
             События ({sortedEvents.length})
@@ -176,12 +178,15 @@ export default function PersonEvents({
                   <Box sx={{ flex: 1 }}>
                     {/* Заголовок: Тип и Дата в стиле "чипа" */}
                     <Box
-                      display="flex"
-                      alignItems="center"
-                      justifyContent="space-between"
-                      mb={0.5}
-                    >
-                      <Stack direction="row" alignItems="center" spacing={1}>
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        mb: 0.5
+                      }}>
+                      <Stack direction="row" spacing={1} sx={{
+                        alignItems: "center"
+                      }}>
                         <Typography
                           variant="body2"
                           sx={{ fontWeight: 800, color: "text.primary" }}
@@ -236,10 +241,11 @@ export default function PersonEvents({
                         <Box sx={{ display: "flex", alignItems: "center" }}>
                           <Typography
                             variant="body2"
-                            color="text.primary"
                             component="div"
-                            sx={{ fontSize: "0.85rem" }}
-                          >
+                            sx={{
+                              color: "text.primary",
+                              fontSize: "0.85rem"
+                            }}>
                             {ev.description}
                           </Typography>
                         </Box>
@@ -248,10 +254,12 @@ export default function PersonEvents({
                       {(ev.place || ev.notes) && (
                         <Typography
                           variant="caption"
-                          color="text.secondary"
                           component="div"
-                          sx={{ display: "flex", gap: 1.5 }}
-                        >
+                          sx={{
+                            color: "text.secondary",
+                            display: "flex",
+                            gap: 1.5
+                          }}>
                           {ev.place && (
                             <Box
                               component="span"
@@ -299,14 +307,16 @@ export default function PersonEvents({
                                 component={Link}
                                 to={`/person/${p.id}`}
                                 title={labelOf(p)}
-                                display="flex"
-                                alignItems="center"
                                 sx={{
+                                  display: "flex",
+                                  alignItems: "center",
                                   mt: 0.25,
+
                                   bgcolor: (theme) =>
                                     theme.palette.mode === "dark"
                                       ? "rgba(255,255,255,0.08)"
                                       : "rgba(0,0,0,0.05)",
+
                                   px: 1,
                                   py: 0.2,
                                   borderRadius: "999px",
@@ -314,16 +324,16 @@ export default function PersonEvents({
                                   color: "text.secondary",
                                   fontSize: "0.7rem",
                                   letterSpacing: "0.5px",
-                                  textDecoration: "none",
-                                }}
-                              >
+                                  textDecoration: "none"
+                                }}>
                                 <PersonAvatar personId={p.id} size={22} />
                                 <Typography
                                   component="span"
-                                  ml={1}
                                   variant="body2"
-                                  color="text.secondary"
-                                >
+                                  sx={{
+                                    ml: 1,
+                                    color: "text.secondary"
+                                  }}>
                                   {labelOf(p)}
                                 </Typography>
                               </Box>
@@ -337,12 +347,14 @@ export default function PersonEvents({
                                 component={Link}
                                 to={`/external?selected=${encodeURIComponent(entity.id)}`}
                                 title={getExternalEntityLabel(entity)}
-                                display="flex"
-                                alignItems="center"
                                 sx={{
+                                  display: "flex",
+                                  alignItems: "center",
                                   mt: 0.25,
+
                                   bgcolor: (theme) =>
                                     alpha(theme.palette.secondary.main, 0.12),
+
                                   px: 1,
                                   py: 0.2,
                                   borderRadius: "999px",
@@ -350,9 +362,8 @@ export default function PersonEvents({
                                   color: "text.secondary",
                                   fontSize: "0.7rem",
                                   letterSpacing: "0.5px",
-                                  textDecoration: "none",
-                                }}
-                              >
+                                  textDecoration: "none"
+                                }}>
                                 <ExternalEntityAvatar
                                   entityId={entity.id}
                                   entity={entity}
@@ -360,10 +371,11 @@ export default function PersonEvents({
                                 />
                                 <Typography
                                   component="span"
-                                  ml={1}
                                   variant="body2"
-                                  color="text.secondary"
-                                >
+                                  sx={{
+                                    ml: 1,
+                                    color: "text.secondary"
+                                  }}>
                                   {getExternalEntityLabel(entity)}
                                 </Typography>
                               </Box>

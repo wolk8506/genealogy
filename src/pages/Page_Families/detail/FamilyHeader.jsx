@@ -72,9 +72,10 @@ export default function FamilyHeader({ family, onBack }) {
         <Stack
           direction="row"
           spacing={0.75}
-          alignItems="center"
-          sx={{ minWidth: 0 }}
-        >
+          sx={{
+            alignItems: "center",
+            minWidth: 0
+          }}>
           <Typography
             noWrap
             sx={{

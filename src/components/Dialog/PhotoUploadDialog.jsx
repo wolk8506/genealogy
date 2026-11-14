@@ -605,16 +605,18 @@ export default function PhotoUploadDialog({
       maxWidth="lg"
       fullWidth
       PaperComponent={DraggableDialog}
-      PaperProps={{
-        sx: {
-          borderRadius: "24px",
-          backgroundImage: "none",
-          bgcolor: "background.paper",
-          maxHeight: "90vh",
-          overflow: "hidden",
-          display: "flex",
-          flexDirection: "column",
-        },
+      slotProps={{
+        paper: {
+          sx: {
+            borderRadius: "24px",
+            backgroundImage: "none",
+            bgcolor: "background.paper",
+            maxHeight: "90vh",
+            overflow: "hidden",
+            display: "flex",
+            flexDirection: "column",
+          },
+        }
       }}
     >
       <DialogContent sx={{ p: 0 }}>
@@ -751,20 +753,24 @@ export default function PhotoUploadDialog({
                                 required
                                 error={!selectedOwner}
                                 sx={fieldSx}
-                                InputProps={{
-                                  ...params.InputProps,
-                                  startAdornment: (
-                                    <>
-                                      <PersonIcon
-                                        sx={{
-                                          color: "action.active",
-                                          ml: 1,
-                                          mr: 0.5,
-                                        }}
-                                      />
-                                      {params.InputProps.startAdornment}
-                                    </>
-                                  ),
+                                slotProps={{
+                                  ...params.slotProps,
+
+                                  input: {
+                                    ...params.slotProps.input,
+                                    startAdornment: (
+                                      <>
+                                        <PersonIcon
+                                          sx={{
+                                            color: "action.active",
+                                            ml: 1,
+                                            mr: 0.5,
+                                          }}
+                                        />
+                                        {params.slotProps.input.startAdornment}
+                                      </>
+                                    ),
+                                  }
                                 }}
                               />
                             )}
@@ -808,8 +814,10 @@ export default function PhotoUploadDialog({
                               sx={fieldSx}
                             />
                           )}
-                          ChipProps={{
-                            sx: { borderRadius: "8px", fontWeight: 500 },
+                          slotProps={{
+                            chip: {
+                              sx: { borderRadius: "8px", fontWeight: 500 },
+                            }
                           }}
                         />
 
@@ -820,26 +828,29 @@ export default function PhotoUploadDialog({
                           variant="outlined"
                           fullWidth
                           sx={fieldSx}
-                          InputProps={{
-                            readOnly: true,
-                            startAdornment: (
-                              <CalendarMonthIcon
-                                sx={{
-                                  mr: 1,
-                                  color: "action.active",
-                                  fontSize: 20,
-                                }}
-                              />
-                            ),
+                          slotProps={{
+                            input: {
+                              readOnly: true,
+                              startAdornment: (
+                                <CalendarMonthIcon
+                                  sx={{
+                                    mr: 1,
+                                    color: "action.active",
+                                    fontSize: 20,
+                                  }}
+                                />
+                              ),
+                            }
                           }}
                         />
 
                         <Stack
                           direction="row"
                           spacing={1}
-                          alignItems="center"
-                          flexWrap="wrap"
-                        >
+                          sx={{
+                            alignItems: "center",
+                            flexWrap: "wrap"
+                          }}>
                           <Button
                             size="small"
                             variant="outlined"
@@ -891,10 +902,14 @@ export default function PhotoUploadDialog({
                       }}
                     >
                       <Box sx={{ flexGrow: 1, minWidth: 0 }}>
-                        <Typography variant="body2" fontWeight={600}>
+                        <Typography variant="body2" sx={{
+                          fontWeight: 600
+                        }}>
                           Добавить ещё одну
                         </Typography>
-                        <Typography variant="caption" color="text.secondary">
+                        <Typography variant="caption" sx={{
+                          color: "text.secondary"
+                        }}>
                           Окно останется открытым после сохранения
                         </Typography>
                       </Box>
@@ -934,11 +949,13 @@ export default function PhotoUploadDialog({
 
           {/* ПРАВАЯ КОЛОНКА */}
           <Stack
-            flex={1}
-            minWidth={0}
             spacing={1.25}
-            sx={{ p: 1.5, height: "100%" }}
-          >
+            sx={{
+              flex: 1,
+              minWidth: 0,
+              p: 1.5,
+              height: "100%"
+            }}>
             <Box
               sx={{
                 position: "relative",
@@ -994,7 +1011,9 @@ export default function PhotoUploadDialog({
                   <Typography variant="body1" sx={{ fontWeight: 600 }}>
                     Перетащите фото
                   </Typography>
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography variant="body2" sx={{
+                    color: "text.secondary"
+                  }}>
                     или нажмите, чтобы выбрать файл
                   </Typography>
                 </Box>
@@ -1067,10 +1086,14 @@ export default function PhotoUploadDialog({
 
             <Typography
               variant="caption"
-              color="text.secondary"
               noWrap
-              sx={{ textAlign: "center", fontWeight: 500, px: 1, pb: 0.5 }}
-            >
+              sx={{
+                color: "text.secondary",
+                textAlign: "center",
+                fontWeight: 500,
+                px: 1,
+                pb: 0.5
+              }}>
               {filename || "Файл не выбран"}
               {faces?.length > 0 && ` · Лиц на снимке: ${faces.length}`}
               {customThumbReady && " · Превью настроено"}

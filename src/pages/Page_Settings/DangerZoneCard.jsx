@@ -150,15 +150,18 @@ export const DangerZoneCard = ({ cardStyle }) => {
           <WarningAmberIcon sx={{ fontSize: 18 }} />
         </RowIcon>
         <Box sx={{ minWidth: 0 }}>
-          <Typography variant="subtitle1" fontWeight={700} noWrap>
+          <Typography variant="subtitle1" noWrap sx={{
+            fontWeight: 700
+          }}>
             Удаление данных
           </Typography>
           <Typography
             variant="caption"
-            color="text.secondary"
-            display="block"
             noWrap
-          >
+            sx={{
+              color: "text.secondary",
+              display: "block"
+            }}>
             Необратимые действия с фото и базой
           </Typography>
         </Box>
@@ -293,25 +296,30 @@ export const DangerZoneCard = ({ cardStyle }) => {
         maxWidth="xs"
         fullWidth
         transitionDuration={{ enter: 180, exit: 140 }}
-        PaperProps={{
-          sx: { borderRadius: "24px", backgroundImage: "none" },
+        slotProps={{
+          paper: {
+            sx: { borderRadius: "24px", backgroundImage: "none" },
+          }
         }}
       >
         <Box sx={{ px: 3, pt: 3, pb: 1 }}>
           <Typography
             variant="h6"
-            fontWeight={700}
-            textAlign="center"
-            color="error.main"
-            sx={{ mb: 2 }}
-          >
+            sx={{
+              fontWeight: 700,
+              textAlign: "center",
+              color: "error.main",
+              mb: 2
+            }}>
             Полная очистка данных
           </Typography>
           <Typography
             variant="body2"
-            color="text.secondary"
-            sx={{ mb: 2, lineHeight: 1.5 }}
-          >
+            sx={{
+              color: "text.secondary",
+              mb: 2,
+              lineHeight: 1.5
+            }}>
             Это действие безвозвратно удалит <b>всех людей</b> и{" "}
             <b>все фотографии</b> из папки Genealogy. Приложение станет
             абсолютно чистым.

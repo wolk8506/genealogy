@@ -60,15 +60,18 @@ export const NewPhotoProcessingOptionsCard = ({ cardStyle }) => {
           <SettingsIcon sx={{ fontSize: 18 }} />
         </RowIcon>
         <Box sx={{ minWidth: 0 }}>
-          <Typography variant="subtitle1" fontWeight={700} noWrap>
+          <Typography variant="subtitle1" noWrap sx={{
+            fontWeight: 700
+          }}>
             Обработка новых фото
           </Typography>
           <Typography
             variant="caption"
-            color="text.secondary"
-            display="block"
             noWrap
-          >
+            sx={{
+              color: "text.secondary",
+              display: "block"
+            }}>
             Импорт, сжатие и хранение оригиналов
           </Typography>
         </Box>
@@ -106,9 +109,13 @@ export const NewPhotoProcessingOptionsCard = ({ cardStyle }) => {
             </Box>
             <Typography
               variant="caption"
-              color="text.secondary"
-              sx={{ display: "block", mt: 1, ml: 0.5, lineHeight: 1.4 }}
-            >
+              sx={{
+                color: "text.secondary",
+                display: "block",
+                mt: 1,
+                ml: 0.5,
+                lineHeight: 1.4
+              }}>
               Копия в папке <b>originals</b> позволяет вернуться к исходному
               качеству, но требует в 2–3 раза больше места на диске.
             </Typography>
@@ -129,31 +136,35 @@ export const NewPhotoProcessingOptionsCard = ({ cardStyle }) => {
               >
                 <Stack
                   direction="row"
-                  alignItems="center"
                   spacing={1.5}
-                  sx={{ flex: "1 1 220px", minWidth: 0 }}
-                >
+                  sx={{
+                    alignItems: "center",
+                    flex: "1 1 220px",
+                    minWidth: 0
+                  }}>
                   <Box sx={{ minWidth: 0 }}>
                     <Typography
                       variant="body2"
-                      fontWeight={400}
-                      sx={{ fontSize: "0.8125rem" }}
-                    >
+                      sx={{
+                        fontWeight: 400,
+                        fontSize: "0.8125rem"
+                      }}>
                       Степень сжатия
                     </Typography>
-                    <Typography variant="caption" color="text.secondary">
+                    <Typography variant="caption" sx={{
+                      color: "text.secondary"
+                    }}>
                       Баланс между размером файла и чёткостью
                     </Typography>
                   </Box>
                   <Typography
                     variant="body2"
-                    color="text.secondary"
                     sx={{
+                      color: "text.secondary",
                       flexShrink: 0,
                       pr: 1,
-                      fontVariantNumeric: "tabular-nums",
-                    }}
-                  >
+                      fontVariantNumeric: "tabular-nums"
+                    }}>
                     {importSettings.quality}%
                   </Typography>
                 </Stack>
@@ -194,9 +205,13 @@ export const NewPhotoProcessingOptionsCard = ({ cardStyle }) => {
             </Box>
             <Typography
               variant="caption"
-              color="text.secondary"
-              sx={{ display: "block", mt: 1, ml: 0.5, lineHeight: 1.4 }}
-            >
+              sx={{
+                color: "text.secondary",
+                display: "block",
+                mt: 1,
+                ml: 0.5,
+                lineHeight: 1.4
+              }}>
               <b>80%</b> — золотая середина: фото визуально неотличимы от
               оригинала, но весят на 60% меньше. При <b>100%</b> сжатие почти
               отсутствует, что увеличит нагрузку на сеть.

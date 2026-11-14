@@ -355,15 +355,18 @@ export const FaceScanMasterCard = ({ cardStyle }) => {
           <FaceRetouchingNaturalIcon sx={{ fontSize: 18 }} />
         </RowIcon>
         <Box sx={{ minWidth: 0 }}>
-          <Typography variant="subtitle1" fontWeight={700} noWrap>
+          <Typography variant="subtitle1" noWrap sx={{
+            fontWeight: 700
+          }}>
             {title}
           </Typography>
           <Typography
             variant="caption"
-            color="text.secondary"
-            display="block"
             noWrap
-          >
+            sx={{
+              color: "text.secondary",
+              display: "block"
+            }}>
             {subtitle}
           </Typography>
         </Box>
@@ -388,7 +391,9 @@ export const FaceScanMasterCard = ({ cardStyle }) => {
                       <Stack
                         direction="row"
                         spacing={0.75}
-                        alignItems="center"
+                        sx={{
+                          alignItems: "center"
+                        }}
                       >
                         <CountBadge value={pendingReview} />
                         {chevron}
@@ -420,7 +425,9 @@ export const FaceScanMasterCard = ({ cardStyle }) => {
                       <Stack
                         direction="row"
                         spacing={0.75}
-                        alignItems="center"
+                        sx={{
+                          alignItems: "center"
+                        }}
                       >
                         <CountBadge value={noFacePhotos} />
                         {chevron}
@@ -525,9 +532,11 @@ export const FaceScanMasterCard = ({ cardStyle }) => {
                   >
                     <Typography
                       variant="body2"
-                      fontWeight={600}
-                      sx={{ flexGrow: 1, lineHeight: 1.35 }}
-                    >
+                      sx={{
+                        fontWeight: 600,
+                        flexGrow: 1,
+                        lineHeight: 1.35
+                      }}>
                       Повторно сканировать только фото с неподтвержденными
                       лицами
                     </Typography>
@@ -540,17 +549,21 @@ export const FaceScanMasterCard = ({ cardStyle }) => {
                     <Box sx={{ px: 2, py: 1.4 }}>
                       <Stack
                         direction="row"
-                        justifyContent="space-between"
-                        alignItems="baseline"
-                      >
-                        <Typography variant="body2" fontWeight={600}>
+                        sx={{
+                          justifyContent: "space-between",
+                          alignItems: "baseline"
+                        }}>
+                        <Typography variant="body2" sx={{
+                          fontWeight: 600
+                        }}>
                           Порог совпадения
                         </Typography>
                         <Typography
                           variant="body2"
-                          color="text.secondary"
-                          sx={{ fontVariantNumeric: "tabular-nums" }}
-                        >
+                          sx={{
+                            color: "text.secondary",
+                            fontVariantNumeric: "tabular-nums"
+                          }}>
                           {matchThreshold.toFixed(2)}
                         </Typography>
                       </Stack>
@@ -623,33 +636,40 @@ export const FaceScanMasterCard = ({ cardStyle }) => {
                   />
                   <Stack
                     direction="row"
-                    justifyContent="space-between"
-                    sx={{ mt: 1.5 }}
-                  >
-                    <Typography variant="body2" fontWeight={600}>
+                    sx={{
+                      justifyContent: "space-between",
+                      mt: 1.5
+                    }}>
+                    <Typography variant="body2" sx={{
+                      fontWeight: 600
+                    }}>
                       {progress.current} / {progress.total}
                     </Typography>
-                    <Typography variant="body2" color="text.secondary">
+                    <Typography variant="body2" sx={{
+                      color: "text.secondary"
+                    }}>
                       {progress.percent}%
                     </Typography>
                   </Stack>
                   {progress.currentFile && (
                     <Typography
                       variant="caption"
-                      color="text.secondary"
                       noWrap
-                      display="block"
-                      sx={{ mt: 0.5 }}
-                    >
+                      sx={{
+                        color: "text.secondary",
+                        display: "block",
+                        mt: 0.5
+                      }}>
                       {progress.currentFile}
                     </Typography>
                   )}
                   <Typography
                     variant="caption"
-                    color="text.secondary"
-                    display="block"
-                    sx={{ mt: 1 }}
-                  >
+                    sx={{
+                      color: "text.secondary",
+                      display: "block",
+                      mt: 1
+                    }}>
                     Найдено лиц: {progress.facesFound}
                   </Typography>
                 </Box>

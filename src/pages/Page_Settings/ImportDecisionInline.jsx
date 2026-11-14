@@ -101,7 +101,12 @@ export function ImportDecisionInline({
             color="info"
             sx={{ fontSize: 18, flexShrink: 0 }}
           />
-          <Typography variant="caption" color="text.secondary" lineHeight={1.35}>
+          <Typography
+            variant="caption"
+            sx={{
+              color: "text.secondary",
+              lineHeight: 1.35
+            }}>
             {summary ||
               "В бэкапе найдены совпадения с текущей базой. Выберите, как поступить с данными."}
           </Typography>
@@ -203,7 +208,9 @@ export function ImportDecisionInline({
                     />
                   }
                   label={
-                    <Typography variant="body2" fontWeight={600}>
+                    <Typography variant="body2" sx={{
+                      fontWeight: 600
+                    }}>
                       Выбрать все ({allIds.length})
                     </Typography>
                   }
@@ -214,9 +221,12 @@ export function ImportDecisionInline({
               {allIds.length === 0 ? (
                 <Typography
                   variant="caption"
-                  color="text.secondary"
-                  sx={{ display: "block", textAlign: "center", py: 3 }}
-                >
+                  sx={{
+                    color: "text.secondary",
+                    display: "block",
+                    textAlign: "center",
+                    py: 3
+                  }}>
                   Нет доступных персон
                 </Typography>
               ) : (
@@ -320,8 +330,8 @@ export function ImportDecisionInline({
       <Stack
         direction="row"
         spacing={1}
-        justifyContent="flex-end"
         sx={{
+          justifyContent: "flex-end",
           position: "sticky",
           bottom: 0,
           zIndex: 1,
@@ -331,9 +341,8 @@ export function ImportDecisionInline({
           pt: 1.5,
           pb: 0.5,
           borderTop: `1px solid ${theme.palette.divider}`,
-          bgcolor: theme.palette.background.default,
-        }}
-      >
+          bgcolor: theme.palette.background.default
+        }}>
         <AppButton preset="ghost" onClick={handleClose} sx={{ px: 2 }}>
           Отменить
         </AppButton>
