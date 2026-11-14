@@ -199,15 +199,14 @@ function MediaStrip({
           </Typography>
           <Typography
             variant="caption"
-            color="text.secondary"
             sx={{
+              color: "text.secondary",
               display: "block",
               whiteSpace: "nowrap",
               overflow: "hidden",
               textOverflow: "ellipsis",
-              fontSize: height > 60 ? "0.68rem" : "0.6rem",
-            }}
-          >
+              fontSize: height > 60 ? "0.68rem" : "0.6rem"
+            }}>
             {eventPersonName?.(ev)}
           </Typography>
         </Box>
@@ -843,7 +842,9 @@ export default function TimelinePage({
                 textAlign: "center",
               }}
             >
-              <Stack spacing={3} alignItems="center">
+              <Stack spacing={3} sx={{
+                alignItems: "center"
+              }}>
                 <Box sx={{ position: "relative" }}>
                   <Box
                     sx={{
@@ -893,7 +894,11 @@ export default function TimelinePage({
         {!isFeedEmpty && level === "years" && (
           <Box ref={listRef} sx={{ height: "100%", px: 2 }}>
             {yearsList.length === 0 ? (
-              <Typography color="text.secondary" sx={{ pt: 2 }}>
+              <Typography
+                sx={{
+                  color: "text.secondary",
+                  pt: 2
+                }}>
                 Нет датированных фото — всё в хвосте «Без даты» на уровне дней.
               </Typography>
             ) : (
@@ -940,9 +945,10 @@ export default function TimelinePage({
                         </Typography>
                         <Typography
                           variant="caption"
-                          color="text.secondary"
-                          sx={{ display: "block" }}
-                        >
+                          sx={{
+                            color: "text.secondary",
+                            display: "block"
+                          }}>
                           {[
                             photoCount > 0 ? `Фото: ${photoCount}` : null,
                             eventCount > 0 ? `Событий: ${eventCount}` : null,
@@ -1019,9 +1025,10 @@ export default function TimelinePage({
                       </Typography>
                       <Typography
                         variant="caption"
-                        color="text.secondary"
-                        sx={{ display: "block" }}
-                      >
+                        sx={{
+                          color: "text.secondary",
+                          display: "block"
+                        }}>
                         {[
                           photoCount > 0 ? `Фото: ${photoCount}` : null,
                           eventCount > 0 ? `Событий: ${eventCount}` : null,
@@ -1080,7 +1087,9 @@ export default function TimelinePage({
                     borderRadius: "12px",
                   }}
                 >
-                  <Typography variant="subtitle2" fontWeight="bold">
+                  <Typography variant="subtitle2" sx={{
+                    fontWeight: "bold"
+                  }}>
                     {dayHeaders[idx]}
                   </Typography>
                   {mapKey && (
@@ -1208,14 +1217,13 @@ export default function TimelinePage({
                         {(ev.date || ev.place) && (
                           <Typography
                             variant="caption"
-                            color="text.secondary"
                             sx={{
+                              color: "text.secondary",
                               display: "block",
                               whiteSpace: "nowrap",
                               overflow: "hidden",
-                              textOverflow: "ellipsis",
-                            }}
-                          >
+                              textOverflow: "ellipsis"
+                            }}>
                             {[ev.date, ev.place]
                               .filter(Boolean)
                               .join(" · ")}

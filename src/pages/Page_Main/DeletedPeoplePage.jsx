@@ -7,14 +7,13 @@ import {
   Typography,
   CircularProgress,
   Box,
-  Grid,
   Tabs,
   Tab,
 } from "@mui/material";
 import { useTheme, alpha } from "@mui/material/styles";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
 import PeopleAltRoundedIcon from "@mui/icons-material/PeopleAltRounded";
 import TrashFillIcon from "../../components/svg/TrashFillIcon";
 import { RowIcon } from "../Page_Settings/settingsUi";
@@ -196,10 +195,11 @@ export default function DeletedPeoplePage() {
   if (loading) {
     return (
       <Stack
-        alignItems="center"
-        justifyContent="center"
-        sx={{ height: "60vh" }}
-      >
+        sx={{
+          alignItems: "center",
+          justifyContent: "center",
+          height: "60vh"
+        }}>
         <CircularProgress />
       </Stack>
     );
@@ -235,7 +235,9 @@ export default function DeletedPeoplePage() {
             boxShadow: "0 8px 32px rgba(0,0,0,0.1)",
           }}
         >
-          <Stack spacing={3} alignItems="center">
+          <Stack spacing={3} sx={{
+            alignItems: "center"
+          }}>
             <Box sx={{ position: "relative" }}>
               <Box
                 sx={{
@@ -329,15 +331,18 @@ export default function DeletedPeoplePage() {
           <TrashFillIcon sx={{ fontSize: 18 }} />
         </RowIcon>
         <Box sx={{ minWidth: 0 }}>
-          <Typography variant="subtitle1" fontWeight={700} noWrap>
+          <Typography variant="subtitle1" noWrap sx={{
+            fontWeight: 700
+          }}>
             Корзина ({totalCount})
           </Typography>
           <Typography
             variant="caption"
-            color="text.secondary"
-            display="block"
             noWrap
-          >
+            sx={{
+              color: "text.secondary",
+              display: "block"
+            }}>
             Удалённые люди и записи справочника
           </Typography>
         </Box>
@@ -360,18 +365,17 @@ export default function DeletedPeoplePage() {
           {archivedPeople.length === 0 ? (
             <EmptyTabMessage text="В корзине нет удалённых людей." />
           ) : (
-            <Grid container spacing={2} direction="column">
+            <Stack spacing={2}>
               {archivedPeople.map((person) => (
-                <Grid key={person.id} size={{ xs: 12 }}>
-                  <PersonCard
-                    person={person}
-                    isArchived
-                    onRestore={handleRestorePerson}
-                    onDeleteForever={handleDeletePersonForever}
-                  />
-                </Grid>
+                <PersonCard
+                  key={person.id}
+                  person={person}
+                  isArchived
+                  onRestore={handleRestorePerson}
+                  onDeleteForever={handleDeletePersonForever}
+                />
               ))}
-            </Grid>
+            </Stack>
           )}
         </>
       )}
@@ -381,20 +385,19 @@ export default function DeletedPeoplePage() {
           {archivedExternal.length === 0 ? (
             <EmptyTabMessage text="В корзине нет записей справочника." />
           ) : (
-            <Grid container spacing={2} direction="column">
+            <Stack spacing={2}>
               {archivedExternal.map((entity) => (
-                <Grid key={entity.id} size={{ xs: 12 }}>
-                  <ExternalEntityCard
-                    entity={entity}
-                    allPeople={allPeople}
-                    allExternal={allExternal}
-                    isArchived
-                    onRestore={handleRestoreExternal}
-                    onDeleteForever={handleDeleteExternalForever}
-                  />
-                </Grid>
+                <ExternalEntityCard
+                  key={entity.id}
+                  entity={entity}
+                  allPeople={allPeople}
+                  allExternal={allExternal}
+                  isArchived
+                  onRestore={handleRestoreExternal}
+                  onDeleteForever={handleDeleteExternalForever}
+                />
               ))}
-            </Grid>
+            </Stack>
           )}
         </>
       )}
@@ -414,7 +417,7 @@ function EmptyTabMessage({ text }) {
         borderRadius: 3,
       }}
     >
-      <DeleteOutlineIcon sx={{ fontSize: 40, opacity: 0.35, mb: 1 }} />
+      <DeleteOutlineOutlinedIcon sx={{ fontSize: 40, opacity: 0.35, mb: 1 }} />
       <Typography variant="body2">{text}</Typography>
     </Box>
   );

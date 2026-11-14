@@ -1,7 +1,6 @@
 const { contextBridge, ipcRenderer } = require("electron");
 
 // В preload нельзя подключать файлы приложения (песочница) — только electron.
-console.log("✅ preload.js загружен");
 
 // ⚙️ Настройки
 contextBridge.exposeInMainWorld("settings", {

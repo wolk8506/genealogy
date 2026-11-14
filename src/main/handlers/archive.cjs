@@ -2,8 +2,14 @@ const { ipcMain, BrowserWindow } = require("electron");
 const { getMainWindow } = require("../mainWindow.cjs");
 const fs = require("fs");
 const path = require("path");
-const archiver = require("archiver");
+const { ZipArchive } = require("archiver");
 const log = require("../logger.cjs").createLogger("archive");
+const {
+  listFilesRecursive,
+  getTotalSize,
+  getArchiveRoot,
+  toArchiveEntryName,
+} = require("./archiveUtils.cjs");
 
 // function listFilesRecursive(paths) {
 //   const files = [];
@@ -41,57 +47,12 @@ const log = require("../logger.cjs").createLogger("archive");
 //   return files;
 // }
 
-function listFilesRecursive(paths) {
-  let files = [];
-
-  for (const p of paths) {
-    if (!fs.existsSync(p)) continue;
-
-    const stat = fs.statSync(p);
-    if (stat.isFile()) {
-      // Это файл (фото, json, md) — добавляем в список
-      files.push(p);
-    } else if (stat.isDirectory()) {
-      // Это папка (например, папка человека) — заходим внутрь!
-      const entries = fs.readdirSync(p);
-      const childPaths = entries.map((e) => path.join(p, e));
-
-      // РЕКУРСИЯ: вызываем эту же функцию для содержимого папки
-      const nestedFiles = listFilesRecursive(childPaths);
-      files = files.concat(nestedFiles);
-    }
-  }
-  return files;
-}
-
-function getTotalSize(files) {
-  let total = 0;
-  for (const f of files) {
-    try {
-      total += fs.statSync(f).size;
-    } catch (e) {}
-  }
-  return total;
-}
-
 function safeSend(win, payload) {
   if (!win || !win.webContents) return;
   if (!payload || typeof payload !== "object") return;
   try {
     win.webContents.send("archive:progress", payload);
   } catch (e) {}
-}
-
-function getArchiveRoot(filePaths) {
-  const jsonFile = filePaths.find(
-    (p) => path.basename(p) === "genealogy-data.json",
-  );
-  return jsonFile ? path.dirname(jsonFile) : path.dirname(filePaths[0]);
-}
-
-function toArchiveEntryName(archiveRoot, src) {
-  const rel = path.relative(archiveRoot, src) || path.basename(src);
-  return rel.split(path.sep).join("/");
 }
 
 ipcMain.handle("archive:create", async (_, filePaths, archivePath) => {
@@ -133,7 +94,7 @@ ipcMain.handle("archive:create", async (_, filePaths, archivePath) => {
   // writing
   await fs.promises.mkdir(path.dirname(archivePath), { recursive: true });
   const output = fs.createWriteStream(archivePath);
-  const archive = archiver("zip", { zlib: { level: 9 } });
+  const archive = new ZipArchive({ zlib: { level: 9 } });
   archive.pipe(output);
 
   // build file entries with sizes to compute current file

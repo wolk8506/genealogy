@@ -207,17 +207,19 @@ export default function AvatarEditorDialog({
       onClose={handleClose}
       maxWidth={false}
       transitionDuration={{ enter: 180, exit: 140 }}
-      PaperProps={{
-        sx: {
-          width: 600,
-          maxWidth: "94vw",
-          maxHeight: "calc(100vh - 64px)",
-          borderRadius: "24px",
-          backgroundImage: "none",
-          display: "flex",
-          flexDirection: "column",
-          overflow: "hidden",
-        },
+      slotProps={{
+        paper: {
+          sx: {
+            width: 600,
+            maxWidth: "94vw",
+            maxHeight: "calc(100vh - 64px)",
+            borderRadius: "24px",
+            backgroundImage: "none",
+            display: "flex",
+            flexDirection: "column",
+            overflow: "hidden",
+          },
+        }
       }}
     >
       <Box sx={{ p: 3, pb: 2, overflowY: "auto" }}>
@@ -228,7 +230,9 @@ export default function AvatarEditorDialog({
           Редактировать аватар
         </Typography>
 
-        <Stack spacing={3} alignItems="center">
+        <Stack spacing={3} sx={{
+          alignItems: "center"
+        }}>
           {/* Верхнее превью */}
           <Box sx={{ position: "relative" }}>
             <Avatar
@@ -300,12 +304,18 @@ export default function AvatarEditorDialog({
               <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
                 Перетащите фото сюда
               </Typography>
-              <Typography variant="body2" color="text.secondary" mb={3}>
+              <Typography
+                variant="body2"
+                sx={{
+                  color: "text.secondary",
+                  mb: 3
+                }}>
                 Поддерживаются JPG, PNG, HEIC
               </Typography>
               <AppButton
                 preset="primary"
                 component="label"
+                nativeButton={false}
                 sx={{ px: 4 }}
               >
                 Выбрать файл
@@ -346,15 +356,14 @@ export default function AvatarEditorDialog({
               <Stack
                 direction="row"
                 spacing={2}
-                alignItems="center"
                 sx={{
+                  alignItems: "center",
                   mt: 3,
                   px: 2,
                   py: 1.5,
                   bgcolor: alpha(theme.palette.action.hover, 0.04),
-                  borderRadius: "12px",
-                }}
-              >
+                  borderRadius: "12px"
+                }}>
                 <IconButton
                   onClick={handleZoomOut}
                   disabled={zoom <= minZoom}

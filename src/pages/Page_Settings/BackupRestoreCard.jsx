@@ -572,15 +572,18 @@ export const BackupRestoreCard = ({ cardStyle, onSubpageChange }) => {
           <SettingsBackupRestoreIcon sx={{ fontSize: 18 }} />
         </RowIcon>
         <Box sx={{ minWidth: 0 }}>
-          <Typography variant="subtitle1" fontWeight={700} noWrap>
+          <Typography variant="subtitle1" noWrap sx={{
+            fontWeight: 700
+          }}>
             {headerTitle}
           </Typography>
           <Typography
             variant="caption"
-            color="text.secondary"
-            display="block"
             noWrap
-          >
+            sx={{
+              color: "text.secondary",
+              display: "block"
+            }}>
             {headerSubtitle}
           </Typography>
         </Box>
@@ -629,9 +632,12 @@ export const BackupRestoreCard = ({ cardStyle, onSubpageChange }) => {
               </Box>
               <Typography
                 variant="caption"
-                color="text.secondary"
-                sx={{ display: "block", mt: 1, ml: 0.5 }}
-              >
+                sx={{
+                  color: "text.secondary",
+                  display: "block",
+                  mt: 1,
+                  ml: 0.5
+                }}>
                 Архив содержит базу данных, фотографии и справочник.
               </Typography>
             </Box>
@@ -643,9 +649,11 @@ export const BackupRestoreCard = ({ cardStyle, onSubpageChange }) => {
           <Stack spacing={2.5} sx={{ flexGrow: 1, minHeight: 0 }}>
             <Typography
               variant="caption"
-              color="text.secondary"
-              sx={{ display: "block", px: 0.5 }}
-            >
+              sx={{
+                color: "text.secondary",
+                display: "block",
+                px: 0.5
+              }}>
               Настройте имя архива, папки фото и обслуживание базы перед
               упаковкой.
             </Typography>
@@ -704,9 +712,12 @@ export const BackupRestoreCard = ({ cardStyle, onSubpageChange }) => {
               </Box>
               <Typography
                 variant="caption"
-                color="text.secondary"
-                sx={{ display: "block", mt: 1, ml: 0.5 }}
-              >
+                sx={{
+                  color: "text.secondary",
+                  display: "block",
+                  mt: 1,
+                  ml: 0.5
+                }}>
                 Выберите хотя бы один из вариантов: оригиналы или WebP.
               </Typography>
             </Box>
@@ -775,9 +786,10 @@ export const BackupRestoreCard = ({ cardStyle, onSubpageChange }) => {
             <Stack
               direction="row"
               spacing={1}
-              justifyContent="flex-end"
-              sx={{ pt: 0.5 }}
-            >
+              sx={{
+                justifyContent: "flex-end",
+                pt: 0.5
+              }}>
               <AppButton
                 preset="ghost"
                 onClick={closeBackupSetup}
@@ -805,9 +817,11 @@ export const BackupRestoreCard = ({ cardStyle, onSubpageChange }) => {
           <Stack spacing={2.5} sx={{ flexGrow: 1, minHeight: 0 }}>
             <Typography
               variant="caption"
-              color="text.secondary"
-              sx={{ display: "block", px: 0.5 }}
-            >
+              sx={{
+                color: "text.secondary",
+                display: "block",
+                px: 0.5
+              }}>
               Проверьте бэкап, выберите нужные папки фото для восстановления и
               запустите импорт.
             </Typography>
@@ -816,22 +830,27 @@ export const BackupRestoreCard = ({ cardStyle, onSubpageChange }) => {
               <Typography sx={sectionLabelSx}>Бэкап</Typography>
               <Box sx={groupSx}>
                 <Box sx={{ px: 2, py: 1.75 }}>
-                  <Typography variant="body2" fontWeight={600} noWrap>
+                  <Typography variant="body2" noWrap sx={{
+                    fontWeight: 600
+                  }}>
                     {importArchiveMeta?.archiveName || "Без имени"}
                   </Typography>
                   <Typography
                     variant="caption"
-                    color="text.secondary"
-                    display="block"
-                    sx={{ mb: 1 }}
-                  >
+                    sx={{
+                      color: "text.secondary",
+                      display: "block",
+                      mb: 1
+                    }}>
                     {importArchiveMeta?.createdAt
                       ? `Создан: ${new Date(
                           importArchiveMeta.createdAt,
                         ).toLocaleString("ru-RU")}`
                       : "Дата создания неизвестна"}
                   </Typography>
-                  <Stack direction="row" spacing={0.75} flexWrap="wrap">
+                  <Stack direction="row" spacing={0.75} sx={{
+                    flexWrap: "wrap"
+                  }}>
                     {(importArchiveMeta?.availablePhotoFolders || []).map(
                       (folder) => (
                         <Chip
@@ -918,9 +937,12 @@ export const BackupRestoreCard = ({ cardStyle, onSubpageChange }) => {
               </Box>
               <Typography
                 variant="caption"
-                color="text.secondary"
-                sx={{ display: "block", mt: 1, ml: 0.5 }}
-              >
+                sx={{
+                  color: "text.secondary",
+                  display: "block",
+                  mt: 1,
+                  ml: 0.5
+                }}>
                 Переключатели активны только если файл есть в бэкапе.
               </Typography>
             </Box>
@@ -966,9 +988,12 @@ export const BackupRestoreCard = ({ cardStyle, onSubpageChange }) => {
               </Box>
               <Typography
                 variant="caption"
-                color="text.secondary"
-                sx={{ display: "block", mt: 1, ml: 0.5 }}
-              >
+                sx={{
+                  color: "text.secondary",
+                  display: "block",
+                  mt: 1,
+                  ml: 0.5
+                }}>
                 Если какой-то папки нет в бэкапе, она просто будет пропущена.
               </Typography>
             </Box>
@@ -976,9 +1001,10 @@ export const BackupRestoreCard = ({ cardStyle, onSubpageChange }) => {
             <Stack
               direction="row"
               spacing={1}
-              justifyContent="flex-end"
-              sx={{ pt: 0.5 }}
-            >
+              sx={{
+                justifyContent: "flex-end",
+                pt: 0.5
+              }}>
               <AppButton
                 preset="ghost"
                 onClick={resetImportSetup}
@@ -1006,16 +1032,23 @@ export const BackupRestoreCard = ({ cardStyle, onSubpageChange }) => {
               <Box sx={groupSx}>
                 <Stack
                   spacing={1.5}
-                  alignItems="center"
-                  sx={{ px: 2, py: 3, textAlign: "center" }}
-                >
+                  sx={{
+                    alignItems: "center",
+                    px: 2,
+                    py: 3,
+                    textAlign: "center"
+                  }}>
                   <RowIcon bg="red">
                     <ErrorIcon sx={{ fontSize: 18 }} />
                   </RowIcon>
-                  <Typography variant="subtitle1" fontWeight={700}>
+                  <Typography variant="subtitle1" sx={{
+                    fontWeight: 700
+                  }}>
                     Ошибка экспорта
                   </Typography>
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography variant="body2" sx={{
+                    color: "text.secondary"
+                  }}>
                     {exportStatus}
                   </Typography>
                   <AppButton
@@ -1034,16 +1067,23 @@ export const BackupRestoreCard = ({ cardStyle, onSubpageChange }) => {
               <Box sx={groupSx}>
                 <Stack
                   spacing={1.5}
-                  alignItems="center"
-                  sx={{ px: 2, py: 3, textAlign: "center" }}
-                >
+                  sx={{
+                    alignItems: "center",
+                    px: 2,
+                    py: 3,
+                    textAlign: "center"
+                  }}>
                   <RowIcon bg="green">
                     <CheckCircleIcon sx={{ fontSize: 18 }} />
                   </RowIcon>
-                  <Typography variant="subtitle1" fontWeight={700}>
+                  <Typography variant="subtitle1" sx={{
+                    fontWeight: 700
+                  }}>
                     Бэкап готов
                   </Typography>
-                  <Typography variant="caption" color="text.secondary">
+                  <Typography variant="caption" sx={{
+                    color: "text.secondary"
+                  }}>
                     Нажмите на путь, чтобы показать файл в Finder.
                   </Typography>
                   <Box
@@ -1085,42 +1125,46 @@ export const BackupRestoreCard = ({ cardStyle, onSubpageChange }) => {
                 <Box sx={{ px: 2, py: 2 }}>
                   <Stack
                     direction="row"
-                    justifyContent="space-between"
-                    alignItems="center"
-                    sx={{ mb: 1.5 }}
-                  >
+                    sx={{
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      mb: 1.5
+                    }}>
                     <Stack
                       direction="row"
                       spacing={1.5}
-                      alignItems="center"
-                      sx={{ minWidth: 0 }}
-                    >
+                      sx={{
+                        alignItems: "center",
+                        minWidth: 0
+                      }}>
                       <RowIcon bg="blue">
                         <SaveIcon sx={{ fontSize: 18 }} />
                       </RowIcon>
                       <Box sx={{ minWidth: 0 }}>
-                        <Typography variant="body2" fontWeight={600} noWrap>
+                        <Typography variant="body2" noWrap sx={{
+                          fontWeight: 600
+                        }}>
                           Экспорт данных
                         </Typography>
                         <Typography
                           variant="caption"
-                          color="text.secondary"
-                          display="block"
                           noWrap
-                        >
+                          sx={{
+                            color: "text.secondary",
+                            display: "block"
+                          }}>
                           {exportStatus}
                         </Typography>
                       </Box>
                     </Stack>
                     <Typography
                       variant="subtitle1"
-                      fontWeight={700}
                       sx={{
+                        fontWeight: 700,
                         fontVariantNumeric: "tabular-nums",
                         flexShrink: 0,
-                        ml: 2,
-                      }}
-                    >
+                        ml: 2
+                      }}>
                       {exportPercent}%
                     </Typography>
                   </Stack>
@@ -1138,14 +1182,18 @@ export const BackupRestoreCard = ({ cardStyle, onSubpageChange }) => {
 
                   <Stack
                     direction="row"
-                    justifyContent="space-between"
                     spacing={2}
+                    sx={{
+                      justifyContent: "space-between"
+                    }}
                   >
                     <Typography
                       variant="caption"
-                      color="text.secondary"
-                      sx={{ fontVariantNumeric: "tabular-nums", flexShrink: 0 }}
-                    >
+                      sx={{
+                        color: "text.secondary",
+                        fontVariantNumeric: "tabular-nums",
+                        flexShrink: 0
+                      }}>
                       {(archiveProgress.processedFiles || 0).toLocaleString()}{" "}
                       из{" "}
                       {(archiveProgress.totalFiles || 0).toLocaleString()}{" "}
@@ -1153,14 +1201,13 @@ export const BackupRestoreCard = ({ cardStyle, onSubpageChange }) => {
                     </Typography>
                     <Typography
                       variant="caption"
-                      color="text.secondary"
                       noWrap
                       sx={{
+                        color: "text.secondary",
                         textAlign: "right",
                         overflow: "hidden",
-                        textOverflow: "ellipsis",
-                      }}
-                    >
+                        textOverflow: "ellipsis"
+                      }}>
                       {archiveProgress.phase.startsWith("writing")
                         ? "Сжатие и упаковка"
                         : archiveProgress.currentFile ||
@@ -1181,16 +1228,23 @@ export const BackupRestoreCard = ({ cardStyle, onSubpageChange }) => {
               <Box sx={groupSx}>
                 <Stack
                   spacing={1.5}
-                  alignItems="center"
-                  sx={{ px: 2, py: 3, textAlign: "center" }}
-                >
+                  sx={{
+                    alignItems: "center",
+                    px: 2,
+                    py: 3,
+                    textAlign: "center"
+                  }}>
                   <RowIcon bg="red">
                     <ErrorIcon sx={{ fontSize: 18 }} />
                   </RowIcon>
-                  <Typography variant="subtitle1" fontWeight={700}>
+                  <Typography variant="subtitle1" sx={{
+                    fontWeight: 700
+                  }}>
                     Ошибка импорта
                   </Typography>
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography variant="body2" sx={{
+                    color: "text.secondary"
+                  }}>
                     {importStatus}
                   </Typography>
                   <AppButton
@@ -1210,42 +1264,46 @@ export const BackupRestoreCard = ({ cardStyle, onSubpageChange }) => {
                 <Box sx={{ px: 2, py: 2 }}>
                   <Stack
                     direction="row"
-                    justifyContent="space-between"
-                    alignItems="center"
-                    sx={{ mb: 1.5 }}
-                  >
+                    sx={{
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      mb: 1.5
+                    }}>
                     <Stack
                       direction="row"
                       spacing={1.5}
-                      alignItems="center"
-                      sx={{ minWidth: 0 }}
-                    >
+                      sx={{
+                        alignItems: "center",
+                        minWidth: 0
+                      }}>
                       <RowIcon bg="green">
                         <RestoreIcon sx={{ fontSize: 18 }} />
                       </RowIcon>
                       <Box sx={{ minWidth: 0 }}>
-                        <Typography variant="body2" fontWeight={600} noWrap>
+                        <Typography variant="body2" noWrap sx={{
+                          fontWeight: 600
+                        }}>
                           Восстановление данных
                         </Typography>
                         <Typography
                           variant="caption"
-                          color="text.secondary"
-                          display="block"
                           noWrap
-                        >
+                          sx={{
+                            color: "text.secondary",
+                            display: "block"
+                          }}>
                           {importStatus || "Чтение бэкапа..."}
                         </Typography>
                       </Box>
                     </Stack>
                     <Typography
                       variant="subtitle1"
-                      fontWeight={700}
                       sx={{
+                        fontWeight: 700,
                         fontVariantNumeric: "tabular-nums",
                         flexShrink: 0,
-                        ml: 2,
-                      }}
-                    >
+                        ml: 2
+                      }}>
                       {progressValue}%
                     </Typography>
                   </Stack>
@@ -1263,14 +1321,18 @@ export const BackupRestoreCard = ({ cardStyle, onSubpageChange }) => {
 
                   <Stack
                     direction="row"
-                    justifyContent="space-between"
                     spacing={2}
+                    sx={{
+                      justifyContent: "space-between"
+                    }}
                   >
                     <Typography
                       variant="caption"
-                      color="text.secondary"
-                      sx={{ fontVariantNumeric: "tabular-nums", flexShrink: 0 }}
-                    >
+                      sx={{
+                        color: "text.secondary",
+                        fontVariantNumeric: "tabular-nums",
+                        flexShrink: 0
+                      }}>
                       {(importProgress.processedFiles || 0).toLocaleString()}{" "}
                       из{" "}
                       {(importProgress.totalFiles || 0).toLocaleString()}{" "}
@@ -1278,14 +1340,13 @@ export const BackupRestoreCard = ({ cardStyle, onSubpageChange }) => {
                     </Typography>
                     <Typography
                       variant="caption"
-                      color="text.secondary"
                       noWrap
                       sx={{
+                        color: "text.secondary",
                         textAlign: "right",
                         overflow: "hidden",
-                        textOverflow: "ellipsis",
-                      }}
-                    >
+                        textOverflow: "ellipsis"
+                      }}>
                       Распаковка бэкапа
                     </Typography>
                   </Stack>
@@ -1295,16 +1356,23 @@ export const BackupRestoreCard = ({ cardStyle, onSubpageChange }) => {
               <Box sx={groupSx}>
                 <Stack
                   spacing={1.5}
-                  alignItems="center"
-                  sx={{ px: 2, py: 3, textAlign: "center" }}
-                >
+                  sx={{
+                    alignItems: "center",
+                    px: 2,
+                    py: 3,
+                    textAlign: "center"
+                  }}>
                   <RowIcon bg="green">
                     <CheckCircleIcon sx={{ fontSize: 18 }} />
                   </RowIcon>
-                  <Typography variant="subtitle1" fontWeight={700}>
+                  <Typography variant="subtitle1" sx={{
+                    fontWeight: 700
+                  }}>
                     Данные успешно восстановлены
                   </Typography>
-                  <Typography variant="caption" color="text.secondary">
+                  <Typography variant="caption" sx={{
+                    color: "text.secondary"
+                  }}>
                     Библиотека обновлена — можно продолжать работу.
                   </Typography>
                   <AppButton

@@ -4,7 +4,6 @@ import {
   InputBase,
   IconButton,
   alpha,
-  styled,
   Tooltip,
   Paper,
   List,
@@ -17,66 +16,192 @@ import {
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import CloseIcon from "@mui/icons-material/Close";
-import { useSelector, useDispatch } from "react-redux"; // Добавить импорты
-import {
-  toolbarPillBg,
-  toolbarPillHoverBg,
-} from "../layout/toolbarStyles";
-import { setSearchQuery } from "../store/searchSlice"; // Путь к вашему слайсу
-// import { setSearchQuery } from "../../../store/searchSlice"; // Путь к вашему слайсу
+import { useSelector, useDispatch } from "react-redux";
+import { setSearchQuery } from "../store/searchSlice";
+import ToolbarButtonGroup from "./ToolbarButtonGroup";
+import { useToolbarButtonGroupHitSx } from "./ToolbarCapsuleContext";
+import { TOOLBAR_CAPSULE, TOOLBAR_HIT } from "../layout/toolbarTokens";
 
-const SearchContainer = styled(Box, {
-  shouldForwardProp: (prop) => prop !== "$expanded",
-})(({ theme, $expanded }) => ({
-  display: "flex",
-  alignItems: "center",
-  borderRadius: "999px",
-  height: 36,
-  padding: 0,
-  transition: theme.transitions.create("width", {
-    easing: theme.transitions.easing.sharp,
-    duration: theme.transitions.duration.shorter,
-  }),
-  width: $expanded ? 250 : 36,
-  position: "relative",
-  zIndex: 2,
-}));
+const SEARCH_EXPANDED_WIDTH = 250;
+/** Иконка лупы в развёрнутом поле (app bar). */
+const SEARCH_FIELD_ICON_SIZE = 18;
+/** Кнопка очистки: белый кружок 12×12. */
+const SEARCH_CLEAR_SIZE = 12;
+const SEARCH_CLEAR_ICON_SIZE = 8;
+const SEARCH_FONT_SIZE = 13;
+const SEARCH_LINE_HEIGHT = 16;
+
+function SearchCapsuleContent({
+  isExpanded,
+  isFocused,
+  value,
+  placeholder,
+  ghostText,
+  theme,
+  inputRef,
+  onFocus,
+  onKeyDown,
+  onChange,
+  onClear,
+}) {
+  const hitSx = useToolbarButtonGroupHitSx(isFocused);
+  const iconSize = isExpanded ? SEARCH_FIELD_ICON_SIZE : TOOLBAR_HIT.iconSize;
+
+  const focusSearch = () => inputRef.current?.focus();
+
+  return (
+    <Box
+      onClick={!isExpanded ? focusSearch : undefined}
+      sx={{
+        ...hitSx,
+        boxSizing: "border-box",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: isExpanded ? "flex-start" : "center",
+        gap: isExpanded ? "6px" : 0,
+        width: "100%",
+        minWidth: 0,
+        px: isExpanded ? "10px" : 0,
+        cursor: isExpanded ? "text" : "pointer",
+        "&:focus-within": {
+          outline: "2px solid",
+          outlineColor: "primary.main",
+          outlineOffset: "2px",
+        },
+      }}
+    >
+      <SearchIcon
+        onClick={focusSearch}
+        sx={{
+          flex: "0 0 auto",
+          width: iconSize,
+          height: iconSize,
+          fontSize: iconSize,
+          color: "inherit",
+          cursor: "pointer",
+        }}
+      />
+
+      <Box
+        sx={{
+          position: "relative",
+          flex: isExpanded ? 1 : "0 0 auto",
+          display: "flex",
+          alignItems: "center",
+          minWidth: 0,
+          width: isExpanded ? undefined : 0,
+          overflow: "hidden",
+        }}
+      >
+        {ghostText && (
+          <Typography
+            sx={{
+              position: "absolute",
+              left: 0,
+              color: alpha(theme.palette.text.primary, 0.3),
+              fontSize: SEARCH_FONT_SIZE,
+              lineHeight: `${SEARCH_LINE_HEIGHT}px`,
+              pointerEvents: "none",
+              whiteSpace: "pre",
+            }}
+          >
+            {ghostText}
+          </Typography>
+        )}
+
+        <InputBase
+          inputRef={inputRef}
+          inputProps={{ "data-app-search": "true" }}
+          placeholder={isExpanded ? placeholder : ""}
+          value={value}
+          onChange={onChange}
+          onFocus={onFocus}
+          onKeyDown={onKeyDown}
+          sx={{
+            flex: 1,
+            minWidth: 0,
+            width: isExpanded ? "100%" : SEARCH_FIELD_ICON_SIZE,
+            p: 0,
+            fontFamily:
+              '"SF Pro", -apple-system, BlinkMacSystemFont, sans-serif',
+            fontSize: SEARCH_FONT_SIZE,
+            fontWeight: 500,
+            lineHeight: `${SEARCH_LINE_HEIGHT}px`,
+            letterSpacing: 0,
+            color: "inherit",
+            zIndex: 1,
+            opacity: isExpanded ? 1 : 0,
+            "& input": {
+              p: 0,
+              "&::placeholder": {
+                color: "text.secondary",
+                opacity: 1,
+              },
+            },
+          }}
+        />
+      </Box>
+
+      {value.length > 0 && (
+        <IconButton
+          size="small"
+          onClick={onClear}
+          aria-label="Очистить поиск"
+          sx={{
+            flexShrink: 0,
+            p: 0,
+            width: SEARCH_CLEAR_SIZE,
+            height: SEARCH_CLEAR_SIZE,
+            borderRadius: "50%",
+            bgcolor: "#fff",
+            color: (theme) =>
+              theme.palette.mode === "dark" ? "#3a3a3a" : "#6e6e6e",
+            "&:hover": {
+              bgcolor: alpha("#fff", 0.92),
+            },
+          }}
+        >
+          <CloseIcon
+            sx={{
+              fontSize: SEARCH_CLEAR_ICON_SIZE,
+              width: SEARCH_CLEAR_ICON_SIZE,
+              height: SEARCH_CLEAR_ICON_SIZE,
+            }}
+          />
+        </IconButton>
+      )}
+    </Box>
+  );
+}
 
 export default function ExpandingSearch({
-  value: propsValue, // Возвращаем пропс
-  scope = "default", // Ключ страницы
+  value: propsValue,
+  scope = "default",
   onChange,
   enableHashtags = false,
   placeholder = "Поиск...",
   tooltip = "Поиск… (Ctrl/⌘+K)",
+  expandedWidth = SEARCH_EXPANDED_WIDTH,
 }) {
   const theme = useTheme();
   const isDark = theme.palette.mode === "dark";
 
   const dispatch = useDispatch();
 
-  // 1. ЛОГИКА ВЫБОРА ЗНАЧЕНИЯ:
-  // Если пропс propsValue передан (не undefined), используем его.
-  // Если не передан — берем из Redux для конкретной страницы (scope).
   const reduxValue = useSelector((state) => state.search.queries[scope]) || "";
-  // 1. Если в Redux что-то есть — это приоритет (клик по тегу)
-  // 2. Если в Redux пусто, берем из пропсов (старое поведение)
   const value = reduxValue || propsValue || "";
 
-  // Режим управления теперь тоже зависит от наличия данных в Redux
   const isControlledByProps = propsValue !== undefined && !reduxValue;
 
-  // 2. ФУНКЦИЯ ОБНОВЛЕНИЯ:
   const handleValueChange = (newValue) => {
     if (isControlledByProps) {
-      // Если работаем через пропсы (старые страницы)
       onChange?.(newValue);
     } else {
-      // Если работаем через Redux (Галерея)
       dispatch(setSearchQuery({ scope, value: newValue }));
-      onChange?.(newValue); // На всякий случай вызываем и onChange
+      onChange?.(newValue);
     }
   };
+
   const [isFocused, setIsFocused] = useState(false);
   const [uniqueTags, setUniqueTags] = useState([]);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -90,30 +215,25 @@ export default function ExpandingSearch({
     }
   }, [value, isControlledByProps, onChange]);
 
-  // Загрузка тегов из API
   useEffect(() => {
     if (isFocused && window.photoAPI?.getGlobalHashtags) {
       window.photoAPI.getGlobalHashtags().then((tags) => {
-        // Сортируем алфавитно для удобства
         const sorted = (tags || []).sort((a, b) => a.localeCompare(b));
         setUniqueTags(sorted);
       });
     }
   }, [isFocused]);
 
-  // Логика поиска и отображения тегов
   const hashtagMatch = useMemo(() => {
     if (!enableHashtags || !isFocused || uniqueTags.length === 0) return null;
 
     const words = value.split(/\s+/);
     const lastWord = words[words.length - 1];
 
-    // Если введена просто решетка — показываем ВСЕ теги
     if (lastWord === "#") {
       return uniqueTags;
     }
 
-    // Если введено #что-то — фильтруем
     if (lastWord && lastWord.startsWith("#") && lastWord.length > 1) {
       const searchPattern = lastWord.toLowerCase();
       const matches = uniqueTags.filter((tag) => {
@@ -130,15 +250,14 @@ export default function ExpandingSearch({
 
   const showList = Boolean(hashtagMatch);
 
-  // Подсказка в строке (Ghost Text) — только если уже начали писать после #
   const ghostText = useMemo(() => {
-    if (!hashtagMatch || !isFocused || activeIndex >= hashtagMatch.length)
+    if (!hashtagMatch || !isFocused || activeIndex >= hashtagMatch.length) {
       return "";
+    }
 
     const words = value.split(/\s+/);
     const lastWord = words[words.length - 1];
 
-    // Не показываем ghost text, если введена только решетка (чтобы не путать)
     if (lastWord === "#") return "";
 
     const currentSuggestion = hashtagMatch[activeIndex];
@@ -177,7 +296,7 @@ export default function ExpandingSearch({
       const newBefore = value.slice(0, lastHashIndex) + formattedTag + " ";
       const newAfter = value.slice(cursor);
 
-      handleValueChange(newBefore + newAfter); // Вызов Redux вместо onChange
+      handleValueChange(newBefore + newAfter);
 
       setTimeout(() => {
         inputRef.current?.focus();
@@ -207,88 +326,56 @@ export default function ExpandingSearch({
       e.preventDefault();
       applyTag(hashtagMatch[activeIndex]);
     } else if (e.key === "Escape") {
-      setIsFocused(false); // Закрыть список по Esc
+      setIsFocused(false);
     }
   };
 
   const isExpanded = isFocused || value.length > 0;
 
+  const handleClear = () => {
+    handleValueChange("");
+    setIsFocused(false);
+  };
+
   return (
     <ClickAwayListener onClickAway={() => setIsFocused(false)}>
-      <Box sx={{ display: "inline-block", WebkitAppRegion: "no-drag" }}>
+      <Box
+        ref={anchorRef}
+        sx={{
+          display: "inline-flex",
+          flexShrink: 0,
+          position: "relative",
+          zIndex: 2,
+          WebkitAppRegion: "no-drag",
+        }}
+      >
         <Tooltip title={!isExpanded ? tooltip : ""}>
-          <SearchContainer
-            ref={anchorRef}
-            $expanded={isExpanded}
+          <ToolbarButtonGroup
+            gap={0}
             sx={{
-              border: 0,
-              bgcolor: isFocused ? toolbarPillHoverBg : toolbarPillBg,
-              transition: "background-color 0.2s ease",
+              width: isExpanded ? expandedWidth : TOOLBAR_CAPSULE.height,
+              minWidth: isExpanded ? 130 : TOOLBAR_CAPSULE.height,
+              transition: theme.transitions.create("width", {
+                easing: theme.transitions.easing.sharp,
+                duration: theme.transitions.duration.shorter,
+              }),
             }}
+            contentSx={{ width: "100%", minWidth: 0 }}
           >
-            <IconButton
-              size="small"
-              onClick={() => inputRef.current?.focus()}
-              sx={{ color: "text.secondary", p: 0, width: 36, height: 36 }}
-            >
-              <SearchIcon sx={{ fontSize: 18 }} />
-            </IconButton>
-
-            <Box
-              sx={{
-                position: "relative",
-                flex: 1,
-                display: "flex",
-                alignItems: "center",
-              }}
-            >
-              {ghostText && (
-                <Typography
-                  sx={{
-                    position: "absolute",
-                    left: 9,
-                    color: alpha(theme.palette.text.primary, 0.3),
-                    fontSize: "0.875rem",
-                    pointerEvents: "none",
-                    whiteSpace: "pre",
-                  }}
-                >
-                  {ghostText}
-                </Typography>
-              )}
-
-              <InputBase
-                inputRef={inputRef}
-                inputProps={{ "data-app-search": "true" }}
-                placeholder={isExpanded ? placeholder : ""}
-                value={value}
-                onChange={(e) => handleValueChange(e.target.value)} // В Redux
-                onFocus={() => setIsFocused(true)}
-                onKeyDown={handleKeyDown}
-                sx={{
-                  ml: 1,
-                  flex: 1,
-                  color: "text.primary",
-                  fontSize: "0.875rem",
-                  zIndex: 1,
-                  opacity: isExpanded ? 1 : 0,
-                }}
-              />
-            </Box>
-
-            {value.length > 0 && (
-              <IconButton
-                size="small"
-                onClick={() => {
-                  handleValueChange(""); // Очистка через Redux
-                  setIsFocused(false);
-                }}
-                sx={{ color: "text.primary", p: "5px", mr: 0.5 }}
-              >
-                <CloseIcon fontSize="inherit" />
-              </IconButton>
-            )}
-          </SearchContainer>
+            <SearchCapsuleContent
+              isExpanded={isExpanded}
+              isFocused={isFocused}
+              value={value}
+              placeholder={placeholder}
+              ghostText={ghostText}
+              theme={theme}
+              inputRef={inputRef}
+              onFocus={() => setIsFocused(true)}
+              onKeyDown={handleKeyDown}
+              onChange={(e) => handleValueChange(e.target.value)}
+              onClear={handleClear}
+            />
+          </ToolbarButtonGroup>
         </Tooltip>
 
         <Popper
@@ -297,8 +384,7 @@ export default function ExpandingSearch({
           placement="bottom-start"
           style={{
             zIndex: 99999,
-            width: anchorRef.current?.clientWidth || 250,
-            height: 36,
+            width: anchorRef.current?.clientWidth || expandedWidth,
           }}
           modifiers={[{ name: "offset", options: { offset: [0, 8] } }]}
         >
@@ -343,12 +429,16 @@ export default function ExpandingSearch({
                   >
                     <ListItemText
                       primary={tag.startsWith("#") ? tag : `#${tag}`}
-                      primaryTypographyProps={{
-                        fontSize: "0.85rem",
-                        fontWeight: isActive ? 700 : 500,
-                        color: isActive
-                          ? theme.palette.primary.main
-                          : "inherit",
+                      slotProps={{
+                        primary: {
+                          sx: {
+                            fontSize: "0.85rem",
+                            fontWeight: isActive ? 700 : 500,
+                            color: isActive
+                              ? theme.palette.primary.main
+                              : "inherit",
+                          },
+                        },
                       }}
                     />
                   </ListItemButton>

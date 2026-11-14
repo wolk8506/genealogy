@@ -13,7 +13,7 @@ import DownloadIcon from "@mui/icons-material/Download";
 import InfoIcon from "@mui/icons-material/Info";
 import DeleteIcon from "@mui/icons-material/Delete";
 import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
-import PersonOutlineIcon from "@mui/icons-material/PersonOutline";
+import PersonOutlineOutlinedIcon from "@mui/icons-material/PersonOutlineOutlined";
 import PlaceOutlinedIcon from "@mui/icons-material/PlaceOutlined";
 import { useTheme } from "@mui/material/styles";
 import { useDispatch } from "react-redux";
@@ -173,7 +173,9 @@ const PhotoCell = React.memo(
                 justifyContent: "center",
               }}
             >
-              <Typography variant="caption" color="text.secondary">
+              <Typography variant="caption" sx={{
+                color: "text.secondary"
+              }}>
                 Загрузка...
               </Typography>
             </Box>
@@ -228,7 +230,7 @@ const PhotoCell = React.memo(
                       maxWidth: "100%",
                     }}
                   >
-                    <PersonOutlineIcon
+                    <PersonOutlineOutlinedIcon
                       sx={{ fontSize: 12, color: "lightgray", opacity: 0.8, flexShrink: 0 }}
                     />
                     <Typography

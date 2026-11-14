@@ -3,7 +3,7 @@ import { Box, Button, Divider, IconButton, Typography } from "@mui/material";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import CloseIcon from "@mui/icons-material/Close";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
+import ErrorOutlineOutlinedIcon from "@mui/icons-material/ErrorOutlineOutlined";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 
@@ -117,7 +117,11 @@ export function SettingsRow({
   disabled,
   danger,
   multiline,
+  subtitleLines = 1,
 }) {
+  // Подпись можно ограничить N строками: 1 — одна строка с многоточием,
+  // 2 и больше — перенос и обрезка после N-й строки.
+  const clampSubtitle = subtitleLines > 1;
   return (
     <Box
       onClick={disabled ? undefined : onClick}
@@ -138,35 +142,43 @@ export function SettingsRow({
       <Box sx={{ minWidth: 0, flexGrow: 1 }}>
         <Typography
           variant="body2"
-          fontWeight={400}
           noWrap={!multiline}
           sx={{
+            fontWeight: 400,
             fontSize: "0.8125rem",
             lineHeight: 1.4,
             color: danger ? "error.main" : "text.primary",
+
             ...(multiline && {
               whiteSpace: "normal",
               overflowWrap: "anywhere",
-            }),
-          }}
-        >
+            })
+          }}>
           {title}
         </Typography>
         {subtitle && (
           <Typography
             variant="caption"
-            display="block"
-            noWrap={!multiline}
+            noWrap={!multiline && !clampSubtitle}
             sx={{
+              display: clampSubtitle ? "-webkit-box" : "block",
               fontSize: "0.7rem",
               lineHeight: 1.45,
               color: "text.secondary",
-              ...(multiline && {
+
+              ...(clampSubtitle && {
+                WebkitBoxOrient: "vertical",
+                WebkitLineClamp: subtitleLines,
+                overflow: "hidden",
                 whiteSpace: "normal",
                 overflowWrap: "anywhere",
               }),
-            }}
-          >
+
+              ...(multiline && {
+                whiteSpace: "normal",
+                overflowWrap: "anywhere",
+              })
+            }}>
             {subtitle}
           </Typography>
         )}
@@ -248,7 +260,9 @@ export function CountBadge({ value }) {
         placeItems: "center",
       }}
     >
-      <Typography variant="caption" fontWeight={700}>
+      <Typography variant="caption" sx={{
+        fontWeight: 700
+      }}>
         {value}
       </Typography>
     </Box>
@@ -266,7 +280,7 @@ export const chevron = (
 
 const statusTone = {
   success: { bg: "green", icon: <CheckCircleIcon sx={{ fontSize: 18 }} /> },
-  error: { bg: "red", icon: <ErrorOutlineIcon sx={{ fontSize: 18 }} /> },
+  error: { bg: "red", icon: <ErrorOutlineOutlinedIcon sx={{ fontSize: 18 }} /> },
   warning: { bg: "orange", icon: <WarningAmberIcon sx={{ fontSize: 18 }} /> },
   info: { bg: "blue", icon: <InfoOutlinedIcon sx={{ fontSize: 18 }} /> },
 };
@@ -291,18 +305,22 @@ export function InlineStatus({ tone = "info", title, message, onClose }) {
       <Box sx={{ minWidth: 0, flexGrow: 1 }}>
         <Typography
           variant="body2"
-          fontWeight={600}
-          sx={{ lineHeight: 1.4, overflowWrap: "anywhere" }}
-        >
+          sx={{
+            fontWeight: 600,
+            lineHeight: 1.4,
+            overflowWrap: "anywhere"
+          }}>
           {title}
         </Typography>
         {message && (
           <Typography
             variant="caption"
-            color="text.secondary"
-            display="block"
-            sx={{ lineHeight: 1.4, overflowWrap: "anywhere" }}
-          >
+            sx={{
+              color: "text.secondary",
+              display: "block",
+              lineHeight: 1.4,
+              overflowWrap: "anywhere"
+            }}>
             {message}
           </Typography>
         )}

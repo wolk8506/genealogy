@@ -191,27 +191,38 @@ export default function Info({
         {/* ЛЕВЫЙ БЛОК (Инфо) - Фиксированный 802px */}
         <Stack
           spacing={0.3}
-          alignItems="center"
           sx={{
-            width: 785, // Чуть шире, чтобы компенсировать отступ для скролла
+            alignItems: "center",
+
+            // Чуть шире, чтобы компенсировать отступ для скролла
+            width: 785,
+
             flexShrink: 0,
             height: "100%",
             overflowY: "auto",
-            pr: 0.5, // Отступ справа, чтобы скроллбар не "прилипал" к карточкам
+
+            // Отступ справа, чтобы скроллбар не "прилипал" к карточкам
+            pr: 0.5,
+
             // pt: 1, // Небольшой отступ сверху
-            pb: 4, // Отступ снизу, чтобы контент не упирался в край
+            // Отступ снизу, чтобы контент не упирался в край
+            pb: 4,
+
             // pr: 0.5,
 
             /* Стилизация скроллбара для левого блока */
             "&::-webkit-scrollbar": { width: "6px" },
+
             "&::-webkit-scrollbar-track": { background: "transparent" },
+
             "&::-webkit-scrollbar-thumb": {
               background: (theme) => theme.palette.divider,
               borderRadius: "6px",
             },
-            scrollbarWidth: "thin", // Для Firefox
-          }}
-        >
+
+            // Для Firefox
+            scrollbarWidth: "thin"
+          }}>
           <RenderSectionParent
             title={"Родители"}
             people={[father, mother].filter(Boolean)}
@@ -243,7 +254,9 @@ export default function Info({
                 }}
               >
                 <PersonPinCircleIcon sx={{ fontSize: 14 }} />
-                <Typography variant="caption" fontWeight={700}>
+                <Typography variant="caption" sx={{
+                  fontWeight: 700
+                }}>
                   Это я
                 </Typography>
               </Box>
@@ -295,9 +308,10 @@ export default function Info({
                 <Stack
                   direction="row"
                   spacing={5}
-                  alignItems="flex-start"
-                  sx={{ px: 2 }}
-                >
+                  sx={{
+                    alignItems: "flex-start",
+                    px: 2
+                  }}>
                   <Box sx={{ position: "relative" }}>
                     <Box
                       onClick={() => {
@@ -322,9 +336,13 @@ export default function Info({
                     </Box>
                   </Box>
 
-                  <Stack spacing={2} flex={1}>
+                  <Stack spacing={2} sx={{
+                    flex: 1
+                  }}>
                     <Stack spacing={0.5}>
-                      <Stack direction="row" spacing={1.5} alignItems="center">
+                      <Stack direction="row" spacing={1.5} sx={{
+                        alignItems: "center"
+                      }}>
                         <Typography
                           variant="h4"
                           sx={{ fontWeight: 800, letterSpacing: "-0.5px" }}
@@ -334,11 +352,15 @@ export default function Info({
                             .join(" ") || "Без имени"}
                         </Typography>
                       </Stack>
-                      <Stack direction="row" flexDirection={"column"}>
+                      <Stack direction="row" sx={{
+                        flexDirection: "column"
+                      }}>
                         {person.patronymic && (
                           <Typography
                             variant="subtitle1"
-                            color="text.secondary"
+                            sx={{
+                              color: "text.secondary"
+                            }}
                           >
                             Отчество: {person.patronymic}
                           </Typography>
@@ -347,7 +369,9 @@ export default function Info({
                         {person.maidenName && (
                           <Typography
                             variant="subtitle1"
-                            color="text.secondary"
+                            sx={{
+                              color: "text.secondary"
+                            }}
                           >
                             Девичья фамилия: {person.maidenName}
                           </Typography>
@@ -423,10 +447,14 @@ export default function Info({
                     )}
 
                     <Stack direction="row" spacing={3}>
-                      <Typography variant="caption" color="text.disabled">
+                      <Typography variant="caption" sx={{
+                        color: "text.disabled"
+                      }}>
                         <b>ID:</b> {person.id}
                       </Typography>
-                      <Typography variant="caption" color="text.disabled">
+                      <Typography variant="caption" sx={{
+                        color: "text.disabled"
+                      }}>
                         <b>Поколение:</b> {person.generation}
                       </Typography>
                     </Stack>
@@ -476,10 +504,11 @@ export default function Info({
                 {/* Шапка обратной стороны */}
                 <Stack
                   direction="row"
-                  justifyContent="space-between"
-                  alignItems="center"
-                  mb={2}
-                >
+                  sx={{
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    mb: 2
+                  }}>
                   <Typography
                     variant="h6"
                     sx={{
@@ -527,7 +556,12 @@ export default function Info({
             </Box>
           </Box>
 
-          <Stack spacing={1} alignItems={"center"} sx={{ width: 736 }}>
+          <Stack
+            spacing={1}
+            sx={{
+              alignItems: "center",
+              width: 736
+            }}>
             <RenderSectionFamilies
               key={person.id}
               title={person.gender === "male" ? "Супруга" : "Супруг"}

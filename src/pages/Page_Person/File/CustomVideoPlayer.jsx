@@ -159,7 +159,10 @@ export default function CustomVideoPlayer({ src, fileName, onClose }) {
         }}
       />
 
-      <Box sx={chromeSx("top", chromeHidden)} justifyContent="space-between">
+      <Box
+        sx={[{
+          justifyContent: "space-between"
+        }, chromeSx("top", chromeHidden)]}>
         <Typography
           noWrap
           title={fileName}

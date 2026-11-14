@@ -344,13 +344,17 @@ export default function PhotoGallery({
                     zIndex: 1,
                   }}
                 >
-                  <Stack direction="row" spacing={1} alignItems="center">
+                  <Stack direction="row" spacing={1} sx={{
+                    alignItems: "center"
+                  }}>
                     {groupBy === "byType" ? (
                       <PersonPinCircleIcon fontSize="small" color="primary" />
                     ) : (
                       <CalendarMonthIcon fontSize="small" color="action" />
                     )}
-                    <Typography variant="subtitle2" fontWeight="bold">
+                    <Typography variant="subtitle2" sx={{
+                      fontWeight: "bold"
+                    }}>
                       {headers[idx]}
                     </Typography>
                   </Stack>

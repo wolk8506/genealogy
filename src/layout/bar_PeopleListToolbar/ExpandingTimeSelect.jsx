@@ -1,15 +1,15 @@
 import React, { useState } from "react";
 import {
   Box,
-  IconButton,
-  styled,
   Menu,
   MenuItem,
   Typography,
   ListItemIcon,
   Tooltip,
-  alpha,
 } from "@mui/material";
+import { Toggle } from "@base-ui/react/toggle";
+import CheckIcon from "@mui/icons-material/Check";
+import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 
 // Иконки
 import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
@@ -19,21 +19,9 @@ import DateRangeIcon from "@mui/icons-material/DateRange";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import HistoryToggleOffIcon from "@mui/icons-material/HistoryToggleOff";
 import EventNoteIcon from "@mui/icons-material/EventNote";
-import { toolbarPillBg, toolbarPillSx } from "../toolbarStyles";
+import { ToolbarSegmentHit } from "../../components/ToolbarCapsuleContext";
+import { TOOLBAR_HIT, TOOLBAR_MENU } from "../toolbarTokens";
 import { popoverArrowSx } from "../../theme/popoverArrow";
-
-const StyledContainer = styled(Box, {
-  shouldForwardProp: (prop) => prop !== "$expanded",
-})(({ theme, $expanded }) => ({
-  ...toolbarPillSx,
-  display: "flex",
-  alignItems: "center",
-  transition:
-    "transform 0.2s ease-out, box-shadow 0.2s ease-out, background-color 0.2s",
-  paddingRight: $expanded ? 12 : 0,
-  cursor: "pointer",
-  backgroundColor: toolbarPillBg,
-}));
 
 const timeOptions = [
   {
@@ -91,28 +79,51 @@ export default function ExpandingTimeSelect({
   return (
     <>
       <Tooltip title={tooltipTitle}>
-        <StyledContainer $expanded={isExpanded} onClick={handleOpen}>
-          <IconButton size="small" sx={{ color: "text.primary", p: "8px" }}>
-            <BaseIcon
-              color={isExpanded ? "primary" : "inherit"}
-              fontSize="small"
+        <Toggle
+          pressed={isExpanded}
+          onClick={handleOpen}
+          aria-haspopup="menu"
+          aria-expanded={open}
+          render={(props, state) => (
+            <ToolbarSegmentHit
+              {...props}
+              pressed={state.pressed}
+              sx={{
+                gap: isExpanded
+                  ? TOOLBAR_HIT.gapIconLabelPx
+                  : TOOLBAR_HIT.gapPx,
+              }}
             />
-          </IconButton>
+          )}
+        >
+          <BaseIcon sx={{ fontSize: TOOLBAR_HIT.iconSize, color: "inherit" }} />
 
           {isExpanded && (
             <Typography
               variant="caption"
+              component="span"
               sx={{
-                color: "text.primary",
+                color: "inherit",
                 whiteSpace: "nowrap",
-                ml: 0.5,
-                fontWeight: 700,
+                fontWeight: 600,
+                fontSize: "0.75rem",
+                lineHeight: 1,
               }}
             >
               {labelPrefix}: {selectedOption.label}
             </Typography>
           )}
-        </StyledContainer>
+          <KeyboardArrowDownIcon
+            sx={{
+              fontSize: TOOLBAR_HIT.chevronSize,
+              width: TOOLBAR_HIT.chevronSize,
+              height: TOOLBAR_HIT.chevronSize,
+              opacity: 0.85,
+              flexShrink: 0,
+              color: "inherit",
+            }}
+          />
+        </Toggle>
       </Tooltip>
 
       <Menu
@@ -121,20 +132,23 @@ export default function ExpandingTimeSelect({
         onClose={handleClose}
         anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
         transformOrigin={{ vertical: "top", horizontal: "center" }}
-        PaperProps={{
-          sx: {
-            mt: 1.5,
-            minWidth: 180,
-            borderRadius: "16px",
-            overflow: "visible",
-            backgroundImage: "none",
-            bgcolor: (theme) =>
-              theme.palette.mode === "dark" ? "#1E1E1E" : "#FFFFFF",
-            border: "1px solid",
-            borderColor: "divider",
-            // Хвостик меню
-            "&::before": popoverArrowSx(),
+        slotProps={{
+          paper: {
+            sx: {
+              mt: 1.5,
+              minWidth: 180,
+              borderRadius: TOOLBAR_MENU.paperRadiusPx,
+              overflow: "visible",
+              backgroundImage: "none",
+              bgcolor: (theme) =>
+                theme.palette.mode === "dark" ? "#1E1E1E" : "#FFFFFF",
+              border: "1px solid",
+              borderColor: "divider",
+              // Хвостик меню
+              "&::before": popoverArrowSx(),
+            },
           },
+          list: { sx: { py: 0.5, px: 0.5 } },
         }}
       >
         <Box sx={{ position: "relative", zIndex: 1 }}>
@@ -161,26 +175,34 @@ export default function ExpandingTimeSelect({
                   handleClose();
                 }}
                 sx={{
-                  mx: 1,
-                  my: 0.5,
-                  borderRadius: "8px",
-                  bgcolor: (t) =>
-                    isSelected
-                      ? alpha(t.palette.primary.main, 0.15)
-                      : "transparent",
-                  "&:hover": {
-                    bgcolor: (t) =>
-                      isSelected
-                        ? alpha(t.palette.primary.main, 0.25)
-                        : "action.hover",
-                  },
-                  transition: "background-color 0.2s",
+                  gap: 0.75,
+                  mx: 0.5,
+                  my: 0.25,
+                  borderRadius: TOOLBAR_MENU.itemRadiusPx,
+                  pl: 1,
+                  pr: 1.25,
+                  py: 0.75,
+                  bgcolor: "transparent",
+                  "&:hover": { bgcolor: "action.hover" },
                 }}
               >
+                <Box
+                  sx={{
+                    width: TOOLBAR_MENU.checkGutter,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexShrink: 0,
+                  }}
+                >
+                  {isSelected && (
+                    <CheckIcon sx={{ fontSize: TOOLBAR_MENU.checkIcon }} />
+                  )}
+                </Box>
                 <ListItemIcon
                   sx={{
-                    minWidth: "32px !important",
-                    color: isSelected ? "primary.main" : "text.secondary",
+                    minWidth: "28px !important",
+                    color: isSelected ? "text.primary" : "text.secondary",
                   }}
                 >
                   {opt.icon}
@@ -188,7 +210,7 @@ export default function ExpandingTimeSelect({
                 <Typography
                   variant="body2"
                   sx={{
-                    fontWeight: isSelected ? 700 : 400,
+                    fontWeight: isSelected ? 600 : 400,
                     color: isSelected ? "text.primary" : "text.secondary",
                   }}
                 >

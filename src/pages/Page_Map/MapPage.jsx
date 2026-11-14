@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   Box,
   Typography,
@@ -10,8 +11,9 @@ import {
   Tooltip,
   useTheme,
 } from "@mui/material";
-import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
+import HelpOutlineOutlinedIcon from "@mui/icons-material/HelpOutlineOutlined";
 import SearchIcon from "@mui/icons-material/Search";
+import FitScreenIcon from "@mui/icons-material/FitScreen";
 import CheckIcon from "@mui/icons-material/Check";
 import CloseIcon from "@mui/icons-material/Close";
 import { useNavigate } from "react-router-dom";
@@ -77,6 +79,75 @@ function FitBounds({ points, fitRequestKey = 0 }) {
     }
   }, [points, map, fitRequestKey]);
   return null;
+}
+
+// Кнопка «Показать все точки» живёт на карте под кнопками зума.
+function FitAllPointsControl({ onFit, disabled }) {
+  const map = useMap();
+  const theme = useTheme();
+  const [container, setContainer] = useState(null);
+
+  useEffect(() => {
+    const el = L.DomUtil.create("div", "leaflet-control map-fit-control");
+    L.DomEvent.disableClickPropagation(el);
+    L.DomEvent.disableScrollPropagation(el);
+    const control = L.control({ position: "topright" });
+    control.onAdd = () => el;
+    control.addTo(map);
+    setContainer(el);
+    return () => {
+      control.remove();
+      setContainer(null);
+    };
+  }, [map]);
+
+  if (!container) return null;
+
+  return createPortal(
+    <Tooltip title="Показать все точки" placement="left">
+      <span style={{ display: "flex" }}>
+        {/* Подложка — как у переключателя слоёв: стеклянный круг, внутри
+            которого кнопка подсвечивается при наведении. */}
+        <Box
+          sx={{
+            display: "flex",
+            borderRadius: "50%",
+            overflow: "hidden",
+            bgcolor: theme.palette.glass.surface,
+            boxShadow: "0 2px 12px rgba(0,0,0,0.22)",
+            backdropFilter: "blur(8px)",
+            WebkitBackdropFilter: "blur(8px)",
+          }}
+        >
+          <IconButton
+            aria-label="Показать все точки"
+            onClick={onFit}
+            disabled={disabled}
+            sx={{
+              width: 36,
+              height: 36,
+              p: 0,
+              borderRadius: "50%",
+              color: theme.palette.text.primary,
+              transition: "background-color 160ms ease",
+              "&:hover": { bgcolor: theme.palette.glass.hover },
+              "&.Mui-disabled": {
+                // Гаснет только значок: стеклянная подложка остаётся.
+                color:
+                  theme.palette.mode === "dark"
+                    ? "rgba(255,255,255,0.4)"
+                    : "rgba(17,17,17,0.35)",
+                bgcolor: "transparent",
+              },
+            }}
+          >
+            <FitScreenIcon sx={{ fontSize: 20 }} />
+          </IconButton>
+        </Box>
+      </span>
+    </Tooltip>,
+    container,
+  );
 }
 
 function RememberView() {
@@ -180,7 +251,6 @@ export default function MapPage({
   clearGeocodeKey = 0,
   dataRevision = 0,
   selectedPeopleIds = [],
-  fitBoundsKey = 0,
   focusPointKey = null,
   focusTrigger = 0,
   onStatsChange,
@@ -214,6 +284,7 @@ export default function MapPage({
   const [editError, setEditError] = useState("");
   const [editFlyTrigger, setEditFlyTrigger] = useState(0);
   const [editConfirming, setEditConfirming] = useState(false);
+  const [fitRequest, setFitRequest] = useState(0);
   const loadRun = useRef(0);
   const pendingFull = useRef(new Set());
 
@@ -892,9 +963,13 @@ export default function MapPage({
         style={{ height: "100%", width: "100%", background: "#aad3df" }}
       >
         <ZoomControl position="topright" />
+        <FitAllPointsControl
+          onFit={() => setFitRequest((k) => k + 1)}
+          disabled={loading || visiblePoints.length === 0}
+        />
         <MapBaseTileLayer layer={getBaseLayer(baseLayer)} />
         <FlyToLocation pos={locatePos} trigger={locateTrigger} />
-        <FitBounds points={visiblePoints} fitRequestKey={fitBoundsKey} />
+        <FitBounds points={visiblePoints} fitRequestKey={fitRequest} />
         <RememberView />
         <AutoResize />
         <MapMarkerLayer
@@ -953,31 +1028,33 @@ export default function MapPage({
               if (e.key === "Enter") handleEditSearch();
               if (e.key === "Escape") handleEditCancel();
             }}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <IconButton
-                    size="small"
-                    edge="start"
-                    title="Найти"
-                    onClick={handleEditSearch}
-                    disabled={editSearching || !editQuery.trim()}
-                    sx={{ color: "inherit" }}
-                  >
-                    {editSearching ? (
-                      <CircularProgress size={16} color="inherit" />
-                    ) : (
-                      <SearchIcon fontSize="small" />
-                    )}
-                  </IconButton>
-                </InputAdornment>
-              ),
-              sx: {
-                borderRadius: "12px",
-                width: 460,
-                maxWidth: "45vw",
-                bgcolor: "background.paper",
-              },
+            slotProps={{
+              input: {
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <IconButton
+                      size="small"
+                      edge="start"
+                      title="Найти"
+                      onClick={handleEditSearch}
+                      disabled={editSearching || !editQuery.trim()}
+                      sx={{ color: "inherit" }}
+                    >
+                      {editSearching ? (
+                        <CircularProgress size={16} color="inherit" />
+                      ) : (
+                        <SearchIcon fontSize="small" />
+                      )}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+                sx: {
+                  borderRadius: "12px",
+                  width: 460,
+                  maxWidth: "45vw",
+                  bgcolor: "background.paper",
+                },
+              }
             }}
           />
           <Tooltip title="Подтвердить">
@@ -1093,7 +1170,7 @@ export default function MapPage({
             },
           }}
         >
-          <HelpOutlineIcon sx={{ fontSize: 20 }} />
+          <HelpOutlineOutlinedIcon sx={{ fontSize: 20 }} />
         </IconButton>
       </Tooltip>
 

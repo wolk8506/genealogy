@@ -1,101 +1,41 @@
 import React from "react";
-import { Stack, Tooltip, Box } from "@mui/material";
+import { Box, Stack } from "@mui/material";
 
-// import PersonTabs from "./PersonTabs"; // Используем созданный ранее компонент
-import { ToggleButton, ToggleButtonGroup } from "@mui/material";
-import { useTheme } from "@mui/material/styles";
 import BioToolbar from "./bio/BioToolbar";
-import PersonFillIcon from "../../components/svg/PersonFillIcon";
-import TextDocumentFillIcon from "../../components/svg/TextDocumentFillIcon";
-import PhotoOnRectangleAngledIcon from "../../components/svg/PhotoOnRectangleAngledIcon";
 import PhotoToolbar from "./photo/PhotoToolbar";
 import InfoToolbar from "./info/InfoToolbar";
-import FileCopyIcon from "@mui/icons-material/FileCopy";
 import FileToolbar from "./file/FileToolbar";
-import { toolbarPillSx } from "../toolbarStyles";
+import PersonTabCluster from "./PersonTabCluster";
 
-export default function ToolbarGroup({
+export default function PersonToolbar({
   activeElement,
   setActiveElement,
   infoProps,
   photoProps,
   bioProps,
 }) {
-  const theme = useTheme();
-  const isDark = theme.palette.mode === "dark";
   return (
     <Stack
       direction="row"
-      spacing={2}
+      spacing={1.5}
       sx={{ alignItems: "center", width: "100%", flex: 1, minWidth: 0 }}
     >
-      {/* Вкладки: Анкета, Фото, Био, Файлы */}
-      <Box
-        sx={{
-          ...toolbarPillSx,
-          display: "inline-flex",
-          flexShrink: 0,
-          alignItems: "center",
-          p: "3px",
-        }}
-      >
-        <ToggleButtonGroup
-          value={activeElement}
-          exclusive
-          onChange={(e, val) => val && setActiveElement(val)}
-          size="small"
-          sx={{
-            gap: 0.5,
-            bgcolor: "transparent",
-            "& .MuiToggleButton-root": {
-              color: "text.primary",
-              border: "none",
-              borderRadius: "12px",
-              minWidth: 36,
-              height: 30,
-              p: 0,
-              fontSize: 20,
-              "&.Mui-selected": {
-                bgcolor: "rgba(153, 153, 153, 0.24)",
-                color: "primary.main",
-              },
-            },
-          }}
-        >
-          <Tooltip title="Инфо">
-            <ToggleButton value="info">
-              <PersonFillIcon sx={{ fontSize: 18 }} />
-            </ToggleButton>
-          </Tooltip>
+      <PersonTabCluster
+        active={activeElement}
+        onChange={setActiveElement}
+      />
 
-          <Tooltip title="Фотоальбом">
-            <ToggleButton value="photo">
-              <PhotoOnRectangleAngledIcon sx={{ fontSize: 18 }} />
-            </ToggleButton>
-          </Tooltip>
-
-          <Tooltip title="Биография">
-            <ToggleButton value="bio">
-              <TextDocumentFillIcon sx={{ fontSize: 18 }} />
-            </ToggleButton>
-          </Tooltip>
-
-          <Tooltip title="Файлы">
-            <ToggleButton value="files">
-              <FileCopyIcon sx={{ fontSize: 18 }} />
-            </ToggleButton>
-          </Tooltip>
-        </ToggleButtonGroup>
-      </Box>
       {activeElement === "files" && <FileToolbar />}
 
       {activeElement === "info" && (
-        <InfoToolbar
-          infoProps={infoProps} // ПЕРЕДАЕМ ВЕСЬ ОБЪЕКТ (тут лежат и методы, и реф)
-          personRef={infoProps.personPageRef} // Передаем реф страницы для фактов/событий
-        />
+        <Box sx={{ flex: 1, minWidth: 0, display: "flex" }}>
+          <InfoToolbar
+            infoProps={infoProps}
+            personRef={infoProps.personPageRef}
+          />
+        </Box>
       )}
-      {/* Если выбрана вкладка Фото, показываем дополнительные кнопки */}
+
       {activeElement === "photo" && (
         <PhotoToolbar
           search={photoProps.search}
@@ -107,6 +47,7 @@ export default function ToolbarGroup({
           onAddPhoto={photoProps.onAddPhoto}
         />
       )}
+
       {activeElement === "bio" && (
         <BioToolbar
           isEditing={bioProps.isEditing}

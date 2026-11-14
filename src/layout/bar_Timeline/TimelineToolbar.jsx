@@ -1,64 +1,81 @@
 import React from "react";
-import { Box, Stack, Typography, styled } from "@mui/material";
-import PhotoLibraryIcon from "@mui/icons-material/PhotoLibrary";
-import EventIcon from "@mui/icons-material/Event";
-import ContactsIcon from "@mui/icons-material/Contacts";
+import { Box, Stack, Typography, Tooltip } from "@mui/material";
+import { Toggle } from "@base-ui/react/toggle";
 import CloseIcon from "@mui/icons-material/Close";
-import { toolbarPillSx } from "../toolbarStyles";
+import ToolbarButtonGroup from "../../components/ToolbarButtonGroup";
+import MapLayerFilterCluster from "../bar_Map/MapLayerFilterCluster";
+import {
+  ToolbarSegmentHit,
+  useToolbarButtonGroupHitSx,
+} from "../../components/ToolbarCapsuleContext";
+import { TOOLBAR_CAPSULE, TOOLBAR_HIT } from "../toolbarTokens";
+import {
+  toolbarClusterSx,
+  toolbarDragSpacerSx,
+  toolbarRowSx,
+} from "../appBarToolbarLayout";
 
-const Pill = styled(Box)(({ theme }) => ({
-  ...toolbarPillSx,
-  display: "flex",
-  alignItems: "center",
-  overflow: "hidden",
-}));
+function CapsuleText({ children, sx }) {
+  return (
+    <Typography
+      variant="caption"
+      component="span"
+      sx={{
+        px: TOOLBAR_HIT.segmentPaddingX,
+        fontWeight: 600,
+        fontSize: "0.75rem",
+        lineHeight: 1,
+        whiteSpace: "nowrap",
+        color: "inherit",
+        opacity: 0.72,
+        userSelect: "none",
+        ...sx,
+      }}
+    >
+      {children}
+    </Typography>
+  );
+}
 
-function SegButton({ active, onClick, children }) {
+function PersonFilterCloseButton({ onClick, children }) {
+  const hitSx = useToolbarButtonGroupHitSx(false);
   return (
     <Box
+      component="button"
+      type="button"
       onClick={onClick}
-      sx={{
-        px: 1.75,
-        height: "100%",
-        display: "flex",
-        alignItems: "center",
-        cursor: "pointer",
-        color: active ? "primary.main" : "text.primary",
-        fontWeight: active ? 700 : 500,
-        fontSize: "0.78rem",
-        bgcolor: active ? "action.hover" : "transparent",
-        "&:hover": { bgcolor: "action.selected" },
-      }}
+      sx={{ ...hitSx, p: 0 }}
     >
       {children}
     </Box>
   );
 }
 
-function FilterToggle({ active, onClick, icon, label, title }) {
+function SegmentToggle({ pressed, onClick, title, children }) {
   return (
-    <Box
-      onClick={onClick}
-      title={title}
-      sx={{
-        px: 1.5,
-        height: "100%",
-        display: "flex",
-        alignItems: "center",
-        gap: 0.75,
-        cursor: "pointer",
-        color: "text.primary",
-        opacity: active ? 1 : 0.45,
-        fontSize: "0.78rem",
-        fontWeight: 600,
-        "&:hover": { bgcolor: "action.selected" },
-      }}
-    >
-      {icon}
-      <Typography variant="caption" sx={{ fontWeight: 600 }}>
-        {label}
-      </Typography>
-    </Box>
+    <Tooltip title={title}>
+      <Toggle
+        pressed={pressed}
+        onClick={onClick}
+        render={(props, state) => (
+          <ToolbarSegmentHit {...props} pressed={state.pressed} />
+        )}
+      >
+        <Typography
+          variant="caption"
+          component="span"
+          sx={{
+            fontWeight: 600,
+            fontSize: "0.75rem",
+            lineHeight: 1,
+            whiteSpace: "nowrap",
+            color: "inherit",
+          }}
+        >
+          {children}
+        </Typography>
+      </Toggle>
+    </Tooltip>
   );
 }
 
@@ -78,98 +95,107 @@ export default function TimelineToolbar({
   onGoYears,
   onGoMonths,
 }) {
+  const personLabel = filterPerson
+    ? [filterPerson.firstName, filterPerson.lastName || filterPerson.maidenName]
+        .filter(Boolean)
+        .join(" ")
+    : "";
+
   return (
-    <Stack direction="row" spacing={2} alignItems="center" sx={{ flexGrow: 1 }}>
-      <Pill>
-        <SegButton onClick={onGoYears}>Лента</SegButton>
+    <Stack direction="row" sx={toolbarRowSx}>
+      <Box sx={{ ...toolbarClusterSx, minWidth: 0 }}>
+      <ToolbarButtonGroup gap={TOOLBAR_CAPSULE.gapSegmentsPx}>
+        <SegmentToggle pressed={!year} onClick={onGoYears} title="Вся лента">
+          Лента
+        </SegmentToggle>
         {year && (
           <>
-            <Typography variant="caption" color="text.secondary">
-              /
-            </Typography>
-            <SegButton onClick={onGoMonths}>{year}</SegButton>
+            <CapsuleText>/</CapsuleText>
+            <SegmentToggle
+              pressed={Boolean(year) && !month}
+              onClick={onGoMonths}
+              title={`Год ${year}`}
+            >
+              {year}
+            </SegmentToggle>
           </>
         )}
         {month && (
           <>
-            <Typography variant="caption" color="text.secondary">
-              /
-            </Typography>
-            <Typography
-              variant="caption"
-              sx={{ fontWeight: 700, px: 1.5, color: "text.primary" }}
-            >
-              {month}
-            </Typography>
+            <CapsuleText>/</CapsuleText>
+            <CapsuleText>{month}</CapsuleText>
           </>
         )}
-      </Pill>
+      </ToolbarButtonGroup>
 
       {filterPerson && (
-        <Pill>
-          <Typography
-            variant="caption"
-            sx={{ px: 1.5, color: "text.primary", fontWeight: 600, maxWidth: 180 }}
-            noWrap
-          >
-            {[filterPerson.firstName, filterPerson.lastName || filterPerson.maidenName]
-              .filter(Boolean)
-              .join(" ")}
-          </Typography>
-          <Box
-            onClick={onClearPersonFilter}
-            title="Показать всю ленту"
+        <>
+        <ToolbarButtonGroup gap={TOOLBAR_CAPSULE.gapSegmentsPx}>
+          <CapsuleText
             sx={{
-              px: 1,
-              height: "100%",
-              display: "flex",
-              alignItems: "center",
-              cursor: "pointer",
-              opacity: 0.7,
-              "&:hover": { opacity: 1, bgcolor: "action.selected" },
+              opacity: 1,
+              maxWidth: 180,
+              overflow: "hidden",
+              textOverflow: "ellipsis",
             }}
           >
-            <CloseIcon sx={{ fontSize: 16, color: "text.primary" }} />
-          </Box>
-        </Pill>
+            {personLabel}
+          </CapsuleText>
+          <Tooltip title="Показать всю ленту">
+            <PersonFilterCloseButton
+              onClick={onClearPersonFilter}
+              aria-label="Сбросить фильтр по человеку"
+            >
+              <CloseIcon
+                sx={{
+                  fontSize: TOOLBAR_HIT.chevronSize,
+                  color: "inherit",
+                }}
+              />
+            </PersonFilterCloseButton>
+          </Tooltip>
+        </ToolbarButtonGroup>
+        </>
       )}
+      </Box>
 
-      <Box sx={{ flexGrow: 1 }} />
-      <Pill>
-        <SegButton active={level === "years"} onClick={() => onLevelChange("years")}>
+      <Box sx={toolbarDragSpacerSx} />
+
+      <Box sx={toolbarClusterSx}>
+      <ToolbarButtonGroup gap={TOOLBAR_CAPSULE.gapSegmentsPx}>
+        <SegmentToggle
+          pressed={level === "years"}
+          onClick={() => onLevelChange("years")}
+          title="Уровень: годы"
+        >
           Годы
-        </SegButton>
-        <SegButton active={level === "months"} onClick={() => onLevelChange("months")}>
+        </SegmentToggle>
+        <SegmentToggle
+          pressed={level === "months"}
+          onClick={() => onLevelChange("months")}
+          title="Уровень: месяцы"
+        >
           Месяцы
-        </SegButton>
-        <SegButton active={level === "days"} onClick={() => onLevelChange("days")}>
+        </SegmentToggle>
+        <SegmentToggle
+          pressed={level === "days"}
+          onClick={() => onLevelChange("days")}
+          title="Уровень: дни"
+        >
           Дни
-        </SegButton>
-      </Pill>
+        </SegmentToggle>
+      </ToolbarButtonGroup>
 
-      <Pill>
-        <FilterToggle
-          active={showPhotos}
-          onClick={onTogglePhotos}
-          title="Показать/скрыть фото"
-          icon={<PhotoLibraryIcon sx={{ fontSize: 17 }} />}
-          label="Фото"
-        />
-        <FilterToggle
-          active={showEvents}
-          onClick={onToggleEvents}
-          title="Показать/скрыть события"
-          icon={<EventIcon sx={{ fontSize: 17 }} />}
-          label="События"
-        />
-        <FilterToggle
-          active={showExternal}
-          onClick={onToggleExternal}
-          title="Показать/скрыть справочник"
-          icon={<ContactsIcon sx={{ fontSize: 17 }} />}
-          label="Спр."
-        />
-      </Pill>
+      <MapLayerFilterCluster
+        showPhotos={showPhotos}
+        showEvents={showEvents}
+        showExternal={showExternal}
+        onTogglePhotos={onTogglePhotos}
+        onToggleEvents={onToggleEvents}
+        onToggleExternal={onToggleExternal}
+        externalLabel="Спр."
+      />
+      </Box>
     </Stack>
   );
 }

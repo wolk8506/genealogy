@@ -298,8 +298,10 @@ export default function PhotoInspectorPanel({ allPeople = [] }) {
         onClose={toggle}
         variant="persistent"
         {...inspectorDrawerTransitionProps}
-        PaperProps={{
-          sx: { top: 50, height: "calc(100% - 50px)", ...inspectorPaperSx },
+        slotProps={{
+          paper: {
+            sx: { top: 50, height: "calc(100% - 50px)", ...inspectorPaperSx },
+          }
         }}
       >
         <Box
@@ -390,13 +392,17 @@ export default function PhotoInspectorPanel({ allPeople = [] }) {
                         {...params}
                         label="Владелец (папка)"
                         variant="outlined"
-                        InputLabelProps={{
-                          ...params.InputLabelProps,
-                          shrink: true,
-                        }}
                         sx={{
                           "& .MuiInputBase-input": { fontSize: "0.8rem" },
                           "& .MuiInputLabel-root": { fontSize: "0.75rem" },
+                        }}
+                        slotProps={{
+                          ...params.slotProps,
+
+                          inputLabel: {
+                            ...params.slotProps.inputLabel,
+                            shrink: true,
+                          }
                         }}
                       />
                     )}
@@ -434,14 +440,20 @@ export default function PhotoInspectorPanel({ allPeople = [] }) {
                           {...params}
                           label="Кто на фото"
                           variant="outlined"
-                          InputLabelProps={{
-                            ...params.InputLabelProps,
-                            shrink: true,
+                          slotProps={{
+                            ...params.slotProps,
+
+                            inputLabel: {
+                              ...params.slotProps.inputLabel,
+                              shrink: true,
+                            }
                           }}
                         />
                       )}
-                      ChipProps={{
-                        sx: { borderRadius: "8px", fontWeight: 500 },
+                      slotProps={{
+                        chip: {
+                          sx: { borderRadius: "8px", fontWeight: 500 },
+                        }
                       }}
                     />
 
@@ -450,9 +462,10 @@ export default function PhotoInspectorPanel({ allPeople = [] }) {
                   <Stack
                     direction="row"
                     spacing={1}
-                    alignItems="center"
-                    justifyContent="space-between"
-                  >
+                    sx={{
+                      alignItems: "center",
+                      justifyContent: "space-between"
+                    }}>
                     <FieldLabel>Дата снимка</FieldLabel>
                     <Box
                       onClick={() => setDatePickerOpen(true)}
@@ -528,7 +541,9 @@ export default function PhotoInspectorPanel({ allPeople = [] }) {
                       borderStyle: rename ? "solid" : "dashed",
                     }}
                   >
-                    <Stack direction="row" spacing={1} alignItems="center">
+                    <Stack direction="row" spacing={1} sx={{
+                      alignItems: "center"
+                    }}>
                       <TextField
                         label="Имя файла на диске"
                         value={rename ? newFilename : photo.filename}
@@ -549,14 +564,16 @@ export default function PhotoInspectorPanel({ allPeople = [] }) {
                         size="small"
                         fullWidth
                         variant="standard"
-                        InputProps={{
-                          readOnly: !rename,
-                          disableUnderline: !rename,
-                          sx: {
-                            fontSize: "0.8rem",
-                            fontWeight: 500,
-                            fontFamily: "monospace",
-                          },
+                        slotProps={{
+                          input: {
+                            readOnly: !rename,
+                            disableUnderline: !rename,
+                            sx: {
+                              fontSize: "0.8rem",
+                              fontWeight: 500,
+                              fontFamily: "monospace",
+                            },
+                          }
                         }}
                       />
                       <IconButton

@@ -16,7 +16,11 @@ export const RenderSectionChildren = ({
   parentGender,
 }) => {
   return (
-    <Stack alignItems="center" sx={{ width: "100%" }}>
+    <Stack
+      sx={{
+        alignItems: "center",
+        width: "100%"
+      }}>
       <Divider
         orientation="vertical"
         sx={{

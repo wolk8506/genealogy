@@ -39,7 +39,9 @@ export const RenderSectionChildren = ({ title, people, row = 1 }) => {
         }}
       >
         {people.map((p) => (
-          <Box key={p.id} width={"352px"}>
+          <Box key={p.id} sx={{
+            width: "352px"
+          }}>
             <RenderPersonItem p={p} link={true} />
           </Box>
         ))}

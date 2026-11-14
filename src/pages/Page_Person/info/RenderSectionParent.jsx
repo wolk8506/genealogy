@@ -54,10 +54,16 @@ export const RenderSectionParent = ({ title, people }) => {
       {/* если есть второй — вставляем линию и второй элемент */}
       {people.length > 1 && (
         <>
-          <Box width={1}>
-            <Box height={30}></Box>
+          <Box sx={{
+            width: 1
+          }}>
+            <Box sx={{
+              height: 30
+            }}></Box>
             <Divider></Divider>
-            <Box height={30}></Box>
+            <Box sx={{
+              height: 30
+            }}></Box>
           </Box>
           <Box
             sx={{

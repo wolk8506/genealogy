@@ -151,15 +151,20 @@ export function SpellcheckCard({ cardStyle }) {
           </RowIcon>
         </Box>
         <Box sx={{ minWidth: 0 }}>
-          <Typography variant="subtitle1" fontWeight={700}>
+          <Typography variant="subtitle1" sx={{
+            fontWeight: 700
+          }}>
             Орфография
           </Typography>
           <Typography
             variant="caption"
-            color="text.secondary"
-            display="block"
-            sx={{ mt: 0.25, lineHeight: 1.45, whiteSpace: "normal" }}
-          >
+            sx={{
+              color: "text.secondary",
+              display: "block",
+              mt: 0.25,
+              lineHeight: 1.45,
+              whiteSpace: "normal"
+            }}>
             Проверка в редакторе биографии. Работает на собственном словаре
             приложения и не зависит от системного правописания macOS или
             Windows.
@@ -220,18 +225,26 @@ export function SpellcheckCard({ cardStyle }) {
           <Typography
             variant="caption"
             color="error"
-            display="block"
-            sx={{ mt: 1, ml: 0.5, lineHeight: 1.45, whiteSpace: "normal" }}
-          >
+            sx={{
+              display: "block",
+              mt: 1,
+              ml: 0.5,
+              lineHeight: 1.45,
+              whiteSpace: "normal"
+            }}>
             {error}
           </Typography>
         ) : (
           <Typography
             variant="caption"
-            color="text.secondary"
-            display="block"
-            sx={{ mt: 1, ml: 0.5, lineHeight: 1.45, whiteSpace: "normal" }}
-          >
+            sx={{
+              color: "text.secondary",
+              display: "block",
+              mt: 1,
+              ml: 0.5,
+              lineHeight: 1.45,
+              whiteSpace: "normal"
+            }}>
             Русский словарь входит в приложение. Остальные скачиваются один раз
             и хранятся в папке данных.
           </Typography>
@@ -242,7 +255,9 @@ export function SpellcheckCard({ cardStyle }) {
         anchorEl={anchorEl}
         open={Boolean(anchorEl)}
         onClose={() => setAnchorEl(null)}
-        MenuListProps={{ dense: true }}
+        slotProps={{
+          list: { dense: true }
+        }}
       >
         <MenuItem
           selected={state?.choice === "auto"}

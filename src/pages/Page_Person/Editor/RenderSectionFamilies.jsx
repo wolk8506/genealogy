@@ -80,19 +80,19 @@ export const RenderSectionFamilies = ({
       {totalItems > 2 && (
         <Stack
           direction="row"
-          alignItems="center"
-          justifyContent="space-between"
           spacing={1}
-          width={1}
           sx={{
+            alignItems: "center",
+            justifyContent: "space-between",
+            width: 1,
             mb: 1,
             pr: 1,
             position: "absolute",
             right: 0,
-            top: "12px",
+
             // px: 2,
-          }}
-        >
+            top: "12px"
+          }}>
           <Box
             sx={{
               display: "flex",
@@ -143,9 +143,10 @@ export const RenderSectionFamilies = ({
       <Stack
         direction="row"
         spacing={2}
-        justifyContent="center"
-        alignItems="flex-start"
-      >
+        sx={{
+          justifyContent: "center",
+          alignItems: "flex-start"
+        }}>
         {visibleItems.map((item) => {
           const isDroppable = getDropStatus(item);
 
@@ -157,7 +158,11 @@ export const RenderSectionFamilies = ({
 
           if (item.type === "solo_children") {
             return (
-              <Stack key="solo-group" alignItems="center" sx={columnStyle}>
+              <Stack
+                key="solo-group"
+                sx={[{
+                  alignItems: "center"
+                }, ...(Array.isArray(columnStyle) ? columnStyle : [columnStyle])]}>
                 <Divider orientation="vertical" sx={{ height: 124 }} />
 
                 <Box sx={{ width: "100%" }}>
@@ -181,7 +186,11 @@ export const RenderSectionFamilies = ({
             );
 
             return (
-              <Stack key={fam.partner.id} alignItems="center" sx={columnStyle}>
+              <Stack
+                key={fam.partner.id}
+                sx={[{
+                  alignItems: "center"
+                }, ...(Array.isArray(columnStyle) ? columnStyle : [columnStyle])]}>
                 {/* <Divider orientation="vertical" sx={{ height: 30 }} /> */}
                 <Divider
                   orientation="vertical"
@@ -196,9 +205,11 @@ export const RenderSectionFamilies = ({
                 >
                   <Stack
                     direction="row"
-                    alignItems="center"
-                    spacing={1}
                     // sx={{ mb: 1 }}
+                    spacing={1}
+                    sx={{
+                      alignItems: "center"
+                    }}
                   >
                     <IconButton
                       size="small"
@@ -265,9 +276,10 @@ export const RenderSectionFamilies = ({
             return (
               <Stack
                 key="empty-slot"
-                alignItems="center"
-                sx={{ flex: "0 0 360px" }}
-              >
+                sx={{
+                  alignItems: "center",
+                  flex: "0 0 360px"
+                }}>
                 <Divider
                   orientation="vertical"
                   sx={{

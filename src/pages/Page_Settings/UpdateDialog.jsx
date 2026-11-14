@@ -121,7 +121,12 @@ export function UpdateDialog() {
         >
           Genealogy {notice?.version}
         </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+        <Typography
+          variant="body2"
+          sx={{
+            color: "text.secondary",
+            mt: 0.5
+          }}>
           Доступно обновление
           {currentVersion ? ` · установлена версия ${currentVersion}` : ""}
         </Typography>
@@ -139,7 +144,12 @@ export function UpdateDialog() {
 
       {error ? (
         <Box sx={{ px: { xs: 2, sm: 3 }, pb: { xs: 2, sm: 2.5 } }}>
-          <Typography variant="caption" color="error.main" sx={{ wordBreak: "break-word" }}>
+          <Typography
+            variant="caption"
+            sx={{
+              color: "error.main",
+              wordBreak: "break-word"
+            }}>
             {installFailed
               ? "Не удалось запустить установщик"
               : "Не удалось загрузить обновление"}
@@ -148,9 +158,11 @@ export function UpdateDialog() {
           {installFailed && (
             <Typography
               variant="caption"
-              color="text.secondary"
-              sx={{ display: "block", mt: 0.5 }}
-            >
+              sx={{
+                color: "text.secondary",
+                display: "block",
+                mt: 0.5
+              }}>
               Файл лежит в папке «Загрузки → GenealogyUpdater» — его можно
               запустить и самому.
             </Typography>
@@ -165,15 +177,19 @@ export function UpdateDialog() {
           />
           <Typography
             variant="caption"
-            color="text.secondary"
-            sx={{ display: "block", mt: 1 }}
-          >
+            sx={{
+              color: "text.secondary",
+              display: "block",
+              mt: 1
+            }}>
             {progress > 0 ? `Загрузка: ${progress}%` : "Подготовка загрузки…"}
           </Typography>
         </Box>
       ) : downloaded ? (
         <Box sx={{ px: { xs: 2, sm: 3 }, pb: { xs: 2, sm: 2.5 } }}>
-          <Typography variant="caption" color="text.secondary">
+          <Typography variant="caption" sx={{
+            color: "text.secondary"
+          }}>
             Установка готова — приложение закроется само
           </Typography>
         </Box>

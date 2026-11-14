@@ -16,18 +16,20 @@ export default function AvatarPreviewDialog({
       onClose={onClose}
       maxWidth="sm"
       fullWidth
-      PaperProps={{
-        sx: {
-          borderRadius: 3,
-          overflow: "visible",
-          bgcolor: "#000",
-          width: 600,
-          maxWidth: "calc(100vw - 32px)",
-          height: 600,
-          maxHeight: "calc(100vh - 48px)",
-          m: 0,
-          position: "relative",
-        },
+      slotProps={{
+        paper: {
+          sx: {
+            borderRadius: 3,
+            overflow: "visible",
+            bgcolor: "#000",
+            width: 600,
+            maxWidth: "calc(100vw - 32px)",
+            height: 600,
+            maxHeight: "calc(100vh - 48px)",
+            m: 0,
+            position: "relative",
+          },
+        }
       }}
     >
       <Box

@@ -44,10 +44,12 @@ export default function ChildrenTray({
       >
         <Stack
           direction="row"
-          alignItems="baseline"
           spacing={0.75}
-          sx={{ mb: 1.25, px: 0.5 }}
-        >
+          sx={{
+            alignItems: "baseline",
+            mb: 1.25,
+            px: 0.5
+          }}>
           <Typography
             sx={{
               fontSize: 10.5,

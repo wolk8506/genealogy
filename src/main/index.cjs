@@ -2,6 +2,7 @@ const { app, Menu } = require("electron");
 const { autoUpdater } = require("electron-updater"); // ← импортим здесь
 const path = require("path");
 const log = require("./logger.cjs").createLogger("main");
+const { isNewerVersion } = require("./versionUtils.cjs");
 
 (async () => {
   const Store = (await import("electron-store")).default;
@@ -112,10 +113,24 @@ const log = require("./logger.cjs").createLogger("main");
     try {
       const result = await autoUpdater.checkForUpdates();
       const updateInfo = result?.updateInfo;
-      if (updateInfo && updateInfo.version !== app.getVersion()) {
-        // пришло что-то новое — показываем окно обновления в рендерере
-        if (!win.isDestroyed()) {
-          win.webContents.send("app:update-available", updateInfo);
+      if (updateInfo && isNewerVersion(updateInfo.version, app.getVersion())) {
+        // пришло что-то новое — показываем окно обновления в рендерере.
+        // Быстрый фид отвечает раньше, чем интерфейс подписывается на событие,
+        // поэтому ждём загрузки окна и небольшую паузу на монтирование.
+        const announce = () => {
+          setTimeout(() => {
+            if (!win.isDestroyed()) {
+              win.webContents.send("app:update-available", {
+                ...updateInfo,
+                isNewer: true,
+              });
+            }
+          }, 600);
+        };
+        if (win.webContents.isLoading()) {
+          win.webContents.once("did-finish-load", announce);
+        } else {
+          announce();
         }
       }
     } catch (e) {

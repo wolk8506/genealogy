@@ -15,7 +15,7 @@ import {
 import { alpha, useTheme } from "@mui/material/styles";
 import FaceRetouchingNaturalIcon from "@mui/icons-material/FaceRetouchingNatural";
 import AddIcon from "@mui/icons-material/Add";
-import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import CheckIcon from "@mui/icons-material/Check";
 import PhotoFaceOverlay from "../PhotoFaceOverlay";
@@ -297,17 +297,19 @@ export default function PhotoFacesDialog({
       open={open}
       onClose={onClose}
       maxWidth={false}
-      PaperProps={{
-        sx: {
-          borderRadius: "24px",
-          backgroundImage: "none",
-          width: 920,
-          maxWidth: "94vw",
-          maxHeight: "94vh",
-          overflow: "hidden",
-          display: "flex",
-          flexDirection: "column",
-        },
+      slotProps={{
+        paper: {
+          sx: {
+            borderRadius: "24px",
+            backgroundImage: "none",
+            width: 920,
+            maxWidth: "94vw",
+            maxHeight: "94vh",
+            overflow: "hidden",
+            display: "flex",
+            flexDirection: "column",
+          },
+        }
       }}
     >
       <Box sx={{ p: 3, overflowY: "auto" }}>
@@ -318,7 +320,9 @@ export default function PhotoFacesDialog({
           Лица
         </Typography>
 
-        <Stack direction="row" spacing={2} alignItems="stretch">
+        <Stack direction="row" spacing={2} sx={{
+          alignItems: "stretch"
+        }}>
           {/* ФОТО */}
           <Box
             sx={{
@@ -482,10 +486,11 @@ export default function PhotoFacesDialog({
           >
             <Stack
               direction="row"
-              alignItems="center"
-              justifyContent="space-between"
-              sx={{ mb: 1.5 }}
-            >
+              sx={{
+                alignItems: "center",
+                justifyContent: "space-between",
+                mb: 1.5
+              }}>
               <Typography
                 variant="overline"
                 sx={{ fontWeight: 700, color: "text.secondary" }}
@@ -504,7 +509,9 @@ export default function PhotoFacesDialog({
 
             <Box sx={{ flexGrow: 1, overflowY: "auto", pr: 0.5 }}>
               {faces.length === 0 ? (
-                <Typography variant="body2" color="text.secondary">
+                <Typography variant="body2" sx={{
+                  color: "text.secondary"
+                }}>
                   Нет размеченных лиц. Нажмите «Найти» или нарисуйте рамку.
                 </Typography>
               ) : (
@@ -545,7 +552,9 @@ export default function PhotoFacesDialog({
                           transition: "background-color 200ms ease, border-color 200ms ease",
                         }}
                       >
-                        <Stack direction="row" spacing={1} alignItems="center">
+                        <Stack direction="row" spacing={1} sx={{
+                          alignItems: "center"
+                        }}>
                           <Autocomplete
                             fullWidth
                             size="small"
@@ -615,7 +624,7 @@ export default function PhotoFacesDialog({
                               },
                             }}
                           >
-                            <DeleteOutlineIcon fontSize="small" />
+                            <DeleteOutlineOutlinedIcon fontSize="small" />
                           </IconButton>
                         </Stack>
 
@@ -625,10 +634,12 @@ export default function PhotoFacesDialog({
                             <Stack
                               direction="row"
                               spacing={1}
-                              alignItems="center"
                               onClick={() => setSelectedFaceId(face.id)}
-                              sx={{ mt: 1, cursor: "pointer" }}
-                            >
+                              sx={{
+                                alignItems: "center",
+                                mt: 1,
+                                cursor: "pointer"
+                              }}>
                               <TextField
                                 size="small"
                                 fullWidth

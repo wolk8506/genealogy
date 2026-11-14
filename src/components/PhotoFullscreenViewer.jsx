@@ -18,8 +18,8 @@ import InfoIcon from "@mui/icons-material/Info";
 import DownloadIcon from "@mui/icons-material/Download";
 import EditIcon from "@mui/icons-material/Edit";
 import FaceIcon from "@mui/icons-material/Face";
-import PersonOutlineIcon from "@mui/icons-material/PersonOutline";
-import PeopleOutlineIcon from "@mui/icons-material/PeopleOutline";
+import PersonOutlineOutlinedIcon from "@mui/icons-material/PersonOutlineOutlined";
+import PeopleOutlineOutlinedIcon from "@mui/icons-material/PeopleOutlineOutlined";
 import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
 import PlaceOutlinedIcon from "@mui/icons-material/PlaceOutlined";
 import PhotoFaceOverlay from "./PhotoFaceOverlay";
@@ -111,7 +111,9 @@ const PhotoFullscreenViewer = ({
       fullScreen
       open={open}
       onClose={onClose}
-      PaperProps={{ sx: { bgcolor: "#000", backgroundImage: "none" } }}
+      slotProps={{
+        paper: { sx: { bgcolor: "#000", backgroundImage: "none" } }
+      }}
     >
       <Box
         sx={{
@@ -424,7 +426,7 @@ const PhotoFullscreenViewer = ({
                   color: "rgba(255,255,255,0.7)",
                 }}
               >
-                <MetaRow icon={PersonOutlineIcon}>
+                <MetaRow icon={PersonOutlineOutlinedIcon}>
                   {currentPhotoInfo.ownerText}
                 </MetaRow>
                 {currentPhotoInfo.datePhoto && (
@@ -432,7 +434,7 @@ const PhotoFullscreenViewer = ({
                     {currentPhotoInfo.datePhoto}
                   </MetaRow>
                 )}
-                <MetaRow icon={PeopleOutlineIcon}>
+                <MetaRow icon={PeopleOutlineOutlinedIcon}>
                   На фото: {currentPhotoInfo.peopleText || "—"}
                 </MetaRow>
                 {currentPhotoInfo.locationName && (

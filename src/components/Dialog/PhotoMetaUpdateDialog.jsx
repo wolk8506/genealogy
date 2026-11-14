@@ -37,7 +37,7 @@ import DraggableDialog from "./DraggableDialog";
 import FaceIcon from "@mui/icons-material/Face";
 import FaceRetouchingNaturalIcon from "@mui/icons-material/FaceRetouchingNatural";
 import AddIcon from "@mui/icons-material/Add";
-import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import CheckIcon from "@mui/icons-material/Check";
 import Popover from "@mui/material/Popover";
@@ -592,18 +592,20 @@ export default function PhotoMetaUpdateDialog({
       maxWidth="lg"
       fullWidth
       PaperComponent={DraggableDialog}
-      PaperProps={{
-        sx: {
-          borderRadius: "24px",
-          backgroundImage: "none",
-          bgcolor: isDark ? alpha(theme.palette.background.paper, 0.9) : "#fff",
-          backdropFilter: "blur(15px)",
-          border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
-          boxShadow: theme.shadows[24],
-          overflow: "hidden",
-          display: "flex",
-          flexDirection: "column",
-        },
+      slotProps={{
+        paper: {
+          sx: {
+            borderRadius: "24px",
+            backgroundImage: "none",
+            bgcolor: isDark ? alpha(theme.palette.background.paper, 0.9) : "#fff",
+            backdropFilter: "blur(15px)",
+            border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+            boxShadow: theme.shadows[24],
+            overflow: "hidden",
+            display: "flex",
+            flexDirection: "column",
+          },
+        }
       }}
     >
       <DialogContent sx={{ p: 0 }}>
@@ -643,7 +645,9 @@ export default function PhotoMetaUpdateDialog({
               <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
                 Редактирование фото
               </Typography>
-              <Stack direction="row" alignItems="center" spacing={1.5}>
+              <Stack direction="row" spacing={1.5} sx={{
+                alignItems: "center"
+              }}>
                 <Box
                   sx={{
                     p: 0.8,
@@ -682,7 +686,9 @@ export default function PhotoMetaUpdateDialog({
                     onChange={(e) =>
                       setLocal((s) => ({ ...s, title: e.target.value }))
                     }
-                    InputProps={{ sx: { borderRadius: "12px" } }}
+                    slotProps={{
+                      input: { sx: { borderRadius: "12px" } }
+                    }}
                   />
 
                   <HashtagInput
@@ -701,12 +707,17 @@ export default function PhotoMetaUpdateDialog({
                 <Stack spacing={1.5}>
                   <Stack
                     direction="row"
-                    alignItems="center"
-                    justifyContent="space-between"
-                  >
-                    <Stack direction="row" alignItems="center" spacing={1}>
+                    sx={{
+                      alignItems: "center",
+                      justifyContent: "space-between"
+                    }}>
+                    <Stack direction="row" spacing={1} sx={{
+                      alignItems: "center"
+                    }}>
                       <FaceIcon fontSize="small" color="primary" />
-                      <Typography variant="subtitle2" fontWeight={700}>
+                      <Typography variant="subtitle2" sx={{
+                        fontWeight: 700
+                      }}>
                         Лица на фото
                       </Typography>
                     </Stack>
@@ -716,7 +727,9 @@ export default function PhotoMetaUpdateDialog({
                   </Stack>
 
                   {local.faces.length === 0 ? (
-                    <Typography variant="body2" color="text.secondary">
+                    <Typography variant="body2" sx={{
+                      color: "text.secondary"
+                    }}>
                       Нет размеченных лиц. Нажмите «Найти» или ПКМ + drag для
                       новой рамки.
                     </Typography>
@@ -742,26 +755,26 @@ export default function PhotoMetaUpdateDialog({
                       return (
                         <Stack key={face.id} spacing={0.8}>
                           <Stack
-                            // direction="row"
-                            flexDirection="column"
                             spacing={1.25}
-                            alignItems="center"
                             onClick={() => setSelectedFaceId(face.id)}
                             sx={{
+                              flexDirection: "column",
+                              alignItems: "center",
                               p: 0.5,
                               borderRadius: "12px",
                               transition: "background-color 200ms ease",
+
                               bgcolor: isSelected
                                 ? alpha(theme.palette.primary.main, 0.08)
-                                : "transparent",
-                            }}
-                          >
+                                : "transparent"
+                            }}>
                             <Stack
                               direction="row"
                               spacing={1}
-                              width={1}
-                              alignItems="center"
-                            >
+                              sx={{
+                                width: 1,
+                                alignItems: "center"
+                              }}>
                               <Autocomplete
                                 fullWidth
                                 size="small"
@@ -844,7 +857,7 @@ export default function PhotoMetaUpdateDialog({
                                   },
                                 }}
                               >
-                                <DeleteOutlineIcon fontSize="small" />
+                                <DeleteOutlineOutlinedIcon fontSize="small" />
                               </IconButton>
                             </Stack>
 
@@ -854,15 +867,14 @@ export default function PhotoMetaUpdateDialog({
                                 <Stack
                                   direction="row"
                                   spacing={1}
-                                  width={1}
-                                  alignItems="center"
                                   onClick={() => setSelectedFaceId(face.id)}
                                   sx={{
+                                    width: 1,
+                                    alignItems: "center",
                                     cursor: "pointer",
                                     p: 0.5,
-                                    borderRadius: "8px",
-                                  }}
-                                >
+                                    borderRadius: "8px"
+                                  }}>
                                   <TextField
                                     size="small"
                                     fullWidth
@@ -935,7 +947,9 @@ export default function PhotoMetaUpdateDialog({
                   )}
 
                   {selectedFace && (
-                    <Typography variant="caption" color="text.secondary">
+                    <Typography variant="caption" sx={{
+                      color: "text.secondary"
+                    }}>
                       Выбрано лицо {local.faces.indexOf(selectedFace) + 1}.
                       Размер — точка справа внизу (ЛКМ), перемещение — ЛКМ +
                       drag, новая рамка — ПКМ + drag, Backspace — удалить.
@@ -992,8 +1006,9 @@ export default function PhotoMetaUpdateDialog({
                         label="Кто на фото"
                       />
                     )}
-                    ChipProps={{ sx: { borderRadius: "8px", fontWeight: 500 } }}
-                  // sx={{ "& .MuiOutlinedInput-root": { borderRadius: "12px" } }}
+                    slotProps={{
+                      chip: { sx: { borderRadius: "8px", fontWeight: 500 } }
+                    }}
                   />
 
                   <Autocomplete
@@ -1018,11 +1033,13 @@ export default function PhotoMetaUpdateDialog({
                         label="Из справочника (внешние)"
                       />
                     )}
-                    ChipProps={{
-                      sx: { borderRadius: "8px", fontWeight: 500 },
-                    }}
                     sx={{
                       "& .MuiOutlinedInput-root": { borderRadius: "12px" },
+                    }}
+                    slotProps={{
+                      chip: {
+                        sx: { borderRadius: "8px", fontWeight: 500 },
+                      }
                     }}
                   />
                 </Stack>
@@ -1035,14 +1052,16 @@ export default function PhotoMetaUpdateDialog({
                     onClick={() => setDatePickerOpen(true)}
                     fullWidth
                     variant="outlined"
-                    InputProps={{
-                      readOnly: true,
-                      sx: { borderRadius: "12px" },
-                      startAdornment: (
-                        <CalendarMonthIcon
-                          sx={{ mr: 1, color: "action.active", fontSize: 20 }}
-                        />
-                      ),
+                    slotProps={{
+                      input: {
+                        readOnly: true,
+                        sx: { borderRadius: "12px" },
+                        startAdornment: (
+                          <CalendarMonthIcon
+                            sx={{ mr: 1, color: "action.active", fontSize: 20 }}
+                          />
+                        ),
+                      }
                     }}
                   />
                 </Stack>
@@ -1055,9 +1074,13 @@ export default function PhotoMetaUpdateDialog({
                   onChange={(e) =>
                     setLocal((s) => ({ ...s, locationName: e.target.value }))
                   }
-                  InputProps={{ sx: { borderRadius: "12px" } }}
+                  slotProps={{
+                    input: { sx: { borderRadius: "12px" } }
+                  }}
                 />
-                <Stack direction="row" spacing={1} alignItems="center">
+                <Stack direction="row" spacing={1} sx={{
+                  alignItems: "center"
+                }}>
                   <Button
                     size="small"
                     variant="outlined"
@@ -1099,7 +1122,9 @@ export default function PhotoMetaUpdateDialog({
                       : "divider",
                   }}
                 >
-                  <Stack direction="row" spacing={1} alignItems="center">
+                  <Stack direction="row" spacing={1} sx={{
+                    alignItems: "center"
+                  }}>
                     <TextField
                       label="Имя файла на диске"
                       value={rename ? newFilename : local.filename}
@@ -1107,14 +1132,16 @@ export default function PhotoMetaUpdateDialog({
                       size="small"
                       fullWidth
                       variant="standard"
-                      InputProps={{
-                        readOnly: !rename,
-                        disableUnderline: !rename,
-                        sx: {
-                          fontSize: "0.85rem",
-                          fontWeight: 500,
-                          fontFamily: "monospace",
-                        },
+                      slotProps={{
+                        input: {
+                          readOnly: !rename,
+                          disableUnderline: !rename,
+                          sx: {
+                            fontSize: "0.85rem",
+                            fontWeight: 500,
+                            fontFamily: "monospace",
+                          },
+                        }
                       }}
                     />
                     <IconButton
@@ -1161,7 +1188,13 @@ export default function PhotoMetaUpdateDialog({
           </Box>
 
           {/* ПРАВАЯ КОЛОНКА: Превью фотографии */}
-          <Stack flex={1} spacing={1.5} sx={{ p: 2, height: "100%" }}>
+          <Stack
+            spacing={1.5}
+            sx={{
+              flex: 1,
+              p: 2,
+              height: "100%"
+            }}>
             <Box
               sx={{
                 position: "relative",
@@ -1409,9 +1442,11 @@ export default function PhotoMetaUpdateDialog({
             {/* Подпись снизу превью */}
             <Typography
               variant="caption"
-              color="text.secondary"
-              sx={{ textAlign: "center", fontWeight: 500 }}
-            >
+              sx={{
+                color: "text.secondary",
+                textAlign: "center",
+                fontWeight: 500
+              }}>
               {local?.title || local?.filename}
               {local?.faces?.length > 0 &&
                 ` · Лиц на снимке: ${local.faces.length}`}

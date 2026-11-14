@@ -93,15 +93,20 @@ export function HomePersonCard({ cardStyle }) {
           </RowIcon>
         </Box>
         <Box sx={{ minWidth: 0 }}>
-          <Typography variant="subtitle1" fontWeight={700}>
+          <Typography variant="subtitle1" sx={{
+            fontWeight: 700
+          }}>
             Это я
           </Typography>
           <Typography
             variant="caption"
-            color="text.secondary"
-            display="block"
-            sx={{ mt: 0.25, lineHeight: 1.45, whiteSpace: "normal" }}
-          >
+            sx={{
+              color: "text.secondary",
+              display: "block",
+              mt: 0.25,
+              lineHeight: 1.45,
+              whiteSpace: "normal"
+            }}>
             Ваша карточка в этой библиотеке. От неё по умолчанию строится
             дерево, а в карточке человека видна отметка «Это я». Корень дерева
             можно сменить правым кликом.
@@ -161,9 +166,12 @@ export function HomePersonCard({ cardStyle }) {
         {loaded && homePersonId && !homePerson && (
           <Typography
             variant="caption"
-            color="warning.main"
-            sx={{ display: "block", mt: 1, ml: 0.5 }}
-          >
+            sx={{
+              color: "warning.main",
+              display: "block",
+              mt: 1,
+              ml: 0.5
+            }}>
             Карточка с ID {homePersonId} не найдена в этой библиотеке — выберите
             человека заново.
           </Typography>
@@ -186,15 +194,17 @@ export function HomePersonCard({ cardStyle }) {
               borderRadius: "12px",
             },
           },
-        }}
-        MenuListProps={{ dense: true, sx: { py: 0.5 } }}
-      >
+
+          list: { dense: true, sx: { py: 0.5 } }
+        }}>
         <MenuItem
           selected={!homePersonId}
           onClick={() => select(null)}
           sx={{ borderRadius: "8px", mx: 0.5 }}
         >
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant="body2" sx={{
+            color: "text.secondary"
+          }}>
             Не назначено
           </Typography>
         </MenuItem>

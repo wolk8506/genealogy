@@ -122,7 +122,9 @@ export const RenderPersonItem = ({
           </IconButton>
         </Tooltip>
       )}
-      <Stack direction="row" spacing={2} alignItems="center">
+      <Stack direction="row" spacing={2} sx={{
+        alignItems: "center"
+      }}>
         <PersonAvatar personId={p.id} initials={initials} size={42} />
 
         <Stack spacing={0.2} sx={{ overflow: "hidden", flex: 1 }}>
@@ -141,7 +143,9 @@ export const RenderPersonItem = ({
             {name}
           </Typography>
 
-          <Stack direction="row" alignItems="center" spacing={1}>
+          <Stack direction="row" spacing={1} sx={{
+            alignItems: "center"
+          }}>
             <Typography
               variant="caption"
               sx={{ color: "text.secondary", fontSize: "0.7rem" }}

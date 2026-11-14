@@ -119,17 +119,19 @@ export default function EventEditorDialog({
         onClose={onClose}
         maxWidth={false}
         transitionDuration={{ enter: 180, exit: 140 }}
-        PaperProps={{
-          sx: {
-            width: 600,
-            maxWidth: "94vw",
-            maxHeight: "calc(100vh - 64px)",
-            borderRadius: "24px",
-            backgroundImage: "none",
-            display: "flex",
-            flexDirection: "column",
-            overflow: "hidden",
-          },
+        slotProps={{
+          paper: {
+            sx: {
+              width: 600,
+              maxWidth: "94vw",
+              maxHeight: "calc(100vh - 64px)",
+              borderRadius: "24px",
+              backgroundImage: "none",
+              display: "flex",
+              flexDirection: "column",
+              overflow: "hidden",
+            },
+          }
         }}
       >
         <Box sx={{ p: 3, pb: 2, overflowY: "auto" }}>
@@ -158,33 +160,37 @@ export default function EventEditorDialog({
                   size="small"
                   fullWidth
                   sx={fieldSx}
-                  SelectProps={{
-                    renderValue: (selected) => {
-                      const eventType = EVENT_TYPES.find(
-                        (t) => t.name === selected,
-                      );
-                      return (
-                        <Box
-                          sx={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 1.5,
-                          }}
-                        >
+                  slotProps={{
+                    select: {
+                      renderValue: (selected) => {
+                        const eventType = EVENT_TYPES.find(
+                          (t) => t.name === selected,
+                        );
+                        return (
                           <Box
                             sx={{
-                              color: "primary.main",
                               display: "flex",
+                              alignItems: "center",
+                              gap: 1.5,
                             }}
                           >
-                            {eventType?.icon}
+                            <Box
+                              sx={{
+                                color: "primary.main",
+                                display: "flex",
+                              }}
+                            >
+                              {eventType?.icon}
+                            </Box>
+                            <Typography variant="body2" sx={{
+                              fontWeight: 500
+                            }}>
+                              {eventType?.name}
+                            </Typography>
                           </Box>
-                          <Typography variant="body2" fontWeight={500}>
-                            {eventType?.name}
-                          </Typography>
-                        </Box>
-                      );
-                    },
+                        );
+                      },
+                    }
                   }}
                 >
                   {EVENT_TYPES.map((t) => (
@@ -207,9 +213,11 @@ export default function EventEditorDialog({
                   fullWidth
                   sx={fieldSx}
                   placeholder="Нажмите для выбора даты"
-                  InputProps={{
-                    readOnly: true,
-                    sx: { cursor: "pointer" },
+                  slotProps={{
+                    input: {
+                      readOnly: true,
+                      sx: { cursor: "pointer" },
+                    }
                   }}
                 />
               </Stack>
@@ -242,39 +250,41 @@ export default function EventEditorDialog({
                       ? `Координаты: ${Number(evLat).toFixed(4)}, ${Number(evLng).toFixed(4)}`
                       : "Можно указать точку на карте"
                   }
-                  InputProps={{
-                    endAdornment: (
-                      <InputAdornment position="end">
-                        <Tooltip title="Указать на карте">
-                          <IconButton
-                            size="small"
-                            color={
-                              evLat != null && evLng != null
-                                ? "primary"
-                                : "default"
-                            }
-                            onClick={() => setLocationPickerOpen(true)}
-                          >
-                            <MapIcon fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
-                        {(place.trim() !== "" ||
-                          (evLat != null && evLng != null)) && (
-                          <Tooltip title="Очистить">
+                  slotProps={{
+                    input: {
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          <Tooltip title="Указать на карте">
                             <IconButton
                               size="small"
-                              onClick={() => {
-                                setPlace("");
-                                setEvLat(null);
-                                setEvLng(null);
-                              }}
+                              color={
+                                evLat != null && evLng != null
+                                  ? "primary"
+                                  : "default"
+                              }
+                              onClick={() => setLocationPickerOpen(true)}
                             >
-                              <CloseIcon fontSize="small" />
+                              <MapIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>
-                        )}
-                      </InputAdornment>
-                    ),
+                          {(place.trim() !== "" ||
+                            (evLat != null && evLng != null)) && (
+                            <Tooltip title="Очистить">
+                              <IconButton
+                                size="small"
+                                onClick={() => {
+                                  setPlace("");
+                                  setEvLat(null);
+                                  setEvLng(null);
+                                }}
+                              >
+                                <CloseIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          )}
+                        </InputAdornment>
+                      ),
+                    }
                   }}
                 />
 

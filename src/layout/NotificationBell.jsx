@@ -29,7 +29,7 @@ import AutoFixHighIcon from "@mui/icons-material/AutoFixHigh";
 import PieChartIcon from "@mui/icons-material/PieChart";
 import PermIdentityIcon from "@mui/icons-material/PermIdentity";
 import FaceRetouchingNaturalIcon from "@mui/icons-material/FaceRetouchingNatural";
-import { toolbarPillSx } from "./toolbarStyles";
+import ButtonConteiner from "../components/ButtonConteiner";
 
 const notificationIcon = {
   trash: <TrashFillIcon />,
@@ -84,35 +84,24 @@ export const NotificationBell = () => {
 
   return (
     <>
-      <Box
-        sx={{
-          ...toolbarPillSx,
-          ml: 2,
-          mr: 2,
-          width: 36,
-          display: "inline-flex",
-          alignItems: "center",
-          justifyContent: "center",
-          color: "text.primary",
-        }}
-      >
-        <IconButton onClick={handleOpen} sx={{ p: 0, width: 36, height: 36 }}>
-          {hasNew ? (
-            <BellBadgeFillIcon
-              sx={{
-                color: anchorEl ? "primary.main" : "text.primary",
-                fontSize: 18,
-              }}
-            />
-          ) : (
-            <BellFillIcon
-              sx={{
-                color: anchorEl ? "primary.main" : "text.primary",
-                fontSize: 18,
-              }}
-            />
-          )}
-        </IconButton>
+      <Box sx={{ ml: 2, mr: 2, display: "inline-flex", WebkitAppRegion: "no-drag" }}>
+        <ButtonConteiner>
+          <IconButton
+            onClick={handleOpen}
+            aria-label="Уведомления"
+            aria-expanded={Boolean(anchorEl)}
+            sx={{
+              p: 0,
+              color: "inherit",
+            }}
+          >
+            {hasNew ? (
+              <BellBadgeFillIcon sx={{ fontSize: 18 }} />
+            ) : (
+              <BellFillIcon sx={{ fontSize: 18 }} />
+            )}
+          </IconButton>
+        </ButtonConteiner>
       </Box>
 
       <Popover
@@ -122,22 +111,24 @@ export const NotificationBell = () => {
         anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
         transformOrigin={{ vertical: "top", horizontal: "center" }}
         elevation={0} // Убираем тень самого поповера
-        PaperProps={{
-          sx: {
-            width: 360,
-            mt: 1.5,
-            bgcolor: "transparent", // Убираем общий фон
-            boxShadow: "none",
-            backgroundImage: "none",
-            border: "none",
-            overflow: "visible",
+        slotProps={{
+          paper: {
+            sx: {
+              width: 360,
+              mt: 1.5,
+              bgcolor: "transparent", // Убираем общий фон
+              boxShadow: "none",
+              backgroundImage: "none",
+              border: "none",
+              overflow: "visible",
 
-            // ТРЕУГОЛЬНИК (Хвостик)
-            "&::before": popoverArrowSx({
-              background: lighten(theme.palette.background.paper, 0.1),
-              zIndex: 100,
-            }),
-          },
+              // ТРЕУГОЛЬНИК (Хвостик)
+              "&::before": popoverArrowSx({
+                background: lighten(theme.palette.background.paper, 0.1),
+                zIndex: 100,
+              }),
+            },
+          }
         }}
       >
         {/* ШАПКА */}
@@ -213,7 +204,9 @@ export const NotificationBell = () => {
                     borderColor: "divider",
                   }}
                 >
-                  <Typography variant="body2" color="text.disabled">
+                  <Typography variant="body2" sx={{
+                    color: "text.disabled"
+                  }}>
                     Нет новых уведомлений
                   </Typography>
                 </Box>
@@ -347,14 +340,17 @@ export const NotificationBell = () => {
                         <Stack spacing={1}>
                           <Stack
                             direction="row"
-                            justifyContent="space-between"
-                            alignItems="center"
-                            sx={{ width: "280px" }} // Небольшой отступ слева для заголовка, чтобы не наезжал на крестик
-                          >
+                            sx={{
+                              justifyContent: "space-between",
+                              alignItems: "center",
+                              width: "280px"
+                            }}>
                             <Stack
                               direction="row"
                               spacing={1}
-                              alignItems="center"
+                              sx={{
+                                alignItems: "center"
+                              }}
                             >
                               {note.isNew && (
                                 <CircleIcon

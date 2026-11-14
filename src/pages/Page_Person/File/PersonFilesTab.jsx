@@ -152,9 +152,12 @@ function TxtPreview({ file }) {
 
   if (error) {
     return (
-      <Typography color="text.secondary" sx={{ p: 3 }}>
-        Не удалось загрузить текстовый файл
-      </Typography>
+      <Typography
+        sx={{
+          color: "text.secondary",
+          p: 3
+        }}>Не удалось загрузить текстовый файл
+              </Typography>
     );
   }
 
@@ -193,9 +196,9 @@ function PreviewOverlayBar({
   return (
     <Stack
       direction="row"
-      alignItems="center"
       spacing={0.5}
       sx={{
+        alignItems: "center",
         flexShrink: 0,
         height: 50,
         minHeight: 50,
@@ -203,10 +206,16 @@ function PreviewOverlayBar({
         bgcolor: isDark ? "#141414" : "background.paper",
         color: isDark ? "#fff" : "text.primary",
         borderBottom: 1,
-        borderColor: isDark ? "rgba(255,255,255,0.08)" : "divider",
-      }}
-    >
-      <Typography variant="body2" fontWeight={500} noWrap sx={{ flex: 1, pr: 1 }}>
+        borderColor: isDark ? "rgba(255,255,255,0.08)" : "divider"
+      }}>
+      <Typography
+        variant="body2"
+        noWrap
+        sx={{
+          fontWeight: 500,
+          flex: 1,
+          pr: 1
+        }}>
         {file.name}
       </Typography>
       {showOpenExternal && (
@@ -910,15 +919,14 @@ export default function PersonFilesTab({ personId, personName }) {
         ) : (
           <Stack
             spacing={2}
-            alignItems="center"
-            justifyContent="center"
             sx={{
+              alignItems: "center",
+              justifyContent: "center",
               flex: 1,
               minHeight: 0,
               py: 8,
-              px: 2,
-            }}
-          >
+              px: 2
+            }}>
             <Box
               sx={{
                 width: 80,
@@ -933,11 +941,20 @@ export default function PersonFilesTab({ personId, personName }) {
             >
               <UploadIcon sx={{ fontSize: 40 }} />
             </Box>
-            <Box textAlign="center">
-              <Typography variant="h6" fontWeight="600" gutterBottom>
+            <Box sx={{
+              textAlign: "center"
+            }}>
+              <Typography variant="h6" gutterBottom sx={{
+                fontWeight: "600"
+              }}>
                 Здесь пока пусто
               </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 360 }}>
+              <Typography
+                variant="body2"
+                sx={{
+                  color: "text.secondary",
+                  maxWidth: 360
+                }}>
                 Добавьте документы, аудио, видео или изображения. Поддерживаются JPG,
                 PNG, MP4, MP3, PDF, TXT и другие форматы.
               </Typography>
@@ -967,17 +984,17 @@ export default function PersonFilesTab({ personId, personName }) {
               backgroundColor: "rgba(0, 0, 0, 0.6)",
             },
           },
-        }}
-        PaperProps={{
-          sx: {
-            overflow: "hidden",
-            backgroundImage: "none",
-            boxShadow: theme.shadows[24],
-            borderRadius: 3,
-            bgcolor: isTxtPreview ? "background.paper" : "#0a0a0a",
-          },
-        }}
-      >
+
+          paper: {
+            sx: {
+              overflow: "hidden",
+              backgroundImage: "none",
+              boxShadow: theme.shadows[24],
+              borderRadius: 3,
+              bgcolor: isTxtPreview ? "background.paper" : "#0a0a0a",
+            },
+          }
+        }}>
         {previewFile && (
           <Box
             sx={{
@@ -1047,17 +1064,19 @@ export default function PersonFilesTab({ personId, personName }) {
             : undefined
         }
         {...contextMenuProps}
-        PaperProps={{
-          sx: {
-            bgcolor: "transparent",
-            backgroundImage: "none",
-            boxShadow: 24,
-            borderRadius: "12px",
-            minWidth: 220,
-            px: "6px",
-            border: "1px solid",
-            borderColor: "divider",
-            backdropFilter: "blur(6px)",
+        slotProps={{
+          paper: {
+            sx: {
+              bgcolor: "transparent",
+              backgroundImage: "none",
+              boxShadow: 24,
+              borderRadius: "12px",
+              minWidth: 220,
+              px: "6px",
+              border: "1px solid",
+              borderColor: "divider",
+              backdropFilter: "blur(6px)",
+            },
           },
         }}
       >

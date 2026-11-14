@@ -15,7 +15,7 @@ import {
 import TrashFillIcon from "../../components/svg/TrashFillIcon";
 import TrashSlashFillIcon from "../../components/svg/TrashSlashFillIcon";
 import PetsIcon from "@mui/icons-material/Pets";
-import PersonOutlineIcon from "@mui/icons-material/PersonOutline";
+import PersonOutlineOutlinedIcon from "@mui/icons-material/PersonOutlineOutlined";
 import PhoneIcon from "@mui/icons-material/Phone";
 import EmailIcon from "@mui/icons-material/Email";
 import HomeIcon from "@mui/icons-material/Home";
@@ -125,14 +125,18 @@ export function ExternalEntityCard({
           </Box>
 
           <ListItemText
-            primaryTypographyProps={{ component: "div" }}
-            secondaryTypographyProps={{ component: "div" }}
             primary={
-              <Stack direction="row" alignItems="center" spacing={1} flexWrap="wrap">
+              <Stack
+                direction="row"
+                spacing={1}
+                sx={{
+                  alignItems: "center",
+                  flexWrap: "wrap"
+                }}>
                 {isPet ? (
                   <PetsIcon sx={{ fontSize: 18, color: "secondary.main" }} />
                 ) : (
-                  <PersonOutlineIcon sx={{ fontSize: 18, color: "primary.main" }} />
+                  <PersonOutlineOutlinedIcon sx={{ fontSize: 18, color: "primary.main" }} />
                 )}
                 <Typography sx={{ fontWeight: 700, fontSize: "1.05rem" }}>
                   {entity.name || "Без имени"}
@@ -145,7 +149,9 @@ export function ExternalEntityCard({
               </Stack>
             }
             secondary={
-              <Stack spacing={0.75} mt={0.75}>
+              <Stack spacing={0.75} sx={{
+                mt: 0.75
+              }}>
                 <Typography
                   variant="caption"
                   component="span"
@@ -163,7 +169,9 @@ export function ExternalEntityCard({
                   {entity.id}
                 </Typography>
                 {relationSummary && (
-                  <Typography variant="caption" color="text.secondary">
+                  <Typography variant="caption" sx={{
+                    color: "text.secondary"
+                  }}>
                     {relationSummary}
                     {(entity.relations?.length || 0) > 2
                       ? ` (+${entity.relations.length - 2})`
@@ -173,9 +181,16 @@ export function ExternalEntityCard({
                 {contactItems.length > 0 && (
                   <Stack spacing={0.4}>
                     {contactItems.map((item) => (
-                      <Stack key={`${entity.id}-${item.value}`} direction="row" alignItems="center" spacing={0.75}>
+                      <Stack key={`${entity.id}-${item.value}`} direction="row" spacing={0.75} sx={{
+                        alignItems: "center"
+                      }}>
                         <Box sx={{ color: "text.secondary", display: "flex", alignItems: "center" }}>{item.icon}</Box>
-                        <Typography variant="caption" color="text.secondary" sx={{ wordBreak: "break-word" }}>
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            color: "text.secondary",
+                            wordBreak: "break-word"
+                          }}>
                           {item.value}
                         </Typography>
                       </Stack>
@@ -185,7 +200,10 @@ export function ExternalEntityCard({
               </Stack>
             }
             sx={{ flex: 1, minWidth: 0 }}
-          />
+            slotProps={{
+              primary: { component: "div" },
+              secondary: { component: "div" }
+            }} />
 
           {isArchived && (
             <Box

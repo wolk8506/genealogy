@@ -183,9 +183,11 @@ export default function PersonSummary({
       <Stack
         direction="row"
         spacing={1.5}
-        alignItems="center"
-        sx={{ px: 0.25, pt: 0.25 }}
-      >
+        sx={{
+          alignItems: "center",
+          px: 0.25,
+          pt: 0.25
+        }}>
         <PersonAvatar
           personId={person.id}
           initials={personInitials(person)}

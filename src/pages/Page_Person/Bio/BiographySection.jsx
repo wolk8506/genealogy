@@ -87,7 +87,7 @@ import { gfm } from "@milkdown/kit/preset/gfm";
 import { block } from "@milkdown/plugin-block";
 import AddColumnRowRightIcon from "../../../components/svg/AddColumnRowRightIcon";
 import TrashFillIcon from "../../../components/svg/TrashFillIcon";
-import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
 import SubtitlesOutlinedIcon from "@mui/icons-material/SubtitlesOutlined";
 import PhotoSizeSelectSmallIcon from "@mui/icons-material/PhotoSizeSelectSmall";
 
@@ -2420,9 +2420,11 @@ export default function BiographySection({
                 {headings.length === 0 && (
                   <Typography
                     variant="caption"
-                    color="text.secondary"
-                    sx={{ px: 1, py: 0.5 }}
-                  >
+                    sx={{
+                      color: "text.secondary",
+                      px: 1,
+                      py: 0.5
+                    }}>
                     Добавьте заголовки H1–H3 в биографии
                   </Typography>
                 )}
@@ -2579,11 +2581,6 @@ export default function BiographySection({
                 theme.palette.mode === "dark" ? "#e0e0e0" : "#1a1a1a", // Насыщенный черный для светлой темы
 
               transition: "background-color 0.3s ease",
-              ...(isEditing && {
-                "&:hover": {
-                  transform: "translateY(-2px)",
-                },
-              }),
             }}
           >
             {activeElement === "bio" && bio === "" && !isEditing && (
@@ -2801,9 +2798,13 @@ export default function BiographySection({
                 {!isEditing && bio?.includes("bio_images") && (
                   <Typography
                     variant="caption"
-                    color="text.secondary"
-                    sx={{ display: "block", textAlign: "center", mt: 2, opacity: 0.7 }}
-                  >
+                    sx={{
+                      color: "text.secondary",
+                      display: "block",
+                      textAlign: "center",
+                      mt: 2,
+                      opacity: 0.7
+                    }}>
                     Клик по фото — увеличить
                   </Typography>
                 )}
@@ -2818,18 +2819,20 @@ export default function BiographySection({
                       : undefined
                   }
                   {...bioContextMenuProps}
-                  PaperProps={{
-                    sx: {
-                      bgcolor: "transparent",
-                      backgroundImage: "none",
-                      boxShadow: 24,
-                      borderRadius: "12px",
-                      minWidth: 200,
-                      fontSize: "13px",
-                      px: "6px",
-                      border: "1px solid",
-                      borderColor: "divider",
-                      backdropFilter: "blur(6px)",
+                  slotProps={{
+                    paper: {
+                      sx: {
+                        bgcolor: "transparent",
+                        backgroundImage: "none",
+                        boxShadow: 24,
+                        borderRadius: "12px",
+                        minWidth: 200,
+                        fontSize: "13px",
+                        px: "6px",
+                        border: "1px solid",
+                        borderColor: "divider",
+                        backdropFilter: "blur(6px)",
+                      },
                     },
                   }}
                 >
@@ -2856,7 +2859,9 @@ export default function BiographySection({
                     <MenuItem disabled sx={{ px: 1, borderRadius: "8px" }}>
                       <ListItemText
                         primary="Нет вариантов"
-                        primaryTypographyProps={{ fontSize: "13px" }}
+                        slotProps={{
+                          primary: { sx: { fontSize: "13px" } }
+                        }}
                       />
                     </MenuItem>
                   )}
@@ -2875,7 +2880,9 @@ export default function BiographySection({
                     >
                       <ListItemText
                         primary={suggestion}
-                        primaryTypographyProps={{ fontSize: "13px" }}
+                        slotProps={{
+                          primary: { sx: { fontSize: "13px" } }
+                        }}
                       />
                     </MenuItem>
                   ))}
@@ -2889,7 +2896,9 @@ export default function BiographySection({
                   >
                     <ListItemText
                       primary={`Добавить «${spellMenu?.word || ""}» в словарь`}
-                      primaryTypographyProps={{ fontSize: "13px" }}
+                      slotProps={{
+                        primary: { sx: { fontSize: "13px" } }
+                      }}
                     />
                   </MenuItem>
                 </Menu>
@@ -2904,21 +2913,23 @@ export default function BiographySection({
                       : undefined
                   }
                   {...bioContextMenuProps}
-                  PaperProps={{
-                    sx: {
-                      // bgcolor: "background.paper",
-                      // bgcolor: "rgba(0,0,0,0)",
+                  slotProps={{
+                    paper: {
+                      sx: {
+                        // bgcolor: "background.paper",
+                        // bgcolor: "rgba(0,0,0,0)",
 
-                      bgcolor: "transparent",
-                      backgroundImage: "none",
-                      boxShadow: 24,
-                      borderRadius: "12px",
-                      minWidth: 200,
-                      fontSize: "13px",
-                      px: "6px",
-                      border: "1px solid",
-                      borderColor: "divider",
-                      backdropFilter: "blur(6px)",
+                        bgcolor: "transparent",
+                        backgroundImage: "none",
+                        boxShadow: 24,
+                        borderRadius: "12px",
+                        minWidth: 200,
+                        fontSize: "13px",
+                        px: "6px",
+                        border: "1px solid",
+                        borderColor: "divider",
+                        backdropFilter: "blur(6px)",
+                      },
                     },
                   }}
                 >
@@ -2938,9 +2949,13 @@ export default function BiographySection({
                       />
                     </ListItemIcon>
                     <ListItemText
-                      primaryTypographyProps={{
-                        fontSize: "13px",
-                        lineHeight: "1.2",
+                      slotProps={{
+                        primary: {
+                          sx: {
+                            fontSize: "13px",
+                            lineHeight: "1.2"
+                          },
+                        }
                       }}
                     >
                       Добавить строку выше
@@ -2959,9 +2974,13 @@ export default function BiographySection({
                       />
                     </ListItemIcon>
                     <ListItemText
-                      primaryTypographyProps={{
-                        fontSize: "13px",
-                        lineHeight: "1.2",
+                      slotProps={{
+                        primary: {
+                          sx: {
+                            fontSize: "13px",
+                            lineHeight: "1.2"
+                          },
+                        }
                       }}
                     >
                       Добавить строку ниже
@@ -2980,9 +2999,13 @@ export default function BiographySection({
                       />
                     </ListItemIcon>
                     <ListItemText
-                      primaryTypographyProps={{
-                        fontSize: "13px",
-                        lineHeight: "1.2",
+                      slotProps={{
+                        primary: {
+                          sx: {
+                            fontSize: "13px",
+                            lineHeight: "1.2"
+                          },
+                        }
                       }}
                     >
                       Добавить столбец слева
@@ -3001,9 +3024,13 @@ export default function BiographySection({
                       />
                     </ListItemIcon>
                     <ListItemText
-                      primaryTypographyProps={{
-                        fontSize: "13px",
-                        lineHeight: "1.2",
+                      slotProps={{
+                        primary: {
+                          sx: {
+                            fontSize: "13px",
+                            lineHeight: "1.2"
+                          },
+                        }
                       }}
                     >
                       Добавить столбец справа
@@ -3025,9 +3052,13 @@ export default function BiographySection({
                       />
                     </ListItemIcon>
                     <ListItemText
-                      primaryTypographyProps={{
-                        fontSize: "13px",
-                        lineHeight: "1.2",
+                      slotProps={{
+                        primary: {
+                          sx: {
+                            fontSize: "13px",
+                            lineHeight: "1.2"
+                          },
+                        }
                       }}
                     >
                       Удалить строку
@@ -3046,9 +3077,13 @@ export default function BiographySection({
                       />
                     </ListItemIcon>
                     <ListItemText
-                      primaryTypographyProps={{
-                        fontSize: "13px",
-                        lineHeight: "1.2",
+                      slotProps={{
+                        primary: {
+                          sx: {
+                            fontSize: "13px",
+                            lineHeight: "1.2"
+                          },
+                        }
                       }}
                     >
                       Удалить столбец
@@ -3071,9 +3106,13 @@ export default function BiographySection({
                       />
                     </ListItemIcon>
                     <ListItemText
-                      primaryTypographyProps={{
-                        fontSize: "13px",
-                        lineHeight: "1.2",
+                      slotProps={{
+                        primary: {
+                          sx: {
+                            fontSize: "13px",
+                            lineHeight: "1.2"
+                          },
+                        }
                       }}
                     >
                       Удалить всю таблицу
@@ -3092,9 +3131,13 @@ export default function BiographySection({
                       />
                     </ListItemIcon>
                     <ListItemText
-                      primaryTypographyProps={{
-                        fontSize: "13px",
-                        lineHeight: "1.2",
+                      slotProps={{
+                        primary: {
+                          sx: {
+                            fontSize: "13px",
+                            lineHeight: "1.2"
+                          },
+                        }
                       }}
                     >
                       Столбец по левому краю
@@ -3113,9 +3156,13 @@ export default function BiographySection({
                       />
                     </ListItemIcon>
                     <ListItemText
-                      primaryTypographyProps={{
-                        fontSize: "13px",
-                        lineHeight: "1.2",
+                      slotProps={{
+                        primary: {
+                          sx: {
+                            fontSize: "13px",
+                            lineHeight: "1.2"
+                          },
+                        }
                       }}
                     >
                       Столбец по центру
@@ -3134,9 +3181,13 @@ export default function BiographySection({
                       />
                     </ListItemIcon>
                     <ListItemText
-                      primaryTypographyProps={{
-                        fontSize: "13px",
-                        lineHeight: "1.2",
+                      slotProps={{
+                        primary: {
+                          sx: {
+                            fontSize: "13px",
+                            lineHeight: "1.2"
+                          },
+                        }
                       }}
                     >
                       Столбец по правому краю
@@ -3154,18 +3205,20 @@ export default function BiographySection({
                       : undefined
                   }
                   {...bioContextMenuProps}
-                  PaperProps={{
-                    sx: {
-                      bgcolor: "transparent",
-                      backgroundImage: "none",
-                      boxShadow: 24,
-                      borderRadius: "12px",
-                      minWidth: 220,
-                      fontSize: "13px",
-                      px: "6px",
-                      border: "1px solid",
-                      borderColor: "divider",
-                      backdropFilter: "blur(6px)",
+                  slotProps={{
+                    paper: {
+                      sx: {
+                        bgcolor: "transparent",
+                        backgroundImage: "none",
+                        boxShadow: 24,
+                        borderRadius: "12px",
+                        minWidth: 220,
+                        fontSize: "13px",
+                        px: "6px",
+                        border: "1px solid",
+                        borderColor: "divider",
+                        backdropFilter: "blur(6px)",
+                      },
                     },
                   }}
                 >
@@ -3218,7 +3271,7 @@ export default function BiographySection({
                     sx={{ color: "error.main", px: 1, borderRadius: "8px" }}
                   >
                     <ListItemIcon>
-                      <DeleteOutlineIcon fontSize="small" color="error" />
+                      <DeleteOutlineOutlinedIcon fontSize="small" color="error" />
                     </ListItemIcon>
                     <ListItemText primary="Удалить фото" />
                   </MenuItem>
@@ -3296,26 +3349,30 @@ export default function BiographySection({
       <Dialog
         open={confirmOpen}
         onClose={() => setConfirmOpen(false)}
-        TransitionComponent={Slide}
-        TransitionProps={{ direction: "down" }}
-        PaperProps={{
-          sx: {
-            // Адаптивный фон: в темной теме чуть прозрачный для блюра, в светлой — белый
-            bgcolor: (theme) =>
-              theme.palette.mode === "dark"
-                ? alpha(theme.palette.background.paper, 0.8)
-                : theme.palette.background.paper,
-            width: 500,
-            backdropFilter: "blur(16px)",
-            backgroundImage: "none",
-            borderRadius: "24px", // Увеличил до 24px для единства стиля
-            border: "1px solid",
-            borderColor: "divider", // Системный цвет границы (адаптивный)
-            boxShadow: (theme) => theme.shadows[24],
-            overflow: "hidden",
-          },
+        slots={{
+          transition: Slide
         }}
-      >
+        slotProps={{
+          transition: { direction: "down" },
+
+          paper: {
+            sx: {
+              // Адаптивный фон: в темной теме чуть прозрачный для блюра, в светлой — белый
+              bgcolor: (theme) =>
+                theme.palette.mode === "dark"
+                  ? alpha(theme.palette.background.paper, 0.8)
+                  : theme.palette.background.paper,
+              width: 500,
+              backdropFilter: "blur(16px)",
+              backgroundImage: "none",
+              borderRadius: "24px", // Увеличил до 24px для единства стиля
+              border: "1px solid",
+              borderColor: "divider", // Системный цвет границы (адаптивный)
+              boxShadow: (theme) => theme.shadows[24],
+              overflow: "hidden",
+            },
+          }
+        }}>
         <Box sx={{ p: 4, minWidth: 320, textAlign: "center" }}>
           {/* Иконка */}
           <Box
@@ -3375,15 +3432,15 @@ export default function BiographySection({
               backdropFilter: "blur(8px)",
             },
           },
-        }}
-        PaperProps={{
-          sx: {
-            bgcolor: "transparent",
-            boxShadow: "none",
-            overflow: "hidden",
-          },
-        }}
-      >
+
+          paper: {
+            sx: {
+              bgcolor: "transparent",
+              boxShadow: "none",
+              overflow: "hidden",
+            },
+          }
+        }}>
         {/* --- ВЕРХНЕЕ УПРАВЛЕНИЕ (В СТИЛЕ PHOTOVIEWER) --- */}
         <Stack
           direction="row"

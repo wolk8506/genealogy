@@ -18,12 +18,12 @@ import HomeIcon from "@mui/icons-material/Home";
 import CakeIcon from "@mui/icons-material/Cake";
 import { Link as RouterLink, useNavigate } from "react-router-dom";
 import EditIcon from "@mui/icons-material/Edit";
-import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import PhotoCameraIcon from "@mui/icons-material/PhotoCamera";
 import PetsIcon from "@mui/icons-material/Pets";
-import PersonOutlineIcon from "@mui/icons-material/PersonOutline";
+import PersonOutlineOutlinedIcon from "@mui/icons-material/PersonOutlineOutlined";
 import LinkIcon from "@mui/icons-material/Link";
 import ExternalEntityAvatar from "../../components/ExternalEntityAvatar";
 import AvatarPreviewDialog from "../../components/Dialog/AvatarPreviewDialog";
@@ -146,7 +146,9 @@ export default function ExternalEntityDetail({
   if (!entityId) {
     return (
       <Box sx={{ p: 2 }}>
-        <Typography color="text.secondary" variant="body2">
+        <Typography variant="body2" sx={{
+          color: "text.secondary"
+        }}>
           Выберите запись из списка слева — здесь появятся подробности.
         </Typography>
       </Box>
@@ -155,7 +157,11 @@ export default function ExternalEntityDetail({
 
   if (loading) {
     return (
-      <Stack alignItems="center" py={6}>
+      <Stack
+        sx={{
+          alignItems: "center",
+          py: 6
+        }}>
         <CircularProgress size={28} />
       </Stack>
     );
@@ -164,7 +170,9 @@ export default function ExternalEntityDetail({
   if (!entity) {
     return (
       <Box sx={{ p: 2 }}>
-        <Typography color="text.secondary" variant="body2">
+        <Typography variant="body2" sx={{
+          color: "text.secondary"
+        }}>
           Запись не найдена
         </Typography>
       </Box>
@@ -212,16 +220,19 @@ export default function ExternalEntityDetail({
         <Box sx={{ flex: 1, minWidth: 0 }}>
           <Stack
             direction="row"
-            alignItems="center"
             spacing={1}
-            flexWrap="wrap"
-          >
+            sx={{
+              alignItems: "center",
+              flexWrap: "wrap"
+            }}>
             {isPet ? (
               <PetsIcon color="secondary" />
             ) : (
-              <PersonOutlineIcon color="primary" />
+              <PersonOutlineOutlinedIcon color="primary" />
             )}
-            <Typography variant={compact ? "h6" : "h4"} fontWeight={800}>
+            <Typography variant={compact ? "h6" : "h4"} sx={{
+              fontWeight: 800
+            }}>
               {entity.name}
             </Typography>
             <Chip label={getEntityTypeLabel(entity.type)} size="small" />
@@ -244,7 +255,13 @@ export default function ExternalEntityDetail({
           </Typography>
 
           {!compact && (
-            <Stack direction="row" spacing={1} mt={1.5} flexWrap="wrap">
+            <Stack
+              direction="row"
+              spacing={1}
+              sx={{
+                mt: 1.5,
+                flexWrap: "wrap"
+              }}>
               <Button
                 size="small"
                 startIcon={<EditIcon />}
@@ -256,7 +273,7 @@ export default function ExternalEntityDetail({
               <Button
                 size="small"
                 color="warning"
-                startIcon={<DeleteOutlineIcon />}
+                startIcon={<DeleteOutlineOutlinedIcon />}
                 onClick={handleArchive}
                 sx={{ ...btnStyleRed }}
               >
@@ -315,7 +332,7 @@ export default function ExternalEntityDetail({
                 },
               }}
             >
-              <DeleteOutlineIcon fontSize="small" />
+              <DeleteOutlineOutlinedIcon fontSize="small" />
             </IconButton>
           </Tooltip>
         </Stack>
@@ -329,7 +346,9 @@ export default function ExternalEntityDetail({
           entity.birthday) && (
           <>
             <Divider sx={{ my: 2 }} />
-            <Typography variant="subtitle2" fontWeight={700} gutterBottom>
+            <Typography variant="subtitle2" gutterBottom sx={{
+              fontWeight: 700
+            }}>
               Контакты и информация
             </Typography>
             <Stack spacing={1.25}>
@@ -342,25 +361,33 @@ export default function ExternalEntityDetail({
                 </Typography>
               )}
               {!isPet && entity.phone && (
-                <Stack direction="row" spacing={1} alignItems="center">
+                <Stack direction="row" spacing={1} sx={{
+                  alignItems: "center"
+                }}>
                   <PhoneIcon fontSize="small" color="action" />
                   <Typography variant="body2">{entity.phone}</Typography>
                 </Stack>
               )}
               {!isPet && entity.email && (
-                <Stack direction="row" spacing={1} alignItems="center">
+                <Stack direction="row" spacing={1} sx={{
+                  alignItems: "center"
+                }}>
                   <EmailIcon fontSize="small" color="action" />
                   <Typography variant="body2">{entity.email}</Typography>
                 </Stack>
               )}
               {!isPet && entity.address && (
-                <Stack direction="row" spacing={1} alignItems="center">
+                <Stack direction="row" spacing={1} sx={{
+                  alignItems: "center"
+                }}>
                   <HomeIcon fontSize="small" color="action" />
                   <Typography variant="body2">{entity.address}</Typography>
                 </Stack>
               )}
               {entity.birthday && (
-                <Stack direction="row" spacing={1} alignItems="center">
+                <Stack direction="row" spacing={1} sx={{
+                  alignItems: "center"
+                }}>
                   <CakeIcon fontSize="small" color="action" />
                   <Typography variant="body2">{entity.birthday}</Typography>
                 </Stack>
@@ -450,15 +477,27 @@ export default function ExternalEntityDetail({
 
       {!compact && (
       <>
-      <Stack direction="row" alignItems="center" spacing={1} mb={1.5}>
-        <LinkIcon fontSize="small" color="primary" />
-        <Typography variant="subtitle2" fontWeight={700}>
+      <Stack
+        direction="row"
+        spacing={1}
+        sx={{
+          alignItems: "center",
+          mb: 1.5
+        }}>
+        <LinkIcon color="primary" sx={{
+          fontSize: "small"
+        }} />
+        <Typography variant="subtitle2" sx={{
+          fontWeight: 700
+        }}>
           Связи с родственниками
         </Typography>
       </Stack>
 
       {(entity.relations || []).length === 0 ? (
-        <Typography variant="body2" color="text.secondary">
+        <Typography variant="body2" sx={{
+          color: "text.secondary"
+        }}>
           Связи не указаны
         </Typography>
       ) : (
@@ -482,7 +521,9 @@ export default function ExternalEntityDetail({
                   borderColor: "divider",
                 }}
               >
-                <Typography variant="body2" fontWeight={600}>
+                <Typography variant="body2" sx={{
+                  fontWeight: 600
+                }}>
                   {getRelationTypeLabel(rel.relationType)}
                 </Typography>
                 {rel.targetKind === "external" ? (
@@ -495,13 +536,16 @@ export default function ExternalEntityDetail({
                       {getExternalEntityLabel(external)} ({external.id})
                     </Button>
                   ) : (
-                    <Typography variant="body2" color="text.secondary">
+                    <Typography variant="body2" sx={{
+                      color: "text.secondary"
+                    }}>
                       ID {rel.mainExternalEntityId}
                     </Typography>
                   )
                 ) : person ? (
                   <Button
                     component={RouterLink}
+                    nativeButton={false}
                     to={`/person/${person.id}`}
                     size="small"
                     sx={{ p: 0, mt: 0.5, textTransform: "none" }}
@@ -509,25 +553,29 @@ export default function ExternalEntityDetail({
                     {getPersonLabel(person)} (ID {person.id})
                   </Button>
                 ) : (
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography variant="body2" sx={{
+                    color: "text.secondary"
+                  }}>
                     ID {rel.mainPersonId}
                   </Typography>
                 )}
                 {rel.dates && (
                   <Typography
                     variant="caption"
-                    color="text.secondary"
-                    display="block"
-                  >
+                    sx={{
+                      color: "text.secondary",
+                      display: "block"
+                    }}>
                     Период: {rel.dates}
                   </Typography>
                 )}
                 {rel.notes && (
                   <Typography
                     variant="caption"
-                    color="text.secondary"
-                    display="block"
-                  >
+                    sx={{
+                      color: "text.secondary",
+                      display: "block"
+                    }}>
                     {rel.notes}
                   </Typography>
                 )}

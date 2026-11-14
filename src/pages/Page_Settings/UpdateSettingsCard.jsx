@@ -12,7 +12,7 @@ import InfoIcon from "@mui/icons-material/Info";
 import CloudDownloadIcon from "@mui/icons-material/CloudDownload";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import SystemUpdateAltIcon from "@mui/icons-material/SystemUpdateAlt";
-import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
+import ErrorOutlineOutlinedIcon from "@mui/icons-material/ErrorOutlineOutlined";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import AppButton from "../../components/AppButton";
 import { useUpdateStore } from "../../store/useUpdateStore";
@@ -54,8 +54,9 @@ export const UpdateSettingsCard = ({ cardStyle }) => {
   // заново проверить версию в этом случае значит вести не туда.
   const installFailed = Boolean(error) && Boolean(filePath);
 
-  const hasUpdate =
-    !!updateInfo && !!version && updateInfo.version !== version;
+  // Обновление есть только когда номер в ленте релизов выше установленного:
+  // отставание ленты не должно превращаться в предложение откатиться назад.
+  const hasUpdate = !!updateInfo && updateInfo.isNewer === true;
 
   const notes = useMemo(
     () => (hasUpdate ? parseReleaseNotes(updateInfo?.releaseNotes) : []),
@@ -87,15 +88,18 @@ export const UpdateSettingsCard = ({ cardStyle }) => {
           <SystemUpdateAltIcon sx={{ fontSize: 18 }} />
         </RowIcon>
         <Box sx={{ minWidth: 0 }}>
-          <Typography variant="subtitle1" fontWeight={700} noWrap>
+          <Typography variant="subtitle1" noWrap sx={{
+            fontWeight: 700
+          }}>
             Обновление системы
           </Typography>
           <Typography
             variant="caption"
-            color="text.secondary"
-            display="block"
             noWrap
-          >
+            sx={{
+              color: "text.secondary",
+              display: "block"
+            }}>
             Проверка и установка новых версий
           </Typography>
         </Box>
@@ -127,9 +131,10 @@ export const UpdateSettingsCard = ({ cardStyle }) => {
                   >
                     <Typography
                       variant="caption"
-                      fontWeight={700}
-                      color="text.secondary"
-                    >
+                      sx={{
+                        fontWeight: 700,
+                        color: "text.secondary"
+                      }}>
                       Стабильная
                     </Typography>
                   </Box>
@@ -143,26 +148,30 @@ export const UpdateSettingsCard = ({ cardStyle }) => {
             <Box sx={groupSx}>
               {error ? (
                 <Box sx={{ px: 2, py: 1.6 }}>
-                  <Stack direction="row" spacing={1.5} alignItems="center">
+                  <Stack direction="row" spacing={1.5} sx={{
+                    alignItems: "center"
+                  }}>
                     <RowIcon bg="red">
-                      <ErrorOutlineIcon sx={{ fontSize: 18 }} />
+                      <ErrorOutlineOutlinedIcon sx={{ fontSize: 18 }} />
                     </RowIcon>
                     <Box sx={{ flexGrow: 1, minWidth: 0 }}>
                       <Typography
                         variant="body2"
-                        fontWeight={600}
-                        color="error.main"
-                      >
+                        sx={{
+                          fontWeight: 600,
+                          color: "error.main"
+                        }}>
                         {installFailed
                           ? "Не удалось запустить установщик"
                           : "Не удалось проверить обновления"}
                       </Typography>
                       <Typography
                         variant="caption"
-                        color="text.secondary"
-                        display="block"
                         noWrap
-                      >
+                        sx={{
+                          color: "text.secondary",
+                          display: "block"
+                        }}>
                         {installFailed
                           ? "Файл в папке «Загрузки → GenealogyUpdater» — можно запустить его вручную"
                           : error}
@@ -182,10 +191,11 @@ export const UpdateSettingsCard = ({ cardStyle }) => {
                   <LinearProgress sx={{ height: 6, borderRadius: 3 }} />
                   <Typography
                     variant="caption"
-                    color="text.secondary"
-                    display="block"
-                    sx={{ mt: 1 }}
-                  >
+                    sx={{
+                      color: "text.secondary",
+                      display: "block",
+                      mt: 1
+                    }}>
                     Проверка обновлений…
                   </Typography>
                 </Box>
@@ -204,17 +214,22 @@ export const UpdateSettingsCard = ({ cardStyle }) => {
                   <Stack
                     direction="row"
                     spacing={1.5}
-                    alignItems="center"
-                    sx={{ mb: notes.length > 0 ? 0.75 : 2 }}
-                  >
+                    sx={{
+                      alignItems: "center",
+                      mb: notes.length > 0 ? 0.75 : 2
+                    }}>
                     <RowIcon bg="blue">
                       <CloudDownloadIcon sx={{ fontSize: 18 }} />
                     </RowIcon>
                     <Box sx={{ minWidth: 0 }}>
-                      <Typography variant="body2" fontWeight={600}>
+                      <Typography variant="body2" sx={{
+                        fontWeight: 600
+                      }}>
                         Доступна версия {updateInfo.version}
                       </Typography>
-                      <Typography variant="caption" color="text.secondary">
+                      <Typography variant="caption" sx={{
+                        color: "text.secondary"
+                      }}>
                         Загрузите и перезапустите приложение
                       </Typography>
                     </Box>
@@ -248,7 +263,9 @@ export const UpdateSettingsCard = ({ cardStyle }) => {
                             transition: "transform 160ms ease",
                           }}
                         />
-                        <Typography variant="body2" fontWeight={600}>
+                        <Typography variant="body2" sx={{
+                          fontWeight: 600
+                        }}>
                           Что нового в {updateInfo.version}
                         </Typography>
                       </ButtonBase>
@@ -272,10 +289,11 @@ export const UpdateSettingsCard = ({ cardStyle }) => {
                       />
                       <Typography
                         variant="caption"
-                        color="text.secondary"
-                        display="block"
-                        sx={{ mt: 1 }}
-                      >
+                        sx={{
+                          color: "text.secondary",
+                          display: "block",
+                          mt: 1
+                        }}>
                         Загрузка: {progress}%
                       </Typography>
                     </Box>

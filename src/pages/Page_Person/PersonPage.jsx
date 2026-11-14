@@ -212,7 +212,9 @@ const PersonPage = forwardRef(
           }}
         >
           <CircularProgress size={28} />
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant="body2" sx={{
+            color: "text.secondary"
+          }}>
             Загрузка…
           </Typography>
         </Box>

@@ -23,6 +23,7 @@ import { useNavigate } from "react-router-dom";
 import usePhotoThumbs from "../hooks/usePhotoThumbs";
 import PhotoFullscreenViewer from "../components/PhotoFullscreenViewer";
 import { formatYearsAgo } from "../hooks/useMemories";
+import { getRelationTypeLabel } from "../utils/externalEntities";
 import {
   groupSx,
   RowDivider,
@@ -51,15 +52,15 @@ function PersonHeader({ personId, allPeople, onFocusPerson }) {
   const initials = `${person.firstName?.[0] || ""}${person.lastName?.[0] || person.maidenName?.[0] || ""}`
     .toUpperCase();
   return (
-      <Box
-        sx={{
-          display: "flex",
-          alignItems: "center",
-          gap: 1.5,
-          px: 1.5,
-          py: 1.25,
-        }}
-      >
+    <Box
+      sx={{
+        display: "flex",
+        alignItems: "center",
+        gap: 1.5,
+        px: 1.5,
+        py: 1.25,
+      }}
+    >
       <Avatar src={src} sx={{ width: 44, height: 44, fontSize: "1rem" }}>
         {!src && (initials || "?")}
       </Avatar>
@@ -71,7 +72,9 @@ function PersonHeader({ personId, allPeople, onFocusPerson }) {
         >
           {`${[person.firstName, person.lastName || person.maidenName].filter(Boolean).join(" ")}`}
         </Typography>
-        <Typography variant="caption" color="text.secondary">
+        <Typography variant="caption" sx={{
+          color: "text.secondary"
+        }}>
           Поколение {person.generation ?? "—"}
         </Typography>
       </Box>
@@ -172,10 +175,12 @@ function MemoriesTab({ groups, allPeople }) {
             <Box key={g.year}>
               <Stack
                 direction="row"
-                alignItems="baseline"
                 spacing={1}
-                sx={{ mb: 1, ml: 0.5 }}
-              >
+                sx={{
+                  alignItems: "baseline",
+                  mb: 1,
+                  ml: 0.5
+                }}>
                 <Typography
                   sx={{
                     fontSize: "0.78rem",
@@ -284,9 +289,12 @@ function MemoriesTab({ groups, allPeople }) {
         {total > 0 && (
           <Typography
             variant="caption"
-            color="text.secondary"
-            sx={{ display: "block", mt: 2, ml: 0.5 }}
-          >
+            sx={{
+              color: "text.secondary",
+              display: "block",
+              mt: 2,
+              ml: 0.5
+            }}>
             Всего воспоминаний: {total}
           </Typography>
         )}
@@ -498,7 +506,7 @@ function RelationsTab({ personId, allPeople, onFocusPerson }) {
   }
 
   const renderRelationGroup = (title, people) => (
-    <Box>
+    <Box key={title}>
       <Typography sx={sectionLabelSx}>{title}</Typography>
       <Box sx={groupSx}>
         <Stack divider={<RowDivider />}>
@@ -562,7 +570,10 @@ function RelationsTab({ personId, allPeople, onFocusPerson }) {
                       </Avatar>
                     }
                     title={entity.name || entity.id}
-                    subtitle={[rel.relationType, rel.dates]
+                    subtitle={[
+                      getRelationTypeLabel(rel.relationType),
+                      rel.dates,
+                    ]
                       .filter(Boolean)
                       .join(" · ")}
                   />
@@ -613,14 +624,16 @@ export default function InspectorPanel({
       onClose={onClose}
       variant="persistent"
       {...inspectorDrawerTransitionProps}
-      PaperProps={{
-        sx: {
-          top: 50,
-          height: "calc(100% - 50px)",
-          ...inspectorPaperSx,
-          borderLeft: "1px solid",
-          borderColor: "divider",
-        },
+      slotProps={{
+        paper: {
+          sx: {
+            top: 50,
+            height: "calc(100% - 50px)",
+            ...inspectorPaperSx,
+            borderLeft: "1px solid",
+            borderColor: "divider",
+          },
+        }
       }}
     >
       <Box

@@ -1,8 +1,6 @@
 import React, { useState } from "react";
 import {
   Box,
-  IconButton,
-  styled,
   Menu,
   MenuItem,
   Typography,
@@ -11,21 +9,15 @@ import {
   Tooltip,
   alpha,
 } from "@mui/material";
+import { Toggle } from "@base-ui/react/toggle";
 import SellIcon from "@mui/icons-material/Sell";
+import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
+import CheckIcon from "@mui/icons-material/Check";
 import { useTagsStore } from "../../store/useTagsStore";
 import { popoverArrowSx } from "../../theme/popoverArrow";
-import { toolbarPillSx } from "../toolbarStyles";
-
-const StyledContainer = styled(Box, {
-  shouldForwardProp: (prop) => prop !== "$expanded",
-})(({ theme, $expanded }) => ({
-  ...toolbarPillSx,
-  display: "flex",
-  alignItems: "center",
-  transition: "padding-right 300ms cubic-bezier(0.23, 1, 0.32, 1)",
-  paddingRight: $expanded ? 12 : 0,
-  cursor: "pointer",
-}));
+import ToolbarButtonGroup from "../../components/ToolbarButtonGroup";
+import { ToolbarSegmentHit } from "../../components/ToolbarCapsuleContext";
+import { TOOLBAR_HIT, TOOLBAR_MENU } from "../toolbarTokens";
 
 export default function ExpandingTagsFilter({ selectedTags = [], onChange }) {
   const allTags = useTagsStore((state) => state.tags);
@@ -39,7 +31,7 @@ export default function ExpandingTagsFilter({ selectedTags = [], onChange }) {
 
   const handleToggle = (tagId) => {
     const currentIndex = selectedTags.indexOf(tagId);
-    let newSelected = [...selectedTags];
+    const newSelected = [...selectedTags];
     if (currentIndex === -1) {
       newSelected.push(tagId);
     } else {
@@ -51,44 +43,67 @@ export default function ExpandingTagsFilter({ selectedTags = [], onChange }) {
   return (
     <>
       <Tooltip title="Фильтрация по меткам">
-        <StyledContainer $expanded={isExpanded} onClick={handleOpen}>
-          <IconButton
-            size="small"
-            sx={{
-              color: "text.primary",
-              p: 1,
-              "&:hover": { backgroundColor: "transparent" },
-            }}
+        <ToolbarButtonGroup>
+          <Toggle
+            pressed={isExpanded}
+            onClick={handleOpen}
+            aria-haspopup="menu"
+            aria-expanded={open}
+            render={(props, state) => (
+              <ToolbarSegmentHit
+                {...props}
+                pressed={state.pressed}
+                sx={{
+                  gap: isExpanded
+                    ? TOOLBAR_HIT.gapIconLabelPx
+                    : TOOLBAR_HIT.gapPx,
+                }}
+              />
+            )}
           >
             <SellIcon
-              color={isExpanded ? "primary" : "inherit"}
-              fontSize="small"
+              sx={{
+                fontSize: TOOLBAR_HIT.iconSize,
+                color: "inherit",
+              }}
             />
-          </IconButton>
 
-          {isExpanded && (
-            <Box sx={{ display: "flex", alignItems: "center", ml: 0.5 }}>
-              {selectedTags.map((id, index) => {
-                const tag = allTags.find((t) => t.id === id);
-                if (!tag) return null;
-                return (
-                  <SellIcon
-                    key={id}
-                    sx={{
-                      color: tag.color,
-                      fontSize: 18,
-                      ml: index > 0 ? "-8px" : 0,
-                      stroke: "#1e1e1e",
-                      strokeWidth: 1.5,
-                      position: "relative",
-                      zIndex: index,
-                    }}
-                  />
-                );
-              })}
-            </Box>
-          )}
-        </StyledContainer>
+            {isExpanded && (
+              <Box sx={{ display: "flex", alignItems: "center" }}>
+                {selectedTags.map((id, index) => {
+                  const tag = allTags.find((t) => t.id === id);
+                  if (!tag) return null;
+                  return (
+                    <SellIcon
+                      key={id}
+                      sx={{
+                        color: tag.color,
+                        fontSize: TOOLBAR_HIT.iconSize,
+                        ml: index > 0 ? "-8px" : 0,
+                        stroke: (theme) =>
+                          theme.palette.mode === "dark" ? "#1e1e1e" : "#f5f5f5",
+                        strokeWidth: 1.5,
+                        position: "relative",
+                        zIndex: index,
+                      }}
+                    />
+                  );
+                })}
+              </Box>
+            )}
+
+            <KeyboardArrowDownIcon
+              sx={{
+                fontSize: TOOLBAR_HIT.chevronSize,
+                width: TOOLBAR_HIT.chevronSize,
+                height: TOOLBAR_HIT.chevronSize,
+                opacity: 0.85,
+                flexShrink: 0,
+                color: "inherit",
+              }}
+            />
+          </Toggle>
+        </ToolbarButtonGroup>
       </Tooltip>
 
       <Menu
@@ -97,20 +112,22 @@ export default function ExpandingTagsFilter({ selectedTags = [], onChange }) {
         onClose={handleClose}
         anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
         transformOrigin={{ vertical: "top", horizontal: "center" }}
-        // Настройка Paper для треугольника
-        PaperProps={{
-          sx: {
-            mt: 1.5,
-            minWidth: 200,
-            borderRadius: "16px",
-            overflow: "visible",
-            backgroundImage: "none",
-            bgcolor: (theme) =>
-              theme.palette.mode === "dark" ? "#1E1E1E" : "#FFFFFF",
-            border: "1px solid",
-            borderColor: "divider",
-            "&::before": popoverArrowSx(),
+        slotProps={{
+          paper: {
+            sx: {
+              mt: 1.5,
+              minWidth: 200,
+              borderRadius: TOOLBAR_MENU.paperRadiusPx,
+              overflow: "visible",
+              backgroundImage: "none",
+              bgcolor: (theme) =>
+                theme.palette.mode === "dark" ? "#1E1E1E" : "#FFFFFF",
+              border: "1px solid",
+              borderColor: "divider",
+              "&::before": popoverArrowSx(),
+            },
           },
+          list: { sx: { py: 0.5, px: 0.5 } },
         }}
       >
         <Box sx={{ position: "relative", zIndex: 1 }}>
@@ -138,34 +155,43 @@ export default function ExpandingTagsFilter({ selectedTags = [], onChange }) {
                 key={tag.id}
                 onClick={() => handleToggle(tag.id)}
                 sx={{
-                  mx: 1,
-                  my: 0.5,
-                  borderRadius: "8px",
-                  // Вместо чекбокса красим фон при выделении
-                  bgcolor: isSelected ? alpha(tag.color, 0.15) : "transparent",
+                  gap: 0.75,
+                  mx: 0.5,
+                  my: 0.25,
+                  borderRadius: TOOLBAR_MENU.itemRadiusPx,
+                  pl: 1,
+                  pr: 1.25,
+                  py: 0.75,
+                  bgcolor: isSelected
+                    ? alpha(tag.color, 0.15)
+                    : "transparent",
                   "&:hover": {
                     bgcolor: isSelected
                       ? alpha(tag.color, 0.25)
-                      : alpha("#fff", 0.05),
+                      : "action.hover",
                   },
-                  transition: "background-color 0.2s",
                 }}
               >
-                <ListItemIcon sx={{ minWidth: "36px !important" }}>
-                  <SellIcon
-                    sx={{
-                      color: tag.color,
-                      fontSize: 20,
-                      filter: isSelected
-                        ? "drop-shadow(0 0 2px rgba(0,0,0,0.5))"
-                        : "none",
-                    }}
-                  />
+                <Box
+                  sx={{
+                    width: TOOLBAR_MENU.checkGutter,
+                    flexShrink: 0,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  {isSelected && (
+                    <CheckIcon sx={{ fontSize: TOOLBAR_MENU.checkIcon }} />
+                  )}
+                </Box>
+                <ListItemIcon sx={{ minWidth: "28px !important" }}>
+                  <SellIcon sx={{ color: tag.color, fontSize: TOOLBAR_HIT.iconSize }} />
                 </ListItemIcon>
                 <Typography
                   variant="body2"
                   sx={{
-                    fontWeight: isSelected ? 700 : 400,
+                    fontWeight: isSelected ? 600 : 400,
                     color: isSelected ? "text.primary" : "text.secondary",
                   }}
                 >
@@ -175,7 +201,7 @@ export default function ExpandingTagsFilter({ selectedTags = [], onChange }) {
             );
           })}
 
-          {isExpanded && <Divider sx={{ my: 1 }} />}
+          {isExpanded && <Divider sx={{ my: 0.5, mx: 1 }} />}
 
           {isExpanded && (
             <MenuItem
@@ -187,11 +213,11 @@ export default function ExpandingTagsFilter({ selectedTags = [], onChange }) {
               sx={{
                 color: "error.main",
                 justifyContent: "center",
-                mx: 1,
-                borderRadius: "8px",
+                mx: 0.5,
+                borderRadius: TOOLBAR_MENU.itemRadiusPx,
               }}
             >
-              <Typography variant="caption" fontWeight="bold">
+              <Typography variant="caption" sx={{ fontWeight: "bold" }}>
                 Сбросить фильтр
               </Typography>
             </MenuItem>

@@ -1,36 +1,12 @@
 import React from "react";
-import { Box, IconButton, styled, Tooltip } from "@mui/material";
+import { Tooltip } from "@mui/material";
+import { Toggle } from "@base-ui/react/toggle";
 import SupervisorAccountIcon from "@mui/icons-material/SupervisorAccount";
 import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
-import { toolbarPillBg, toolbarPillHoverBg, toolbarPillSx } from "../toolbarStyles";
-
-const StyledContainer = styled(Box, {
-  shouldForwardProp: (prop) => prop !== "$sortOrder",
-})(({ theme, $sortOrder }) => ({
-  ...toolbarPillSx,
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  width: 56,
-  transition: "background-color 200ms ease",
-  cursor: "pointer",
-  overflow: "hidden",
-  backgroundColor: $sortOrder === "desc" ? toolbarPillHoverBg : toolbarPillBg,
-  "& > .MuiIconButton-root": {
-    width: "auto",
-    height: 36,
-    p: 0,
-    px: 1,
-    gap: 0.25,
-  },
-  "& .MuiIconButton-root:hover": {
-    backgroundColor: "transparent",
-  },
-  "&:hover": {
-    backgroundColor: toolbarPillHoverBg,
-  },
-}));
+import ToolbarButtonGroup from "../../components/ToolbarButtonGroup";
+import { ToolbarSegmentHit } from "../../components/ToolbarCapsuleContext";
+import { TOOLBAR_HIT } from "../toolbarTokens";
 
 export default function ExpandingSortButton({ sortOrder, onToggle }) {
   const isDesc = sortOrder === "desc";
@@ -43,19 +19,41 @@ export default function ExpandingSortButton({ sortOrder, onToggle }) {
           : "Сортировка поколений: По возрастанию"
       }
     >
-      <StyledContainer $sortOrder={sortOrder} onClick={onToggle}>
-        <IconButton size="small" sx={{ color: "text.primary", p: 1 }}>
+      <ToolbarButtonGroup>
+        <Toggle
+          pressed={isDesc}
+          onClick={onToggle}
+          render={(props, state) => (
+            <ToolbarSegmentHit {...props} pressed={state.pressed} />
+          )}
+        >
           <SupervisorAccountIcon
-            color={isDesc ? "primary" : "inherit"}
-            fontSize="small"
+            sx={{
+              fontSize: TOOLBAR_HIT.iconSize,
+              color: "inherit",
+            }}
           />
           {isDesc ? (
-            <KeyboardArrowDownIcon color="primary" sx={{ fontSize: "1rem" }} />
+            <KeyboardArrowDownIcon
+              sx={{
+                fontSize: TOOLBAR_HIT.chevronSize,
+                width: TOOLBAR_HIT.chevronSize,
+                height: TOOLBAR_HIT.chevronSize,
+                color: "inherit",
+              }}
+            />
           ) : (
-            <KeyboardArrowUpIcon sx={{ fontSize: "1rem" }} />
+            <KeyboardArrowUpIcon
+              sx={{
+                fontSize: TOOLBAR_HIT.chevronSize,
+                width: TOOLBAR_HIT.chevronSize,
+                height: TOOLBAR_HIT.chevronSize,
+                color: "inherit",
+              }}
+            />
           )}
-        </IconButton>
-      </StyledContainer>
+        </Toggle>
+      </ToolbarButtonGroup>
     </Tooltip>
   );
 }

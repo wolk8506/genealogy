@@ -123,9 +123,10 @@ function UnionCapsule({ family }) {
       <Stack
         direction="row"
         spacing={0.6}
-        alignItems="center"
-        justifyContent="center"
-      >
+        sx={{
+          alignItems: "center",
+          justifyContent: "center"
+        }}>
         <Icon sx={{ fontSize: 13, color }} />
         <Typography
           noWrap
@@ -174,7 +175,11 @@ export default function UnionCore({
   if (!second) {
     return (
       <Box sx={rowSx}>
-        <Stack alignItems="center" sx={{ width: PARTNER_WIDTH }}>
+        <Stack
+          sx={{
+            alignItems: "center",
+            width: PARTNER_WIDTH
+          }}>
           <AncestorRow
             person={first}
             byId={byId}

@@ -26,17 +26,19 @@ export default function PhotoMetaDialog({ openDialog, meta, onClose }) {
       onClose={onClose}
       maxWidth={false}
       transitionDuration={{ enter: 180, exit: 140 }}
-      PaperProps={{
-        sx: {
-          width: 600,
-          maxWidth: "94vw",
-          maxHeight: "calc(100vh - 64px)",
-          borderRadius: "24px",
-          backgroundImage: "none",
-          display: "flex",
-          flexDirection: "column",
-          overflow: "hidden",
-        },
+      slotProps={{
+        paper: {
+          sx: {
+            width: 600,
+            maxWidth: "94vw",
+            maxHeight: "calc(100vh - 64px)",
+            borderRadius: "24px",
+            backgroundImage: "none",
+            display: "flex",
+            flexDirection: "column",
+            overflow: "hidden",
+          },
+        }
       }}
     >
       <Box sx={{ p: 3, pb: 2, overflowY: "auto" }}>
@@ -49,9 +51,11 @@ export default function PhotoMetaDialog({ openDialog, meta, onClose }) {
 
         <Typography
           variant="caption"
-          color="text.secondary"
-          sx={{ mb: 2, display: "block" }}
-        >
+          sx={{
+            color: "text.secondary",
+            mb: 2,
+            display: "block"
+          }}>
           Уникальный ID: {meta.id}
         </Typography>
 
@@ -82,7 +86,9 @@ export default function PhotoMetaDialog({ openDialog, meta, onClose }) {
                   ) : (
                     <CancelIcon color="error" fontSize="small" />
                   )}
-                  <Typography variant="body1" fontWeight="600">
+                  <Typography variant="body1" sx={{
+                    fontWeight: "600"
+                  }}>
                     {file.type}
                   </Typography>
                 </Box>
@@ -105,13 +111,17 @@ export default function PhotoMetaDialog({ openDialog, meta, onClose }) {
                 >
                   <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
                     <CropOriginalIcon sx={{ fontSize: 14, opacity: 0.7 }} />
-                    <Typography variant="caption" display="block">
+                    <Typography variant="caption" sx={{
+                      display: "block"
+                    }}>
                       Разрешение: <b>{file.res}</b>
                     </Typography>
                   </Box>
                   <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
                     <CalendarTodayIcon sx={{ fontSize: 14, opacity: 0.7 }} />
-                    <Typography variant="caption" display="block">
+                    <Typography variant="caption" sx={{
+                      display: "block"
+                    }}>
                       Создан: {file.date}
                     </Typography>
                   </Box>
@@ -123,13 +133,12 @@ export default function PhotoMetaDialog({ openDialog, meta, onClose }) {
                     />
                     <Typography
                       variant="caption"
-                      display="block"
                       sx={{
+                        display: "block",
                         wordBreak: "break-all",
                         color: "text.secondary",
-                        fontSize: "10px",
-                      }}
-                    >
+                        fontSize: "10px"
+                      }}>
                       {file.fullPath}
                     </Typography>
                   </Box>

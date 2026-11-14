@@ -107,22 +107,22 @@ export const StatisticCard = ({ cardStyle }) => {
         <Box sx={{ minWidth: 0, flexGrow: 1 }}>
           <Typography
             variant="body2"
-            fontWeight={400}
             noWrap
-            sx={{ fontSize: "0.8125rem" }}
-          >
+            sx={{
+              fontWeight: 400,
+              fontSize: "0.8125rem"
+            }}>
             {label}
           </Typography>
         </Box>
         <Typography
           variant="body2"
-          color="text.secondary"
           sx={{
+            color: "text.secondary",
             fontSize: "0.8125rem",
             fontVariantNumeric: "tabular-nums",
-            flexShrink: 0,
-          }}
-        >
+            flexShrink: 0
+          }}>
           {value}
         </Typography>
       </Box>
@@ -214,15 +214,18 @@ export const StatisticCard = ({ cardStyle }) => {
           <PieChartIcon sx={{ fontSize: 18 }} />
         </RowIcon>
         <Box sx={{ minWidth: 0 }}>
-          <Typography variant="subtitle1" fontWeight={700} noWrap>
+          <Typography variant="subtitle1" noWrap sx={{
+            fontWeight: 700
+          }}>
             Статистика хранилища
           </Typography>
           <Typography
             variant="caption"
-            color="text.secondary"
-            display="block"
             noWrap
-          >
+            sx={{
+              color: "text.secondary",
+              display: "block"
+            }}>
             Размеры файлов и обслуживание
           </Typography>
         </Box>
@@ -246,20 +249,27 @@ export const StatisticCard = ({ cardStyle }) => {
                 <Box sx={{ px: 2, py: 2 }}>
                   <Stack
                     direction="row"
-                    justifyContent="space-between"
-                    alignItems="baseline"
-                    sx={{ mb: 1.25 }}
-                  >
+                    sx={{
+                      justifyContent: "space-between",
+                      alignItems: "baseline",
+                      mb: 1.25
+                    }}>
                     <Box>
-                      <Typography variant="body2" fontWeight={600}>
+                      <Typography variant="body2" sx={{
+                        fontWeight: 600
+                      }}>
                         Занято{" "}
                         {(((total - free) / total) * 100).toFixed(0)}%
                       </Typography>
-                      <Typography variant="caption" color="text.secondary">
+                      <Typography variant="caption" sx={{
+                        color: "text.secondary"
+                      }}>
                         {formatStorage(total - free)} из {formatStorage(total)}
                       </Typography>
                     </Box>
-                    <Typography variant="body2" color="text.secondary">
+                    <Typography variant="body2" sx={{
+                      color: "text.secondary"
+                    }}>
                       {formatStorage(free)} свободно
                     </Typography>
                   </Stack>
@@ -307,13 +317,17 @@ export const StatisticCard = ({ cardStyle }) => {
                         <Box sx={{ minWidth: 0 }}>
                           <Typography
                             variant="caption"
-                            color="text.secondary"
-                            display="block"
-                            sx={{ fontSize: "0.65rem", lineHeight: 1.1 }}
-                          >
+                            sx={{
+                              color: "text.secondary",
+                              display: "block",
+                              fontSize: "0.65rem",
+                              lineHeight: 1.1
+                            }}>
                             Файлы библиотеки
                           </Typography>
-                          <Typography variant="body2" fontWeight={700}>
+                          <Typography variant="body2" sx={{
+                            fontWeight: 700
+                          }}>
                             {formatStorage(library)}
                           </Typography>
                         </Box>
@@ -335,13 +349,17 @@ export const StatisticCard = ({ cardStyle }) => {
                         <Box sx={{ minWidth: 0 }}>
                           <Typography
                             variant="caption"
-                            color="text.secondary"
-                            display="block"
-                            sx={{ fontSize: "0.65rem", lineHeight: 1.1 }}
-                          >
+                            sx={{
+                              color: "text.secondary",
+                              display: "block",
+                              fontSize: "0.65rem",
+                              lineHeight: 1.1
+                            }}>
                             Система и кэш
                           </Typography>
-                          <Typography variant="body2" fontWeight={700}>
+                          <Typography variant="body2" sx={{
+                            fontWeight: 700
+                          }}>
                             {formatStorage(total - free - library)}
                           </Typography>
                         </Box>
@@ -364,16 +382,20 @@ export const StatisticCard = ({ cardStyle }) => {
                         <Box sx={{ minWidth: 0 }}>
                           <Typography
                             variant="caption"
-                            color="text.secondary"
-                            display="block"
-                            sx={{ fontSize: "0.65rem", lineHeight: 1.1 }}
-                          >
+                            sx={{
+                              color: "text.secondary",
+                              display: "block",
+                              fontSize: "0.65rem",
+                              lineHeight: 1.1
+                            }}>
                             Доступно (прибл.)
                           </Typography>
                           <Typography
                             variant="body2"
-                            fontWeight={700}
                             color={free < 10240 ? "error.main" : "inherit"}
+                            sx={{
+                              fontWeight: 700
+                            }}
                           >
                             {formatStorage(free)}
                           </Typography>

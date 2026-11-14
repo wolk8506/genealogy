@@ -1,19 +1,24 @@
 import React from "react";
-import { Stack, Tooltip, IconButton, Badge } from "@mui/material";
+import { Stack, Tooltip, IconButton, Badge, Box } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 
-import PersonAddAlt1Icon from "@mui/icons-material/PersonAddAlt1";
 import ExpandingSearch from "../../components/ExpandingSearch";
 import ExpandingTimeSelect from "./ExpandingTimeSelect";
 import ExpandingGenSelect from "./ExpandingGenSelect";
 import ExpandingSortButton from "./ExpandingSortButton";
-import DeleteIcon from "@mui/icons-material/Delete";
 import { usePeopleListStore } from "../../store/usePeopleListStore";
 
 import ExpandingTagsFilter from "./ExpandingTegsFilter";
 import ButtonConteiner from "../../components/ButtonConteiner";
 import TrashFillIcon from "../../components/svg/TrashFillIcon";
 import PersonFillBadgePlusIcon from "../../components/svg/PersonFillBadgePlusIcon";
+import ToolbarButtonGroup from "../../components/ToolbarButtonGroup";
+import { TOOLBAR_CAPSULE } from "../../layout/toolbarTokens";
+import {
+  toolbarClusterSx,
+  toolbarDragSpacerSx,
+  toolbarRowSx,
+} from "../../layout/appBarToolbarLayout";
 
 export default function PeopleListToolbar({
   people = [],
@@ -41,86 +46,78 @@ export default function PeopleListToolbar({
   const trashHasItems = hasArchived || hasArchivedExternal;
 
   return (
-    <Stack
-      direction="row"
-      spacing={1.5}
-      alignItems="center"
-      ml="auto"
-      sx={{ WebkitAppRegion: "no-drag" }}
-    >
-      <ButtonConteiner>
-        <Tooltip title="Корзина">
-          <IconButton
-            onClick={() => navigate("/trash")}
-            size="small"
-            sx={{ color: "text.primary", p: 1 }}
-          >
-            <Badge
-              badgeContent={4}
-              invisible={!trashHasItems}
-              variant="dot"
-              color="warning"
+    <Stack direction="row" sx={toolbarRowSx}>
+      <Box sx={toolbarClusterSx}>
+        <ButtonConteiner>
+          <Tooltip title="Добавить человека">
+            <IconButton
+              onClick={handleOpenAddModal}
+              aria-label="Добавить человека"
+              size="small"
+              sx={{ color: "inherit", p: 0 }}
             >
-              <TrashFillIcon color={"inherit"} sx={{ fontSize: 16 }} />
-              {/* <DeleteIcon color={"inherit"} fontSize="inherit" /> */}
-            </Badge>
-          </IconButton>
-        </Tooltip>
-      </ButtonConteiner>
+              <PersonFillBadgePlusIcon
+                sx={{ fontSize: 16, color: "inherit" }}
+              />
+            </IconButton>
+          </Tooltip>
+        </ButtonConteiner>
 
-      <ExpandingTagsFilter
-        selectedTags={filters.tags}
-        onChange={(val) => updateFilter("tags", val)}
-      />
+        <ButtonConteiner>
+          <Tooltip title="Корзина">
+            <IconButton
+              onClick={() => navigate("/trash")}
+              aria-label="Корзина"
+              size="small"
+              sx={{ color: "inherit", p: 0 }}
+            >
+              <Badge
+                badgeContent={4}
+                invisible={!trashHasItems}
+                variant="dot"
+                color="warning"
+              >
+                <TrashFillIcon color={"inherit"} sx={{ fontSize: 16 }} />
+              </Badge>
+            </IconButton>
+          </Tooltip>
+        </ButtonConteiner>
+      </Box>
 
-      {/* Открытие модалки добавления человека */}
-      <ButtonConteiner>
-        <Tooltip title="Добавить человека">
-          <IconButton
-            onClick={handleOpenAddModal}
-            size="small"
-            sx={{ color: "text.primary", p: 0.9 }}
-          >
-            <PersonFillBadgePlusIcon
-              sx={{ fontSize: 16, color: "text.primary" }}
-            />
-            {/* <PersonAddAlt1Icon color={"inherit"} fontSize="inherit" /> */}
-          </IconButton>
-        </Tooltip>
-      </ButtonConteiner>
+      <Box sx={toolbarDragSpacerSx} />
 
-      {/* Фильтр по дате создания */}
-      <ExpandingTimeSelect
-        type="created"
-        value={filters.created}
-        onChange={(val) => updateFilter("created", val)}
-      />
+      <Box sx={{ ...toolbarClusterSx, minWidth: 0 }}>
+        <ExpandingTagsFilter
+          selectedTags={filters.tags}
+          onChange={(val) => updateFilter("tags", val)}
+        />
 
-      {/* Фильтр по дате изменения */}
-      <ExpandingTimeSelect
-        type="edited"
-        value={filters.edited}
-        onChange={(val) => updateFilter("edited", val)}
-      />
+        <ToolbarButtonGroup gap={TOOLBAR_CAPSULE.gapSegmentsPx}>
+          <ExpandingTimeSelect
+            type="created"
+            value={filters.created}
+            onChange={(val) => updateFilter("created", val)}
+          />
+          <ExpandingTimeSelect
+            type="edited"
+            value={filters.edited}
+            onChange={(val) => updateFilter("edited", val)}
+          />
+          <ExpandingGenSelect
+            options={allGenerations}
+            value={filters.gens}
+            onChange={(_, newValue) => updateFilter("gens", newValue)}
+          />
+        </ToolbarButtonGroup>
 
-      {/* Выбор поколения */}
-      <ExpandingGenSelect
-        options={allGenerations}
-        value={filters.gens}
-        onChange={(_, newValue) => updateFilter("gens", newValue)}
-      />
+        <ExpandingSortButton sortOrder={sortOrder} onToggle={onToggleSort} />
 
-      {/* ФИЛЬТРЫ */}
-
-      {/* СОРТИРОВКА ПОКОЛЕНИЙ */}
-      <ExpandingSortButton sortOrder={sortOrder} onToggle={onToggleSort} />
-
-      {/* ПОИСК */}
-      <ExpandingSearch
-        value={search}
-        onChange={setSearch}
-        placeholder="Поиск по имени или ID..."
-      />
+        <ExpandingSearch
+          value={search}
+          onChange={setSearch}
+          placeholder="Поиск по имени или ID..."
+        />
+      </Box>
     </Stack>
   );
 }

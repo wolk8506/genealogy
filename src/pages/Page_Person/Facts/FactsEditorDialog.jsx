@@ -380,17 +380,19 @@ export default function FactsEditorDialog({
       onClose={onClose}
       maxWidth={false}
       transitionDuration={{ enter: 180, exit: 140 }}
-      PaperProps={{
-        sx: {
-          width: 440,
-          maxWidth: "94vw",
-          maxHeight: "calc(100vh - 64px)",
-          borderRadius: "24px",
-          backgroundImage: "none",
-          display: "flex",
-          flexDirection: "column",
-          overflow: "hidden",
-        },
+      slotProps={{
+        paper: {
+          sx: {
+            width: 440,
+            maxWidth: "94vw",
+            maxHeight: "calc(100vh - 64px)",
+            borderRadius: "24px",
+            backgroundImage: "none",
+            display: "flex",
+            flexDirection: "column",
+            overflow: "hidden",
+          },
+        }
       }}
     >
       <Box sx={{ p: 3, pb: 2, overflowY: "auto" }}>
@@ -417,25 +419,29 @@ export default function FactsEditorDialog({
               size="small"
               fullWidth
               sx={fieldSx}
-              SelectProps={{
-                renderValue: (selected) => (
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-                    <Box
-                      sx={{
-                        display: "flex",
-                        color: "primary.main",
-                        bgcolor: "action.selected",
-                        p: 0.5,
-                        borderRadius: "8px",
-                      }}
-                    >
-                      {getIcon(selected)}
+              slotProps={{
+                select: {
+                  renderValue: (selected) => (
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                      <Box
+                        sx={{
+                          display: "flex",
+                          color: "primary.main",
+                          bgcolor: "action.selected",
+                          p: 0.5,
+                          borderRadius: "8px",
+                        }}
+                      >
+                        {getIcon(selected)}
+                      </Box>
+                      <Typography variant="body2" sx={{
+                        fontWeight: 500
+                      }}>
+                        {selected}
+                      </Typography>
                     </Box>
-                    <Typography variant="body2" fontWeight={500}>
-                      {selected}
-                    </Typography>
-                  </Box>
-                ),
+                  ),
+                }
               }}
             >
               {FACT_TYPES.map((t) => (

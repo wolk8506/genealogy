@@ -49,14 +49,16 @@ export default function FamilyInspector({
       onClose={onClose}
       variant="persistent"
       {...inspectorDrawerTransitionProps}
-      PaperProps={{
-        sx: {
-          top: 50,
-          height: "calc(100% - 50px)",
-          ...inspectorPaperSx,
-          borderLeft: "1px solid",
-          borderColor: "divider",
-        },
+      slotProps={{
+        paper: {
+          sx: {
+            top: 50,
+            height: "calc(100% - 50px)",
+            ...inspectorPaperSx,
+            borderLeft: "1px solid",
+            borderColor: "divider",
+          },
+        }
       }}
     >
       <Box

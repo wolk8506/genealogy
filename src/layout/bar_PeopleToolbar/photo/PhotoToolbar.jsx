@@ -8,9 +8,12 @@ import LayersClearIcon from "@mui/icons-material/LayersClear";
 
 import ExpandingSearch from "../../../components/ExpandingSearch";
 import ExpandingAddPhotoButton from "./ExpandingAddPhotoButton";
-import ExpandingGroupSelect from "../../../components/ExpandingGroupSelect";
-import SortDirToggle from "../../../components/SortDirToggle";
-import { toolbarPillSx } from "../../toolbarStyles";
+import GalleryGroupSortCluster from "../../bar_GlobalPhotoGallery/GalleryGroupSortCluster";
+import {
+  toolbarClusterSx,
+  toolbarDragSpacerSx,
+  toolbarRowSx,
+} from "../../appBarToolbarLayout";
 
 const groupOptions = [
   {
@@ -49,38 +52,30 @@ export default function PhotoToolbar({
   onAddPhoto,
 }) {
   return (
-    <Stack
-      direction="row"
-      spacing={1.5}
-      sx={{ alignItems: "center", flexGrow: 1 }}
-    >
-      <ExpandingAddPhotoButton onToggle={onAddPhoto} />
-      <Box sx={{ flexGrow: 1 }} />
-      <Box
-        sx={{
-          ...toolbarPillSx,
-          display: "inline-flex",
-          alignItems: "center",
-          gap: 1,
-          color: "text.primary",
-          fontSize: 20,
-        }}
-      >
-        <ExpandingGroupSelect
-          value={groupBy}
-          onChange={setGroupBy}
-          options={groupOptions}
-        />
-        <SortDirToggle sortDir={sortDir} onChange={setSortDir} />
+    <Stack direction="row" sx={toolbarRowSx}>
+      <Box sx={toolbarClusterSx}>
+        <ExpandingAddPhotoButton onToggle={onAddPhoto} />
       </Box>
 
-      <ExpandingSearch
-        scope={"personal_gallery"}
-        value={search}
-        onChange={setSearch}
-        placeholder="Поиск по описанию и тегам..."
-        enableHashtags={true}
-      />
+      <Box sx={toolbarDragSpacerSx} />
+
+      <Box sx={{ ...toolbarClusterSx, minWidth: 0 }}>
+        <GalleryGroupSortCluster
+          groupBy={groupBy}
+          setGroupBy={setGroupBy}
+          groupOptions={groupOptions}
+          sortDir={sortDir}
+          setSortDir={setSortDir}
+        />
+
+        <ExpandingSearch
+          scope="personal_gallery"
+          value={search}
+          onChange={setSearch}
+          placeholder="Поиск по описанию и тегам..."
+          enableHashtags
+        />
+      </Box>
     </Stack>
   );
 }

@@ -841,26 +841,36 @@ const Editor = forwardRef(
           {/* ЛЕВЫЙ БЛОК (Инфо) - Фиксированный 802px */}
           <Stack
             spacing={0.3}
-            alignItems="center"
             sx={{
-              width: 785, // Чуть шире, чтобы компенсировать отступ для скролла
+              alignItems: "center",
+
+              // Чуть шире, чтобы компенсировать отступ для скролла
+              width: 785,
+
               flexShrink: 0,
               height: "100%",
               overflowY: "auto",
-              pr: 0.7, // Отступ справа, чтобы скроллбар не "прилипал" к карточкам
+
+              // Отступ справа, чтобы скроллбар не "прилипал" к карточкам
+              pr: 0.7,
+
               // pt: 1, // Небольшой отступ сверху
-              pb: 4, // Отступ снизу, чтобы контент не упирался в край
+              // Отступ снизу, чтобы контент не упирался в край
+              pb: 4,
 
               /* Стилизация скроллбара для левого блока */
               "&::-webkit-scrollbar": { width: "6px" },
+
               "&::-webkit-scrollbar-track": { background: "transparent" },
+
               "&::-webkit-scrollbar-thumb": {
                 background: (theme) => theme.palette.divider,
                 borderRadius: "6px",
               },
-              scrollbarWidth: "thin", // Для Firefox
-            }}
-          >
+
+              // Для Firefox
+              scrollbarWidth: "thin"
+            }}>
             <RenderSectionParent
               father={father}
               mother={mother}
@@ -964,9 +974,11 @@ const Editor = forwardRef(
                   <Stack
                     direction="row"
                     spacing={5}
-                    alignItems="flex-start"
-                    sx={{ px: 2, zIndex: 1 }}
-                  >
+                    sx={{
+                      alignItems: "flex-start",
+                      px: 2,
+                      zIndex: 1
+                    }}>
                     {/* ЛЕВАЯ КОЛОНКА: Аватар */}
                     <Box sx={{ flexShrink: 0 }}>
                       <Box
@@ -1002,45 +1014,70 @@ const Editor = forwardRef(
                     </Box>
 
                     {/* ПРАВАЯ КОЛОНКА: данные человека — та же сетка, что в просмотре */}
-                    <Stack spacing={2} flex={1} sx={{ maxWidth: 468, minWidth: 0 }}>
+                    <Stack
+                      spacing={2}
+                      sx={{
+                        flex: 1,
+                        maxWidth: 468,
+                        minWidth: 0
+                      }}>
                       <Box
-                        display={"flex"}
-                        flexDirection={"column"}
-                        gap={0.5}
-                      >
-                        <Box display={"flex"} gap={1} alignItems={"flex-end"}>
+                        sx={{
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: 0.5
+                        }}>
+                        <Box
+                          sx={{
+                            display: "flex",
+                            gap: 1,
+                            alignItems: "flex-end"
+                          }}>
                           <TextField
                             variant="standard"
                             placeholder="Имя"
                             value={form.firstName || ""}
                             onChange={handleChange("firstName")}
-                            inputProps={{ "aria-label": "Имя" }}
                             sx={nameFieldSx}
-                            InputProps={{
-                              disableUnderline: true,
-                              sx: nameInputSx,
-                            }}
-                          />
+                            slotProps={{
+                              input: {
+                                disableUnderline: true,
+                                sx: nameInputSx,
+                              },
+
+                              htmlInput: { "aria-label": "Имя" }
+                            }} />
                           <TextField
                             variant="standard"
                             placeholder="Фамилия"
                             value={form.lastName || ""}
                             onChange={handleChange("lastName")}
-                            inputProps={{ "aria-label": "Фамилия" }}
                             sx={nameFieldSx}
-                            InputProps={{
-                              disableUnderline: true,
-                              sx: nameInputSx,
-                            }}
-                          />
+                            slotProps={{
+                              input: {
+                                disableUnderline: true,
+                                sx: nameInputSx,
+                              },
+
+                              htmlInput: { "aria-label": "Фамилия" }
+                            }} />
                         </Box>
-                        <Stack direction="row" flexDirection={"column"}>
-                          <Box display={"flex"} gap={1} alignItems={"baseline"}>
+                        <Stack direction="row" sx={{
+                          flexDirection: "column"
+                        }}>
+                          <Box
+                            sx={{
+                              display: "flex",
+                              gap: 1,
+                              alignItems: "baseline"
+                            }}>
                             <Typography
                               variant="subtitle1"
-                              color="text.secondary"
-                              sx={{ whiteSpace: "nowrap", flexShrink: 0 }}
-                            >
+                              sx={{
+                                color: "text.secondary",
+                                whiteSpace: "nowrap",
+                                flexShrink: 0
+                              }}>
                               Отчество:
                             </Typography>
                             <TextField
@@ -1049,26 +1086,31 @@ const Editor = forwardRef(
                               fullWidth
                               value={form.patronymic || ""}
                               onChange={handleChange("patronymic")}
-                              inputProps={{ "aria-label": "Отчество" }}
                               sx={inlineFieldSx}
-                              InputProps={{
-                                disableUnderline: true,
-                                sx: inlineInputSx,
-                              }}
-                            />
+                              slotProps={{
+                                input: {
+                                  disableUnderline: true,
+                                  sx: inlineInputSx,
+                                },
+
+                                htmlInput: { "aria-label": "Отчество" }
+                              }} />
                           </Box>
 
                           {form.gender === "female" && (
                             <Box
-                              display={"flex"}
-                              gap={1}
-                              alignItems={"baseline"}
-                            >
+                              sx={{
+                                display: "flex",
+                                gap: 1,
+                                alignItems: "baseline"
+                              }}>
                               <Typography
                                 variant="subtitle1"
-                                color="text.secondary"
-                                sx={{ whiteSpace: "nowrap", flexShrink: 0 }}
-                              >
+                                sx={{
+                                  color: "text.secondary",
+                                  whiteSpace: "nowrap",
+                                  flexShrink: 0
+                                }}>
                                 Девичья фамилия:
                               </Typography>
                               <TextField
@@ -1077,13 +1119,15 @@ const Editor = forwardRef(
                                 fullWidth
                                 value={form.maidenName || ""}
                                 onChange={handleChange("maidenName")}
-                                inputProps={{ "aria-label": "Девичья фамилия" }}
                                 sx={inlineFieldSx}
-                                InputProps={{
-                                  disableUnderline: true,
-                                  sx: inlineInputSx,
-                                }}
-                              />
+                                slotProps={{
+                                  input: {
+                                    disableUnderline: true,
+                                    sx: inlineInputSx,
+                                  },
+
+                                  htmlInput: { "aria-label": "Девичья фамилия" }
+                                }} />
                             </Box>
                           )}
                         </Stack>
@@ -1092,7 +1136,12 @@ const Editor = forwardRef(
                       <Divider sx={{ borderStyle: "dashed" }} />
 
                       {/* Даты — те же иконки и подписи, что в просмотре */}
-                      <Box display={"flex"} alignItems={"center"} gap={1.5}>
+                      <Box
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 1.5
+                        }}>
                         <Box
                           onClick={() => setBirthdayPickerOpen(true)}
                           sx={{
@@ -1162,10 +1211,14 @@ const Editor = forwardRef(
                         )}
                       </Box>
                       <Stack direction="row" spacing={3}>
-                        <Typography variant="caption" color="text.disabled">
+                        <Typography variant="caption" sx={{
+                          color: "text.disabled"
+                        }}>
                           <b>ID:</b> {person.id}
                         </Typography>
-                        <Typography variant="caption" color="text.disabled">
+                        <Typography variant="caption" sx={{
+                          color: "text.disabled"
+                        }}>
                           <b>Поколение:</b> {person.generation}
                         </Typography>
                       </Stack>
@@ -1187,22 +1240,24 @@ const Editor = forwardRef(
                       width: 132,
                       zIndex: 1,
                     }}
-                    InputProps={{
-                      startAdornment: form.gender && (
-                        <Box
-                          sx={{
-                            mr: 1,
-                            display: "flex",
-                            color: "action.active",
-                          }}
-                        >
-                          {form.gender === "male" ? (
-                            <MaleIcon fontSize="small" />
-                          ) : (
-                            <FemaleIcon fontSize="small" />
-                          )}
-                        </Box>
-                      ),
+                    slotProps={{
+                      input: {
+                        startAdornment: form.gender && (
+                          <Box
+                            sx={{
+                              mr: 1,
+                              display: "flex",
+                              color: "action.active",
+                            }}
+                          >
+                            {form.gender === "male" ? (
+                              <MaleIcon fontSize="small" />
+                            ) : (
+                              <FemaleIcon fontSize="small" />
+                            )}
+                          </Box>
+                        ),
+                      }
                     }}
                   >
                     <MenuItem value="male">Мужской</MenuItem>
@@ -1214,7 +1269,12 @@ const Editor = forwardRef(
               </Box>
             </Box>
 
-            <Stack spacing={1} alignItems={"center"} sx={{ width: 736 }}>
+            <Stack
+              spacing={1}
+              sx={{
+                alignItems: "center",
+                width: 736
+              }}>
               <RenderSectionFamilies
                 person={form}
                 people={families} // Твои сгруппированные семьи
@@ -1268,36 +1328,39 @@ const Editor = forwardRef(
                   mb: 2,
                   "& .MuiOutlinedInput-root": { borderRadius: "12px" },
                 }}
-                InputProps={{
-                  // Иконка поиска слева
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <PersonSearchIcon />
-                    </InputAdornment>
-                  ),
-                  // Кнопка очистки справа (показывается только если есть текст)
-                  endAdornment: searchQuery ? (
-                    <InputAdornment position="end">
-                      <IconButton
-                        aria-label="Очистить поиск"
-                        onClick={() => setSearchQuery("")} // Сбрасываем стейт
-                        edge="end"
-                        size="small"
-                      >
-                        <ClearIcon fontSize="small" />
-                      </IconButton>
-                    </InputAdornment>
-                  ) : null,
+                slotProps={{
+                  input: {
+                    // Иконка поиска слева
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <PersonSearchIcon />
+                      </InputAdornment>
+                    ),
+                    // Кнопка очистки справа (показывается только если есть текст)
+                    endAdornment: searchQuery ? (
+                      <InputAdornment position="end">
+                        <IconButton
+                          aria-label="Очистить поиск"
+                          onClick={() => setSearchQuery("")} // Сбрасываем стейт
+                          edge="end"
+                          size="small"
+                        >
+                          <ClearIcon fontSize="small" />
+                        </IconButton>
+                      </InputAdornment>
+                    ) : null,
+                  }
                 }}
               />
 
               <Stack
                 direction="row"
                 spacing={0.5}
-                flexWrap="wrap"
                 useFlexGap
-                justifyContent={"space-between"}
-              >
+                sx={{
+                  flexWrap: "wrap",
+                  justifyContent: "space-between"
+                }}>
                 {[
                   { id: "all", label: "Все" },
                   { id: "father", label: "Отец" },

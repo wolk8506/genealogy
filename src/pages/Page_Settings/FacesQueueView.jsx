@@ -6,7 +6,6 @@ import React, {
   useState,
 } from "react";
 import {
-  Button,
   Stack,
   Typography,
   Box,
@@ -26,7 +25,7 @@ import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import CheckIcon from "@mui/icons-material/Check";
 import NavigateBeforeIcon from "@mui/icons-material/NavigateBefore";
 import NavigateNextIcon from "@mui/icons-material/NavigateNext";
-import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
 import AddIcon from "@mui/icons-material/Add";
 import FaceIcon from "@mui/icons-material/Face";
 import FaceRetouchingNaturalIcon from "@mui/icons-material/FaceRetouchingNatural";
@@ -548,17 +547,6 @@ export default function FacesQueueView({
     overflow: "hidden",
   };
 
-  const compactButtonSx = {
-    height: 30,
-    minHeight: 30,
-    borderRadius: "12px",
-    px: 1.5,
-    textTransform: "none",
-    fontWeight: 600,
-    fontSize: "0.8125rem",
-    boxShadow: "none",
-  };
-
   const mapControlSx = {
     width: 36,
     height: 36,
@@ -591,10 +579,13 @@ export default function FacesQueueView({
     >
       <Stack
         direction="row"
-        alignItems="center"
         spacing={1.5}
-        sx={{ px: 1, py: 1.5, flexShrink: 0 }}
-      >
+        sx={{
+          alignItems: "center",
+          px: 1,
+          py: 1.5,
+          flexShrink: 0
+        }}>
         <Tooltip title="Назад в настройки">
           <IconButton
             onClick={handleExit}
@@ -632,15 +623,18 @@ export default function FacesQueueView({
           </Typography>
           <Typography
             variant="caption"
-            color="text.secondary"
-            sx={{ lineHeight: 1.2 }}
-          >
+            sx={{
+              color: "text.secondary",
+              lineHeight: 1.2
+            }}>
             {subtitle}
           </Typography>
         </Box>
         <Box sx={{ flexGrow: 1 }} />
         {!loading && queue.length > 0 && (
-          <Stack direction="row" spacing={0.75} alignItems="center">
+          <Stack direction="row" spacing={0.75} sx={{
+            alignItems: "center"
+          }}>
             {(currentItem?.title || currentItem?.filename) && (
               <Chip
                 size="small"
@@ -729,7 +723,11 @@ export default function FacesQueueView({
           >
             <FaceRetouchingNaturalIcon sx={{ fontSize: 30 }} />
           </Box>
-          <Typography color="text.secondary" sx={{ fontSize: "0.95rem" }}>
+          <Typography
+            sx={{
+              color: "text.secondary",
+              fontSize: "0.95rem"
+            }}>
             {emptyText}
           </Typography>
           <AppButton preset="secondary" onClick={handleExit} sx={{ px: 3 }}>
@@ -749,42 +747,40 @@ export default function FacesQueueView({
           >
             <Stack
               direction="row"
-              alignItems="center"
-              justifyContent="space-between"
               spacing={1}
               sx={{
+                alignItems: "center",
+                justifyContent: "space-between",
                 px: 2,
                 py: 1.5,
                 borderBottom: `1px solid ${theme.palette.divider}`,
-                flexShrink: 0,
-              }}
-            >
-              <Stack direction="row" alignItems="center" spacing={1}>
+                flexShrink: 0
+              }}>
+              <Stack direction="row" spacing={1} sx={{
+                alignItems: "center"
+              }}>
                 <FaceIcon fontSize="small" color="primary" />
-                <Typography variant="subtitle2" fontWeight={700}>
+                <Typography variant="subtitle2" sx={{
+                  fontWeight: 700
+                }}>
                   Лица на фото
                 </Typography>
                 {currentFaces.length > 0 && (
-                  <Typography variant="caption" color="text.secondary">
+                  <Typography variant="caption" sx={{
+                    color: "text.secondary"
+                  }}>
                     {currentFaces.length}
                   </Typography>
                 )}
               </Stack>
-              <Button
-                size="small"
+              <AppButton
+                preset="secondary"
                 startIcon={<AddIcon sx={{ fontSize: 16 }} />}
                 onClick={handleAddFace}
                 disabled={saving}
-                sx={{
-                  ...compactButtonSx,
-                  height: 28,
-                  minHeight: 28,
-                  px: 1.25,
-                  borderRadius: "8px",
-                }}
               >
                 Лицо
-              </Button>
+              </AppButton>
             </Stack>
 
             <Box
@@ -874,7 +870,9 @@ export default function FacesQueueView({
                       }}
                     >
                       <Stack spacing={1}>
-                        <Stack direction="row" spacing={1} alignItems="center">
+                        <Stack direction="row" spacing={1} sx={{
+                          alignItems: "center"
+                        }}>
                           <Autocomplete
                             size="small"
                             fullWidth
@@ -934,7 +932,7 @@ export default function FacesQueueView({
                                   },
                               }}
                             >
-                              <DeleteOutlineIcon fontSize="small" />
+                              <DeleteOutlineOutlinedIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>
                         </Stack>
@@ -949,7 +947,9 @@ export default function FacesQueueView({
                             <Stack
                               direction="row"
                               spacing={1}
-                              alignItems="center"
+                              sx={{
+                                alignItems: "center"
+                              }}
                             >
                               <TextField
                                 size="small"
@@ -1035,9 +1035,12 @@ export default function FacesQueueView({
               ) : (
                 <Typography
                   variant="body2"
-                  color="text.secondary"
-                  sx={{ fontSize: "0.85rem", py: 2, textAlign: "center" }}
-                >
+                  sx={{
+                    color: "text.secondary",
+                    fontSize: "0.85rem",
+                    py: 2,
+                    textAlign: "center"
+                  }}>
                   {isNoFaces
                     ? "На снимке нет рамок. Нажмите «Найти» или «Пропустить»."
                     : "Нет рамок. Нажмите «Найти» или добавьте лицо вручную."}
@@ -1048,61 +1051,51 @@ export default function FacesQueueView({
             <Stack
               direction="row"
               spacing={1}
-              alignItems="center"
               sx={{
+                alignItems: "center",
                 p: 1.5,
                 borderTop: `1px solid ${theme.palette.divider}`,
-                flexShrink: 0,
-              }}
-            >
-              <Button
-                size="small"
-                variant="outlined"
+                flexShrink: 0
+              }}>
+              <AppButton
+                preset="secondary"
                 startIcon={<NavigateBeforeIcon sx={{ fontSize: 16 }} />}
                 onClick={goToPrevPhoto}
                 disabled={photoIndex === 0 || saving}
-                sx={compactButtonSx}
               >
                 Назад
-              </Button>
+              </AppButton>
 
-              <Button
-                size="small"
-                variant="outlined"
+              <AppButton
+                preset="secondary"
                 endIcon={<NavigateNextIcon sx={{ fontSize: 16 }} />}
                 onClick={goToNextPhoto}
                 disabled={photoIndex >= queue.length - 1 || saving}
-                sx={compactButtonSx}
               >
                 Далее
-              </Button>
+              </AppButton>
 
               {isNoFaces ? (
-                <Button
-                  size="small"
-                  variant="outlined"
+                <AppButton
+                  preset="secondary"
                   onClick={handleSkipPhoto}
                   disabled={saving || queue.length === 0}
-                  sx={{ ...compactButtonSx, ml: "auto" }}
+                  sx={{ ml: "auto" }}
                 >
                   Пропустить
-                </Button>
+                </AppButton>
               ) : (
                 <Tooltip title="Авто-переход к следующему фото после подписи всех лиц">
-                  <Button
-                    size="small"
-                    variant={autoNextPhoto ? "contained" : "outlined"}
-                    disableElevation
-                    onClick={() => setAutoNextPhoto((v) => !v)}
-                    sx={{
-                      ...compactButtonSx,
-                      ml: "auto",
-                      borderRadius: "999px",
-                      px: 1.75,
-                    }}
-                  >
-                    Автопереход
-                  </Button>
+                  <span>
+                    <AppButton
+                      preset={autoNextPhoto ? "primary" : "secondary"}
+                      disableElevation
+                      onClick={() => setAutoNextPhoto((v) => !v)}
+                      sx={{ ml: "auto" }}
+                    >
+                      Автопереход
+                    </AppButton>
+                  </span>
                 </Tooltip>
               )}
             </Stack>

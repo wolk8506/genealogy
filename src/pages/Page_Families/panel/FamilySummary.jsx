@@ -101,7 +101,9 @@ export default function FamilySummary({
     const canOpen = childFamily && childFamily.key !== family.key;
 
     return (
-      <Stack direction="row" spacing={0.25} alignItems="center">
+      <Stack direction="row" spacing={0.25} sx={{
+        alignItems: "center"
+      }}>
         {canOpen && (
           <ChildFamilyButton
             family={childFamily}
@@ -118,9 +120,11 @@ export default function FamilySummary({
       <Stack
         direction="row"
         spacing={1.25}
-        alignItems="center"
-        sx={{ px: 0.25, pt: 0.25 }}
-      >
+        sx={{
+          alignItems: "center",
+          px: 0.25,
+          pt: 0.25
+        }}>
         <RowIcon bg="indigo">
           <FavoriteRoundedIcon sx={{ fontSize: 18 }} />
         </RowIcon>

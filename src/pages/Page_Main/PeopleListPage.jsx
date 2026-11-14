@@ -79,7 +79,9 @@ function ListEmpty({ avatar, glow, title, text, actions }) {
           boxShadow: "0 8px 32px rgba(0,0,0,0.1)",
         }}
       >
-        <Stack spacing={3} alignItems="center">
+        <Stack spacing={3} sx={{
+          alignItems: "center"
+        }}>
           <Box sx={{ position: "relative" }}>
             <Box
               sx={{
@@ -336,10 +338,11 @@ export default function PeopleListPage({
   if (loading) {
     return (
       <Stack
-        alignItems="center"
-        justifyContent="center"
-        sx={{ height: "60vh" }}
-      >
+        sx={{
+          alignItems: "center",
+          justifyContent: "center",
+          height: "60vh"
+        }}>
         <CircularProgress />
       </Stack>
     );
@@ -368,6 +371,7 @@ export default function PeopleListPage({
               <Button
                 variant="contained"
                 component={Link}
+                nativeButton={false}
                 to="/?action=add"
                 size="large"
                 startIcon={<PersonAddAlt1Icon />}
@@ -379,6 +383,7 @@ export default function PeopleListPage({
               <Button
                 variant="outlined"
                 component={Link}
+                nativeButton={false}
                 to="/settings"
                 size="large"
                 startIcon={<SettingsBackupRestoreIcon />}
@@ -431,6 +436,7 @@ export default function PeopleListPage({
             <Button
               variant="contained"
               component={Link}
+              nativeButton={false}
               to="/trash"
               size="large"
               startIcon={<RestoreFromTrashIcon />}

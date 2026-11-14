@@ -28,6 +28,9 @@ export default function MapInspectorPanel({
   open,
   onClose,
   points = [],
+  photoCount = 0,
+  eventCount = 0,
+  externalCount = 0,
   focusedKey = null,
   onSelectPoint,
 }) {
@@ -38,14 +41,16 @@ export default function MapInspectorPanel({
       onClose={onClose}
       variant="persistent"
       {...inspectorDrawerTransitionProps}
-      PaperProps={{
-        sx: {
-          top: 50,
-          height: "calc(100% - 50px)",
-          ...inspectorPaperSx,
-          borderLeft: "1px solid",
-          borderColor: "divider",
-        },
+      slotProps={{
+        paper: {
+          sx: {
+            top: 50,
+            height: "calc(100% - 50px)",
+            ...inspectorPaperSx,
+            borderLeft: "1px solid",
+            borderColor: "divider",
+          },
+        }
       }}
     >
       <Box
@@ -59,20 +64,34 @@ export default function MapInspectorPanel({
         <Box
           sx={{
             p: 2,
-            pb: 1.5,
+            pb: 0.5,
             display: "flex",
             alignItems: "center",
             gap: 1,
           }}
         >
           <MapIcon color="primary" sx={{ fontSize: 20 }} />
-          <Typography variant="subtitle1" fontWeight={800}>
+          <Typography variant="subtitle1" sx={{
+            fontWeight: 800
+          }}>
             Точки на карте
           </Typography>
           <Box sx={{ ml: "auto" }}>
             <CountBadge value={points.length} />
           </Box>
         </Box>
+
+        <Typography
+          variant="caption"
+          sx={{
+            px: 2,
+            pb: 1.5,
+            color: "text.secondary",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {`Ф:${photoCount} · С:${eventCount} · Спр:${externalCount}`}
+        </Typography>
 
         <Box sx={{ flexGrow: 1, overflowY: "auto", p: 2, pt: 0 }}>
           {points.length === 0 ? (
@@ -99,6 +118,7 @@ export default function MapInspectorPanel({
                     }}
                   >
                     <SettingsRow
+                      subtitleLines={2}
                       icon={
                         <RowIcon bg={KIND_COLOR[p.kind] || KIND_COLOR.event}>
                           {kindIcon(p.kind)}

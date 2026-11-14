@@ -45,17 +45,19 @@ export default function TimelineEventDialog({
       onClose={onClose}
       maxWidth={false}
       transitionDuration={{ enter: 180, exit: 140 }}
-      PaperProps={{
-        sx: {
-          width: 440,
-          maxWidth: "94vw",
-          maxHeight: "calc(100vh - 64px)",
-          borderRadius: "24px",
-          backgroundImage: "none",
-          display: "flex",
-          flexDirection: "column",
-          overflow: "hidden",
-        },
+      slotProps={{
+        paper: {
+          sx: {
+            width: 440,
+            maxWidth: "94vw",
+            maxHeight: "calc(100vh - 64px)",
+            borderRadius: "24px",
+            backgroundImage: "none",
+            display: "flex",
+            flexDirection: "column",
+            overflow: "hidden",
+          },
+        }
       }}
     >
       <Box sx={{ p: 3, pb: 2, overflowY: "auto" }}>
@@ -102,7 +104,9 @@ export default function TimelineEventDialog({
               <Typography variant="overline" sx={sectionLabelSx}>
                 Заметки
               </Typography>
-              <Typography variant="body2" color="text.secondary">
+              <Typography variant="body2" sx={{
+                color: "text.secondary"
+              }}>
                 {event.notes}
               </Typography>
             </Box>
@@ -122,7 +126,12 @@ export default function TimelineEventDialog({
               <Typography variant="overline" sx={sectionLabelSx}>
                 Участники
               </Typography>
-              <Stack direction="row" flexWrap="wrap" gap={0.75}>
+              <Stack
+                direction="row"
+                sx={{
+                  flexWrap: "wrap",
+                  gap: 0.75
+                }}>
                 {participants.map((p) => (
                   <Chip
                     key={p.id}

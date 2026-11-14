@@ -7,11 +7,14 @@ import HistoryIcon from "@mui/icons-material/History";
 import LayersClearIcon from "@mui/icons-material/LayersClear";
 
 import ExpandingPeopleSelect from "./ExpandingPeopleSelect";
-import ExpandingGroupSelect from "../../components/ExpandingGroupSelect";
-import SortDirToggle from "../../components/SortDirToggle";
 import ExpandingSearch from "../../components/ExpandingSearch";
 import ExpandingAddPhotoButton from "./ExpandingAddPhotoButton";
-import { toolbarPillSx } from "../toolbarStyles";
+import GalleryGroupSortCluster from "./GalleryGroupSortCluster";
+import {
+  toolbarClusterSx,
+  toolbarDragSpacerSx,
+  toolbarRowSx,
+} from "../appBarToolbarLayout";
 
 const groupOptions = [
   {
@@ -53,54 +56,37 @@ export default function GalleryToolbar({
   setSearch,
 }) {
   return (
-    <Stack
-      direction="row"
-      spacing={1.5}
-      width="100%"
-      sx={{ alignItems: "center" }}
-    >
-      {/* КНОПКА ДОБАВЛЕНИЯ ФОТО — слева, как в личном альбоме */}
-      <ExpandingAddPhotoButton />
-
-      <Box sx={{ flexGrow: 1 }} />
-
-      {/* КТО НА ФОТО */}
-      <ExpandingPeopleSelect
-        allPeople={allPeople}
-        selectedPeople={selectedPeople}
-        onChange={(_, v) => setSelectedPeople(v)}
-        photos={photos}
-      />
-
-      <Box
-        sx={{
-          ...toolbarPillSx,
-          display: "inline-flex",
-          alignItems: "center",
-          gap: 1,
-          color: "text.primary",
-          fontSize: 20,
-        }}
-      >
-        {/* ГРУППИРОВКА */}
-        <ExpandingGroupSelect
-          value={groupBy}
-          onChange={setGroupBy}
-          options={groupOptions}
-        />
-
-        {/* СОРТИРОВКА: направление текущей группировки */}
-        <SortDirToggle sortDir={sortDir} onChange={setSortDir} />
+    <Stack direction="row" sx={toolbarRowSx}>
+      <Box sx={toolbarClusterSx}>
+        <ExpandingAddPhotoButton />
       </Box>
 
-      {/* ПОИСК */}
-      <ExpandingSearch
-        scope={"gallery"}
-        value={search}
-        onChange={setSearch}
-        placeholder="Поиск по описанию и тегам..."
-        enableHashtags={true}
-      />
+      <Box sx={toolbarDragSpacerSx} />
+
+      <Box sx={{ ...toolbarClusterSx, minWidth: 0 }}>
+        <ExpandingPeopleSelect
+          allPeople={allPeople}
+          selectedPeople={selectedPeople}
+          onChange={(_, v) => setSelectedPeople(v)}
+          photos={photos}
+        />
+
+        <GalleryGroupSortCluster
+          groupBy={groupBy}
+          setGroupBy={setGroupBy}
+          groupOptions={groupOptions}
+          sortDir={sortDir}
+          setSortDir={setSortDir}
+        />
+
+        <ExpandingSearch
+          scope="gallery"
+          value={search}
+          onChange={setSearch}
+          placeholder="Поиск по описанию и тегам..."
+          enableHashtags
+        />
+      </Box>
     </Stack>
   );
 }

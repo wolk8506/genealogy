@@ -349,7 +349,9 @@ export default function GlobalPhotoGallery({
                 textAlign: "center",
               }}
             >
-              <Stack spacing={3} alignItems="center">
+              <Stack spacing={3} sx={{
+                alignItems: "center"
+              }}>
                 <Box sx={{ position: "relative" }}>
                   <Box
                     sx={{
@@ -456,9 +458,13 @@ export default function GlobalPhotoGallery({
                     borderBottom: "1px solid divider",
                   }}
                 >
-                  <Stack direction="row" spacing={1} alignItems="center">
+                  <Stack direction="row" spacing={1} sx={{
+                    alignItems: "center"
+                  }}>
                     {Icon}
-                    <Typography variant="subtitle2" fontWeight="bold">
+                    <Typography variant="subtitle2" sx={{
+                      fontWeight: "bold"
+                    }}>
                       {label}
                     </Typography>
                   </Stack>
